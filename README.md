@@ -24,24 +24,47 @@ Each dataset in data will have its own directory
 
 ├── data/
 |   ├── dataset1/
-|   |   ├── input.parquet         # you provide this
-|   |   ├── umap-001.parquet      # from umap.py, x,y coordinates
-|   |   ├── umap-001.json         # from umap.py, params used
-|   |   ├── umap-001.png          # from umap.py, thumbnail of plot
-|   |   ├── clusters-001.parquet  # from clusters.py, cluster labels
-|   |   ├── clusters-001.json     # from clusters.py, params used
-|   |   ├── clusters-001.png      # from clusters.py, thumbnail of plot
+|   |   ├── input.parquet                   # you provide this file
+|   |   ├── umap-001.parquet                # from umap.py, x,y coordinates
+|   |   ├── umap-001.json                   # from umap.py, params used
+|   |   ├── umap-001.png                    # from umap.py, thumbnail of plot
+|   |   ├── umap-002....                    # subsequent runs increment
+|   |   ├── clusters-umap-001-001.parquet   # from clusters.py, cluster labels
+|   |   ├── clusters-umap-001-001.json      # from clusters.py, params used
+|   |   ├── clusters-umap-001-001.png       # from clusters.py, thumbnail of plot
+|   |   ├── clusters-umap-001-...           # from clusters.py, thumbnail of plot
 
 
 # Scripts
-
-## umap.py
-
-## clusters.py
+The scripts should be run in order once you have an `input.parquet` file in your folder.
 
 ## csv2parquet.py
 A simple utility to convert a csv file into a parquet file. It will write the output parquet file into the proper folder given by the dataset name.
 
 ```bash
-python csv2parquet.py <csv_file> <dataset_name>
+#python csv2parquet.py <csv_file> <dataset_name>
+python csv2parquet.py dadjokes.csv database-curated
+```
+
+## 1. embed.py 
+Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers.
+
+```bash
+# python embed.py <dataset_name> <text_column>
+python embed.py dadabase-curated joke
+```
+
+## 2. umapper.py
+Map the embeddings from high-dimensional space to 2D with UMAP. Will generate a thumbnail of the scatterplot.
+```bash
+# python umapper.py <dataset_name> <neighbors> <min_dist>
+python umapper.py dadabase-curated 50 0.075 
+```
+
+
+## 3. clusters.py
+Cluster the UMAP points using HDBSCAN. This will label each point with a cluster label
+```bash
+# python cluster.py <dataset_name> <umap_name> <samples>
+cluster.py dadabase-curated umap-005 5
 ```
