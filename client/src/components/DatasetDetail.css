@@ -1,0 +1,62 @@
+/* General styling for dataset summary */
+.dataset--details {
+  max-width: 100%;
+  width: 100%;
+  padding: 10px;
+}
+.dataset--details-summary {
+  margin: 10px 0px;
+}
+
+/* Styling for each UMAP and Cluster section */
+.dataset--details-umaps {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dataset--details-clusters {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.dataset--details-umap {
+  /* display: flex; */
+  /* align-items: center; */
+  padding: 10px;
+  margin: 10px 0px;
+  border: 1px solid #999;
+  max-width: 760px;
+}
+.dataset--details-cluster {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin: 10px 0px;
+  border: 1px solid #ddd;
+  min-width: 400px;
+}
+
+/* Styling for the text details in UMAP and Cluster sections */
+.dataset--details-umap h3, .dataset--details-cluster h3 {
+  width: 250px;
+  margin-right: 20px;
+  flex-grow: 1; /* Makes the text occupy the remaining space */
+}
+
+.dataset--details-umap-stats {
+  width: 250px;
+}
+.dataset--details-cluster-stats {
+  width: 250px;
+}
+
+/* Thumbnail styling */
+.dataset--details-umap img, .dataset--details-cluster img {
+  max-width: 200px; /* Adjust as per your requirement */
+  max-height: 200px;
+  object-fit: cover;
+  border: 1px solid lightgray;
+  margin: 5px;
+}

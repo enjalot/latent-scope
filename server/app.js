@@ -1,29 +1,32 @@
 const fs = require('fs');
 const path = require('path');
+const cors = require('cors');
 const express = require('express');
 
 const app = express();
 const port = 3113;
 
+app.use(cors());
 app.use(express.json());
 
 // API Routes
 const api = express.Router();
 api.get("/datasets", (req, res) => {
   const directoryPath = path.join(__dirname, '../data/');
-  let datasets = {};
+  let datasets = [];
   fs.readdirSync(directoryPath).forEach(dir => {
     const filePath = path.join(directoryPath, dir, 'embeddings.json');
     if (fs.existsSync(filePath)) {
       const jsonString = fs.readFileSync(filePath, 'utf8');
       const jsonData = JSON.parse(jsonString);
-      datasets[dir] = jsonData;
+      jsonData.name = dir
+      datasets.push(jsonData);
     }
   });
   res.send(datasets);
   
 })
-api.get("/dataset/:dataset/meta", (req, res) => {
+api.get("/datasets/:dataset/meta", (req, res) => {
   // get all the metadata for this dataset
   const dataset = req.params.dataset;
   const directoryPath = path.join(__dirname, '../data/', dataset);
@@ -55,12 +58,12 @@ app.use("/api", api)
 // Dataset Routes
 // make it easy to fetch dataset files directly from folder
 const datasets = express.Router();
-app.get('*', (req, res) => {
+app.get('/files/*', (req, res) => {
   console.log("req url", req.url)
-  let datasetPath = req.url.split('/dataset')[1];
+  let datasetPath = req.url.split('/files')[1];
   res.sendFile(path.join(__dirname, '../data/', datasetPath));
 });
-app.use("/dataset", datasets)
+app.use("/files", datasets)
 
 // Serve static files in production if not an API route
 if (process.env.NODE_ENV === 'production') {
