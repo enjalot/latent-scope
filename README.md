@@ -10,12 +10,23 @@ The data directory is where you will put your datasets, and where the scripts an
 
 ## client
 A React app that provides the interface for operating the scope and running the various scripts 
+```bash
+cd client
+npm install
+npm run dev
+```
 
 ## scripts
-Python scripts that can be run via CLI or via the web interface (through the server). The scripts assume a certain directory structure in the data folder
+Python scripts that can be run via CLI or via the web interface (through the server). The scripts assume a certain directory structure in the data folder.  
+See below for more detailed instructions on using the scripts
 
 ## server
-A node.js server that 
+A node.js server that provides a local API to access the data files for the client app.
+```bash
+cd server
+npm install
+npm run dev
+```
 
 
 # Directory structure
