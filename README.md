@@ -21,7 +21,7 @@ A node.js server that
 # Directory structure
 
 Each dataset in data will have its own directory
-
+<pre>
 ├── data/
 |   ├── dataset1/
 |   |   ├── input.parquet                   # you provide this file
@@ -33,7 +33,7 @@ Each dataset in data will have its own directory
 |   |   ├── clusters-umap-001-001.json      # from clusters.py, params used
 |   |   ├── clusters-umap-001-001.png       # from clusters.py, thumbnail of plot
 |   |   ├── clusters-umap-001-...           # from clusters.py, thumbnail of plot
-
+</pre>
 
 # Scripts
 The scripts should be run in order once you have an `input.parquet` file in your folder.
