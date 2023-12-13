@@ -20,14 +20,20 @@ npm run dev
 Python scripts that can be run via CLI or via the web interface (through the server). The scripts assume a certain directory structure in the data folder.  
 See below for more detailed instructions on using the scripts
 
-## server
+## node_server
 A node.js server that provides a local API to access the data files for the client app.
 ```bash
-cd server
+cd node_server
 npm install
 npm run dev
 ```
 
+## python_server
+A python server that provides on-demand nearest neighbor search and simple queries into larger datasets
+```bash
+cd python_server
+python server.py
+```
 
 # Directory structure
 
