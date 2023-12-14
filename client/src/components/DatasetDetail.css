@@ -8,6 +8,21 @@
   margin: 10px 0px;
 }
 
+/* Styling for nearest neighbors section */
+.dataset--neighbors {
+  max-width: 760px;
+}
+.dataset--neighbors input {
+  padding: 10px;
+  border: 1px solid #999;
+  border-radius: 8px;
+  font-size: 1em;
+}
+.dataset--neighbors button {
+  margin: 5px;
+
+}
+
 /* Styling for each UMAP and Cluster section */
 .dataset--details-umaps {
   display: flex;

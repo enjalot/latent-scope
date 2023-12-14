@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import './DatasetDetail.css';
 import DatasetUmaps from './DatasetUmaps';
+import DataTable from './DataTable';
 
 
 function DatasetDetail() {
@@ -15,8 +16,8 @@ function DatasetDetail() {
       .then(data => setDataset(data));
   }, [datasetId]);
 
-  const [distances, setDistances] = useState(null);
-  const [indices, setIndices] = useState(null);
+  const [distances, setDistances] = useState([]);
+  const [indices, setIndices] = useState([]);
   const searchQuery = (query) => {
     fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}`)
       .then(response => response.json())
@@ -27,15 +28,24 @@ function DatasetDetail() {
       });
   };
 
-  const [neighbors, setNeighbors] = useState(null);
+  const [neighbors, setNeighbors] = useState([]);
   useEffect(() => {
     fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
       .then(response => response.json())
       .then(data => {
         console.log("neighbors", data)
-        setNeighbors(data)
+        const text_column = dataset["embeddings.json"].text_column
+        let ns = data.map((row, index) => {
+          return {
+            text: row[text_column],
+            score: row.score, // TODO: this is custom to one dataset
+            distance: distances[index]
+          }
+        })
+        ns.sort((a, b) => b.score - a.score)
+        setNeighbors(ns)
       })
-  }, [indices, datasetId])
+  }, [indices, datasetId, dataset, distances])
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -47,7 +57,7 @@ function DatasetDetail() {
         Model: {dataset["embeddings.json"].model}<br/>
       </div>
       
-      <div class="dataset--neighbors">
+      <div className="dataset--neighbors">
         <form onSubmit={(e) => {
           e.preventDefault();
           searchQuery(e.target.elements.searchBox.value);
@@ -56,8 +66,13 @@ function DatasetDetail() {
           <button type="submit">Similarity Search</button>
         </form>
 
+        <DataTable data={neighbors} />
+
       </div>
 
+
+      <hr></hr>
+      <h2> UMAP experiments</h2>
       <DatasetUmaps dataset={dataset} datasetId={datasetId} />
       
     </div>

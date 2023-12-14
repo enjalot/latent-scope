@@ -19,6 +19,7 @@ dataframes = {}
 @app.route('/nn', methods=['GET'])
 def nn():
     dataset = request.args.get('dataset')
+    num = 150
     if dataset not in datasets:
         # load the dataset embeddings
         meta = json.load(open(os.path.join("../data", dataset, "embeddings.json")))
@@ -33,7 +34,7 @@ def nn():
         # find nearest neighbors
         print("fitting embeddings")
         from sklearn.neighbors import NearestNeighbors
-        nne = NearestNeighbors(n_neighbors=50, metric="cosine")
+        nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
         datasets[dataset] = { "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
     else:
