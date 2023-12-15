@@ -12,3 +12,13 @@ table.datatable {
 .datatable th {
   background-color: #f4f4f4;
 }
+
+.datatable .tag-active {
+  background-color: #fff;
+  border: 1px solid gray;
+}
+.datatable .tag-inactive {
+  background-color: #eee;
+  filter: grayscale(100%);
+  opacity: 0.5;
+}

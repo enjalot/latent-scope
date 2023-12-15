@@ -69,10 +69,137 @@ def indexed():
     indices = json.loads(request.args.get('indices'))
     print("indices", indices)
     if dataset not in dataframes:
-      df = pd.read_parquet(os.path.join("../data", dataset, "input.parquet"))
-      dataframes[dataset] = df
+        df = pd.read_parquet(os.path.join("../data", dataset, "input.parquet"))
+        dataframes[dataset] = df
     else:
-      df = dataframes[dataset]
+        df = dataframes[dataset]
+    
+    # get the indexed rows
+    rows = df.iloc[indices]
+    # send back the rows as json
+    return rows.to_json(orient="records")
+
+tagsets = {}
+
+@app.route("/tags", methods=['GET'])
+def tags():
+    dataset = request.args.get('dataset')
+    if dataset not in tagsets:
+        tagsets[dataset] = {}
+    # search the dataset directory for all files ending in .indices
+    tags = []
+    for f in os.listdir(os.path.join("../data", dataset)):
+        if f.endswith(".indices"):
+            tag = f.split(".")[0]
+            indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+            if type(indices) == int:
+                indices = [indices]
+            tagsets[dataset][tag] = indices
+
+    # return an object with the tags for a given dataset
+    return jsonify(tagsets[dataset])
+
+@app.route("/tags/new", methods=['GET'])
+def new_tag():
+    dataset = request.args.get('dataset')
+    tag = request.args.get('tag')
+    if dataset not in tagsets:
+        tagsets[dataset] = {}
+    # search the dataset directory for all files ending in .indices
+    tags = []
+    for f in os.listdir(os.path.join("../data", dataset)):
+        if f.endswith(".indices"):
+            dtag = f.split(".")[0]
+            indices = np.loadtxt(os.path.join("../data", dataset, dtag + ".indices"), dtype=int).tolist()
+            if type(indices) == int:
+                indices = [indices]
+            tagsets[dataset][dtag] = indices
+
+    if tag not in tagsets[dataset]:
+        tagsets[dataset][tag] = []
+        # create an empty file
+        filename = os.path.join("../data", dataset, tag + ".indices")
+        with open(filename, 'w') as f:
+            f.write("")
+            f.close()
+
+
+    # return an object with the tags for a given dataset
+    return jsonify(tagsets[dataset])
+
+@app.route("/tags/add", methods=['GET'])
+def add_tag():
+    dataset = request.args.get('dataset')
+    tag = request.args.get('tag')
+    index = request.args.get('index')
+    if dataset not in tagsets:
+        ts = tagsets[dataset] = {}
+    else:
+        ts = tagsets[dataset]
+    if tag not in ts:
+        # read a tag file, which is just a csv with a single column into an array of integers
+        indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+        if type(indices) == int:
+            indices = [indices]
+        ts[tag] = indices
+    else:
+        indices = ts[tag]
+
+    if not indices:
+        indices = []
+    if index not in indices:
+        indices.append(int(index))
+        ts[tag] = indices
+        # save the indices to a file
+        np.savetxt(os.path.join("../data", dataset, tag + ".indices"), indices, fmt='%d')
+    # return an object with the tags for a given dataset
+    return jsonify(tagsets[dataset])
+
+@app.route("/tags/remove", methods=['GET'])
+def remove_tag():
+    dataset = request.args.get('dataset')
+    tag = request.args.get('tag')
+    index = request.args.get('index')
+    if dataset not in tagsets:
+        tagsets[dataset] = {}
+    else:
+        ts = tagsets[dataset]
+    if tag not in ts:
+        # read a tag file, which is just a csv with a single column into an array of integers
+        indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+        if type(indices) == int:
+            indices = [indices]
+        ts[tag] = indices
+    else:
+        indices = ts[tag]
+    if index in indices:
+        indices = indices.remove(int(index))
+        ts[tag] = indices
+        # save the indices to a file
+        np.savetxt(os.path.join("../data", dataset, tag + ".indices"), indices, fmt='%d')
+    # return an object with the tags for a given dataset
+    return jsonify(tagsets[dataset])
+
+@app.route("/tags/rows", methods=['GET'])
+def tag_rows():
+    dataset = request.args.get('dataset')
+    tag = request.args.get('tag')
+
+    if dataset not in tagsets:
+        tagsets[dataset] = {}
+    else:
+        ts = tagsets[dataset]
+    if tag not in ts:
+        # read a tag file, which is just a csv with a single column into an array of integers
+        indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+        ts[tag] = indices
+    else:
+        indices = ts[tag]
+    if dataset not in dataframes:
+        df = pd.read_parquet(os.path.join("../data", dataset, "input.parquet"))
+        dataframes[dataset] = df
+    else:
+        df = dataframes[dataset]
     
     # get the indexed rows
     rows = df.iloc[indices]
