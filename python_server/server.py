@@ -33,7 +33,7 @@ def send_file(datasetPath):
 
 """
 Get the essential metadata for all available datasets.
-Essential metadata is stored in embeddings.json
+Essential metadata is stored in meta.json
 """
 @app.route('/datasets', methods=['GET'])
 def get_datasets():
@@ -41,7 +41,7 @@ def get_datasets():
     datasets = []
 
     for dir in os.listdir(directory_path):
-        file_path = os.path.join(directory_path, dir, 'embeddings.json')
+        file_path = os.path.join(directory_path, dir, 'meta.json')
         if os.path.isfile(file_path):
             with open(file_path, 'r', encoding='utf-8') as file:
                 jsonData = json.load(file)
@@ -51,15 +51,9 @@ def get_datasets():
     return jsonify(datasets)
 
 """
-Get all metadata files from the given dataset's directory.
-TODO: each kind of metadata should be accessed explicitly.
-i.e. /datasets/<dataset>/umap, /datasets/<dataset>/clusters, etc.
+Get all metadata files from the given a directory.
 """
-@app.route('/datasets/<dataset>/meta', methods=['GET'])
-def get_dataset_meta(dataset):
-    directory_path = os.path.join(os.getcwd(), '../data/', dataset)
-    print("dataset", dataset, directory_path)
-
+def scan_for_json_files(directory_path):
     try:
         files = os.listdir(directory_path)
     except OSError as err:
@@ -77,8 +71,26 @@ def get_dataset_meta(dataset):
                 json_contents[file] = json.load(json_file)
         except json.JSONDecodeError as err:
             print('Error parsing JSON string:', err)
-
     return jsonify(json_contents)
+
+@app.route('/datasets/<dataset>/meta', methods=['GET'])
+def get_dataset_meta(dataset):
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    return jsonify(json_contents)
+
+@app.route('/datasets/<dataset>/umaps', methods=['GET'])
+def get_dataset_umaps(dataset):
+    directory_path = os.path.join(os.getcwd(), '../data/', dataset, "umaps")
+    print("dataset", dataset, directory_path)
+    return scan_for_json_files(directory_path)
+
+@app.route('/datasets/<dataset>/clusters', methods=['GET'])
+def get_dataset_clusters(dataset):
+    directory_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters")
+    print("dataset", dataset, directory_path)
+    return scan_for_json_files(directory_path)
 
 """
 Returns nearest neighbors for a given query string
@@ -90,7 +102,7 @@ def nn():
     num = 150
     if dataset not in DATASETS:
         # load the dataset embeddings
-        meta = json.load(open(os.path.join("../data", dataset, "embeddings.json")))
+        meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
         print("meta", meta)
         embeddings = np.load(os.path.join("../data", dataset, "embeddings.npy"))
         print("embeddings", embeddings.shape)
@@ -161,11 +173,10 @@ def tags():
     if dataset not in tagsets:
         tagsets[dataset] = {}
     # search the dataset directory for all files ending in .indices
-    tags = []
-    for f in os.listdir(os.path.join("../data", dataset)):
+    for f in os.listdir(os.path.join("../data", dataset, "tags")):
         if f.endswith(".indices"):
             tag = f.split(".")[0]
-            indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+            indices = np.loadtxt(os.path.join("../data", dataset, "tags", tag + ".indices"), dtype=int).tolist()
             if type(indices) == int:
                 indices = [indices]
             tagsets[dataset][tag] = indices
@@ -187,7 +198,7 @@ def new_tag():
     for f in os.listdir(os.path.join("../data", dataset)):
         if f.endswith(".indices"):
             dtag = f.split(".")[0]
-            indices = np.loadtxt(os.path.join("../data", dataset, dtag + ".indices"), dtype=int).tolist()
+            indices = np.loadtxt(os.path.join("../data", dataset, "tags", dtag + ".indices"), dtype=int).tolist()
             if type(indices) == int:
                 indices = [indices]
             tagsets[dataset][dtag] = indices
@@ -218,7 +229,7 @@ def add_tag():
         ts = tagsets[dataset]
     if tag not in ts:
         # read a tag file, which is just a csv with a single column into an array of integers
-        indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+        indices = np.loadtxt(os.path.join("../data", dataset, "tags", tag + ".indices"), dtype=int).tolist()
         if type(indices) == int:
             indices = [indices]
         ts[tag] = indices
@@ -249,7 +260,7 @@ def remove_tag():
         ts = tagsets[dataset]
     if tag not in ts:
         # read a tag file, which is just a csv with a single column into an array of integers
-        indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+        indices = np.loadtxt(os.path.join("../data", dataset, "tags", tag + ".indices"), dtype=int).tolist()
         if type(indices) == int:
             indices = [indices]
         ts[tag] = indices
@@ -277,7 +288,7 @@ def tag_rows():
         ts = tagsets[dataset]
     if tag not in ts:
         # read a tag file, which is just a csv with a single column into an array of integers
-        indices = np.loadtxt(os.path.join("../data", dataset, tag + ".indices"), dtype=int).tolist()
+        indices = np.loadtxt(os.path.join("../data", dataset, "tags", tag + ".indices"), dtype=int).tolist()
         ts[tag] = indices
     else:
         indices = ts[tag]

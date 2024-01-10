@@ -45,8 +45,8 @@ function TagDetail() {
     <div className="dataset--details">
       <h2>Dataset: <a href={datasetUrl}>{datasetId}</a></h2>
       <div className="dataset--details-summary">
-        Rows: {dataset["embeddings.json"].shape[0]}<br/>
-        Model: {dataset["embeddings.json"].model}<br/>
+        Rows: {dataset.shape[0]}<br/>
+        Model: {dataset.model}<br/>
         Tags: {tags.map(t => {
           const href = `/datasets/${datasetId}/tag/${t}`
           return <a className="dataset--tag-link" key={t} href={href}>{t}({tagset[t].length})</a>

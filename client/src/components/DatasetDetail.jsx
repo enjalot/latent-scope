@@ -53,7 +53,7 @@ function DatasetDetail() {
       .then(data => {
         if(!dataset) return;
         console.log("neighbors", data)
-        const text_column = dataset["embeddings.json"].text_column
+        const text_column = dataset.text_column
         let ns = data.map((row, index) => {
           return {
             index: indices[index],
@@ -74,8 +74,8 @@ function DatasetDetail() {
     <div className="dataset--details">
       <h1>Dataset: {datasetId}</h1>
       <div className="dataset--details-summary">
-        Rows: {dataset["embeddings.json"].shape[0]}<br/>
-        Model: {dataset["embeddings.json"].model}<br/>
+        Rows: {dataset.shape[0]}<br/>
+        Model: {dataset.model}<br/>
         Tags: {tags.map(t => {
           const href = `/datasets/${datasetId}/tag/${t}`
           return <a className="dataset--tag-link" key={t} href={href}>{t}({tagset[t].length})</a>

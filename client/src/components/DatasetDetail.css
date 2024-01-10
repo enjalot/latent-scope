@@ -42,7 +42,7 @@
   padding: 10px;
   margin: 10px 0px;
   border: 1px solid #999;
-  max-width: 760px;
+  max-width: 480px;
 }
 .dataset--details-cluster {
   display: flex;

@@ -1,5 +1,5 @@
-# Usage: python cluster.py <dataset_name> <umap_name> <samples> 
-# Example: python cluster.py dadabase-curated umap-001 50
+# Usage: python cluster.py <dataset_name> <umap_name> <samples> <min_samples>
+# Example: python cluster.py dadabase-curated umap-001 50 5
 import os
 import re
 import sys
@@ -8,31 +8,34 @@ import hdbscan
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.spatial import ConvexHull
 from scipy.spatial.distance import cdist
 
 
 def clusterer(dataset_name, umap_name, samples, min_samples):
-
+    # Check if clusters directory exists, if not, create it
+    if not os.path.exists(f'../data/{dataset_name}/clusters'):
+        os.makedirs(f'../data/{dataset_name}/clusters')
     # determine the index of the last cluster run by looking in the dataset directory
     # for files named umap-<number>.json
-    cluster_files = [f for f in os.listdir(f"../data/{dataset_name}") if re.match(r"cluster-umap-\d+\-\d+\.json", f) and umap_name in f]
+    cluster_files = [f for f in os.listdir(f"../data/{dataset_name}/clusters") if re.match(r"cluster-\d+\.json", f)]
     print("cluster files", sorted(cluster_files))
     if len(cluster_files) > 0:
         last_cluster = sorted(cluster_files)[-1]
-        last_cluster_number = int(last_cluster.split("-")[3].split(".")[0])
+        last_cluster_number = int(last_cluster.split("-")[1].split(".")[0])
         print("lastcluster", last_cluster, last_cluster_number)
         next_cluster_number = last_cluster_number + 1
     else:
         next_cluster_number = 1
 
     # make the umap name from the number, zero padded to 3 digits
-    cluster_name = f"cluster-{umap_name}-{next_cluster_number:03d}"
+    cluster_name = f"cluster-{next_cluster_number:03d}"
 
     # save a json file with the umap parameters
-    with open(f'../data/{dataset_name}/{cluster_name}.json', 'w') as f:
+    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
         json.dump({"umap_name": umap_name, "samples": samples, "min_samples": min_samples}, f)
 
-    umap_embeddings_df = pd.read_parquet(f"../data/{dataset_name}/{umap_name}.parquet")
+    umap_embeddings_df = pd.read_parquet(f"../data/{dataset_name}/umaps/{umap_name}.parquet")
     umap_embeddings = umap_embeddings_df.to_numpy()
 
     clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean')
@@ -58,7 +61,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
       new_assignments = [non_noise_labels[index] for index in closest_centroid_indices]
       cluster_labels[noise_indices] = new_assignments
 
-    with open(f'../data/{dataset_name}/{cluster_name}.json', 'w') as f:
+    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
         json.dump({
             "umap_name": umap_name, 
             "samples": samples, 
@@ -71,16 +74,25 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
 
     # save umap embeddings to a parquet file with columns x,y
     df = pd.DataFrame({"cluster": cluster_labels, "raw_cluster": raw_cluster_labels})
-    output_file = f"../data/{dataset_name}/{cluster_name}.parquet"
+    output_file = f"../data/{dataset_name}/clusters/{cluster_name}.parquet"
     df.to_parquet(output_file)
     print(df.head())
 
     # generate a scatterplot of the umap embeddings and save it to a file
     fig, ax = plt.subplots(figsize=(6, 6))
     plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=1, alpha=0.5, c=cluster_labels, cmap='Spectral')
+    # plot a convex hull around each cluster
+    for label in non_noise_labels:
+        points = umap_embeddings[cluster_labels == label]
+        hull = ConvexHull(points)
+        for simplex in hull.simplices:
+            plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
+
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
-    plt.savefig(f"../data/{dataset_name}/{cluster_name}.png")
+    plt.savefig(f"../data/{dataset_name}/clusters/{cluster_name}.png")
+
+    
 
     print("wrote", output_file)
 
@@ -88,5 +100,5 @@ if __name__ == "__main__":
     dataset_name = sys.argv[1]
     umap_name = sys.argv[2]
     samples = int(sys.argv[3])
-    min_samples = 5
+    min_samples = int(sys.argv[4])
     clusterer(dataset_name, umap_name, samples, min_samples)

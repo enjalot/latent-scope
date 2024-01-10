@@ -20,16 +20,9 @@ npm run dev
 Python scripts that can be run via CLI or via the web interface (through the server). The scripts assume a certain directory structure in the data folder.  
 See below for more detailed instructions on using the scripts
 
-## node_server
-A node.js server that provides a local API to access the data files for the client app.
-```bash
-cd node_server
-npm install
-npm run dev
-```
 
 ## python_server
-A python server that provides on-demand nearest neighbor search and simple queries into larger datasets
+A python server that provides access to the data as well as on-demand nearest neighbor search and simple queries into larger datasets
 ```bash
 cd python_server
 python server.py
@@ -42,14 +35,19 @@ Each dataset in data will have its own directory
 ├── data/
 |   ├── dataset1/
 |   |   ├── input.parquet                   # you provide this file
-|   |   ├── umap-001.parquet                # from umap.py, x,y coordinates
-|   |   ├── umap-001.json                   # from umap.py, params used
-|   |   ├── umap-001.png                    # from umap.py, thumbnail of plot
-|   |   ├── umap-002....                    # subsequent runs increment
-|   |   ├── clusters-umap-001-001.parquet   # from clusters.py, cluster labels
-|   |   ├── clusters-umap-001-001.json      # from clusters.py, params used
-|   |   ├── clusters-umap-001-001.png       # from clusters.py, thumbnail of plot
-|   |   ├── clusters-umap-001-...           # from clusters.py, thumbnail of plot
+|   |   ├── umaps/
+|   |   |   ├── umap-001.parquet                # from umap.py, x,y coordinates
+|   |   |   ├── umap-001.json                   # from umap.py, params used
+|   |   |   ├── umap-001.png                    # from umap.py, thumbnail of plot
+|   |   |   ├── umap-002....                    # subsequent runs increment
+|   |   ├── clusters/
+|   |   |   ├── clusters-umap-001-001.parquet   # from clusters.py, cluster labels
+|   |   |   ├── clusters-umap-001-001.json      # from clusters.py, params used
+|   |   |   ├── clusters-umap-001-001.png       # from clusters.py, thumbnail of plot
+|   |   |   ├── clusters-umap-001-...           # from clusters.py, thumbnail of plot
+|   |   ├── tags/
+|   |   |   ├── ❤️.indices                       # tagged by UI, powered by server.py
+|   |   |   ├── ...                             # can have arbitrary named tags
 </pre>
 
 # Scripts
@@ -85,3 +83,8 @@ Cluster the UMAP points using HDBSCAN. This will label each point with a cluster
 # python cluster.py <dataset_name> <umap_name> <samples>
 cluster.py dadabase-curated umap-005 5
 ```
+
+## Optional 1D scripts
+There are `umap-1d.py` and `cluster-1d.py` which will create 1-dimensional umaps and clustering. This can be useful for ordering the data in a list.
+
+## TODO: Higher-dimensional clustering

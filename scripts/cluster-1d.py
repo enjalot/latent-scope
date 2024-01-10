@@ -15,24 +15,24 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
 
     # determine the index of the last cluster run by looking in the dataset directory
     # for files named umap1d-<number>.json
-    cluster_files = [f for f in os.listdir(f"../data/{dataset_name}") if re.match(r"cluster-umap1d-\d+\-\d+\.json", f) and umap_name in f]
+    cluster_files = [f for f in os.listdir(f"../data/{dataset_name}") if re.match(r"cluster-\d+\.json", f)]
     print("cluster files", sorted(cluster_files))
     if len(cluster_files) > 0:
         last_cluster = sorted(cluster_files)[-1]
-        last_cluster_number = int(last_cluster.split("-")[3].split(".")[0])
+        last_cluster_number = int(last_cluster.split("-")[1].split(".")[0])
         print("lastcluster", last_cluster, last_cluster_number)
         next_cluster_number = last_cluster_number + 1
     else:
         next_cluster_number = 1
 
     # make the umap name from the number, zero padded to 3 digits
-    cluster_name = f"cluster-{umap_name}-{next_cluster_number:03d}"
+    cluster_name = f"cluster-{next_cluster_number:03d}"
 
     # save a json file with the umap parameters
-    with open(f'../data/{dataset_name}/{cluster_name}.json', 'w') as f:
+    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
         json.dump({"umap_name": umap_name, "samples": samples, "min_samples": min_samples}, f)
 
-    umap_embeddings_df = pd.read_parquet(f"../data/{dataset_name}/{umap_name}.parquet")
+    umap_embeddings_df = pd.read_parquet(f"../data/{dataset_name}/umaps/{umap_name}.parquet")
     umap_embeddings = umap_embeddings_df.to_numpy()
 
     clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean')
@@ -58,7 +58,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
       new_assignments = [non_noise_labels[index] for index in closest_centroid_indices]
       cluster_labels[noise_indices] = new_assignments
 
-    with open(f'../data/{dataset_name}/{cluster_name}.json', 'w') as f:
+    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
         json.dump({
             "umap_name": umap_name, 
             "samples": samples, 
@@ -71,7 +71,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
 
     # save umap embeddings to a parquet file with columns x,y
     df = pd.DataFrame({"cluster": cluster_labels, "raw_cluster": raw_cluster_labels})
-    output_file = f"../data/{dataset_name}/{cluster_name}.parquet"
+    output_file = f"../data/{dataset_name}/clusters/{cluster_name}.parquet"
     df.to_parquet(output_file)
     print(df.head())
 
@@ -81,7 +81,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
     plt.scatter(umap_embeddings[:, 0], y_values, s=1, alpha=0.5, c=cluster_labels, cmap='Spectral')
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
-    plt.savefig(f"../data/{dataset_name}/{cluster_name}.png")
+    plt.savefig(f"../data/{dataset_name}/clusters/{cluster_name}.png")
 
     print("wrote", output_file)
 

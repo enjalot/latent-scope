@@ -16,7 +16,7 @@ def umapper(dataset_name, neighbors=25, min_dist=0.075):
 
     # determine the index of the last umap run by looking in the dataset directory
     # for files named umap-<number>.json
-    umap_files = [f for f in os.listdir(f"../data/{dataset_name}") if re.match(r"umap1d-\d+\.json", f)]
+    umap_files = [f for f in os.listdir(f"../data/{dataset_name}/umaps") if re.match(r"umap1d-\d+\.json", f)]
     if len(umap_files) > 0:
         last_umap = sorted(umap_files)[-1]
         last_umap_number = int(last_umap.split("-")[1].split(".")[0])
@@ -28,7 +28,7 @@ def umapper(dataset_name, neighbors=25, min_dist=0.075):
     umap_name = f"umap1d-{next_umap_number:03d}"
 
     # save a json file with the umap parameters
-    with open(f'../data/{dataset_name}/{umap_name}.json', 'w') as f:
+    with open(f'../data/{dataset_name}/umaps/{umap_name}.json', 'w') as f:
         json.dump({"neighbors": neighbors, "min_dist": min_dist}, f)
 
     reducer = umap.UMAP(
@@ -53,7 +53,7 @@ def umapper(dataset_name, neighbors=25, min_dist=0.075):
 
     # save umap embeddings to a parquet file with columns x,y
     df = pd.DataFrame(umap_embeddings, columns=['x'])
-    output_file = f"../data/{dataset_name}/{umap_name}.parquet"
+    output_file = f"../data/{dataset_name}/umaps/{umap_name}.parquet"
     df.to_parquet(output_file)
     print("wrote", output_file)
 
@@ -64,7 +64,7 @@ def umapper(dataset_name, neighbors=25, min_dist=0.075):
     plt.scatter(umap_embeddings[:, 0], y=y_values, s=1, alpha=0.5)
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
-    plt.savefig(f"../data/{dataset_name}/{umap_name}.png")
+    plt.savefig(f"../data/{dataset_name}/umaps/{umap_name}.png")
     
 
 
