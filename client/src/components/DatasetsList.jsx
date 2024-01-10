@@ -5,7 +5,7 @@ function DatasetsList() {
   const [datasets, setDatasets] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3113/api/datasets')
+    fetch('http://localhost:5001/datasets')
       .then(response => response.json())
       .then(data => setDatasets(data));
   }, []);

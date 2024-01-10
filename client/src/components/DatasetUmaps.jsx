@@ -15,14 +15,14 @@ function DatasetUmaps({ datasetId, dataset}) {
     const umaps = umaps_keys.map(umap => ({
       file: umap,
       name: umap.replace(".json",""),
-      url: `http://localhost:3113/files/${datasetId}/${umap.replace(".json","")}.png`,
+      url: `http://localhost:5001/files/${datasetId}/${umap.replace(".json","")}.png`,
       ...dataset[umap]
     }))
     const clusters_keys = Object.keys(dataset).filter(key => key.startsWith('cluster'));
     const clusters = clusters_keys.map(cluster=> ({
       file: cluster,
       name: cluster.replace(".json", ""),
-      url: `http://localhost:3113/files/${datasetId}/${cluster.replace(".json", "")}.png`,
+      url: `http://localhost:5001/files/${datasetId}/${cluster.replace(".json", "")}.png`,
       ...dataset[cluster]
     }))
     umaps.forEach(umap => {

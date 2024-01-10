@@ -6,15 +6,79 @@ import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer, AutoModel
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__)
 
 CORS(app)
 
-datasets = {}
-dataframes = {}
+# in memory cache of dataset metadata, embeddings, models and tokenizers
+DATASETS = {}
+# in memory cache of dataframes loaded for each dataset
+DATAFRAMES = {}
+
+# ===========================================================
+# File based routes for reading data and metadata  from disk
+# ===========================================================
+
+"""
+Allow fetching of dataset files directly from disk
+"""
+@app.route('/files/<path:datasetPath>', methods=['GET'])
+def send_file(datasetPath):
+    print("req url", request.url)
+    return send_from_directory(os.path.join(os.getcwd(), '../data/'), datasetPath)
+
+
+"""
+Get the essential metadata for all available datasets.
+Essential metadata is stored in embeddings.json
+"""
+@app.route('/datasets', methods=['GET'])
+def get_datasets():
+    directory_path = os.path.join(os.getcwd(), '../data/')  # Adjust the path as necessary
+    datasets = []
+
+    for dir in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, dir, 'embeddings.json')
+        if os.path.isfile(file_path):
+            with open(file_path, 'r', encoding='utf-8') as file:
+                jsonData = json.load(file)
+                jsonData['name'] = dir
+                datasets.append(jsonData)
+
+    return jsonify(datasets)
+
+"""
+Get all metadata files from the given dataset's directory.
+TODO: each kind of metadata should be accessed explicitly.
+i.e. /datasets/<dataset>/umap, /datasets/<dataset>/clusters, etc.
+"""
+@app.route('/datasets/<dataset>/meta', methods=['GET'])
+def get_dataset_meta(dataset):
+    directory_path = os.path.join(os.getcwd(), '../data/', dataset)
+    print("dataset", dataset, directory_path)
+
+    try:
+        files = os.listdir(directory_path)
+    except OSError as err:
+        print('Unable to scan directory:', err)
+        return jsonify({"error": "Unable to scan directory"}), 500
+
+    json_files = [file for file in files if file.endswith('.json')]
+    print("files", files)
+    print("json", json_files)
+
+    json_contents = {}
+    for file in json_files:
+        try:
+            with open(os.path.join(directory_path, file), 'r', encoding='utf-8') as json_file:
+                json_contents[file] = json.load(json_file)
+        except json.JSONDecodeError as err:
+            print('Error parsing JSON string:', err)
+
+    return jsonify(json_contents)
 
 """
 Returns nearest neighbors for a given query string
@@ -24,7 +88,7 @@ Hard coded to 150 results currently
 def nn():
     dataset = request.args.get('dataset')
     num = 150
-    if dataset not in datasets:
+    if dataset not in DATASETS:
         # load the dataset embeddings
         meta = json.load(open(os.path.join("../data", dataset, "embeddings.json")))
         print("meta", meta)
@@ -40,12 +104,12 @@ def nn():
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
-        datasets[dataset] = { "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
+        DATASETS[dataset] = { "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
     else:
-        embeddings = datasets[dataset]["embeddings"]
-        model = datasets[dataset]["model"]
-        tokenizer = datasets[dataset]["tokenizer"]
-        nne = datasets[dataset]["nne"]
+        embeddings = DATASETS[dataset]["embeddings"]
+        model = DATASETS[dataset]["model"]
+        tokenizer = DATASETS[dataset]["tokenizer"]
+        nne = DATASETS[dataset]["nne"]
     
     # embed the query string and find the nearest neighbor
     query = request.args.get('query')
@@ -74,11 +138,11 @@ Given a list of indices (passed as a json array), return the rows from the datas
 def indexed():
     dataset = request.args.get('dataset')
     indices = json.loads(request.args.get('indices'))
-    if dataset not in dataframes:
+    if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join("../data", dataset, "input.parquet"))
-        dataframes[dataset] = df
+        DATAFRAMES[dataset] = df
     else:
-        df = dataframes[dataset]
+        df = DATAFRAMES[dataset]
     
     # get the indexed rows
     rows = df.iloc[indices]
@@ -217,11 +281,11 @@ def tag_rows():
         ts[tag] = indices
     else:
         indices = ts[tag]
-    if dataset not in dataframes:
+    if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join("../data", dataset, "input.parquet"))
-        dataframes[dataset] = df
+        DATAFRAMES[dataset] = df
     else:
-        df = dataframes[dataset]
+        df = DATAFRAMES[dataset]
     
     # get the indexed rows
     rows = df.iloc[indices]

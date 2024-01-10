@@ -11,9 +11,12 @@ function DatasetDetail() {
   const { dataset: datasetId } = useParams();
 
   useEffect(() => {
-    fetch(`http://localhost:3113/api/datasets/${datasetId}/meta`)
+    fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
       .then(response => response.json())
-      .then(data => setDataset(data));
+      .then(data => {
+        console.log("dataset meta", data)
+        setDataset(data)
+      });
   }, [datasetId]);
 
   const [tagset, setTagset] = useState({});
