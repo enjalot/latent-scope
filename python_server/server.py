@@ -16,6 +16,10 @@ CORS(app)
 datasets = {}
 dataframes = {}
 
+"""
+Returns nearest neighbors for a given query string
+Hard coded to 150 results currently
+"""
 @app.route('/nn', methods=['GET'])
 def nn():
     dataset = request.args.get('dataset')
@@ -63,11 +67,13 @@ def nn():
         
     return jsonify(indices=indices[0].tolist(), distances=distances[0].tolist())
 
+"""
+Given a list of indices (passed as a json array), return the rows from the dataset
+"""
 @app.route('/indexed', methods=['GET'])
 def indexed():
     dataset = request.args.get('dataset')
     indices = json.loads(request.args.get('indices'))
-    print("indices", indices)
     if dataset not in dataframes:
         df = pd.read_parquet(os.path.join("../data", dataset, "input.parquet"))
         dataframes[dataset] = df
@@ -81,6 +87,10 @@ def indexed():
 
 tagsets = {}
 
+"""
+Return the tagsets for a given dataset
+This is a JSON object with the tag name as the key and an array of indices as the value
+"""
 @app.route("/tags", methods=['GET'])
 def tags():
     dataset = request.args.get('dataset')
@@ -99,6 +109,9 @@ def tags():
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
 
+"""
+Create a new tag for a given dataset
+"""
 @app.route("/tags/new", methods=['GET'])
 def new_tag():
     dataset = request.args.get('dataset')
@@ -127,6 +140,9 @@ def new_tag():
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
 
+"""
+Add a data index to a tag
+"""
 @app.route("/tags/add", methods=['GET'])
 def add_tag():
     dataset = request.args.get('dataset')
@@ -155,6 +171,9 @@ def add_tag():
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
 
+"""
+Remove a data index from a tag
+"""
 @app.route("/tags/remove", methods=['GET'])
 def remove_tag():
     dataset = request.args.get('dataset')
@@ -180,6 +199,9 @@ def remove_tag():
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
 
+"""
+Return the data rows for a given tag
+"""
 @app.route("/tags/rows", methods=['GET'])
 def tag_rows():
     dataset = request.args.get('dataset')
