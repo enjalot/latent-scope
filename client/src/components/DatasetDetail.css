@@ -59,6 +59,9 @@
   margin-right: 20px;
   flex-grow: 1; /* Makes the text occupy the remaining space */
 }
+.dataset--details-umap button {
+  margin: 0 5px;
+}
 
 .dataset--details-umap-stats {
   width: 250px;

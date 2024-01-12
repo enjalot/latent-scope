@@ -63,6 +63,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
 
     with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
         json.dump({
+            "cluster_name": cluster_name,
             "umap_name": umap_name, 
             "samples": samples, 
             "min_samples": min_samples,

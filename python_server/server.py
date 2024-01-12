@@ -92,6 +92,19 @@ def get_dataset_clusters(dataset):
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
+@app.route('/datasets/<dataset>/umaps/activate', methods=['GET'])
+def set_active_umap(dataset):
+    umap = request.args.get('umap')
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    json_contents["active_umap"] = umap
+    # write the file back out
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(json_contents, json_file)
+    return jsonify(json_contents)
+
+
 """
 Returns nearest neighbors for a given query string
 Hard coded to 150 results currently

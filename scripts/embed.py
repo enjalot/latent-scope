@@ -51,8 +51,13 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
     # Save embeddings as a numpy file
     np.save(f'../data/{dataset_name}/embeddings.npy', np_embeds)
     # write out a json file with the model name and shape of the embeddings
-    with open(f'../data/{dataset_name}/embeddings.json', 'w') as f:
-        json.dump({"model": model_name, "text_column": text_column, "shape": np_embeds.shape}, f)
+    with open(f'../data/{dataset_name}/meta.json', 'w') as f:
+        json.dump({
+            "id": dataset_name,
+            "model": model_name, 
+            "text_column": text_column, 
+            "shape": np_embeds.shape
+            }, f)
 
 
 

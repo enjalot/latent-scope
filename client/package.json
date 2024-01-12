@@ -10,9 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.28.1-dev82.0",
+    "apache-arrow": "^14.0.2",
+    "d3-scale": "^4.0.2",
+    "parquet-wasm": "^0.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.1"
+    "react-router-dom": "^6.20.1",
+    "regl-scatterplot": "^1.8.5",
+    "request": "^2.88.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -22,6 +28,8 @@
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vite-plugin-top-level-await": "^1.4.1",
+    "vite-plugin-wasm": "^3.3.0"
   }
 }

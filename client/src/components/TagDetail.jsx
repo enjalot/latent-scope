@@ -22,6 +22,7 @@ function TagDetail() {
       .then(response => response.json())
       .then(data => setTagset(data));
   }, [datasetId])
+
   const tags = useMemo(() => {
     const tags = []
     for (const tag in tagset) {
