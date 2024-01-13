@@ -27,6 +27,5 @@ export default defineConfig({
     react(), 
     wasm(),
     topLevelAwait(),
-    
   ],
 })

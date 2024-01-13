@@ -8,6 +8,15 @@
   margin: 10px 0px;
 }
 
+/* Styling for the scope */
+.dataset--scope {
+  position: relative;
+  border: 1px solid gray;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+
 /* Styling for nearest neighbors section */
 .dataset--neighbors {
   max-width: 760px;

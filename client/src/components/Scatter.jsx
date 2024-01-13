@@ -2,7 +2,17 @@ import React, { useEffect, useRef } from 'react';
 import createScatterplot from 'regl-scatterplot';
 import { scaleLinear } from 'd3-scale';
 
-const ScatterPlot = ({ points, pointsLoading, width, height}) => {
+import "./Scatter.css"
+
+const ScatterPlot = ({ 
+  points, 
+  pointsLoading, 
+  width, 
+  height, 
+  onView,
+  onSelect,
+  // onHover,
+}) => {
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -10,8 +20,6 @@ const ScatterPlot = ({ points, pointsLoading, width, height}) => {
     .domain(xDomain.current)
   const yScale = scaleLinear()
     .domain(yDomain.current)
-
-
 
   useEffect(() => {
     const scatterplot = createScatterplot({ 
@@ -26,26 +34,34 @@ const ScatterPlot = ({ points, pointsLoading, width, height}) => {
 
     scatterplot.draw(points);
 
+    onView(xScale, yScale)
     scatterplot.subscribe(
       "view",
       ({ camera, view, xScale: xs, yScale: ys }) => {
         xDomain.current = xs.domain();
         yDomain.current = ys.domain();
-        // onView()
+        onView(xDomain.current, yDomain.current)
      }
     );
     scatterplot.subscribe("select", ({ points }) => {
-      // console.log("points", points, props.embeddings)
+      onSelect(points)
     });
     scatterplot.subscribe("deselect", () => {
+      onSelect([])
     });
+    // scatterplot.subscribe("pointOver", (pointIndex) => {
+    //   onHover(pointIndex)
+    // });
+    // scatterplot.subscribe("pointOut", () => {
+    //   onHover(null)
+    // });
 
     return () => {
       scatterplot.destroy();
     };
   }, [points]);
 
-  return <canvas ref={container} />;
+  return <canvas className="scatter" ref={container} />;
 };
 
 export default ScatterPlot;

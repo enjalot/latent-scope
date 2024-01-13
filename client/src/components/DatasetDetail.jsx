@@ -5,6 +5,7 @@ import './DatasetDetail.css';
 import DatasetUmaps from './DatasetUmaps';
 import DataTable from './DataTable';
 import Scatter from './Scatter';
+import AnnotationPlot from './AnnotationPlot';
 
 import { instantiate } from '../lib/DuckDB'
 
@@ -88,7 +89,7 @@ function DatasetDetail() {
       .then(response => response.json())
       .then(data => {
         if(!dataset) return;
-        console.log("neighbors", data)
+        // console.log("neighbors", data)
         const text_column = dataset.text_column
         let ns = data.map((row, index) => {
           return {
@@ -112,6 +113,26 @@ function DatasetDetail() {
         setDataset(data);
       });
   })
+
+  const [xDomain, setXDomain] = useState([-1, 1]);
+  const [yDomain, setYDomain] = useState([-1, 1]);
+  const handleView = useCallback((xDomain, yDomain) => {
+    setXDomain(xDomain);
+    setYDomain(yDomain);
+  })
+  
+  const handleSelected = useCallback((indices) => {
+    setIndices(indices);
+  })
+  // const handleHover = useCallback((index) => {
+  //   setIndex(index);
+  // })
+
+  const [annotations, setAnnotations] = useState([]);
+  useEffect(() => {
+    const annots = indices.map(index => points[index])
+    setAnnotations(annots)
+  }, [indices, points])
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -142,9 +163,23 @@ function DatasetDetail() {
         <br/>
       </div>
 
-      <div className="dataset--scatter">
-        <canvas style={{ position: 'absolute', pointerEvents: 'none' }} width={scopeWidth} height={scopeHeight} />
-        <Scatter points={points} loading={loadingPoints} width={scopeWidth} height={scopeHeight} />
+      <div className="dataset--scope" style={{ width: scopeWidth, height: scopeHeight }}>
+        <Scatter 
+          points={points} 
+          loading={loadingPoints} 
+          width={scopeWidth} 
+          height={scopeHeight}
+          onView={handleView} 
+          onSelect={handleSelected}
+          />
+        <AnnotationPlot 
+          points={annotations} 
+          xDomain={xDomain} 
+          yDomain={yDomain} 
+          width={scopeWidth} 
+          height={scopeHeight} 
+          />
+        
       </div>
       
       <div className="dataset--neighbors">
@@ -154,6 +189,7 @@ function DatasetDetail() {
         }}>
           <input type="text" id="searchBox" />
           <button type="submit">Similarity Search</button>
+          <span>{indices.length}</span>
         </form>
 
         <DataTable data={neighbors} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} />
