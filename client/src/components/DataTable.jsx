@@ -7,9 +7,11 @@ DataTable.propTypes = {
   data: PropTypes.array.isRequired,
   tagset: PropTypes.object.isRequired,
   datasetId: PropTypes.string.isRequired,
+  maxRows: PropTypes.number,
   onTagset: PropTypes.func.isRequired,
+  onHover: PropTypes.func,
 };
-function DataTable({ data, tagset, datasetId, onTagset }) {
+function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover }) {
   if (!data.length) {
     return <p>No data available.</p>;
   }
@@ -43,7 +45,10 @@ function DataTable({ data, tagset, datasetId, onTagset }) {
   
   }
 
+  const rows = maxRows ? data.slice(0, maxRows) : data;
+
   return (
+    <>
     <table className="datatable">
       <thead>
         <tr>
@@ -52,8 +57,8 @@ function DataTable({ data, tagset, datasetId, onTagset }) {
         </tr>
       </thead>
       <tbody>
-        {data.map((row, index) => (
-          <tr key={index}>
+        {rows.map((row, index) => (
+          <tr key={index} onMouseEnter={() => onHover(row.index)} onMouseLeave={() => onHover()}>
             {headers.map((header, idx) => <td key={idx}>{row[header]}</td>)}
             <td>
               {tags.map((tag, idx) => (
@@ -69,6 +74,8 @@ function DataTable({ data, tagset, datasetId, onTagset }) {
         ))}
       </tbody>
     </table>
+    {maxRows && data.length > maxRows ? <p>Showing {maxRows} of {data.length} rows.</p> : null}
+    </>
   );
 }
 

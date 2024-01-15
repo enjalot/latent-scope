@@ -8,12 +8,39 @@
   margin: 10px 0px;
 }
 
+.dataset--scope-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-height: 650px;
+}
 /* Styling for the scope */
 .dataset--scope {
   position: relative;
   border: 1px solid gray;
   border-radius: 5px;
   padding: 5px;
+}
+.dataset--interaction-displays {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 650px;
+  width: 650px;
+  max-height: 650px;
+  overflow-y: hidden;
+}
+
+.dataset--hovered-table {
+  max-height: 50px;
+  height: 50px;
+  overflow-y: hidden;
+  flex-basis: 650px; /* not sure why this is the number */
+}
+.dataset--selected-table {
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 

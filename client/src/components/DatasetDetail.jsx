@@ -19,6 +19,15 @@ function DatasetDetail() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId } = useParams();
 
+  // the indices returned from similarity search
+  const [searchIndices, setSearchIndices] = useState([]);
+  // indices of items selected by the scatter plot
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  // indices of items in a chosen slide
+  const [slideIndices, setSlideIndices] = useState([]);
+  // index of item being hovered over
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
       .then(response => response.json())
@@ -39,21 +48,62 @@ function DatasetDetail() {
     for (const tag in tagset) {
       tags.push(tag)
     }
-    console.log("tagset", tagset)
+    // console.log("tagset", tagset)
     return tags
   }, [tagset])
 
   const [distances, setDistances] = useState([]);
-  const [indices, setIndices] = useState([]);
+  // const [indices, setIndices] = useState([]);
   const searchQuery = (query) => {
     fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}`)
       .then(response => response.json())
       .then(data => {
-        console.log("search", data)
+        // console.log("search", data)
         setDistances(data.distances);
-        setIndices(data.indices);
+        setSearchIndices(data.indices);
       });
   };
+
+  const hydrateIndices = useCallback((indices, setter, distances = []) => {
+    fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
+      .then(response => response.json())
+      .then(data => {
+        if(!dataset) return;
+        // console.log("neighbors", data)
+        const text_column = dataset.text_column
+        let rows = data.map((row, index) => {
+          return {
+            index: indices[index],
+            text: row[text_column],
+            score: row.score, // TODO: this is custom to one dataset
+            distance: distances[index],
+            date: row.date,
+          }
+        })
+        rows.sort((a, b) => b.score - a.score)
+        setter(rows)
+        // console.log("rows", rows)
+      })
+  }, [dataset, datasetId])
+
+  const [neighbors, setNeighbors] = useState([]);
+  useEffect(() => {
+    hydrateIndices(searchIndices, setNeighbors, distances)
+  }, [searchIndices, setNeighbors, distances])
+
+  const [selected, setSelected] = useState([]);
+  useEffect(() => {
+    hydrateIndices(selectedIndices, setSelected)
+  }, [selectedIndices, setSelected])
+
+  const [hovered, setHovered] = useState([]);
+  useEffect(() => {
+    if(hoveredIndex !== null && hoveredIndex !== undefined) {
+      hydrateIndices([hoveredIndex], setHovered)
+    } else {
+      setHovered([])
+    }
+  }, [hoveredIndex, setHovered])
 
   const [points, setPoints] = useState([]);
   const [loadingPoints, setLoadingPoints] = useState(false);
@@ -83,27 +133,7 @@ function DatasetDetail() {
     }
   }, [dataset]);
 
-  const [neighbors, setNeighbors] = useState([]);
-  useEffect(() => {
-    fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
-      .then(response => response.json())
-      .then(data => {
-        if(!dataset) return;
-        // console.log("neighbors", data)
-        const text_column = dataset.text_column
-        let ns = data.map((row, index) => {
-          return {
-            index: indices[index],
-            text: row[text_column],
-            score: row.score, // TODO: this is custom to one dataset
-            distance: distances[index],
-            date: row.date,
-          }
-        })
-        ns.sort((a, b) => b.score - a.score)
-        setNeighbors(ns)
-      })
-  }, [indices, datasetId, dataset, distances])
+  
 
   const handleActivateUmap = useCallback((umap) => {
     fetch(`http://localhost:5001/datasets/${datasetId}/umaps/activate?umap=${umap.name}`)
@@ -122,27 +152,35 @@ function DatasetDetail() {
   })
   
   const handleSelected = useCallback((indices) => {
-    setIndices(indices);
+    setSelectedIndices(indices);
   })
-  // const handleHover = useCallback((index) => {
-  //   setIndex(index);
-  // })
+  const handleHover = useCallback((index) => {
+    setHoveredIndex(index);
+  })
 
-  const [annotations, setAnnotations] = useState([]);
+  const [searchAnnotations, setSearchAnnotations] = useState([]);
   useEffect(() => {
-    const annots = indices.map(index => points[index])
-    setAnnotations(annots)
-  }, [indices, points])
+    const annots = searchIndices.map(index => points[index])
+    setSearchAnnotations(annots)
+  }, [searchIndices, points])
+
+  const [hoverAnnotations, setHoverAnnotations] = useState([]);
+  useEffect(() => {
+    if(hoveredIndex !== null && hoveredIndex !== undefined) {
+      setHoverAnnotations([points[hoveredIndex]])
+    }
+  }, [hoveredIndex, points])
+
+
+  const [scatter, setScatter] = useState({})
 
   if (!dataset) return <div>Loading...</div>;
 
   return (
     <div className="dataset--details">
-      <h1>Dataset: {datasetId}</h1>
+      <h2>Dataset: {datasetId}</h2>
       <div className="dataset--details-summary">
-        Rows: {dataset.shape[0]}<br/>
-        Embedding Model: {dataset.model}<br/>
-        Active UMAP: {dataset.active_umap}<br/>
+        [ {dataset.shape[0]} rows ][ {dataset.model} ][ {dataset.active_umap} ]<br/>
         Tags: {tags.map(t => {
           const href = `/datasets/${datasetId}/tag/${t}`
           return <a className="dataset--tag-link" key={t} href={href}>{t}({tagset[t].length})</a>
@@ -163,37 +201,82 @@ function DatasetDetail() {
         <br/>
       </div>
 
-      <div className="dataset--scope" style={{ width: scopeWidth, height: scopeHeight }}>
-        <Scatter 
-          points={points} 
-          loading={loadingPoints} 
-          width={scopeWidth} 
-          height={scopeHeight}
-          onView={handleView} 
-          onSelect={handleSelected}
-          />
-        <AnnotationPlot 
-          points={annotations} 
-          xDomain={xDomain} 
-          yDomain={yDomain} 
-          width={scopeWidth} 
-          height={scopeHeight} 
-          />
-        
+      <div className="dataset--scope-container">
+        <div className="dataset--scope" style={{ width: scopeWidth, height: scopeHeight }}>
+          <Scatter 
+            points={points} 
+            loading={loadingPoints} 
+            width={scopeWidth} 
+            height={scopeHeight}
+            onScatter={setScatter}
+            onView={handleView} 
+            onSelect={handleSelected}
+            onHover={handleHover}
+            />
+          <AnnotationPlot 
+            points={searchAnnotations} 
+            fill="black"
+            size="3"
+            xDomain={xDomain} 
+            yDomain={yDomain} 
+            width={scopeWidth} 
+            height={scopeHeight} 
+            />
+          <AnnotationPlot 
+            points={hoverAnnotations} 
+            stroke="black"
+            fill="orange"
+            size="4"
+            xDomain={xDomain} 
+            yDomain={yDomain} 
+            width={scopeWidth} 
+            height={scopeHeight} 
+            />
+          
+        </div>
+        <div className="dataset--interaction-displays">
+          <div className="dataset--hovered-table">
+            {/* Hovered: &nbsp; */}
+            <span>{hovered[0]?.text}</span>
+            {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
+          </div>
+          <div className="dataset--selected-table">
+            <span>Selected: {selected.length} 
+              {selected.length > 0 ? 
+                <button className="deselect" onClick={() => {
+                  setSelectedIndices([])
+                  scatter?.select([])
+                }
+                }>X</button> 
+              : ""}
+            </span>
+            {selected.length > 0 ? 
+              <DataTable data={selected} tagset={tagset} maxRows={50} datasetId={datasetId} onTagset={(data) => setTagset(data)} onHover={handleHover} />
+            : "" }
+          </div>
+        </div>
       </div>
       
-      <div className="dataset--neighbors">
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          searchQuery(e.target.elements.searchBox.value);
-        }}>
-          <input type="text" id="searchBox" />
-          <button type="submit">Similarity Search</button>
-          <span>{indices.length}</span>
-        </form>
-
-        <DataTable data={neighbors} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} />
-
+      <div className="dataset--tabs">
+        <div className="dataset--neighbors">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            searchQuery(e.target.elements.searchBox.value);
+          }}>
+            <input type="text" id="searchBox" />
+            <button type="submit">Similarity Search</button>
+            <span>{searchIndices.length}
+              {searchIndices.length > 0 ? 
+                <button className="deselect" onClick={() => {
+                  setSearchIndices([])
+                  document.getElementById("searchBox").value = "";
+                }
+                }>X</button> 
+              : ""}
+            </span>
+          </form>
+          <DataTable data={neighbors} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} onHover={handleHover} />
+        </div>
       </div>
 
 

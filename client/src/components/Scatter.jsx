@@ -9,9 +9,10 @@ const ScatterPlot = ({
   pointsLoading, 
   width, 
   height, 
+  onScatter,
   onView,
   onSelect,
-  // onHover,
+  onHover,
 }) => {
   const container = useRef();
   const xDomain = useRef([-1, 1]);
@@ -49,12 +50,15 @@ const ScatterPlot = ({
     scatterplot.subscribe("deselect", () => {
       onSelect([])
     });
-    // scatterplot.subscribe("pointOver", (pointIndex) => {
-    //   onHover(pointIndex)
-    // });
-    // scatterplot.subscribe("pointOut", () => {
-    //   onHover(null)
-    // });
+    scatterplot.subscribe("pointOver", (pointIndex) => {
+      onHover(pointIndex)
+    });
+    scatterplot.subscribe("pointOut", () => {
+      onHover(null)
+    });
+
+    // TODO: this may not be proper React
+    onScatter(scatterplot)
 
     return () => {
       scatterplot.destroy();
