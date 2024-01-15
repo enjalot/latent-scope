@@ -1,4 +1,5 @@
 table.datatable {
+  width: 100%;
   max-width: 100%;
   border-collapse: collapse;
 }
@@ -7,6 +8,8 @@ table.datatable {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: left;
+  word-wrap: break-word; /* Break long words */
+  overflow-wrap: break-word; /* Alternative to word-wrap */
 }
 
 .datatable th {

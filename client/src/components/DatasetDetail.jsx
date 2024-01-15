@@ -133,8 +133,6 @@ function DatasetDetail() {
     }
   }, [dataset]);
 
-  
-
   const handleActivateUmap = useCallback((umap) => {
     fetch(`http://localhost:5001/datasets/${datasetId}/umaps/activate?umap=${umap.name}`)
       .then(response => response.json())
@@ -153,6 +151,7 @@ function DatasetDetail() {
   
   const handleSelected = useCallback((indices) => {
     setSelectedIndices(indices);
+    setActiveTab(0)
   })
   const handleHover = useCallback((index) => {
     setHoveredIndex(index);
@@ -168,11 +167,23 @@ function DatasetDetail() {
   useEffect(() => {
     if(hoveredIndex !== null && hoveredIndex !== undefined) {
       setHoverAnnotations([points[hoveredIndex]])
+    } else {
+      setHoverAnnotations([])
     }
   }, [hoveredIndex, points])
 
 
+  // this is a reference to the regl scatterplot instance
+  // so we can do stuff like clear selections without re-rendering
   const [scatter, setScatter] = useState({})
+
+  const tabs = [
+    { id: 0, name: "Selected"},
+    { id: 1, name: "Search"},
+    { id: 2, name: "Slide"},
+    { id: 3, name: "Tag"},
+  ]
+  const [activeTab, setActiveTab] = useState(0)
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -199,6 +210,26 @@ function DatasetDetail() {
           <button type="submit">New Tag</button>
         </form>
         <br/>
+      </div>
+
+      <div className="dataset--search-box">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          searchQuery(e.target.elements.searchBox.value);
+          setActiveTab(1)
+        }}>
+          <input type="text" id="searchBox" />
+          <button type="submit">Similarity Search</button>
+          <span>{searchIndices.length}
+            {searchIndices.length > 0 ? 
+              <button className="deselect" onClick={() => {
+                setSearchIndices([])
+                document.getElementById("searchBox").value = "";
+              }
+              }>X</button> 
+            : ""}
+          </span>
+        </form>
       </div>
 
       <div className="dataset--scope-container">
@@ -234,50 +265,62 @@ function DatasetDetail() {
             />
           
         </div>
-        <div className="dataset--interaction-displays">
-          <div className="dataset--hovered-table">
-            {/* Hovered: &nbsp; */}
-            <span>{hovered[0]?.text}</span>
-            {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
+        <div className="dataset--tabs">
+          <div className="dataset--tab-header">
+            {tabs.map(tab => (
+              <button 
+                key={tab.id} 
+                onClick={() => setActiveTab(tab.id)}
+                className={tab.id === activeTab ? 'tab-active' : 'tab-inactive'}>
+                  {tab.name}
+              </button>
+            ))}
           </div>
-          <div className="dataset--selected-table">
-            <span>Selected: {selected.length} 
+
+          <div className="dataset--tab-content">
+            {activeTab === 0 ?
+            <div className="dataset--selected-table">
+              <span>Selected: {selected.length} 
+                {selected.length > 0 ? 
+                  <button className="deselect" onClick={() => {
+                    setSelectedIndices([])
+                    scatter?.select([])
+                  }
+                  }>X</button> 
+                : null}
+              </span>
               {selected.length > 0 ? 
-                <button className="deselect" onClick={() => {
-                  setSelectedIndices([])
-                  scatter?.select([])
-                }
-                }>X</button> 
-              : ""}
-            </span>
-            {selected.length > 0 ? 
-              <DataTable data={selected} tagset={tagset} maxRows={50} datasetId={datasetId} onTagset={(data) => setTagset(data)} onHover={handleHover} />
-            : "" }
+                <DataTable data={selected} tagset={tagset} datasetId={datasetId} maxRows={150} onTagset={(data) => setTagset(data)} onHover={handleHover} />
+              : null }
+            </div>
+            : null }
+
+            {activeTab === 1 ? 
+            <div className="dataset--neighbors">
+              <span>Nearest Neighbors: {searchIndices.length}
+                {searchIndices.length > 0 ? 
+                  <button className="deselect" onClick={() => {
+                    setSearchIndices([])
+                    document.getElementById("searchBox").value = "";
+                  }
+                  }>X</button> 
+                : ""}
+              </span>
+              <DataTable data={neighbors} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} onHover={handleHover} />
+            </div>
+            : null }
+            
           </div>
         </div>
+      </div>
+
+      <div className="dataset--hovered-table">
+        {/* Hovered: &nbsp; */}
+        <span>{hovered[0]?.text}</span>
+        {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
       </div>
       
-      <div className="dataset--tabs">
-        <div className="dataset--neighbors">
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            searchQuery(e.target.elements.searchBox.value);
-          }}>
-            <input type="text" id="searchBox" />
-            <button type="submit">Similarity Search</button>
-            <span>{searchIndices.length}
-              {searchIndices.length > 0 ? 
-                <button className="deselect" onClick={() => {
-                  setSearchIndices([])
-                  document.getElementById("searchBox").value = "";
-                }
-                }>X</button> 
-              : ""}
-            </span>
-          </form>
-          <DataTable data={neighbors} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} onHover={handleHover} />
-        </div>
-      </div>
+      
 
 
       <hr></hr>

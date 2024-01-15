@@ -22,25 +22,38 @@
   border-radius: 5px;
   padding: 5px;
 }
-.dataset--interaction-displays {
+
+.dataset--tab-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
   max-width: 650px;
   width: 650px;
-  max-height: 650px;
-  overflow-y: hidden;
+  max-height: 610px;
+  overflow-y: scroll;
+}
+
+.dataset--tab-content table, 
+.dataset--tab-content tbody, 
+.dataset--tab-content tr {
+  max-width: 650px;
+}
+
+.tab-active {
+  color: seagreen;
+  font-weight: bold;
+  background-color: lightgray; 
 }
 
 .dataset--hovered-table {
-  max-height: 50px;
-  height: 50px;
-  overflow-y: hidden;
-  flex-basis: 650px; /* not sure why this is the number */
+  /* max-height: 50px; */
+  /* height: 50px; */
+  /* overflow-y: hidden; */
+  /* flex-basis: 650px; not sure why this is the number */
 }
 .dataset--selected-table {
-  flex-grow: 1;
-  overflow-y: auto;
+  /* flex-grow: 1; */
+  /* overflow-y: auto; */
 }
 
 
