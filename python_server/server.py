@@ -219,7 +219,7 @@ def new_tag():
     if tag not in tagsets[dataset]:
         tagsets[dataset][tag] = []
         # create an empty file
-        filename = os.path.join("../data", dataset, tag + ".indices")
+        filename = os.path.join("../data", dataset, "tags", tag + ".indices")
         with open(filename, 'w') as f:
             f.write("")
             f.close()
@@ -255,7 +255,7 @@ def add_tag():
         indices.append(int(index))
         ts[tag] = indices
         # save the indices to a file
-        np.savetxt(os.path.join("../data", dataset, tag + ".indices"), indices, fmt='%d')
+        np.savetxt(os.path.join("../data", dataset, "tags", tag + ".indices"), indices, fmt='%d')
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
 
@@ -283,7 +283,7 @@ def remove_tag():
         indices = indices.remove(int(index))
         ts[tag] = indices
         # save the indices to a file
-        np.savetxt(os.path.join("../data", dataset, tag + ".indices"), indices, fmt='%d')
+        np.savetxt(os.path.join("../data", dataset, "tags", tag + ".indices"), indices, fmt='%d')
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
 
