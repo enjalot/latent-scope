@@ -51,14 +51,24 @@ Each dataset in data will have its own directory
 </pre>
 
 # Scripts
-The scripts should be run in order once you have an `input.parquet` file in your folder.
+The scripts should be run in order once you have an `input.parquet` file in your folder. You will need to install the dependencies:
+
+```bash
+pip install fastparquet pyarrow umap-learn hdbscan matplotlib
+```
+
+Follow along by downloading the dad_jokes.csv file from https://www.kaggle.com/datasets/usamabuttar/dad-jokes into data/, and cd into the scripts folder:
+
+```bash
+cd scripts/
+```
 
 ## csv2parquet.py
 A simple utility to convert a csv file into a parquet file. It will write the output parquet file into the proper folder given by the dataset name.
 
 ```bash
 #python csv2parquet.py <csv_file> <dataset_name>
-python csv2parquet.py dadjokes.csv database-curated
+python csv2parquet.py ../data/dad_jokes.csv dadabase-curated
 ```
 
 ## 1. embed.py 
@@ -67,6 +77,7 @@ Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-
 ```bash
 # python embed.py <dataset_name> <text_column>
 python embed.py dadabase-curated joke
+# output: reading ../dad_jokes.csv… wrote ../data/dadabase-curated/input.parquet
 ```
 
 ## 2. umapper.py
@@ -74,14 +85,15 @@ Map the embeddings from high-dimensional space to 2D with UMAP. Will generate a 
 ```bash
 # python umapper.py <dataset_name> <neighbors> <min_dist>
 python umapper.py dadabase-curated 50 0.075 
+# output: embedding 13187 sentences… 132it [03:19,  1.51s/it]… sentence embeddings: torch.Size([13187, 384])
 ```
 
 
 ## 3. clusters.py
 Cluster the UMAP points using HDBSCAN. This will label each point with a cluster label
 ```bash
-# python cluster.py <dataset_name> <umap_name> <samples>
-cluster.py dadabase-curated umap-005 5
+# python cluster.py <dataset_name> <umap_name> <samples> <min_samples>
+python cluster.py dadabase-curated umap-002 50 5
 ```
 
 ## Optional 1D scripts
