@@ -30,14 +30,7 @@ def umapper(dataset_name, model, neighbors=25, min_dist=0.075):
 
     # make the umap name from the number, zero padded to 3 digits
     umap_name = f"umap-{next_umap_number:03d}"
-
-    # save a json file with the umap parameters
-    with open(f'../data/{dataset_name}/umaps/{umap_name}.json', 'w') as f:
-        json.dump({
-            "name": umap_name, 
-            "embeddings": model,
-            "neighbors": neighbors, 
-            "min_dist": min_dist}, f, indent=2)
+ 
 
     reducer = umap.UMAP(
         n_neighbors=neighbors,
@@ -72,6 +65,15 @@ def umapper(dataset_name, model, neighbors=25, min_dist=0.075):
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
     plt.savefig(f"../data/{dataset_name}/umaps/{umap_name}.png")
+
+    # save a json file with the umap parameters
+    with open(f'../data/{dataset_name}/umaps/{umap_name}.json', 'w') as f:
+        json.dump({
+            "name": umap_name, 
+            "embeddings": model,
+            "neighbors": neighbors, 
+            "min_dist": min_dist}, f, indent=2)
+    f.close()
     
 
 

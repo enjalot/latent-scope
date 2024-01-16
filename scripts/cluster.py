@@ -57,15 +57,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
       new_assignments = [non_noise_labels[index] for index in closest_centroid_indices]
       cluster_labels[noise_indices] = new_assignments
 
-    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
-        json.dump({
-            "cluster_name": cluster_name,
-            "umap_name": umap_name, 
-            "samples": samples, 
-            "min_samples": min_samples,
-            "n_clusters": len(non_noise_labels),
-            "n_noise": len(noise_points)
-        }, f, indent=2)
+    
     print("n_clusters:", len(non_noise_labels))
     print("noise points assigned to clusters:", len(noise_points))
 
@@ -89,7 +81,16 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
     plt.savefig(f"../data/{dataset_name}/clusters/{cluster_name}.png")
 
-    
+    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
+        json.dump({
+            "cluster_name": cluster_name,
+            "umap_name": umap_name, 
+            "samples": samples, 
+            "min_samples": min_samples,
+            "n_clusters": len(non_noise_labels),
+            "n_noise": len(noise_points)
+        }, f, indent=2)
+    f.close()
 
     print("wrote", output_file)
 

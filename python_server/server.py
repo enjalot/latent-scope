@@ -14,9 +14,15 @@ app = Flask(__name__)
 CORS(app)
 
 # in memory cache of dataset metadata, embeddings, models and tokenizers
+# only used in nearest neighbor search
 DATASETS = {}
 # in memory cache of dataframes loaded for each dataset
+# used in returning rows for a given index (indexed, get_tags)
 DATAFRAMES = {}
+
+from scripts import scripts_bp
+app.register_blueprint(scripts_bp, url_prefix='/scripts') 
+
 
 # ===========================================================
 # File based routes for reading data and metadata  from disk
