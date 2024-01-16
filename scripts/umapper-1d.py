@@ -1,5 +1,6 @@
 # Usage: python umapper.py <dataset_name> <neighbors> <min_dist>
 # Example: python umapper.py dadabase-curated 50 0.075
+# TODO: update this to match latest improvements in umapper.py
 import os
 import re
 import sys

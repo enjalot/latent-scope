@@ -303,7 +303,7 @@ function DatasetDetail() {
       <h2>Dataset: {datasetId}</h2>
       <div className="dataset--details-summary">
 
-        [ {dataset.shape[0]} rows ][ {dataset.model} ][ {dataset.active_umap} ]
+        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ]
         [ <a href={`/datasets/${datasetId}/experiments`}>umap experiments</a> ]
         <br/>
 

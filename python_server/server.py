@@ -117,7 +117,7 @@ def nn():
         # load the dataset embeddings
         meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
         print("meta", meta)
-        embeddings = np.load(os.path.join("../data", dataset, "embeddings.npy"))
+        embeddings = np.load(os.path.join("../data", dataset, "embeddings",  meta["active_embeddings"] + ".npy"))
         print("embeddings", embeddings.shape)
         print("loading model")
         # Load model from HuggingFace Hub
@@ -153,8 +153,13 @@ def nn():
 
     distances, indices = nne.kneighbors([embedding])
     print("distances", distances)
+    # Filter distances and indices to only elements where distance is less than .4
+    filtered_indices = indices[0][distances[0] < 0.4]
+    filtered_distances = distances[0][distances[0] < 0.4]
+    indices = filtered_indices
+    distances = filtered_distances
         
-    return jsonify(indices=indices[0].tolist(), distances=distances[0].tolist())
+    return jsonify(indices=indices.tolist(), distances=distances.tolist())
 
 """
 Given a list of indices (passed as a json array), return the rows from the dataset

@@ -31,7 +31,7 @@ function DatasetExperiments() {
     <div className="dataset--details-experiments">
       <h2>Dataset: <a href={datasetUrl}>{datasetId}</a></h2>
       <div className="dataset--details-summary">
-        [ {dataset.shape[0]} rows ][ {dataset.model} ][ {dataset.active_umap} ]<br/>
+        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ]<br/>
       </div>
       
       

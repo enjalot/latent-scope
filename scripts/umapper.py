@@ -1,18 +1,22 @@
-# Usage: python umapper.py <dataset_name> <neighbors> <min_dist>
-# Example: python umapper.py dadabase-curated 50 0.075
+# Usage: python umapper.py <dataset_name> <model> <neighbors> <min_dist>
+# Example: python umapper.py dadabase-curated BAAI_bge-small-en-v1.5 50 0.075
 import os
 import re
 import sys
 import json
 import umap
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def umapper(dataset_name, neighbors=25, min_dist=0.075):
+def umapper(dataset_name, model, neighbors=25, min_dist=0.075):
     # read in the embeddings
-    embeddings = np.load(f'../data/{dataset_name}/embeddings.npy')
+    embeddings = np.load(f'../data/{dataset_name}/embeddings/{model}.npy')
+
+    if not os.path.exists(f'../data/{dataset_name}/umaps'):
+        os.makedirs(f'../data/{dataset_name}/umaps')
 
     # determine the index of the last umap run by looking in the dataset directory
     # for files named umap-<number>.json
@@ -68,7 +72,12 @@ def umapper(dataset_name, neighbors=25, min_dist=0.075):
 
 
 if __name__ == "__main__":
-    dataset_name = sys.argv[1]
-    neighbors = int(sys.argv[2])
-    min_dist = float(sys.argv[3])
-    umapper(dataset_name, neighbors=neighbors, min_dist=min_dist)
+    parser = argparse.ArgumentParser(description='UMAP embeddings for a dataset')
+    parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
+    parser.add_argument('model', type=str, help='(Sanitized) Name of embedding model to use', default="BAAI_bge-small-en-v1.5")
+    parser.add_argument('neighbors', type=int, help='Output file', default=25)
+    parser.add_argument('min_dist', type=float, help='Output file', default=0.075)
+
+    # Parse arguments
+    args = parser.parse_args()
+    umapper(args.name, args.model, args.neighbors, args.min_dist)

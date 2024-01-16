@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import torch
+import argparse
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -48,20 +49,26 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
     print("sentence embeddings:", sentence_embeddings.shape)
 
     # Save embeddings as a numpy file
-    np.save(f'../data/{dataset_name}/embeddings.npy', np_embeds)
+    if not os.path.exists(f'../data/{dataset_name}/embeddings'):
+        os.makedirs(f'../data/{dataset_name}/embeddings')
+    safe_model_name = model_name.replace("/", "_")
+    np.save(f'../data/{dataset_name}/embeddings/{safe_model_name}.npy', np_embeds)
     # write out a json file with the model name and shape of the embeddings
     with open(f'../data/{dataset_name}/meta.json', 'w') as f:
         json.dump({
             "id": dataset_name,
-            "model": model_name, 
             "text_column": text_column, 
-            "shape": np_embeds.shape
+            "length": len(sentences),
+            "active_embeddings": safe_model_name, 
             }, f, indent=2)
 
-
-
 if __name__ == "__main__":
-    dataset_name = sys.argv[1]
-    text_column = sys.argv[2]
-    model = "BAAI/bge-small-en-v1.5"
-    embedder(dataset_name, text_column)
+    parser = argparse.ArgumentParser(description='Embed a dataset')
+    parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
+    parser.add_argument('--text-column', type=str, help='Output file', default='text')
+    parser.add_argument('--model', type=str, help='Name of Transformer Embedding model to use', default="BAAI/bge-small-en-v1.5")
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    embedder(args.name, args.text_column, args.model)
