@@ -89,3 +89,11 @@
 .new-tag input {
   width: 40px;
 }
+
+.dataset--details .slide-bar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 100px;
+  height: 100%;
+}

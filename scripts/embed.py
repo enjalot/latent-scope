@@ -57,7 +57,7 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
             "model": model_name, 
             "text_column": text_column, 
             "shape": np_embeds.shape
-            }, f)
+            }, f, indent=2)
 
 
 

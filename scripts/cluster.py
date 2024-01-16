@@ -31,10 +31,6 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
     # make the umap name from the number, zero padded to 3 digits
     cluster_name = f"cluster-{next_cluster_number:03d}"
 
-    # save a json file with the umap parameters
-    with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
-        json.dump({"umap_name": umap_name, "samples": samples, "min_samples": min_samples}, f)
-
     umap_embeddings_df = pd.read_parquet(f"../data/{dataset_name}/umaps/{umap_name}.parquet")
     umap_embeddings = umap_embeddings_df.to_numpy()
 
@@ -69,7 +65,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
             "min_samples": min_samples,
             "n_clusters": len(non_noise_labels),
             "n_noise": len(noise_points)
-        }, f)
+        }, f, indent=2)
     print("n_clusters:", len(non_noise_labels))
     print("noise points assigned to clusters:", len(noise_points))
 

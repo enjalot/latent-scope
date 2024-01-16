@@ -5,6 +5,7 @@ import './DatasetDetail.css';
 import DataTable from './DataTable';
 import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
+import SlideBar from './SlideBar';
 
 import { instantiate } from '../lib/DuckDB'
 
@@ -16,16 +17,7 @@ const scopeHeight = 640
 
 function DatasetDetail() {
   const [dataset, setDataset] = useState(null);
-  const { dataset: datasetId } = useParams();
-
-  // the indices returned from similarity search
-  const [searchIndices, setSearchIndices] = useState([]);
-  // indices of items selected by the scatter plot
-  const [selectedIndices, setSelectedIndices] = useState([]);
-  // indices of items in a chosen slide
-  const [slideIndices, setSlideIndices] = useState([]);
-  // index of item being hovered over
-  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const { dataset: datasetId } = useParams(); 
 
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
@@ -36,6 +28,59 @@ function DatasetDetail() {
       });
   }, [datasetId]);
 
+  // Points for rendering the scatterplot
+  const [points, setPoints] = useState([]);
+  const [loadingPoints, setLoadingPoints] = useState(false);
+  useEffect(() => {
+    if(dataset?.active_umap) {
+      fetch(`http://localhost:5001/files/${dataset.id}/umaps/${dataset.active_umap}.parquet`)
+        .then(response => response.arrayBuffer())
+        .then(async buffer => {
+          setLoadingPoints(true)
+          const db = await instantiate()
+          const uint8 = new Uint8Array(buffer)
+          const name = dataset.active_umap
+          await db.registerFileBuffer(name, uint8);
+          const conn = await db.connect();
+          await conn.query(
+            `CREATE VIEW '${name}' AS SELECT * FROM parquet_scan('${name}')`
+          );
+          const results = await conn.query(`SELECT * FROM '${name}'`);
+          // await conn.close();
+          // let rows = results.toArray().map(Object.fromEntries);
+          // rows.columns = results.schema.fields.map((d) => d.name);
+          let rows = results.toArray().map(d => [d.x, d.y])
+          setPoints(rows);
+          setLoadingPoints(false)
+        })
+        .catch(err => console.log(err))
+    }
+  }, [dataset]); 
+   
+
+  const hydrateIndices = useCallback((indices, setter, distances = []) => {
+    fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
+      .then(response => response.json())
+      .then(data => {
+        if(!dataset) return;
+        // console.log("neighbors", data)
+        const text_column = dataset.text_column
+        let rows = data.map((row, index) => {
+          return {
+            index: indices[index],
+            text: row[text_column],
+            score: row.score, // TODO: this is custom to one dataset
+            distance: distances[index],
+            date: row.date,
+          }
+        })
+        rows.sort((a, b) => b.score - a.score)
+        setter(rows)
+        // console.log("rows", rows)
+      })
+  }, [dataset, datasetId])
+
+  // Tags
   const [tagset, setTagset] = useState({});
   useEffect(() => {
     fetch(`http://localhost:5001/tags?dataset=${datasetId}`)
@@ -75,120 +120,6 @@ function DatasetDetail() {
       }
   }, [datasetId, tag, tagset])
 
-  const [distances, setDistances] = useState([]);
-  // const [indices, setIndices] = useState([]);
-  const searchQuery = (query) => {
-    fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}`)
-      .then(response => response.json())
-      .then(data => {
-        // console.log("search", data)
-        setDistances(data.distances);
-        setSearchIndices(data.indices);
-        scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
-      });
-  };
-
-  const hydrateIndices = useCallback((indices, setter, distances = []) => {
-    fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
-      .then(response => response.json())
-      .then(data => {
-        if(!dataset) return;
-        // console.log("neighbors", data)
-        const text_column = dataset.text_column
-        let rows = data.map((row, index) => {
-          return {
-            index: indices[index],
-            text: row[text_column],
-            score: row.score, // TODO: this is custom to one dataset
-            distance: distances[index],
-            date: row.date,
-          }
-        })
-        rows.sort((a, b) => b.score - a.score)
-        setter(rows)
-        // console.log("rows", rows)
-      })
-  }, [dataset, datasetId])
-
-  const [neighbors, setNeighbors] = useState([]);
-  useEffect(() => {
-    hydrateIndices(searchIndices, setNeighbors, distances)
-  }, [searchIndices, setNeighbors, distances])
-
-  const [selected, setSelected] = useState([]);
-  useEffect(() => {
-    hydrateIndices(selectedIndices, setSelected)
-  }, [selectedIndices, setSelected])
-  useEffect(() => {
-    if(selected.length === 1){
-      searchQuery(selected[0].text)
-    }
-  }, [selected])
-
-  const [hovered, setHovered] = useState([]);
-  useEffect(() => {
-    if(hoveredIndex !== null && hoveredIndex !== undefined) {
-      hydrateIndices([hoveredIndex], setHovered)
-    } else {
-      setHovered([])
-    }
-  }, [hoveredIndex, setHovered])
-
-  const [points, setPoints] = useState([]);
-  const [loadingPoints, setLoadingPoints] = useState(false);
-  useEffect(() => {
-    if(dataset?.active_umap) {
-      fetch(`http://localhost:5001/files/${dataset.id}/umaps/${dataset.active_umap}.parquet`)
-        .then(response => response.arrayBuffer())
-        .then(async buffer => {
-          setLoadingPoints(true)
-          const db = await instantiate()
-          const uint8 = new Uint8Array(buffer)
-          const name = dataset.active_umap
-          await db.registerFileBuffer(name, uint8);
-          const conn = await db.connect();
-          await conn.query(
-            `CREATE VIEW '${name}' AS SELECT * FROM parquet_scan('${name}')`
-          );
-          const results = await conn.query(`SELECT * FROM '${name}'`);
-          // await conn.close();
-          // let rows = results.toArray().map(Object.fromEntries);
-          // rows.columns = results.schema.fields.map((d) => d.name);
-          let rows = results.toArray().map(d => [d.x, d.y])
-          setPoints(rows);
-          setLoadingPoints(false)
-        })
-        .catch(err => console.log(err))
-    }
-  }, [dataset]);
-
-  
-
-  const [xDomain, setXDomain] = useState([-1, 1]);
-  const [yDomain, setYDomain] = useState([-1, 1]);
-  const handleView = useCallback((xDomain, yDomain) => {
-    setXDomain(xDomain);
-    setYDomain(yDomain);
-  })
-  
-  const handleSelected = useCallback((indices) => {
-    setSelectedIndices(indices);
-    setActiveTab(0)
-    // scatter?.zoomToPoints(indices, { transition: true })
-  })
-  const handleHover = useCallback((index) => {
-    setHoveredIndex(index);
-  })
-  const handleClicked = useCallback((index) => {
-    scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 })
-  })
-
-  const [searchAnnotations, setSearchAnnotations] = useState([]);
-  useEffect(() => {
-    const annots = searchIndices.map(index => points[index])
-    setSearchAnnotations(annots)
-  }, [searchIndices, points])
-
   const [tagAnnotations, setTagAnnotations] = useState([]);
   useEffect(() => {
     if(tagset[tag]) {
@@ -201,6 +132,80 @@ function DatasetDetail() {
     }
   }, [tagset, tag, points])
 
+  // Search
+  // the indices returned from similarity search
+  const [searchIndices, setSearchIndices] = useState([]);
+  const [distances, setDistances] = useState([]);
+
+  const searchQuery = (query) => {
+    fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}`)
+      .then(response => response.json())
+      .then(data => {
+        // console.log("search", data)
+        setDistances(data.distances);
+        setSearchIndices(data.indices);
+        scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
+      });
+  };
+
+  const [neighbors, setNeighbors] = useState([]);
+  useEffect(() => {
+    hydrateIndices(searchIndices, setNeighbors, distances)
+  }, [searchIndices, setNeighbors, distances])
+
+  const [searchAnnotations, setSearchAnnotations] = useState([]);
+  useEffect(() => {
+    const annots = searchIndices.map(index => points[index])
+    setSearchAnnotations(annots)
+  }, [searchIndices, points])
+
+  // Scatterplot related logic
+  // this is a reference to the regl scatterplot instance
+  // so we can do stuff like clear selections without re-rendering
+  const [scatter, setScatter] = useState({})
+  const [xDomain, setXDomain] = useState([-1, 1]);
+  const [yDomain, setYDomain] = useState([-1, 1]);
+  const handleView = useCallback((xDomain, yDomain) => {
+    setXDomain(xDomain);
+    setYDomain(yDomain);
+  })
+  
+   
+  // Selection via Scatterplot
+  // indices of items selected by the scatter plot
+  const [selectedIndices, setSelectedIndices] = useState([]);
+
+  const [selected, setSelected] = useState([]);
+  useEffect(() => {
+    hydrateIndices(selectedIndices, setSelected)
+  }, [selectedIndices, setSelected])
+
+  const handleSelected = useCallback((indices) => {
+    setSelectedIndices(indices);
+    setActiveTab(0)
+    // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
+    // scatter?.zoomToPoints(indices, { transition: true })
+  })
+
+  // If only one item is selected, do a NN search for it
+  useEffect(() => {
+    if(selected.length === 1){
+      searchQuery(selected[0].text)
+    }
+  }, [selected])
+
+  // Hover via scatterplot or tables
+  // index of item being hovered over
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [hovered, setHovered] = useState([]);
+  useEffect(() => {
+    if(hoveredIndex !== null && hoveredIndex !== undefined) {
+      hydrateIndices([hoveredIndex], setHovered)
+    } else {
+      setHovered([])
+    }
+  }, [hoveredIndex, setHovered])
+
 
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
@@ -212,10 +217,7 @@ function DatasetDetail() {
   }, [hoveredIndex, points])
 
 
-  // this is a reference to the regl scatterplot instance
-  // so we can do stuff like clear selections without re-rendering
-  const [scatter, setScatter] = useState({})
-
+  // Tabs
   const tabs = [
     { id: 0, name: "Selected"},
     { id: 1, name: "Search"},
@@ -223,6 +225,76 @@ function DatasetDetail() {
     { id: 3, name: "Tag"},
   ]
   const [activeTab, setActiveTab] = useState(0)
+
+  // Slides
+  // indices of items in a chosen slide
+  const [slideIndices, setSlideIndices] = useState([]);
+  const [slide, setSlide] = useState(null);
+  const [slideHover, setSlideHover] = useState(null);
+  const [slideRows, setSlideRows] = useState([]);
+  useEffect(() => {
+    if(slide) {
+      fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(slide.indices)}`)
+        .then(response => response.json())
+        .then(data => {
+          const text_column = dataset.text_column
+          let rows = data.map((row, index) => {
+            return {
+              index: slide.indices[index],
+              text: row[text_column],
+              score: row.score, // TODO: this is custom to one dataset
+              date: row.date,
+            }
+          })
+          rows.sort((a, b) => b.score - a.score)
+          setSlideRows(rows)
+        }).catch(e => console.log(e));
+      } else {
+        setSlideRows([])
+      }
+  }, [datasetId, slide])
+
+  const [slideAnnotations, setSlideAnnotations] = useState([]);
+  useEffect(() => {
+    if(slide) {
+      const annots = slide.indices.map(index => points[index])
+      setSlideAnnotations(annots)
+    } else {
+      setSlideAnnotations([])
+      if(scatter && scatter.zoomToOrigin)
+        scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+    }
+  }, [slide, points])
+  const [slideHoverAnnotations, setSlideHoverAnnotations] = useState([]);
+  useEffect(() => {
+    if(slideHover) {
+      const annots = slideHover.indices.map(index => points[index])
+      setSlideHoverAnnotations(annots)
+    } else {
+      setSlideHoverAnnotations([])
+    }
+  }, [slideHover, points])
+
+
+
+  const handleSlideClick = useCallback((slide) => {
+    setSlide(slide)
+    setActiveTab(2)
+    scatter?.zoomToPoints(slide.indices, { transition: true, padding: 0.5, transitionDuration: 1500 })
+  })
+
+  const handleSlideHover = useCallback((slide) => {
+    setSlideHover(slide)
+  })
+
+
+  // Handlers for responding to individual data points
+  const handleClicked = useCallback((index) => {
+    scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 })
+  })
+  const handleHover = useCallback((index) => {
+    setHoveredIndex(index);
+  })
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -288,6 +360,24 @@ function DatasetDetail() {
             points={searchAnnotations} 
             fill="black"
             size="3"
+            xDomain={xDomain} 
+            yDomain={yDomain} 
+            width={scopeWidth} 
+            height={scopeHeight} 
+            />
+          <AnnotationPlot 
+            points={slideAnnotations} 
+            fill="darkred"
+            size="3"
+            xDomain={xDomain} 
+            yDomain={yDomain} 
+            width={scopeWidth} 
+            height={scopeHeight} 
+            />
+          <AnnotationPlot 
+            points={slideHoverAnnotations} 
+            fill="red"
+            size="7"
             xDomain={xDomain} 
             yDomain={yDomain} 
             width={scopeWidth} 
@@ -379,12 +469,28 @@ function DatasetDetail() {
 
             {activeTab === 2 ? 
              <div className="dataset--slide">
-              Slide!
+              <span>{slide?.label} {slide?.indices.length}
+                { slide ? <button className="deselect" onClick={() => {
+                    setSlide(null)
+                  }
+                  }>X</button> 
+                : null}
+              </span>
+              { slideRows.length ? 
+                <DataTable 
+                  data={slideRows} 
+                  tagset={tagset} 
+                  datasetId={datasetId} 
+                  onTagset={(data) => setTagset(data)} 
+                  onHover={handleHover} 
+                  onClick={handleClicked}
+                />
+              : null }
               </div>
             : null }
 
             {activeTab === 3 ? 
-              <div className="dataset--slide">
+              <div className="dataset--tag">
               <span>{tag} {tagset[tag]?.length}
                 { tag ? <button className="deselect" onClick={() => {
                     setTag(null)
@@ -408,6 +514,13 @@ function DatasetDetail() {
           </div>
         </div>
       </div>
+
+      <SlideBar 
+        dataset={dataset} 
+        selected={slide}
+        onClick={handleSlideClick} 
+        onHover={handleSlideHover}
+        />
 
       <div className="dataset--hovered-table">
         {/* Hovered: &nbsp; */}

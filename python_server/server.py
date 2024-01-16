@@ -174,6 +174,10 @@ def indexed():
     # send back the rows as json
     return rows.to_json(orient="records")
 
+# ===========================================================
+# Tags
+# ===========================================================
+
 tagsets = {}
 
 """
@@ -315,6 +319,25 @@ def tag_rows():
     rows = df.iloc[indices]
     # send back the rows as json
     return rows.to_json(orient="records")
+
+
+# ===========================================================
+# Slides
+# ===========================================================
+
+"""
+Return the slides for a given dataset
+"""
+@app.route("/slides", methods=['GET'])
+def slides():
+    dataset = request.args.get('dataset')
+    # get the active_slides from meta.json
+    meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
+    # search the dataset directory for all files ending in .indices
+    # read the slides parquet file
+    slides_df = pd.read_parquet(os.path.join("../data", dataset, "slides", meta["active_slides"] + ".parquet"))
+    # return an object with the tags for a given dataset
+    return slides_df.to_json(orient="records")
 
 
 # set port

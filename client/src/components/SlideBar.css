@@ -1,0 +1,30 @@
+.slide-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* border: 1px solid lightgray; */
+  /* border-radius: 5px; */
+  /* padding: 5px; */
+  /* margin: 10px 0; */
+  /* max-height: 50px; */
+  /* height: 50px; */
+  overflow-y: hidden;
+  /* flex-basis: 650px; not sure why this is the number */
+}
+.slide-bar .slide-bar-body {
+  max-height: 100%;
+  overflow-y: scroll;
+}
+
+.slide-bar .slide-bar-item {
+  cursor: pointer;
+  background-color: white;
+}
+.slide-bar .slide-bar-item:hover {
+  background-color: lightgray;
+}
+.slide-bar .slide-active {
+  color: darkred;
+  font-weight: bold;
+  /* background-color: lightgray; */
+}
