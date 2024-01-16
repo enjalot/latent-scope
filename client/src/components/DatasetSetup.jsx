@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
-import './DatasetExperiments.css';
+import './DatasetSetup.css';
 import DatasetUmaps from './DatasetUmaps';
 
-function DatasetExperiments() {
+function DatasetSetup() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId } = useParams();
 
@@ -22,6 +22,15 @@ function DatasetExperiments() {
         setDataset(data);
       });
   })
+  const handleNewUmap = useCallback((umap) => {
+    // fetch request that submits embeddigns, neighbors and min_dist
+    
+  })
+  const handleNewCluster = useCallback((cluster) => {
+    // fetch request that submits cluster name and umap name
+ 
+  })
+
 
 
   if (!dataset) return <div>Loading...</div>;
@@ -34,11 +43,15 @@ function DatasetExperiments() {
         [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ]<br/>
       </div>
       
-      
-      <DatasetUmaps dataset={dataset} datasetId={datasetId} onActivateUmap={handleActivateUmap} />
+      <DatasetUmaps 
+        dataset={dataset} 
+        onActivateUmap={handleActivateUmap} 
+        onNewUmap={handleNewUmap}
+        onNewCluster={handleNewCluster}
+        />
 
     </div>
   );
 }
 
-export default DatasetExperiments;
+export default DatasetSetup;

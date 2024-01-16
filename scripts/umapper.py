@@ -33,7 +33,11 @@ def umapper(dataset_name, model, neighbors=25, min_dist=0.075):
 
     # save a json file with the umap parameters
     with open(f'../data/{dataset_name}/umaps/{umap_name}.json', 'w') as f:
-        json.dump({"name": umap_name, "neighbors": neighbors, "min_dist": min_dist}, f, indent=2)
+        json.dump({
+            "name": umap_name, 
+            "embeddings": model,
+            "neighbors": neighbors, 
+            "min_dist": min_dist}, f, indent=2)
 
     reducer = umap.UMAP(
         n_neighbors=neighbors,

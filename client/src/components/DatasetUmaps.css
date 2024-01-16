@@ -1,11 +1,6 @@
-.dataset--details-experiments {
-  max-width: 100%;
-  width: 100%;
-  padding: 10px;
-}
 
 /* Styling for each UMAP and Cluster section */
-.dataset--details-umaps {
+.dataset--umaps-list {
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
