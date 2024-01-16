@@ -10,8 +10,9 @@ DataTable.propTypes = {
   maxRows: PropTypes.number,
   onTagset: PropTypes.func.isRequired,
   onHover: PropTypes.func,
+  onClick: PropTypes.func,
 };
-function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover }) {
+function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClick }) {
   if (!data.length) {
     return <p>No data available.</p>;
   }
@@ -58,13 +59,23 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover }) {
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={index} onMouseEnter={() => onHover(row.index)} onMouseLeave={() => onHover()}>
+          <tr 
+            key={index} 
+            onMouseEnter={() => onHover(row.index)} 
+            onMouseLeave={() => onHover()}
+            onClick={() => onClick(row.index)}
+            >
             {headers.map((header, idx) => <td key={idx}>{row[header]}</td>)}
             <td>
               {tags.map((tag, idx) => (
                 <button 
                   key={idx} 
-                  onClick={() => handleTagClick(tag, row.index)}
+                  onClick={(e) => {
+                    handleTagClick(tag, row.index)
+                    e.preventDefault()
+                    e.stopPropagation()
+
+                  }}
                   className={tagset[tag].includes(row.index) ? 'tag-active' : 'tag-inactive'}>
                   {tag}
                 </button>

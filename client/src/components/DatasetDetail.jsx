@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
 import './DatasetDetail.css';
-import DatasetUmaps from './DatasetUmaps';
 import DataTable from './DataTable';
 import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
@@ -48,9 +47,33 @@ function DatasetDetail() {
     for (const tag in tagset) {
       tags.push(tag)
     }
-    // console.log("tagset", tagset)
+    // console.log("tagset", tagset, tags)
     return tags
   }, [tagset])
+
+  const [tag, setTag] = useState(tags[0]);
+  const [tagrows, setTagrows] = useState([]);
+  useEffect(() => {
+    if(tagset[tag]) {
+      fetch(`http://localhost:5001/tags/rows?dataset=${datasetId}&tag=${tag}`)
+        .then(response => response.json())
+        .then(data => {
+          const text_column = dataset.text_column
+          let rows = data.map((row, index) => {
+            return {
+              index: tagset[tag][index],
+              text: row[text_column],
+              score: row.score, // TODO: this is custom to one dataset
+              date: row.date,
+            }
+          })
+          rows.sort((a, b) => b.score - a.score)
+          setTagrows(rows)
+        }).catch(e => console.log(e));
+      } else {
+        setTagrows([])
+      }
+  }, [datasetId, tag, tagset])
 
   const [distances, setDistances] = useState([]);
   // const [indices, setIndices] = useState([]);
@@ -61,6 +84,7 @@ function DatasetDetail() {
         // console.log("search", data)
         setDistances(data.distances);
         setSearchIndices(data.indices);
+        scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
   };
 
@@ -95,6 +119,11 @@ function DatasetDetail() {
   useEffect(() => {
     hydrateIndices(selectedIndices, setSelected)
   }, [selectedIndices, setSelected])
+  useEffect(() => {
+    if(selected.length === 1){
+      searchQuery(selected[0].text)
+    }
+  }, [selected])
 
   const [hovered, setHovered] = useState([]);
   useEffect(() => {
@@ -133,14 +162,7 @@ function DatasetDetail() {
     }
   }, [dataset]);
 
-  const handleActivateUmap = useCallback((umap) => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/umaps/activate?umap=${umap.name}`)
-      .then(response => response.json())
-      .then(data => {
-        console.log("activated umap", umap, data)
-        setDataset(data);
-      });
-  })
+  
 
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -152,9 +174,13 @@ function DatasetDetail() {
   const handleSelected = useCallback((indices) => {
     setSelectedIndices(indices);
     setActiveTab(0)
+    // scatter?.zoomToPoints(indices, { transition: true })
   })
   const handleHover = useCallback((index) => {
     setHoveredIndex(index);
+  })
+  const handleClicked = useCallback((index) => {
+    scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 })
   })
 
   const [searchAnnotations, setSearchAnnotations] = useState([]);
@@ -162,6 +188,19 @@ function DatasetDetail() {
     const annots = searchIndices.map(index => points[index])
     setSearchAnnotations(annots)
   }, [searchIndices, points])
+
+  const [tagAnnotations, setTagAnnotations] = useState([]);
+  useEffect(() => {
+    if(tagset[tag]) {
+      const annots = tagset[tag].map(index => points[index])
+      setTagAnnotations(annots)
+    } else {
+      setTagAnnotations([])
+      if(scatter && scatter.zoomToOrigin)
+        scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+    }
+  }, [tagset, tag, points])
+
 
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
@@ -191,12 +230,21 @@ function DatasetDetail() {
     <div className="dataset--details">
       <h2>Dataset: {datasetId}</h2>
       <div className="dataset--details-summary">
-        [ {dataset.shape[0]} rows ][ {dataset.model} ][ {dataset.active_umap} ]<br/>
+
+        [ {dataset.shape[0]} rows ][ {dataset.model} ][ {dataset.active_umap} ]
+        [ <a href={`/datasets/${datasetId}/experiments`}>umap experiments</a> ]
+        <br/>
+
         Tags: {tags.map(t => {
-          const href = `/datasets/${datasetId}/tag/${t}`
-          return <a className="dataset--tag-link" key={t} href={href}>{t}({tagset[t].length})</a>
+          const href = `/datasets/${datasetId}/tags/${t}`
+          return <button className="dataset--tag-link" key={t} onClick={() => {
+            setTag(t)
+            setActiveTab(3)
+            scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
+          }}>{t}({tagset[t].length})</button>
         })}
-        <form onSubmit={(e) => {
+        {/* NEW TAG FORM */}
+        <form className="new-tag" onSubmit={(e) => {
           e.preventDefault();
           const newTag = e.target.elements.newTag.value;
           fetch(`http://localhost:5001/tags/new?dataset=${datasetId}&tag=${newTag}`)
@@ -220,15 +268,7 @@ function DatasetDetail() {
         }}>
           <input type="text" id="searchBox" />
           <button type="submit">Similarity Search</button>
-          <span>{searchIndices.length}
-            {searchIndices.length > 0 ? 
-              <button className="deselect" onClick={() => {
-                setSearchIndices([])
-                document.getElementById("searchBox").value = "";
-              }
-              }>X</button> 
-            : ""}
-          </span>
+          
         </form>
       </div>
 
@@ -248,6 +288,15 @@ function DatasetDetail() {
             points={searchAnnotations} 
             fill="black"
             size="3"
+            xDomain={xDomain} 
+            yDomain={yDomain} 
+            width={scopeWidth} 
+            height={scopeHeight} 
+            />
+          <AnnotationPlot 
+            points={tagAnnotations} 
+            symbol={tag}
+            size="10"
             xDomain={xDomain} 
             yDomain={yDomain} 
             width={scopeWidth} 
@@ -285,12 +334,21 @@ function DatasetDetail() {
                   <button className="deselect" onClick={() => {
                     setSelectedIndices([])
                     scatter?.select([])
+                    scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
                   }
                   }>X</button> 
                 : null}
               </span>
               {selected.length > 0 ? 
-                <DataTable data={selected} tagset={tagset} datasetId={datasetId} maxRows={150} onTagset={(data) => setTagset(data)} onHover={handleHover} />
+                <DataTable 
+                  data={selected} 
+                  tagset={tagset} 
+                  datasetId={datasetId} 
+                  maxRows={150} 
+                  onTagset={(data) => setTagset(data)} 
+                  onHover={handleHover} 
+                  onClick={handleClicked}
+                  />
               : null }
             </div>
             : null }
@@ -304,10 +362,47 @@ function DatasetDetail() {
                     document.getElementById("searchBox").value = "";
                   }
                   }>X</button> 
-                : ""}
+                : null}
               </span>
-              <DataTable data={neighbors} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} onHover={handleHover} />
+              {neighbors.length > 0 ?
+                <DataTable 
+                  data={neighbors} 
+                  tagset={tagset} 
+                  datasetId={datasetId} 
+                  onTagset={(data) => setTagset(data)} 
+                  onHover={handleHover} 
+                  onClick={handleClicked}
+                />
+              : null }
             </div>
+            : null }
+
+            {activeTab === 2 ? 
+             <div className="dataset--slide">
+              Slide!
+              </div>
+            : null }
+
+            {activeTab === 3 ? 
+              <div className="dataset--slide">
+              <span>{tag} {tagset[tag]?.length}
+                { tag ? <button className="deselect" onClick={() => {
+                    setTag(null)
+                  }
+                  }>X</button> 
+                : null}
+              </span>
+              { tagrows.length ? 
+                <DataTable 
+                  data={tagrows} 
+                  tagset={tagset} 
+                  datasetId={datasetId} 
+                  onTagset={(data) => setTagset(data)} 
+                  onHover={handleHover} 
+                  onClick={handleClicked}
+                />
+              : null }
+              </div>
             : null }
             
           </div>
@@ -319,14 +414,6 @@ function DatasetDetail() {
         <span>{hovered[0]?.text}</span>
         {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
       </div>
-      
-      
-
-
-      <hr></hr>
-      <h2> UMAP experiments</h2>
-      <DatasetUmaps dataset={dataset} datasetId={datasetId} onActivateUmap={handleActivateUmap} />
-      
     </div>
   );
 }

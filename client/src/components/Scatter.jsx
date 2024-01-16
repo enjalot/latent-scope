@@ -29,6 +29,7 @@ const ScatterPlot = ({
       height,
       pointSize: 3,
       opacity: 0.75,
+      pointColorHover: [0.1, 0.1, 0.1, 0.9],
       xScale,
       yScale,
     });
