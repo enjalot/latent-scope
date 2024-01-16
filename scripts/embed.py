@@ -1,7 +1,6 @@
 # Usage: python embed.py <dataset_name> <text_column>
 import os
 import sys
-import time
 import json
 import torch
 import numpy as np

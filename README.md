@@ -16,6 +16,18 @@ npm install
 npm run dev
 ```
 
+## Python setup
+The following directories depend on a virtual env
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+## notebooks
+
+
 ## scripts
 Python scripts that can be run via CLI or via the web interface (through the server). The scripts assume a certain directory structure in the data folder.  
 See below for more detailed instructions on using the scripts
