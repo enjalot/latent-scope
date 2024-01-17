@@ -1,4 +1,4 @@
-# Usage: python embed.py <dataset_name> <text_column>
+# Usage: python embed.py <dataset_name> <text_column> <model>
 import os
 import sys
 import json
@@ -23,7 +23,7 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
 
     # Load model from HuggingFace Hub
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
     model.eval()
 
     batch_size = 100
@@ -51,7 +51,9 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
     # Save embeddings as a numpy file
     if not os.path.exists(f'../data/{dataset_name}/embeddings'):
         os.makedirs(f'../data/{dataset_name}/embeddings')
-    safe_model_name = model_name.replace("/", "_")
+
+    # TODO: make the sanitization a function
+    safe_model_name = model_name.replace("/", "___")
     np.save(f'../data/{dataset_name}/embeddings/{safe_model_name}.npy', np_embeds)
     # write out a json file with the model name and shape of the embeddings
     with open(f'../data/{dataset_name}/meta.json', 'w') as f:
@@ -65,8 +67,8 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Embed a dataset')
     parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
-    parser.add_argument('--text-column', type=str, help='Output file', default='text')
-    parser.add_argument('--model', type=str, help='Name of Transformer Embedding model to use', default="BAAI/bge-small-en-v1.5")
+    parser.add_argument('text_column', type=str, help='Output file', default='text')
+    parser.add_argument('model', type=str, help='Name of Transformer Embedding model to use', default="BAAI/bge-small-en-v1.5")
 
     # Parse arguments
     args = parser.parse_args()

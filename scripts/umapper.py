@@ -11,7 +11,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def umapper(dataset_name, model, neighbors=25, min_dist=0.075):
+def umapper(dataset_name, model_unsanitized, neighbors=25, min_dist=0.075):
+    # TODO: make sanitize a function
+    model = model_unsanitized.replace("/", "___")
     # read in the embeddings
     embeddings = np.load(f'../data/{dataset_name}/embeddings/{model}.npy')
 
@@ -80,7 +82,7 @@ def umapper(dataset_name, model, neighbors=25, min_dist=0.075):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='UMAP embeddings for a dataset')
     parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
-    parser.add_argument('model', type=str, help='(Sanitized) Name of embedding model to use', default="BAAI_bge-small-en-v1.5")
+    parser.add_argument('model', type=str, help='Name of embedding model to use', default="BAAI/bge-small-en-v1.5")
     parser.add_argument('neighbors', type=int, help='Output file', default=25)
     parser.add_argument('min_dist', type=float, help='Output file', default=0.075)
 

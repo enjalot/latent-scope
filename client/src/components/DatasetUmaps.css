@@ -31,7 +31,7 @@
 
 /* Styling for the text details in UMAP and Cluster sections */
 .dataset--details-umap h3, .dataset--details-cluster h3 {
-  width: 250px;
+  width: 350px;
   margin-right: 20px;
   flex-grow: 1; /* Makes the text occupy the remaining space */
 }

@@ -28,6 +28,25 @@ function DatasetDetail() {
       });
   }, [datasetId]);
 
+  const [embeddings, setEmbeddings] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("embeddings", data)
+        setEmbeddings(data)
+      });
+  }, [datasetId]);
+
+
+  const handleModelSelect = useCallback((model) => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings/activate?model=${model}`)
+      .then(response => response.json())
+      .then(data => {
+        setDataset(data);
+      });
+  }, [datasetId])
+
   // Points for rendering the scatterplot
   const [points, setPoints] = useState([]);
   const [loadingPoints, setLoadingPoints] = useState(false);
@@ -100,7 +119,7 @@ function DatasetDetail() {
   const [tagrows, setTagrows] = useState([]);
   useEffect(() => {
     if(tagset[tag]) {
-      fetch(`http://localhost:5001/tags/rows?dataset=${datasetId}&tag=${tag}`)
+      fetch(`http://localhost:5001/tags/rows?dataset=${dataset.id}&tag=${tag}`)
         .then(response => response.json())
         .then(data => {
           const text_column = dataset.text_column
@@ -118,7 +137,7 @@ function DatasetDetail() {
       } else {
         setTagrows([])
       }
-  }, [datasetId, tag, tagset])
+  }, [dataset, tag, tagset])
 
   const [tagAnnotations, setTagAnnotations] = useState([]);
   useEffect(() => {
@@ -127,8 +146,9 @@ function DatasetDetail() {
       setTagAnnotations(annots)
     } else {
       setTagAnnotations([])
-      if(scatter && scatter.zoomToOrigin)
+      if(scatter && scatter.config) {
         scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+      } 
     }
   }, [tagset, tag, points])
 
@@ -144,6 +164,7 @@ function DatasetDetail() {
         // console.log("search", data)
         setDistances(data.distances);
         setSearchIndices(data.indices);
+        console.log("SEARCH RESULTS", data)
         scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
   };
@@ -261,8 +282,9 @@ function DatasetDetail() {
       setSlideAnnotations(annots)
     } else {
       setSlideAnnotations([])
-      if(scatter && scatter.zoomToOrigin)
+      if(scatter && scatter.config) {
         scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+      } 
     }
   }, [slide, points])
   const [slideHoverAnnotations, setSlideHoverAnnotations] = useState([]);
@@ -303,8 +325,8 @@ function DatasetDetail() {
       <h2>Dataset: {datasetId}</h2>
       <div className="dataset--details-summary">
 
-        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ]
-        [ <a href={`/datasets/${datasetId}/experiments`}>umap experiments</a> ]
+        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ] [ {dataset.active_slides} ]
+        [ <a href={`/datasets/${datasetId}/setup`}>setup</a> ]
         <br/>
 
         Tags: {tags.map(t => {
@@ -340,6 +362,14 @@ function DatasetDetail() {
         }}>
           <input type="text" id="searchBox" />
           <button type="submit">Similarity Search</button>
+          <label htmlFor="embeddingModel">Using:</label>
+          <select id="embeddingModel" 
+            onChange={(e) => handleModelSelect(e.target.value)} 
+            value={dataset.active_embeddings}>
+            {embeddings.map((embedding, index) => (
+              <option key={index} value={embedding}>{embedding}</option>
+            ))}
+          </select>
           
         </form>
       </div>
@@ -359,7 +389,7 @@ function DatasetDetail() {
           <AnnotationPlot 
             points={searchAnnotations} 
             fill="black"
-            size="3"
+            size="5"
             xDomain={xDomain} 
             yDomain={yDomain} 
             width={scopeWidth} 
@@ -368,7 +398,7 @@ function DatasetDetail() {
           <AnnotationPlot 
             points={slideAnnotations} 
             fill="darkred"
-            size="3"
+            size="5"
             xDomain={xDomain} 
             yDomain={yDomain} 
             width={scopeWidth} 
@@ -377,7 +407,7 @@ function DatasetDetail() {
           <AnnotationPlot 
             points={slideHoverAnnotations} 
             fill="red"
-            size="7"
+            size="8"
             xDomain={xDomain} 
             yDomain={yDomain} 
             width={scopeWidth} 
@@ -396,7 +426,7 @@ function DatasetDetail() {
             points={hoverAnnotations} 
             stroke="black"
             fill="orange"
-            size="4"
+            size="6"
             xDomain={xDomain} 
             yDomain={yDomain} 
             width={scopeWidth} 

@@ -5,14 +5,31 @@ import './DatasetUmaps.css';
 
 DatasetUmaps.propTypes = {
   dataset: PropTypes.object.isRequired,
+  embeddings: PropTypes.array.isRequired,
   onActivateUmap: PropTypes.func.isRequired,
   onNewUmap: PropTypes.func.isRequired,
+  onDeleteUmap: PropTypes.func.isRequired,
   onNewCluster: PropTypes.func.isRequired,
+  onDeleteCluster: PropTypes.func.isRequired,
+  onNewSlides: PropTypes.func.isRequired,
   umapJob: PropTypes.object,
   clusterJob: PropTypes.object,
+  slidesJob: PropTypes.object,
 };
 
-function DatasetUmaps({ dataset, onActivateUmap, onNewUmap, onNewCluster, umapJob, clusterJob}) {
+function DatasetUmaps({ 
+  dataset, 
+  embeddings,
+  onActivateUmap, 
+  onNewUmap, 
+  onDeleteUmap, 
+  onNewCluster, 
+  onDeleteCluster, 
+  onNewSlides, 
+  umapJob, 
+  clusterJob,
+  slidesJob
+}) {
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
   // Fetch all the UMAPs available and format their meta data
@@ -55,15 +72,7 @@ function DatasetUmaps({ dataset, onActivateUmap, onNewUmap, onNewCluster, umapJo
       .catch(err => console.log(err))
   }, [dataset, umaps, clusterJob]);
 
-  const [embeddings, setEmbeddings] = useState([]);
-  useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${dataset.id}/embeddings`)
-      .then(response => response.json())
-      .then(data => {
-        console.log("embeddings", data)
-        setEmbeddings(data)
-      });
-  }, [dataset]);
+  
 
   // useEffect(() => {
   //   console.log("dataset", dataset)
@@ -138,7 +147,9 @@ function DatasetUmaps({ dataset, onActivateUmap, onNewUmap, onNewCluster, umapJo
                         >
                           Activate
                       </button>)
-                  }</h3>
+                  }
+                    <button onClick={() => onDeleteUmap({umap_name: umap.name}) }>🗑️</button>
+                  </h3>
                   {umap.embeddings}<br/>
                   Neighbors: {umap.neighbors}<br/>
                   Min Dist: {umap.min_dist}<br/>
@@ -159,12 +170,27 @@ function DatasetUmaps({ dataset, onActivateUmap, onNewUmap, onNewCluster, umapJo
                   </label>
                   <button type="submit">New Clusters</button>
                 </form>
-                {clusterJob && clusterJob.command.indexOf(umap.name) >= 0 ? <p>{clusterJob.progress.join("\n")}</p>: null}
+                {clusterJob && !clusterJob.status == "completed" && clusterJob.command.indexOf(umap.name) >= 0 ? <p>{clusterJob.progress.join("\n")}</p>: null}
             </div>
               {clusters.filter(cluster => cluster.umap_name === umap.name).reverse().map(cluster => (
               <div className="dataset--details-cluster" key={cluster.name}>
                 <div className="dataset--details-cluster-stats">
-                  <h3>{cluster.name}</h3>
+                  <h3>{cluster.name}
+                    {dataset.active_slides  == cluster.name ? " (Active)" : 
+                        (<button 
+                          key={cluster.name + "-activate"} 
+                          onClick={() => onNewSlides({cluster_name: cluster.name})}
+                          // className={1 ? 'tag-active' : 'tag-inactive'}
+                          >
+                            Activate
+                        </button>)
+                    }
+                    <button onClick={() => onDeleteCluster({cluster_name: cluster.name}) }>🗑️</button>
+                  </h3>
+                  {slidesJob && !slidesJob.status == "completed" && slidesJob.command.indexOf(cluster.name) >= 0 ? 
+                    <p>Slides loading...</p>
+                    // <p>{slidesJob.progress.join("\n")}</p>
+                  : null}
                   Clusters generated: {cluster.n_clusters}<br/>
                   Noise points (unclustered): {cluster.n_noise}<br/>
                   Samples: {cluster.samples}<br/>

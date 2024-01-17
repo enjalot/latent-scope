@@ -4,6 +4,8 @@ import { useParams } from 'react-router-dom';
 import './DatasetSetup.css';
 import DatasetUmaps from './DatasetUmaps';
 
+import useJobPolling from './RunJob';
+
 function DatasetSetup() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId } = useParams();
@@ -21,93 +23,44 @@ function DatasetSetup() {
         console.log("activated umap", umap, data)
         setDataset(data);
       });
-  })
+  }, [datasetId])
 
-  // run and poll umap job
-  const [umapIntervalId, setUmapIntervalId] = useState(null);
+  
+
+  // umaps
   const [umapJob, setUmapJob] = useState(null);
-  const handleNewUmap = useCallback((umap) => {
-    // fetch request that submits embeddigns, neighbors and min_dist
-    console.log("running umap", umap)
-    fetch(`http://localhost:5001/scripts/umap?dataset=${dataset.id}&embeddings=${umap.embeddings}&neighbors=${umap.neighbors}&min_dist=${umap.min_dist}`)
-      .then(response => response.json())
-      .then(data => {
-        const jobId = data.job_id;
-        console.log("start polling", jobId)
-        const intervalId = setInterval(() => {
-          fetch(`http://localhost:5001/scripts/job?dataset=${dataset.id}&job_id=${jobId}`)
-            .then(response => response.json())
-            .then(jobData => {
-              console.log("polling job status", jobData);
-              setUmapJob(jobData);
-              if (jobData.status === "completed") {
-                clearInterval(intervalId);
-                setUmapIntervalId(null);
-                setUmapJob(null)
-              }
-            })
-            .catch(error => {
-              console.error("Error polling job status", error);
-              clearInterval(intervalId);
-              setUmapIntervalId(null);
-            });
-        }, 100);
-        setUmapIntervalId(intervalId);
-    })
-  }, [dataset])
-  useEffect(() => {
-    return () => {
-      if (umapIntervalId) {
-        clearInterval(umapIntervalId);
-      }
-    };
-  }, [umapIntervalId]); 
-
-  // run and poll cluster job
-  const [clusterIntervalId, setClusterIntervalId] = useState(null);
+  const { startJob: startUmapJob } = useJobPolling(dataset, setUmapJob, 'http://localhost:5001/scripts/umap');
+  const { startJob: deleteUmapJob } = useJobPolling(dataset, setUmapJob, 'http://localhost:5001/scripts/delete/umap');
+  // clusters
   const [clusterJob, setClusterJob] = useState(null);
-  const handleNewCluster = useCallback((cluster) => {
-    // fetch request that submits cluster name and umap name
-    console.log("running cluster", cluster)
-    fetch(`http://localhost:5001/scripts/cluster?dataset=${dataset.id}&umap_name=${cluster.umap_name}&samples=${cluster.samples}&min_samples=${cluster.min_samples}`)
+  const { startJob: startClusterJob } = useJobPolling(dataset, setClusterJob, 'http://localhost:5001/scripts/cluster');
+  const { startJob: deleteClusterJob } = useJobPolling(dataset, setClusterJob, 'http://localhost:5001/scripts/delete/cluster');
+  // slides
+  const [slidesJob, setSlidesJob] = useState(null);
+  const { startJob: startSlidesJob } = useJobPolling(dataset, setSlidesJob, 'http://localhost:5001/scripts/slides');
+  useEffect(() => {
+    if (slidesJob && slidesJob.status === "completed") {
+      fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
+        .then(response => response.json())
+        .then(data => setDataset(data));
+    }
+  }, [slidesJob, datasetId])
+
+  const [embeddingsJob, setEmbeddingsJob] = useState(null);
+  const { startJob: startEmbeddingsJob } = useJobPolling(dataset, setEmbeddingsJob, 'http://localhost:5001/scripts/embed');
+
+  const [embeddings, setEmbeddings] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings`)
       .then(response => response.json())
       .then(data => {
-        const jobId = data.job_id;
-        console.log("start polling", jobId)
-        const intervalId = setInterval(() => {
-          fetch(`http://localhost:5001/scripts/job?dataset=${dataset.id}&job_id=${jobId}`)
-            .then(response => {
-              if (!response.ok) { // This checks if the response status is not in the range 200-299
-                throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              return response.json()
-            })
-            .then(jobData => {
-              console.log("polling job status", jobData);
-              setClusterJob(jobData);
-              if (jobData.status === "completed") {
-                clearInterval(intervalId);
-                setClusterIntervalId(null);
-                setClusterJob(null)
-              }
-            })
-            .catch(error => {
-              console.error("Error polling job status", error);
-              clearInterval(intervalId);
-              setClusterIntervalId(null);
-            });
-        }, 100);
-        setClusterIntervalId(intervalId);
-    })
-  }, [dataset])
-  useEffect(() => {
-    return () => {
-      if (clusterIntervalId) {
-        clearInterval(clusterIntervalId);
-      }
-    };
-  }, [clusterIntervalId]);
+        console.log("embeddings", data)
+        setEmbeddings(data)
+      });
+  }, [datasetId, embeddingsJob]);
 
+  const [embedMode, setEmbedMode] = useState("local");
+ 
 
   if (!dataset) return <div>Loading...</div>;
   const datasetUrl = "/datasets/" + datasetId
@@ -116,16 +69,71 @@ function DatasetSetup() {
     <div className="dataset--details-experiments">
       <h2>Dataset: <a href={datasetUrl}>{datasetId}</a></h2>
       <div className="dataset--details-summary">
-        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ]<br/>
+        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ] [ {dataset.active_slides} ]<br/>
+      </div>
+
+      <div className="dataset--setup-embeddings">
+        <form onSubmit={e => {
+          e.preventDefault()
+          const form = e.target
+          const data = new FormData(form)
+          let job = { 
+            mode: embedMode,
+            text_column: data.get('textColumn'),
+          }
+          if(embedMode === "local") {
+            const model = data.get('modelName')
+            job.model = model
+          }
+          startEmbeddingsJob(job)
+        }}>
+
+          <div>
+            <input type="radio" id="local" name="embedMode" value="local" 
+              onChange={e => setEmbedMode(e.target.value)} checked={embedMode === "local"} />
+            <label htmlFor="local">Local</label>
+          </div>
+          <div>
+            <input type="radio" id="openai" name="embedMode" value="openai" 
+              onChange={e => setEmbedMode(e.target.value)} checked={embedMode === "openai"} />
+            <label htmlFor="openai">OpenAI</label>
+          </div>
+          <div>
+            <input type="radio" id="together" name="embedMode" value="together" 
+              onChange={e => setEmbedMode(e.target.value)} checked={embedMode === "together"} />
+            <label htmlFor="together">Together</label>
+          </div>
+
+          {embedMode === "local" && <div>
+            <label htmlFor="modelName">Model Name:</label>
+            <input type="text" id="modelName" name="modelName" defaultValue="BAAI/bge-small-en-v1.5" />
+            </div>}
+
+          <div>
+            <label htmlFor="textColumn">Text Column:</label>
+            <input type="text" id="textColumn" name="textColumn" defaultValue="text" />
+          </div>
+          
+          <button type="submit">Run</button>
+        </form>
+        {embeddingsJob && embeddingsJob.status !== "completed" && 
+          <div>
+          <pre>{embeddingsJob.progress.join("\n")}</pre>
+          </div>}
       </div>
       
       <DatasetUmaps 
         dataset={dataset} 
+        embeddings={embeddings}
         onActivateUmap={handleActivateUmap} 
-        onNewUmap={handleNewUmap}
-        onNewCluster={handleNewCluster}
+        onNewUmap={startUmapJob}
+        onDeleteUmap={deleteUmapJob}
+        onNewCluster={startClusterJob}
+        onDeleteCluster={deleteClusterJob}
+        onNewSlides={startSlidesJob}
         umapJob={umapJob}
         clusterJob={clusterJob}
+        slidesJob={slidesJob}
         />
 
     </div>

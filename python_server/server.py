@@ -96,7 +96,8 @@ def get_dataset_embeddings(dataset):
         print('Unable to scan directory:', err)
         return jsonify({"error": "Unable to scan directory"}), 500
 
-    npy_files = [file.replace(".npy", "") for file in files if file.endswith('.npy')]
+    # TODO unsanitize the model file names with util function
+    npy_files = [file.replace(".npy", "").replace("___", "/").replace("_", "/") for file in files if file.endswith('.npy')]
     print("files", files)
     print("npy", npy_files)
     return jsonify(npy_files)
@@ -126,6 +127,21 @@ def set_active_umap(dataset):
         json.dump(json_contents, json_file)
     return jsonify(json_contents)
 
+@app.route('/datasets/<dataset>/embeddings/activate', methods=['GET'])
+def set_active_embeddings(dataset):
+    model = request.args.get('model')
+    # TODO: unsanitize the model name with util function
+    model = model.replace("___", "/")
+    model = model.replace("_", "/")
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    json_contents["active_embeddings"] = model
+    # write the file back out
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(json_contents, json_file)
+    return jsonify(json_contents)
+
 
 """
 Returns nearest neighbors for a given query string
@@ -134,24 +150,28 @@ Hard coded to 150 results currently
 @app.route('/nn', methods=['GET'])
 def nn():
     dataset = request.args.get('dataset')
+    meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
     num = 150
-    if dataset not in DATASETS:
+    if dataset not in DATASETS or DATASETS[dataset]["active_embeddings"] != meta["active_embeddings"]:
         # load the dataset embeddings
-        meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
-        print("meta", meta)
-        embeddings = np.load(os.path.join("../data", dataset, "embeddings",  meta["active_embeddings"] + ".npy"))
-        print("embeddings", embeddings.shape)
-        print("loading model")
+        # TODO make sanitize a function in util
+        sanitized_model_name = meta["active_embeddings"].replace("/", "___")
+        embeddings = np.load(os.path.join("../data", dataset, "embeddings", sanitized_model_name + ".npy"))
+        # print("embeddings", embeddings.shape)
         # Load model from HuggingFace Hub
-        tokenizer = AutoTokenizer.from_pretrained(meta["model"])
-        model = AutoModel.from_pretrained(meta["model"])
+        # TODO: make unsanitize a function in util
+        # TODO: we shouldnt have to unsanitize actually but just in case
+        model_name = meta["active_embeddings"].replace("___", "/")
+        print("loading model", model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
         model.eval()
         # find nearest neighbors
         print("fitting embeddings")
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
-        DATASETS[dataset] = { "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
+        DATASETS[dataset] = { "active_embeddings": meta["active_embeddings"], "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
     else:
         embeddings = DATASETS[dataset]["embeddings"]
         model = DATASETS[dataset]["model"]
@@ -176,8 +196,10 @@ def nn():
     distances, indices = nne.kneighbors([embedding])
     print("distances", distances)
     # Filter distances and indices to only elements where distance is less than .4
-    filtered_indices = indices[0][distances[0] < 0.4]
-    filtered_distances = distances[0][distances[0] < 0.4]
+    # filtered_indices = indices[0][distances[0] < 0.4]
+    # filtered_distances = distances[0][distances[0] < 0.4]
+    filtered_indices = indices[0]
+    filtered_distances = distances[0]
     indices = filtered_indices
     distances = filtered_distances
         
@@ -214,10 +236,13 @@ This is a JSON object with the tag name as the key and an array of indices as th
 @app.route("/tags", methods=['GET'])
 def tags():
     dataset = request.args.get('dataset')
+    tagdir = os.path.join("../data", dataset, "tags")
+    if not os.path.exists(tagdir):
+        os.makedirs(tagdir)
     if dataset not in tagsets:
         tagsets[dataset] = {}
     # search the dataset directory for all files ending in .indices
-    for f in os.listdir(os.path.join("../data", dataset, "tags")):
+    for f in os.listdir(tagdir):
         if f.endswith(".indices"):
             tag = f.split(".")[0]
             indices = np.loadtxt(os.path.join("../data", dataset, "tags", tag + ".indices"), dtype=int).tolist()
@@ -362,7 +387,8 @@ def slides():
     meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
     # search the dataset directory for all files ending in .indices
     # read the slides parquet file
-    slides_df = pd.read_parquet(os.path.join("../data", dataset, "slides", meta["active_slides"] + ".parquet"))
+    slide = meta["active_slides"].replace("cluster", "slides")
+    slides_df = pd.read_parquet(os.path.join("../data", dataset, "slides", slide + ".parquet"))
     # return an object with the tags for a given dataset
     return slides_df.to_json(orient="records")
 
@@ -370,4 +396,4 @@ def slides():
 # set port
 port = int(os.environ.get('PORT', 5001))
 print("running app", port)
-app.run(host="0.0.0.0", port=port)
+app.run(host="0.0.0.0", port=port, debug=True)

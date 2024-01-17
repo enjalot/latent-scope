@@ -19,18 +19,19 @@ def slider(dataset_name, cluster_name):
         os.makedirs(f'../data/{dataset_name}/slides')
     # determine the index of the last cluster run by looking in the dataset directory
     # for files named umap-<number>.json
-    slides_files = [f for f in os.listdir(f"../data/{dataset_name}/slides") if re.match(r"slides-\d+\.json", f)]
-    print("slides files", sorted(slides_files))
-    if len(slides_files) > 0:
-        last_slides = sorted(slides_files)[-1]
-        last_slides_number = int(last_slides.split("-")[1].split(".")[0])
-        print("lastslides", last_slides, last_slides_number)
-        next_slides_number = last_slides_number + 1
-    else:
-        next_slides_number = 1
+    # slides_files = [f for f in os.listdir(f"../data/{dataset_name}/slides") if re.match(r"slides-\d+\.json", f)]
+    # print("slides files", sorted(slides_files))
+    # if len(slides_files) > 0:
+    #     last_slides = sorted(slides_files)[-1]
+    #     last_slides_number = int(last_slides.split("-")[1].split(".")[0])
+    #     print("lastslides", last_slides, last_slides_number)
+    #     next_slides_number = last_slides_number + 1
+    # else:
+    #     next_slides_number = 1
 
     # make the umap name from the number, zero padded to 3 digits
-    slides_name = f"slides-{next_slides_number:03d}"
+    # slides_name = f"slides-{next_slides_number:03d}"
+    slides_name = cluster_name.replace("cluster", "slides")
 
     # read cluster labels from parquet
     df = pd.read_parquet(f"../data/{dataset_name}/clusters/{cluster_name}.parquet") 
@@ -60,7 +61,7 @@ def slider(dataset_name, cluster_name):
     # open the database meta json and add "active_slides" key with the name of the slides
     with open(f'../data/{dataset_name}/meta.json', 'r') as f:
         meta = json.load(f)
-        meta['active_slides'] = slides_name
+        meta['active_slides'] = cluster_name 
     with open(f'../data/{dataset_name}/meta.json', 'w') as f:
         # format the json when dumping to have spaces and newlines
         json.dump(meta, f, indent=2)

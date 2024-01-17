@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import './SlideBar.css';
 
 SlideBar.propTypes = {
-  dataset: PropTypes.array.isRequired,
+  dataset: PropTypes.object.isRequired,
   selected: PropTypes.object,
   onHover: PropTypes.func,
   onClick: PropTypes.func,
