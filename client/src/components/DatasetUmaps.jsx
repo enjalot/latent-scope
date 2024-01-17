@@ -38,7 +38,6 @@ function DatasetUmaps({
     fetch(`http://localhost:5001/datasets/${dataset.id}/umaps`)
       .then(response => response.json())
       .then(data => {
-        console.log("data!", data)
         const umaps_keys = Object.keys(data)
         const processed = umaps_keys.map(umap => ({
           file: umap,
@@ -57,6 +56,10 @@ function DatasetUmaps({
   // This will also update umaps
   useEffect(() => {
     if (!dataset || !umaps.length) return;
+    // default activate the first umap we make
+    if(!dataset.active_umap && umaps.length == 1) {
+      onActivateUmap(umaps[0])
+    }
     fetch(`http://localhost:5001/datasets/${dataset.id}/clusters`)
       .then(response => response.json())
       .then(data => {
@@ -70,7 +73,7 @@ function DatasetUmaps({
         setClusters(processed)
       })
       .catch(err => console.log(err))
-  }, [dataset, umaps, clusterJob]);
+  }, [dataset, umaps, clusterJob, onActivateUmap]);
 
   
 
