@@ -150,18 +150,18 @@ Hard coded to 150 results currently
 @app.route('/nn', methods=['GET'])
 def nn():
     dataset = request.args.get('dataset')
-    meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
+    model_name = request.args.get('model')
+    # TODO: make unsanitize a function in util
+    model_name = model_name.replace("___", "/") # to be sure
+    # TODO make sanitize a function in util
+    sanitized_model_name = model_name.replace("/", "___")
+    # meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
     num = 150
-    if dataset not in DATASETS or DATASETS[dataset]["active_embeddings"] != meta["active_embeddings"]:
+    if dataset not in DATASETS or DATASETS[dataset]["active_embeddings"] != model_name:
         # load the dataset embeddings
-        # TODO make sanitize a function in util
-        sanitized_model_name = meta["active_embeddings"].replace("/", "___")
         embeddings = np.load(os.path.join("../data", dataset, "embeddings", sanitized_model_name + ".npy"))
         # print("embeddings", embeddings.shape)
         # Load model from HuggingFace Hub
-        # TODO: make unsanitize a function in util
-        # TODO: we shouldnt have to unsanitize actually but just in case
-        model_name = meta["active_embeddings"].replace("___", "/")
         print("loading model", model_name)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
@@ -171,7 +171,7 @@ def nn():
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
-        DATASETS[dataset] = { "active_embeddings": meta["active_embeddings"], "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
+        DATASETS[dataset] = { "active_embeddings": model_name, "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
     else:
         embeddings = DATASETS[dataset]["embeddings"]
         model = DATASETS[dataset]["model"]

@@ -28,24 +28,47 @@ function DatasetDetail() {
       });
   }, [datasetId]);
 
+  const [umaps, setUmaps] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("UMAPS fetch", data)
+        const rows = Object.keys(data).map(umap => data[umap])
+        setUmaps(rows)
+      })
+  }, [datasetId])
+
   const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/embeddings`)
       .then(response => response.json())
       .then(data => {
-        console.log("embeddings", data)
+        // console.log("embeddings", data)
         setEmbeddings(data)
       });
   }, [datasetId]);
 
 
-  const handleModelSelect = useCallback((model) => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings/activate?model=${model}`)
-      .then(response => response.json())
-      .then(data => {
-        setDataset(data);
-      });
-  }, [datasetId])
+  // The search model is the embeddings model that we pass to the nearest neighbor query
+  // we want to enable searching with any embedding set
+  const [searchModel, setSearchModel] = useState(embeddings[0])
+  const [activeUmap, setActiveUmap] = useState(null)
+  const handleModelSelect = (model) => {
+    console.log("selected", model)
+    setSearchModel(model)
+  }
+  useEffect(() => {
+    if(dataset?.active_umap && umaps?.length) {
+      console.log("UMAPS", umaps, dataset?.active_umap)
+      const au = umaps.find(umap => umap.name === dataset.active_umap);
+      if(au) {
+        setActiveUmap(au)
+        const model = au.embeddings.replace("___", "/")
+        setSearchModel(model);
+      }
+    }
+  }, [dataset, umaps])
 
   // Points for rendering the scatterplot
   const [points, setPoints] = useState([]);
@@ -157,8 +180,8 @@ function DatasetDetail() {
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
 
-  const searchQuery = (query) => {
-    fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}`)
+  const searchQuery = useCallback((query) => {
+    fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}&model=${searchModel}`)
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
@@ -167,7 +190,7 @@ function DatasetDetail() {
         console.log("SEARCH RESULTS", data)
         scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
-  };
+  }, [searchModel]);
 
   const [neighbors, setNeighbors] = useState([]);
   useEffect(() => {
@@ -325,7 +348,7 @@ function DatasetDetail() {
       <h2>Dataset: {datasetId}</h2>
       <div className="dataset--details-summary">
 
-        [ {dataset.length} rows ][ {dataset.active_embeddings} ][ {dataset.active_umap} ] [ {dataset.active_slides} ]
+        [ {dataset.length} rows ][ {dataset.active_umap} ({activeUmap?.embeddings}) ] [ {dataset.active_slides} ]
         [ <a href={`/datasets/${datasetId}/setup`}>setup</a> ]
         <br/>
 
@@ -365,7 +388,7 @@ function DatasetDetail() {
           <label htmlFor="embeddingModel">Using:</label>
           <select id="embeddingModel" 
             onChange={(e) => handleModelSelect(e.target.value)} 
-            value={dataset.active_embeddings}>
+            value={searchModel}>
             {embeddings.map((embedding, index) => (
               <option key={index} value={embedding}>{embedding}</option>
             ))}
