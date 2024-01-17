@@ -46,7 +46,7 @@ function DatasetUmaps({
           ...data[umap],
           clusters: []
         }))
-        console.log("setting umaps", processed)
+        // console.log("setting umaps", processed)
         processed.reverse()
         setUmaps(processed)
       });
@@ -132,7 +132,8 @@ function DatasetUmaps({
             <button type="submit">New UMAP</button>
           </form>
           : <div>Running UMAP... 
-              <pre>{umapJob.progress.join("\n")}</pre>
+              {/* <pre>{umapJob.progress.join("\n")}</pre> */}
+              <pre>{umapJob.progress[umapJob.progress.length -1]}</pre>
             </div>}
       </div>
       <div className="dataset--umaps-list">

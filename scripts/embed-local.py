@@ -1,4 +1,4 @@
-# Usage: python embed.py <dataset_name> <text_column> <model>
+# Usage: python embed-local.py <dataset_name> <text_column> <model>
 import os
 import sys
 import json
