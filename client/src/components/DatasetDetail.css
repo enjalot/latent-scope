@@ -93,7 +93,7 @@
 .dataset--details .slide-bar {
   position: fixed;
   right: 0;
-  top: 0;
+  top: 40px;
   width: 100px;
   height: 100%;
 }

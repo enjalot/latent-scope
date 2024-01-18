@@ -28,7 +28,7 @@ function useJobPolling(dataset, setJob, url) {
                 setTimeout(() => {
                   setJob(null);
                   setJob(jobData);
-                }, 100)
+                }, 200)
               }
             })
             .catch(error => {
