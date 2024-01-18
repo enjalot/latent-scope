@@ -65,12 +65,12 @@ def embedder(dataset_name, text_column="text", model_name="voyage-02"):
     safe_model_name = "voyageai-" + model_name.replace("/", "___")
     np.save(f'../data/{dataset_name}/embeddings/{safe_model_name}.npy', np_embeds)
     # write out a json file with the model name and shape of the embeddings
-    with open(f'../data/{dataset_name}/meta.json', 'w') as f:
-        json.dump({
-            "id": dataset_name,
-            "text_column": text_column, 
-            "length": len(sentences),
-            }, f, indent=2)
+    # with open(f'../data/{dataset_name}/meta.json', 'w') as f:
+    #     json.dump({
+    #         "id": dataset_name,
+    #         "text_column": text_column, 
+    #         "length": len(sentences),
+    #         }, f, indent=2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Embed a dataset using OpenAI')

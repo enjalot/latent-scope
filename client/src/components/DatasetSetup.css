@@ -3,3 +3,13 @@
   width: 100%;
   padding: 10px;
 }
+
+.dataset--setup-embeddings {
+  display: flex;
+  flex-direction: column;
+  max-width: 420px;
+  gap: 10px;
+
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+}

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import DatasetsList from './components/DatasetsList';
+import Home from './components/Home';
 import DatasetDetail from './components/DatasetDetail';
 import DatasetSetup from './components/DatasetSetup';
 import TagDetail from './components/TagDetail';
@@ -12,7 +12,7 @@ function App() {
       <Nav />
       <div className="page">
       <Routes>
-        <Route path="/" element={<DatasetsList />} />
+        <Route path="/" element={<Home />} />
         <Route path="/datasets/:dataset" element={<DatasetDetail />} />
         <Route path="/datasets/:dataset/setup" element={<DatasetSetup/>} />
         <Route path="/datasets/:dataset/tags/:tag" element={<TagDetail />} />

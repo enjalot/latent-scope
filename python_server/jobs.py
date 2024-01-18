@@ -7,7 +7,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 # Create a Blueprint
-scripts_bp = Blueprint('scripts_bp', __name__)
+jobs_bp = Blueprint('jobs_bp', __name__)
 
 
 def run_job(dataset, job_id, command):
@@ -15,7 +15,10 @@ def run_job(dataset, job_id, command):
       os.makedirs(f"../data/{dataset}/jobs")
 
     progress_file = f"../data/{dataset}/jobs/{job_id}.json"
+    job_name = command.replace("python ../scripts/", "").replace(".py", "!!!").split("!!!")[0],
     job = {
+        "dataset": dataset,
+        "job_name": job_name,
         "command": command, 
         "status": "running", 
         "last_update": str(datetime.now()), 
@@ -46,7 +49,7 @@ def run_job(dataset, job_id, command):
     with open(progress_file, 'w') as f:
         json.dump(job, f)
 
-@scripts_bp.route('/job')
+@jobs_bp.route('/job')
 def get_job():
     dataset = request.args.get('dataset')
     job_id = request.args.get('job_id')
@@ -58,8 +61,24 @@ def get_job():
     else:
         return jsonify({'status': 'not found'}), 404
 
+#@jobs_bp.route('/jobs')
 
-@scripts_bp.route('/embed')
+@jobs_bp.route('/ingest', methods=['POST'])
+def run_ingest():
+    dataset = request.form.get('dataset')
+    file = request.files.get('file')
+    print("name", dataset)
+    if not os.path.exists(f"../data/{dataset}"):
+        os.makedirs(f"../data/{dataset}")
+    file.save(f"../data/{dataset}/input.csv")
+
+    job_id = str(uuid.uuid4())
+    command = f'python ../scripts/ingest.py {dataset}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
+@jobs_bp.route('/embed')
 def run_embed():
     dataset = request.args.get('dataset')
     text_column = request.args.get('text_column')
@@ -77,7 +96,7 @@ def run_embed():
     return jsonify({"job_id": job_id})
 
 
-@scripts_bp.route('/umap')
+@jobs_bp.route('/umap')
 def run_umap():
     dataset = request.args.get('dataset')
     embeddings = request.args.get('embeddings')
@@ -90,7 +109,7 @@ def run_umap():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@scripts_bp.route('/delete/umap')
+@jobs_bp.route('/delete/umap')
 def delete_umap():
     dataset = request.args.get('dataset')
     umap_name = request.args.get('umap_name')
@@ -114,7 +133,7 @@ def delete_umap():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@scripts_bp.route('/cluster')
+@jobs_bp.route('/cluster')
 def run_cluster():
     dataset = request.args.get('dataset')
     umap_name = request.args.get('umap_name')
@@ -127,7 +146,7 @@ def run_cluster():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@scripts_bp.route('/delete/cluster')
+@jobs_bp.route('/delete/cluster')
 def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_name = request.args.get('cluster_name')
@@ -136,7 +155,7 @@ def delete_cluster():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@scripts_bp.route('/slides')
+@jobs_bp.route('/slides')
 def run_slides():
     dataset = request.args.get('dataset')
     cluster_name = request.args.get('cluster_name')

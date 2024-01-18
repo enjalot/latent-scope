@@ -1,0 +1,17 @@
+.job-progress {
+  margin: 6px;
+  /* width: 100%; */
+  /* max-width: 600px; */
+  padding: 12px;
+  /* background-color: #222; */
+  border-radius: 4px;
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+
+}
+.job-progress pre {
+  max-height: 200px;
+  overflow-y: scroll;
+  background-color: #111;
+  color: springgreen;
+  padding: 6px;
+}

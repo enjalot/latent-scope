@@ -20,8 +20,8 @@ DATASETS = {}
 # used in returning rows for a given index (indexed, get_tags)
 DATAFRAMES = {}
 
-from scripts import scripts_bp
-app.register_blueprint(scripts_bp, url_prefix='/scripts') 
+from jobs import jobs_bp
+app.register_blueprint(jobs_bp, url_prefix='/jobs') 
 
 
 # ===========================================================
@@ -85,6 +85,20 @@ def get_dataset_meta(dataset):
     with open(file_path, 'r', encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
+
+@app.route('/datasets/<dataset>/meta/update', methods=['GET'])
+def update_dataset_meta(dataset):
+    key = request.args.get('key')
+    value = request.args.get('value')
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    json_contents[key] = value
+    # write the file back out
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(json_contents, json_file)
+    return jsonify(json_contents)
+
 
 @app.route('/datasets/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
