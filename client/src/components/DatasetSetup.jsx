@@ -225,7 +225,7 @@ function DatasetSetup() {
                     <span>
                       {emb} [
                         {umaps.filter(d => d.embeddings == emb).length} umaps,&nbsp;
-                        {clusters.filter(d => umaps.filter(d => d.embeddings == emb).map(d => d.name).indexOf(d.umap_name)).length} clusters 
+                        {clusters.filter(d => umaps.filter(d => d.embeddings == emb).map(d => d.name).indexOf(d.umap_name) >= 0).length} clusters 
                       ]
                     </span>
                     </label>
