@@ -90,16 +90,17 @@ def run_embed():
     model = request.args.get('model') # model id
 
     job_id = str(uuid.uuid4())
-    if provider == "transformers":
-        command = f'python ../scripts/embed-local.py {dataset} {text_column} {model}'
-    elif provider == "openai":
-        command = f'python ../scripts/embed-openai.py {dataset} {text_column}'
-    elif provider == "cohereai":
-        command = f'python ../scripts/embed-cohereai.py {dataset} {text_column} {model}'
-    elif provider == "togetherai":
-        command = f'python ../scripts/embed-togetherai.py {dataset} {text_column} {model}'
-    elif provider == "voyageai":
-        command = f'python ../scripts/embed-voyageai.py {dataset} {text_column} {model}'
+    command = f'python ../scripts/embed.py {dataset} {text_column} {model}'
+    # if provider == "transformers":
+    #     command = f'python ../scripts/embed-local.py {dataset} {text_column} {model}'
+    # elif provider == "openai":
+    #     command = f'python ../scripts/embed-openai.py {dataset} {text_column}'
+    # elif provider == "cohereai":
+    #     command = f'python ../scripts/embed-cohereai.py {dataset} {text_column} {model}'
+    # elif provider == "togetherai":
+    #     command = f'python ../scripts/embed-togetherai.py {dataset} {text_column} {model}'
+    # elif provider == "voyageai":
+    #     command = f'python ../scripts/embed-voyageai.py {dataset} {text_column} {model}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

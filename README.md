@@ -90,22 +90,13 @@ This script turns the input.csv into input.parquet and sets up the directories a
 python ingest.py database-curated
 ```
 
-## 1. embed-local.py 
-Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers.
+## 1. embed.py 
+Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers. API services are supported as well, see [models/models.json](models/models.json) for model ids. 
 
 ```bash
 # python embed.py <dataset_name> <text_column> <model_id>
-python embed-local.py dadabase-curated joke transformers-intfloat___e5-small-v2
+python embed.py dadabase-curated joke transformers-intfloat___e5-small-v2
 ```
-
-## 1-a. embed-openai.py
-Use OpenAI's embedding with your OpenAI API Key to quickly embed a dataset
-
-```bash
-# python embed.py <dataset_name> <text_column>
-python embed-openai.py dadabase-curated joke
-```
-
 
 ## 2. umapper.py
 Map the embeddings from high-dimensional space to 2D with UMAP. Will generate a thumbnail of the scatterplot.

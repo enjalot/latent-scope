@@ -1,4 +1,5 @@
 import os
+import time
 import tiktoken
 import together
 from dotenv import load_dotenv
@@ -13,6 +14,7 @@ class TogetherAIProvider(ModelProvider):
         self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
 
     def embed(self, inputs):
+        time.sleep(0.1) # TODO proper rate limiting
         enc = self.encoder
         max_tokens = self.params["max_tokens"]
         inputs = [b.replace("\n", " ") for b in inputs]

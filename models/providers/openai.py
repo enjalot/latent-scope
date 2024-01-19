@@ -1,4 +1,5 @@
 import os
+import time
 import tiktoken
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -12,6 +13,7 @@ class OpenAIProvider(ModelProvider):
         self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
 
     def embed(self, inputs):
+        time.sleep(0.01) # TODO proper rate limiting
         enc = self.encoder
         max_tokens = self.params["max_tokens"]
         inputs = [b.replace("\n", " ") for b in inputs]

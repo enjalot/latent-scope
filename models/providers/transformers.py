@@ -35,4 +35,5 @@ class TransformersProvider(ModelProvider):
                 embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
 
         # Normalize embeddings
-        return torch.nn.functional.normalize(embeddings, p=2, dim=1)
+        normalized_embeedings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+        return normalized_embeedings.tolist()
