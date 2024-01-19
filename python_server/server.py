@@ -112,13 +112,12 @@ def get_dataset_embeddings(dataset):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "embeddings")
     print("dataset", dataset, directory_path)
     try:
-        files = os.listdir(directory_path)
+        files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
     except OSError as err:
         print('Unable to scan directory:', err)
         return jsonify({"error": "Unable to scan directory"}), 500
 
-    # TODO unsanitize the model file names with util function
-    npy_files = [file.replace(".npy", "").replace("___", "/").replace("_", "/") for file in files if file.endswith('.npy')]
+    npy_files = [file.replace(".npy", "") for file in files if file.endswith('.npy')]
     print("files", files)
     print("npy", npy_files)
     return jsonify(npy_files)

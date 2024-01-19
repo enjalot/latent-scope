@@ -1,26 +1,115 @@
-.dataset--details-experiments {
+.dataset--setup {
   max-width: 100%;
   width: 100%;
   padding: 10px;
 }
-
-.dataset--details-columns {
+.dataset--setup-summary {
+  display: flex;
+  flex-direction: row;
+  max-width: calc(100% - 64px);
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+}
+.dataset--setup-info {
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
   gap: 10px;
+  width: 640px;
   max-width: 640px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px;
+}
+.dataset--setup-saves {
+  max-width: calc(100% - 640px);
 }
 
-.dataset--setup-embeddings {
+
+.dataset--setup-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+.dataset--setup-left-column {
+  width: 640px;
   max-width: 640px;
+}
+.dataset--setup-right-column {
+  width: calc(100% - 640px - 64px);
+  /* flex-grow: 1; */
+}
+
+/* LEFT COLUMN  */
+.dataset--setup-embeddings,
+.dataset--setup-umaps,
+.dataset--setup-clusters,
+.dataset--setup-slides
+ {
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
+  margin: 12px;
 }
 .dataset--setup-embeddings form {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* RIGHT COLUMN  */
+.dataset--setup-save-box {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+  width: 100%;
+}
+
+.dataset--setup-umap {
+  max-width: 640px;
+  max-height: 640px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+}
+.dataset--setup-umaps-list, .dataset--setup-clusters-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+}
+.dataset--setup-umaps-item, .dataset--setup-clusters-item {
+  cursor: pointer;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  margin-top: 12px;
+  width: 132px;
+}
+.dataset--setup-umaps-item label, .dataset--setup-clusters-item label {
+  cursor: pointer;
+}
+
+.dataset--setup-umaps-item img, .dataset--setup-clusters-item img {
+  width: 120px;
+  height: 120px;
+}
+
+
+.dataset--setup-save-box-boxes {
+  display: flex;
+  flex-direction: row;
+}
+.box-item {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  margin: 6px;
+  width: 132px;
+}
+.box-item img {
+  width: 120px;
+  height: 120px;
+
 }
