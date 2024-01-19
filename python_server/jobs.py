@@ -82,16 +82,20 @@ def run_ingest():
 def run_embed():
     dataset = request.args.get('dataset')
     text_column = request.args.get('text_column')
-    mode = request.args.get('mode')
+    provider = request.args.get('provider')
     model = request.args.get('model')
 
     job_id = str(uuid.uuid4())
-    if mode == "local":
+    if provider == "transformers":
         command = f'python ../scripts/embed-local.py {dataset} {text_column} {model}'
-    elif mode == "openai":
-        command = "echo 'openai not implemented yet'"
-    elif mode == "togetherai":
-        command = "echo 'togetherai not implemented yet'"
+    elif provider == "openai":
+        command = f'python ../scripts/embed-openai.py {dataset} {text_column}'
+    elif provider == "cohereai":
+        command = f'python ../scripts/embed-cohereai.py {dataset} {text_column} {model}'
+    elif provider == "togetherai":
+        command = f'python ../scripts/embed-togetherai.py {dataset} {text_column} {model}'
+    elif provider == "voyageai":
+        command = f'python ../scripts/embed-voyageai.py {dataset} {text_column} {model}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

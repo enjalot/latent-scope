@@ -3,12 +3,23 @@ import { useParams } from 'react-router-dom';
 
 import './DatasetSetup.css';
 import DatasetUmaps from './DatasetUmaps';
+import JobProgress from './JobProgress';
 
 import { useStartJobPolling } from './JobRun';
 
 function DatasetSetup() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId } = useParams();
+
+  const [models, setModels] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/models`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("models", data)
+        setModels(data)
+      });
+  }, []);
 
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
@@ -76,8 +87,6 @@ function DatasetSetup() {
       });
   }, [datasetId, embeddingsJob]);
 
-  const [embedMode, setEmbedMode] = useState("local");
- 
   if (!dataset) return <div>Loading...</div>;
   const datasetUrl = "/datasets/" + datasetId
 
@@ -102,54 +111,33 @@ function DatasetSetup() {
       </div>
 
       <div className="dataset--setup-embeddings">
-        <form onSubmit={e => {
-          e.preventDefault()
-          const form = e.target
-          const data = new FormData(form)
-          let job = { 
-            mode: embedMode,
-            text_column: textColumn//data.get('textColumn'),
-          }
-          if(embedMode === "local") {
-            const model = data.get('modelName')
-            job.model = model
-          }
-          startEmbeddingsJob(job)
-        }}>
-
-          <div>
-            <input type="radio" id="local" name="embedMode" value="local" 
-              onChange={e => setEmbedMode(e.target.value)} checked={embedMode === "local"} />
-            <label htmlFor="local">Local</label>
-          </div>
-          <div>
-            <input type="radio" id="openai" name="embedMode" value="openai" 
-              onChange={e => setEmbedMode(e.target.value)} checked={embedMode === "openai"} />
-            <label htmlFor="openai">OpenAI</label>
-          </div>
-          <div>
-            <input type="radio" id="together" name="embedMode" value="together" 
-              onChange={e => setEmbedMode(e.target.value)} checked={embedMode === "together"} />
-            <label htmlFor="together">Together</label>
-          </div>
-
-          {embedMode === "local" && <div>
-            <label htmlFor="modelName">Model Name:</label>
-            <input type="text" id="modelName" name="modelName" defaultValue="BAAI/bge-small-en-v1.5" />
-            </div>}
-
           <div>
             Embedding on <b>{textColumn}</b>
-            {/* <label htmlFor="textColumn">Text Column:</label> */}
-            {/* <input type="text" id="textColumn" name="textColumn" defaultValue="text" /> */}
           </div>
-          
-          <button type="submit">Run</button>
-        </form>
-        {embeddingsJob && embeddingsJob.status !== "completed" && 
+        {!embeddingsJob || embeddingsJob?.status == "completed" ? <form onSubmit={e => {
+            e.preventDefault()
+            const form = e.target
+            const data = new FormData(form)
+            const model = models.find(model => model.id === data.get('modelName'))
+            let job = { 
+              text_column: textColumn,
+              provider: model.provider,
+              model: model.id,
+            }
+            startEmbeddingsJob(job)
+          }}>
           <div>
-          <pre>{embeddingsJob.progress.join("\n")}</pre>
-          </div>}
+            <label htmlFor="modelName">Model:</label>
+            <select id="modelName" name="modelName">
+              {models.map((model, index) => (
+                <option key={index} value={model.id}>{model.provider}: {model.name}</option>
+              ))}
+            </select>
+          </div> 
+          <button type="submit">New Embedding</button>
+        </form> : 
+        <JobProgress job={embeddingsJob} /> }
+       
       </div>
       
       <DatasetUmaps 

@@ -31,7 +31,9 @@ function jobPolling(dataset, setJob, jobId) {
         // TODO: have some kind of error state persist
       });
   }, 200);
+  console.log("returning jobPolling cleanup")
   return () => {
+    console.log("inside cleanup", intervalId)
     if (intervalId) {
       clearInterval(intervalId);
     }
@@ -46,15 +48,17 @@ function useStartJobPolling(dataset, setJob, url) {
       .then(response => response.json())
       .then(data => {
         const jobId = data.job_id;
-        setCleanup(jobPolling(dataset, setJob, jobId))
+        const cleanup = jobPolling(dataset, setJob, jobId)
+        // console.log("start job cleanup", cleanup)
+        // setCleanup(cleanup)
       });
   }, [dataset, setJob, url]);
-  useEffect(() => {
-    return () => {
-      if(cleanup)
-        cleanup()
-    };
-  }, [cleanup])
+  // useEffect(() => {
+  //   return () => {
+  //     if(cleanup)
+  //       cleanup()
+  //   };
+  // }, [cleanup])
   return { startJob };
 }
 

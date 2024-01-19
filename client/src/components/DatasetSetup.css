@@ -4,12 +4,23 @@
   padding: 10px;
 }
 
-.dataset--setup-embeddings {
+.dataset--details-columns {
   display: flex;
   flex-direction: column;
-  max-width: 420px;
+  flex-wrap: wrap;
   gap: 10px;
-
+  max-width: 640px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
+}
+
+.dataset--setup-embeddings {
+  max-width: 640px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+}
+.dataset--setup-embeddings form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }

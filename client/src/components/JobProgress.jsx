@@ -18,8 +18,8 @@ function JobProgress({job, onlyLast}) {
   }, [job]);
 
   return (
-    <div className='job-progress'>
-      { job ? <>
+    <>
+      { job ? <div className='job-progress'>
       Running <b>{job.job_name}</b><br/>
       <code>{job.command}</code>
       <pre ref={preRef}>
@@ -28,9 +28,9 @@ function JobProgress({job, onlyLast}) {
         job.progress.join("\n") 
       } 
       </pre>
-      </>
+      </div>
       : <></> }
-    </div>
+    </>
   );
 }
 

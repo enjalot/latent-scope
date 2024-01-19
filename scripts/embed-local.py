@@ -7,41 +7,31 @@ import argparse
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModel
+
+# TODO is this hacky way to import from the models directory?
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from models import get_model
 
 def chunked_iterable(iterable, size):
     """Yield successive chunks from an iterable."""
     for i in range(0, len(iterable), size):
         yield iterable[i:i + size]
 
-def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.5"):
-
+def embedder(dataset_name, text_column="text", model_id="transformers-BAAI___bge-small-en-v1.5"):
     df = pd.read_parquet(f"../data/{dataset_name}/input.parquet")
-    # Sentences we want sentence embeddings for
     sentences = df[text_column].tolist()
-    print("embedding", len(sentences), "sentences")
 
-    # Load model from HuggingFace Hub
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-    model.eval()
+    model = get_model(model_id)
+    print("loading", model.name)
+    model.load_model()
 
     batch_size = 100
     sentence_embeddings = []
 
+    print("embedding", len(sentences), "sentences")
     for batch in tqdm(chunked_iterable(sentences, batch_size),  total=len(sentences)//batch_size):
-        # Tokenize sentences
-        encoded_input = tokenizer(batch, padding=True, truncation=True, return_tensors='pt')
-        # Compute token embeddings
-        with torch.no_grad():
-            model_output = model(**encoded_input)
-            # Perform pooling. In this case, cls pooling.
-            batch_sentence_embeddings = model_output[0][:, 0]
-
-        # Normalize embeddings
-        batch_sentence_embeddings = torch.nn.functional.normalize(batch_sentence_embeddings, p=2, dim=1)
+        batch_sentence_embeddings = model.embed(batch)
         sentence_embeddings.append(batch_sentence_embeddings)
-
 
     # Concatenate all embeddings
     sentence_embeddings = torch.cat(sentence_embeddings, dim=0)
@@ -52,23 +42,13 @@ def embedder(dataset_name, text_column="text", model_name="BAAI/bge-small-en-v1.
     if not os.path.exists(f'../data/{dataset_name}/embeddings'):
         os.makedirs(f'../data/{dataset_name}/embeddings')
 
-    # TODO: make the sanitization a function
-    safe_model_name = model_name.replace("/", "___")
-    np.save(f'../data/{dataset_name}/embeddings/{safe_model_name}.npy', np_embeds)
-    # # write out a json file with the model name and shape of the embeddings
-    # with open(f'../data/{dataset_name}/meta.json', 'w') as f:
-    #     json.dump({
-    #         "id": dataset_name,
-    #         "text_column": text_column, 
-    #         "length": len(sentences),
-    #         "active_embeddings": safe_model_name, 
-    #         }, f, indent=2)
+    np.save(f'../data/{dataset_name}/embeddings/{model_id}.npy', np_embeds)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Embed a dataset')
     parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
     parser.add_argument('text_column', type=str, help='Output file', default='text')
-    parser.add_argument('model', type=str, help='Name of Transformer Embedding model to use', default="BAAI/bge-small-en-v1.5")
+    parser.add_argument('model', type=str, help='ID of Transformer Embedding model to use', default="transformers-BAAI___bge-small-en-v1.5")
 
     # Parse arguments
     args = parser.parse_args()

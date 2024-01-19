@@ -1,4 +1,16 @@
 
+.dataset--umaps-new {
+  max-width: 640px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+}
+.dataset--umaps-new form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  
+}
 /* Styling for each UMAP and Cluster section */
 .dataset--umaps-list {
   display: flex;

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import JobProgress from './JobProgress';
 
 import './DatasetUmaps.css';
 
@@ -131,10 +132,7 @@ function DatasetUmaps({
             </label>
             <button type="submit">New UMAP</button>
           </form>
-          : <div>Running UMAP... 
-              {/* <pre>{umapJob.progress.join("\n")}</pre> */}
-              <pre>{umapJob.progress[umapJob.progress.length -1]}</pre>
-            </div>}
+          : <JobProgress job={umapJob} /> }
       </div>
       <div className="dataset--umaps-list">
         {umaps.map(umap => (

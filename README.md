@@ -1,9 +1,9 @@
-# latent-scope
-A lens formed by the embeddings of a model, illuminated by data points and housed by an interactive web interface 
+# Latent Scope
 
+Quickly embed, project, cluster and explore a dataset. I think of this as somewhere between a microscope and a workbench for visualizing and exploring datasets through the lens of embedding model latent spaces. 
 
-# Repository overview
-This repository is currently meant to run locally, as it has several pieces that use the file system to coordinate functionality.
+## Repository overview
+This repository is currently meant to run locally, with a React frontend that communicates with a python server backend. We support several popular open source embedding models that can run locally as well as proprietary API embedding services. Adding new models and services should be quick and easy.
 
 ## data
 The data directory is where you will put your datasets, and where the scripts and app will store the output of their processes along with the associated metadata. The web app will look at the contents of this folder using a specific directory structure.
@@ -26,7 +26,7 @@ pip install -r requirements.txt
 ```
 
 ## notebooks
-There are some example notebooks for preparing data from CSV format into the input.parquet format that latent scope expects for a dataset. 
+There are some example notebooks for preparing data in CSV format for ingesting into latent scope:
 * [dvs-survey](notebooks/dvs-survey.ipynb)
 * [dadabase](notebooks/dadabase.ipynb)
 
@@ -42,7 +42,7 @@ cd python_server
 python server.py
 ```
 
-# Directory structure
+# Dataset directory structure
 
 Each dataset in data will have its own directory
 <pre>
@@ -73,23 +73,29 @@ Each dataset in data will have its own directory
 |   |   |   ├──  8980️-12345...json              # created when job is run via web UI
 </pre>
 
+# Embedding models
+The scripts below (which power the app) reference embedding models by an "id" which identifies models prepared in [models/models.json](models/models.json)
+
+There is a `get_model(id)` function which will load the appropriate class based on the model provider. See `providers/` for `transformers`, `openai`, `cohereai`, `togetherai`, `voyageai`
+
+
 # Scripts
 The scripts should be run in order once you have an `input.parquet` file in your folder. Alternatively the Setup page in the web UI will run these scripts via API calls to the server for you.
 
-## csv2parquet.py
-A simple utility to convert a csv file into a parquet file. It will write the output parquet file into the proper folder given by the dataset name.
+## ingest.py
+This script turns the input.csv into input.parquet and sets up the directories and `meta.json` which run the app
 
 ```bash
-#python csv2parquet.py <csv_file> <dataset_name>
-python csv2parquet.py dadjokes.csv database-curated
+#python ingest.py <dataset_name>
+python ingest.py database-curated
 ```
 
 ## 1. embed-local.py 
 Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers.
 
 ```bash
-# python embed.py <dataset_name> <text_column>
-python embed-local.py dadabase-curated joke intfloat/e5-small-v2
+# python embed.py <dataset_name> <text_column> <model_id>
+python embed-local.py dadabase-curated joke transformers-intfloat___e5-small-v2
 ```
 
 ## 1-a. embed-openai.py
@@ -113,7 +119,7 @@ python umapper.py dadabase-curated 50 0.1
 Cluster the UMAP points using HDBSCAN. This will label each point with a cluster label
 ```bash
 # python cluster.py <dataset_name> <umap_name> <samples> <min-samples>
-slides.py dadabase-curated cluster-005 5 3
+slides.py dadabase-curated umap-005 5 3
 ```
 
 ## 4. slides.py

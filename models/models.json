@@ -1,0 +1,172 @@
+[
+  {
+      "provider": "transformers",
+      "name": "intfloat/e5-small-v2",
+      "sanitized_name": "intfloat___e5-small-v2",
+      "id": "transformers-intfloat___e5-small-v2",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "average"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "intfloat/e5-large-v2",
+      "sanitized_name": "intfloat___e5-large-v2",
+      "id": "transformers-intfloat___e5-large-v2",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "average"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "jinaai/jina-embeddings-v2-small-en",
+      "sanitized_name": "jinaai___jina-embeddings-v2-small-en",
+      "id": "transformers-jinaai___jina-embeddings-v2-small-en",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "mean"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "jinaai/jina-embeddings-v2-base-en",
+      "sanitized_name": "jinaai___jina-embeddings-v2-base-en",
+      "id": "transformers-jinaai___jina-embeddings-v2-base-en",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "mean"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "BAAI/bge-small-en-v1.5",
+      "sanitized_name": "BAAI___bge-small-en-v1.5",
+      "id": "transformers-BAAI___bge-small-en-v1.5",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "cls"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "BAAI/bge-large-en-v1.5",
+      "sanitized_name": "BAAI___bge-large-en-v1.5",
+      "id": "transformers-BAAI___bge-large-en-v1.5",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "cls"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "sentence-transformers/all-mpnet-base-v2",
+      "sanitized_name": "sentence-transformers___all-mpnet-base-v2",
+      "id": "transformers-sentence-transformers___all-mpnet-base-v2",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "mean"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "sentence-transformers/all-MiniLM-L6-v2",
+      "sanitized_name": "sentence-transformers___all-MiniLM-L6-v2",
+      "id": "transformers-sentence-transformers___all-MiniLM-L6-v2",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "mean"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "thenlper/gte-small",
+      "sanitized_name": "thenlper___gte-small",
+      "id": "transformers-thenlper___gte-small",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "average"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "WhereIsAI/UAE-Large-V1",
+      "sanitized_name": "WhereIsAI___UAE-Large-V1",
+      "id": "transformers-WhereIsAI___UAE-Large-V1",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "cls"
+      }
+  },
+  
+  {
+      "provider": "openai",
+      "name": "text-embedding-ada-002",
+      "id": "openai-text-embedding-ada-002",
+      "params": {
+          "max_tokens": 8192
+      }
+  },
+  {
+      "provider": "cohereai",
+      "name": "embed-english-v3.0",
+      "id": "cohereai-embed-english-v3.0",
+      "params": {
+          "input_type": "clustering"
+      }
+  },
+  {
+      "provider": "togetherai",
+      "name": "togethercomputer/m2-bert-80M-2k-retrieval",
+      "sanitized_name": "togethercomputer___m2-bert-80M-2k-retrieval",
+      "id": "transformers-togethercomputer___m2-bert-80M-2k-retrieval",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true
+      }
+  },
+  {
+      "provider": "togetherai",
+      "name": "togethercomputer/m2-bert-80M-8k-retrieval",
+      "sanitized_name": "togethercomputer___m2-bert-80M-8k-retrieval",
+      "id": "transformers-togethercomputer___m2-bert-80M-8k-retrieval",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true
+      }
+  },
+  {
+      "provider": "togetherai",
+      "name": "togethercomputer/m2-bert-80M-32k-retrieval",
+      "sanitized_name": "togethercomputer___m2-bert-80M-32k-retrieval",
+      "id": "transformers-togethercomputer___m2-bert-80M-32k-retrieval",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true
+      }
+  }
+]

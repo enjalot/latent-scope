@@ -1,4 +1,4 @@
-# Usage: python csv2parquet.py <csv_file> <dataset_name>
+# Usage: python ingest.py <dataset_name>
 import os
 import sys
 import json
