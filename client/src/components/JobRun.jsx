@@ -16,7 +16,7 @@ function jobPolling(dataset, setJob, jobId) {
       .then(jobData => {
         console.log("polling job status", jobData);
         setJob(jobData);
-        if (jobData.status === "completed") {
+        if (jobData.status === "completed" || jobData.status === "error") {
           clearInterval(intervalId);
           setTimeout(() => {
             setJob(null);
@@ -41,8 +41,7 @@ function jobPolling(dataset, setJob, jobId) {
 }
 
 function useStartJobPolling(dataset, setJob, url) {
-  // const [intervalId, setIntervalId] = useState(null);
-  const [cleanup, setCleanup] = useState(() => {})
+  // const [cleanup, setCleanup] = useState(() => {})
   const startJob = useCallback((params) => {
     fetch(`${url}?dataset=${dataset.id}&${new URLSearchParams(params)}`)
       .then(response => response.json())

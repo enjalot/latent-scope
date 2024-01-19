@@ -2,7 +2,6 @@
 import os
 import sys
 import time
-import cohere
 import argparse
 import numpy as np
 import pandas as pd
@@ -21,7 +20,7 @@ def chunked_iterable(iterable, size):
         yield iterable[i:i + size]
 
 
-def embedder(dataset_name, text_column="text", model_name="embed-english-v3.0"):
+def embedder(dataset_name, text_column="text", model_id="cohereai-embed-english-v3.0"):
     # TODO: have lookup table for truncate lengths
 
     df = pd.read_parquet(f"../data/{dataset_name}/input.parquet")
@@ -32,7 +31,6 @@ def embedder(dataset_name, text_column="text", model_name="embed-english-v3.0"):
     batch_size = 100
     sentence_embeddings = []
 
-    model_id = f"cohereai-{model_name}"
     model = get_model(model_id)
     model.load_model()
 
@@ -56,7 +54,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Embed a dataset using OpenAI')
     parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
     parser.add_argument('text_column', type=str, help='Output file', default='text')
-    parser.add_argument('model', type=str, help='Name of Transformer Embedding model to use', default="embed-english-v3.0")
+    parser.add_argument('model', type=str, help='Model ID of embedding model to use', default="cohereai-embed-english-v3.0")
 
     # Parse arguments
     args = parser.parse_args()

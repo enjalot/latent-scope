@@ -3,6 +3,8 @@ import json
 from .providers.transformers import TransformersProvider
 from .providers.openai import OpenAIProvider
 from .providers.cohereai import CohereAIProvider
+from .providers.togetherai import TogetherAIProvider
+from .providers.voyageai import VoyageAIProvider
 
 models_path = os.path.join(os.path.dirname(__file__), "models.json")
 with open(models_path, "r") as f:
@@ -23,3 +25,7 @@ def get_model(id):
         return OpenAIProvider(model['name'], model['params'])
     if model['provider'] == "cohereai":
         return CohereAIProvider(model['name'], model['params'])
+    if model['provider'] == "togetherai":
+        return TogetherAIProvider(model['name'], model['params'])
+    if model['provider'] == "voyageai":
+        return VoyageAIProvider(model['name'], model['params'])

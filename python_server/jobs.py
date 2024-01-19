@@ -44,8 +44,12 @@ def run_job(dataset, job_id, command):
             with open(progress_file, 'w') as f:
                 json.dump(job, f)
 
-    # Mark job as complete
-    job["status"] = "completed"
+    if process.returncode != 0:
+        job["status"] = "error"
+    else:
+        job["status"] = "completed"
+    # job["status"] = "completed"
+
     with open(progress_file, 'w') as f:
         json.dump(job, f)
 
@@ -83,7 +87,7 @@ def run_embed():
     dataset = request.args.get('dataset')
     text_column = request.args.get('text_column')
     provider = request.args.get('provider')
-    model = request.args.get('model')
+    model = request.args.get('model') # model id
 
     job_id = str(uuid.uuid4())
     if provider == "transformers":
