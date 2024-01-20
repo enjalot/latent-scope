@@ -5,10 +5,10 @@ import './DataTable.css';
 
 DataTable.propTypes = {
   data: PropTypes.array.isRequired,
-  tagset: PropTypes.object.isRequired,
-  datasetId: PropTypes.string.isRequired,
+  tagset: PropTypes.object,
+  datasetId: PropTypes.string,
   maxRows: PropTypes.number,
-  onTagset: PropTypes.func.isRequired,
+  onTagset: PropTypes.func,
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
@@ -19,8 +19,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
 
   const headers = Object.keys(data[0]);
 
-  const tags = Object.keys(tagset)
-
+  let tags;
   function handleTagClick(tag, index) {
     console.log("tag", tag)
     console.log("index", index)
@@ -43,7 +42,9 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
           onTagset(data);
         });
     }
-  
+  }
+  if(tagset){
+    tags = Object.keys(tagset)
   }
 
   const rows = maxRows ? data.slice(0, maxRows) : data;
@@ -54,19 +55,19 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
       <thead>
         <tr>
           {headers.map((header, index) => <th key={index}>{header}</th>)}
-          <th>tags</th>
+          {tags ? <th>tags</th> : null }
         </tr>
       </thead>
       <tbody>
         {rows.map((row, index) => (
           <tr 
             key={index} 
-            onMouseEnter={() => onHover(row.index)} 
-            onMouseLeave={() => onHover()}
-            onClick={() => onClick(row.index)}
+            onMouseEnter={() => onHover && onHover(row.index)} 
+            onMouseLeave={() => onHover && onHover()}
+            onClick={() => onClick && onClick(row.index)}
             >
             {headers.map((header, idx) => <td key={idx}>{row[header]}</td>)}
-            <td>
+            {tags ? <td>
               {tags.map((tag, idx) => (
                 <button 
                   key={idx} 
@@ -80,7 +81,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
                   {tag}
                 </button>
               ))}
-            </td>
+            </td> : null }
           </tr>
         ))}
       </tbody>

@@ -92,7 +92,7 @@ function Home() {
           />
           <button type="submit">Submit</button>
         </form>
-        <JobProgress job={ingestJob} />
+        <JobProgress job={ingestJob} clearJob={() => setIngestJob(null)} />
       </div>
       <h3>Datasets</h3>
       <ul>

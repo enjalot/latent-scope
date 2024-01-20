@@ -1,15 +1,16 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import './DatasetSetup.css';
-import DatasetUmaps from './DatasetUmaps';
+// import DatasetUmaps from './DatasetUmaps';
+import DataTable from './DataTable';
 import JobProgress from './JobProgress';
 
 import { useStartJobPolling } from './JobRun';
 
 function DatasetSetup() {
   const [dataset, setDataset] = useState(null);
-  const { dataset: datasetId } = useParams();
+  const { dataset: datasetId, scope: scopeId } = useParams();
   // Get the dataset meta data
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
@@ -33,7 +34,7 @@ function DatasetSetup() {
         setDataset(data)
       });
   }, [datasetId])
-
+ 
 
   // get the list of available models
   const [models, setModels] = useState([]);
@@ -88,17 +89,16 @@ function DatasetSetup() {
     fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
       .then(response => response.json())
       .then(data => {
-        const array = Object.keys(data).map(key => {
+        const array = data.map(d=> {
           return {
-            ...data[key],
-            url: `http://localhost:5001/files/${datasetId}/umaps/${key.replace(".json","")}.png`,
+            ...d,
+            url: `http://localhost:5001/files/${datasetId}/umaps/${d.name}.png`,
           }
         })
-        // const filtered = array.filter(d => d.embeddings == embedding)
-        // console.log("umap array", filtered)
         setUmaps(array.reverse())
       });
   }, [datasetId, umapJob]);
+  
   const [umap, setUmap] = useState(umaps[0]);
     useEffect(() => {
       if(umaps.length)
@@ -114,7 +114,6 @@ function DatasetSetup() {
     startUmapJob({embeddings: embedding, neighbors, min_dist})
   }, [startUmapJob, embedding])
 
-
   // clusters
   const [clusterJob, setClusterJob] = useState(null);
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/cluster');
@@ -125,10 +124,10 @@ function DatasetSetup() {
     fetch(`http://localhost:5001/datasets/${datasetId}/clusters`)
       .then(response => response.json())
       .then(data => {
-        const array = Object.keys(data).map(key => {
+        const array = data.map(d => {
           return {
-            ...data[key],
-            url: `http://localhost:5001/files/${datasetId}/clusters/${key.replace(".json","")}.png`,
+            ...d,
+            url: `http://localhost:5001/files/${datasetId}/clusters/${d.cluster_name}.png`,
           }
         })
         // console.log("clusters", clusters)
@@ -137,10 +136,26 @@ function DatasetSetup() {
   }, [datasetId, clusterJob]);
 
   const [cluster, setCluster] = useState(clusters[0]);
-    useEffect(() => {
-      if(clusters.length && umap)
-        setCluster(clusters.filter(d => d.umap_name == umap.name)[0])
+  useEffect(() => {
+    if(clusters.length && umap) {
+      setCluster(clusters.filter(d => d.umap_name == umap.name)[0])
+    } else {
+      setCluster(null)
+    }
   }, [clusters, umap]) 
+
+  const [clusterLabels, setClusterLabels] = useState([]);
+  useEffect(() => {
+    if(cluster) {
+      fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${cluster.cluster_name}/labels`)
+        .then(response => response.json())
+        .then(data => {
+          setClusterLabels(data)
+        });
+      } else {
+        setClusterLabels([])
+      }
+  }, [cluster, setClusterLabels, datasetId])
 
   const handleNewCluster = useCallback((e) => {
     e.preventDefault()
@@ -152,24 +167,77 @@ function DatasetSetup() {
   }, [startClusterJob, umap])
 
 
-
-
-  // slides
-  const [slidesJob, setSlidesJob] = useState(null);
-  const { startJob: startSlidesJob } = useStartJobPolling(dataset, setSlidesJob, 'http://localhost:5001/jobs/slides');
+  // Get the available scopes
+  const[scopes, setScopes] = useState([]);
+  const[scope, setScope] = useState(null);
   useEffect(() => {
-    if (slidesJob && slidesJob.status === "completed") {
-      fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
-        .then(response => response.json())
-        .then(data => setDataset(data));
-    }
-  }, [slidesJob, datasetId])
+    fetch(`http://localhost:5001/datasets/${datasetId}/scopes`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("got scope data", data)
+        setScopes(data)
+      });
+  }, [datasetId, setScopes]);
 
-  
+  useEffect(() => {
+    if(scopeId && scopes.length) {
+      const scope = scopes.find(d => d.name == scopeId)
+      if(scope) {
+        setScope(scope)
+        const selectedUmap = umaps.find(u => u.name === scope.umap);
+        const selectedCluster = clusters.find(c => c.cluster_name === scope.cluster);
+        setUmap(selectedUmap);
+        setCluster(selectedCluster);
+      }
+
+    } else {
+      setScope(null)
+    }
+  }, [scopeId, scopes, umaps, clusters, setScope, setUmap, setCluster])
+
+  const navigate = useNavigate();
+  const handleSaveScope = useCallback((event) => {
+    event.preventDefault();
+    if(!umap || !cluster) return;
+    const form = event.target;
+    const data = new FormData(form);
+    const payload = {
+      umap: umap.name,
+      cluster: cluster.cluster_name,
+      label: data.get('label'),
+      description: data.get('description')
+    };
+
+    const action = data.get('action')
+    console.log("action", action)
+    if(action == "save") {
+      payload.name = scope.name
+    }
+
+    fetch(`http://localhost:5001/datasets/${datasetId}/scopes/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Scope saved:', data);
+      setScope(data)
+      fetch(`http://localhost:5001/datasets/${datasetId}/scopes`)
+        .then(response => response.json())
+        .then(data => {
+          setScopes(data)
+        });
+      navigate(`/datasets/${datasetId}/setup/${data.name}`);
+    })
+    .catch(error => {
+      console.error('Error saving scope:', error);
+    });
+  }, [datasetId, cluster, umap, navigate, setScope, scope]);
 
   if (!dataset) return <div>Loading...</div>;
-
-  const datasetUrl = "/datasets/" + datasetId
 
   return (
     <div className="dataset--setup">
@@ -187,13 +255,22 @@ function DatasetSetup() {
             </select>
           </div>
         </div>
-        <div className="dataset--setup-saves">
-            <div className="dataset--setup-saves-item">
-              scope-001
-            </div>
-            <div className="dataset--setup-saves-item">
-              scope-002
-            </div>
+        <div className="dataset--setup-scopes">
+            {scopes && scopes.map((s, index) => {
+              const cl = clusters.find(c => c.cluster_name == s.cluster) || {}
+              return (
+              <div 
+                key={index} 
+                className={ "dataset--setup-scopes-item" + (s.name == scope?.name ? " active" : "") }
+                onClick={() => navigate(`/datasets/${datasetId}/setup/${s.name}`)}
+                >
+                <span>{s.name}</span>
+                <span>{s.label} </span>
+                <span>{s.description}</span>
+                <img src={cl.url} alt={cl.name} /> 
+              </div>
+            )})}
+            
         </div>
       </div>
 
@@ -204,7 +281,7 @@ function DatasetSetup() {
               <div>
                 Embedding on <b>{textColumn}</b>
               </div>
-            {!embeddingsJob || embeddingsJob?.status == "completed" || clusterJob.status == "error" ? 
+            {!embeddingsJob  ? 
             <form onSubmit={handleNewEmbedding}>
               <div>
                 <label htmlFor="modelName">Model:</label>
@@ -216,7 +293,7 @@ function DatasetSetup() {
               </div> 
               <button type="submit">New Embedding</button>
             </form> : 
-            <JobProgress job={embeddingsJob} /> }
+            <JobProgress job={embeddingsJob} clearJob={()=> setEmbeddingsJob(null)} /> }
             <div className="dataset--setup-embeddings-list">
               {embeddings.map((emb, index) => (
                 <div key={index}>
@@ -237,7 +314,7 @@ function DatasetSetup() {
           <div className="dataset--setup-umaps">
             <h3>2. UMAP </h3>
             <div className="dataset--umaps-new">
-              {!umapJob || umapJob.status == "completed" || clusterJob.status == "error" ? 
+              {!umapJob  ? 
               <form onSubmit={handleNewUmap}>
                 <label>
                   Neighbors:
@@ -249,7 +326,7 @@ function DatasetSetup() {
                 </label>
                 <button type="submit">New UMAP</button>
               </form>
-              : <JobProgress job={umapJob} /> }
+              : <JobProgress job={umapJob} clearJob={()=>setUmapJob(null)}/> }
           </div>
             <div className="dataset--setup-umaps-list">
               {umaps.filter(d => d.embeddings == embedding).map((um, index) => (
@@ -271,7 +348,7 @@ function DatasetSetup() {
           <div className="dataset--setup-clusters">
             <h3>3. Clusters</h3>
             <div className="dataset--clusters-new">
-              {!clusterJob || clusterJob.status == "completed" || clusterJob.status == "error" ? 
+              {!clusterJob ? 
               <form onSubmit={(e) => handleNewCluster(e, umap)}>
                 <label>
                   Samples:
@@ -282,7 +359,7 @@ function DatasetSetup() {
                   <input type="number" name="min_samples" defaultValue="5" />
                 </label>
                 <button type="submit">New Clusters</button>
-              </form> : <JobProgress job={clusterJob} /> }
+              </form> : <JobProgress job={clusterJob} clearJob={()=>setClusterJob(null)} /> }
             </div>
             <div className="dataset--setup-clusters-list">
               {umap && clusters.filter(d => d.umap_name == umap.name).map((cl, index) => (
@@ -306,11 +383,24 @@ function DatasetSetup() {
               ))}
             </div>
           </div>
+          {/* AUTO LABEL CLUSTERS */}
           <div className="dataset--setup-slides">
-            <h3>4. Slides</h3>
+            <h3>4. Auto-Label Clusters</h3>
+            {cluster && clusterLabels ? 
+            <div className="dataset--slides-new">
+              {cluster.cluster_name}
+              {/* TODO iterate over chat models  */}
+              <button>Auto Label</button>
+              <div className="dataset--setup-labels-list">
+                <DataTable data={clusterLabels.map(d => ({label: d.label, items: d.indices.length}))} />
+              </div>
+            </div> : null}
           </div>
         </div>
+
+        {/* RIGHT COLUMN */}
         <div className="dataset--setup-right-column">
+
           <div className="dataset--setup-save-box">
             <div className="dataset--setup-save-box-title">
               {embedding}
@@ -327,8 +417,24 @@ function DatasetSetup() {
 
             </div>
             <div className="dataset--setup-save-box-nav">
-              <button>Save scope-001</button>
-              <a href="">Explore scope-001</a>
+              <form onSubmit={handleSaveScope}>
+                <label>
+                  Label:
+                  <input type="text" name="label" defaultValue={scope ? scope.label: ""}/>
+                </label>
+                <label>
+                  Description:
+                  <input type="text" name="description" defaultValue={scope ? scope.description: ""}/>
+                </label>
+                <input type="hidden" name="action" value="" />
+                {scope ? 
+                  <button type="submit" disabled={cluster ? false : true } onClick={() => { 
+                    document.querySelector('input[name="action"]').value = 'save'; 
+                  }}>Save scope</button> : null }
+                  <button type="submit" disabled={cluster ? false : true } onClick={() => { 
+                    document.querySelector('input[name="action"]').value = 'new'; 
+                  }}>New scope</button>
+              </form>
             </div>
 
 

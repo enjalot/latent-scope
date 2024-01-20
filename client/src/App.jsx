@@ -15,6 +15,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/datasets/:dataset" element={<DatasetDetail />} />
         <Route path="/datasets/:dataset/setup" element={<DatasetSetup/>} />
+        <Route path="/datasets/:dataset/setup/:scope" element={<DatasetSetup/>} />
         <Route path="/datasets/:dataset/tags/:tag" element={<TagDetail />} />
       </Routes>
       </div>

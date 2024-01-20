@@ -66,6 +66,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
     output_file = f"../data/{dataset_name}/clusters/{cluster_name}.parquet"
     df.to_parquet(output_file)
     print(df.head())
+    print("wrote", output_file)
 
     # generate a scatterplot of the umap embeddings and save it to a file
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -92,7 +93,21 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
         }, f, indent=2)
     f.close()
 
-    print("wrote", output_file)
+    # create the data structure for labeling clusters
+    # get the indices of each item in a cluster
+    cluster_indices = df.groupby('cluster').groups
+
+    # iterate over the clusters and create a row for each in a new dataframe with a label, description and array of indicies
+    slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
+    for cluster, indices in cluster_indices.items():
+        label = f"Cluster {cluster}"
+        description = f"This is cluster {cluster} with {len(indices)} items."
+        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)]})
+        slides_df = pd.concat([slides_df, new_row], ignore_index=True)
+
+    # write the df to parquet
+    slides_df.to_parquet(f"../data/{dataset_name}/clusters/{cluster_name}-labels.parquet")
+    print("done")
 
 if __name__ == "__main__":
     dataset_name = sys.argv[1]

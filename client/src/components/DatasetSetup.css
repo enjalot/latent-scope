@@ -19,8 +19,26 @@
   width: 640px;
   max-width: 640px;
 }
-.dataset--setup-saves {
+.dataset--setup-scopes {
   max-width: calc(100% - 640px);
+  display: flex;
+  flex-direction: rows;
+}
+.dataset--setup-scopes-item {
+  max-width: 120px;
+  cursor: pointer;
+  border: 1px solid gray;
+  margin: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+.dataset--setup-scopes-item img {
+  width: 120px;
+  height: 120px;
+}
+.dataset--setup-scopes-item.active {
+  border: 3px solid orange;
 }
 
 
@@ -93,6 +111,11 @@
 .dataset--setup-umaps-item img, .dataset--setup-clusters-item img {
   width: 120px;
   height: 120px;
+}
+
+.dataset--setup-labels-list {
+  max-height: 400px;
+  overflow-y: scroll;
 }
 
 

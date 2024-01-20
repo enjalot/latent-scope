@@ -6,9 +6,10 @@ import './JobProgress.css';
 JobProgress.propTypes = {
   job: PropTypes.object,
   onlyLast: PropTypes.bool,
+  clearJob: PropTypes.func.isRequired,
 };
 
-function JobProgress({job, onlyLast}) {
+function JobProgress({job, onlyLast, clearJob}) {
   const preRef = useRef(null);
 
   useEffect(() => {
@@ -28,6 +29,8 @@ function JobProgress({job, onlyLast}) {
         job.progress.join("\n") 
       } 
       </pre>
+      {job.status == "completed" ? <button onClick={clearJob}>👍</button> : null }
+      {job.status == "error" ? <button onClick={clearJob}>🤬</button> : null }
       </div>
       : <></> }
     </>

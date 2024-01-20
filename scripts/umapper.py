@@ -76,6 +76,7 @@ def umapper(dataset_name, model_unsanitized, neighbors=25, min_dist=0.075):
             "neighbors": neighbors, 
             "min_dist": min_dist}, f, indent=2)
     f.close()
+    print("done")
     
 
 

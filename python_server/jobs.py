@@ -91,16 +91,6 @@ def run_embed():
 
     job_id = str(uuid.uuid4())
     command = f'python ../scripts/embed.py {dataset} {text_column} {model}'
-    # if provider == "transformers":
-    #     command = f'python ../scripts/embed-local.py {dataset} {text_column} {model}'
-    # elif provider == "openai":
-    #     command = f'python ../scripts/embed-openai.py {dataset} {text_column}'
-    # elif provider == "cohereai":
-    #     command = f'python ../scripts/embed-cohereai.py {dataset} {text_column} {model}'
-    # elif provider == "togetherai":
-    #     command = f'python ../scripts/embed-togetherai.py {dataset} {text_column} {model}'
-    # elif provider == "voyageai":
-    #     command = f'python ../scripts/embed-voyageai.py {dataset} {text_column} {model}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -138,7 +128,7 @@ def delete_umap():
     command = f'rm ../data/{dataset}/umaps/{umap_name}.parquet; rm ../data/{dataset}/umaps/{umap_name}.json; rm ../data/{dataset}/umaps/{umap_name}.png'
     # Create the rm commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
-        command += f'; rm ../data/{dataset}/clusters/{cluster}.parquet; rm ../data/{dataset}/clusters/{cluster}.json; rm ../data/{dataset}/clusters/{cluster}.png'
+        command += f'; rm ../data/{dataset}/clusters/{cluster}.parquet; rm ../data/{dataset}/clusters/{cluster}.json; rm ../data/{dataset}/clusters/{cluster}.png rm ../data/{dataset}/clusters/{cluster}-labels.parquet'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -160,7 +150,7 @@ def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_name = request.args.get('cluster_name')
     job_id = str(uuid.uuid4())
-    command = f'rm ../data/{dataset}/clusters/{cluster_name}.parquet; rm ../data/{dataset}/clusters/{cluster_name}.json; rm ../data/{dataset}/clusters/{cluster_name}.png'
+    command = f'rm ../data/{dataset}/clusters/{cluster_name}.parquet; rm ../data/{dataset}/clusters/{cluster_name}.json; rm ../data/{dataset}/clusters/{cluster_name}.png rm ../data/{dataset}/clusters/{cluster_name}-labels.parquet'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

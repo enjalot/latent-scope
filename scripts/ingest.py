@@ -29,7 +29,7 @@ def csv_to_parquet(dataset_name):
     os.makedirs(f"../data/{dataset_name}/embeddings", exist_ok=True)
     os.makedirs(f"../data/{dataset_name}/umaps", exist_ok=True)
     os.makedirs(f"../data/{dataset_name}/clusters", exist_ok=True)
-    os.makedirs(f"../data/{dataset_name}/slides", exist_ok=True)
+    os.makedirs(f"../data/{dataset_name}/scopes", exist_ok=True)
 
 
 if __name__ == "__main__":

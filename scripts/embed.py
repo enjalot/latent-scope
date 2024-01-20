@@ -40,6 +40,7 @@ def embedder(dataset_name, text_column="text", model_id="transformers-BAAI___bge
         os.makedirs(f'../data/{dataset_name}/embeddings')
 
     np.save(f'../data/{dataset_name}/embeddings/{model_id}.npy', np_embeds)
+    print("done")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Embed a dataset')

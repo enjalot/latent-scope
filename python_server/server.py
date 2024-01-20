@@ -1,5 +1,5 @@
+import re
 import os
-import sys
 import json
 import torch
 import numpy as np
@@ -77,11 +77,11 @@ def scan_for_json_files(directory_path):
     print("files", files)
     print("json", json_files)
 
-    json_contents = {}
+    json_contents = []
     for file in json_files:
         try:
             with open(os.path.join(directory_path, file), 'r', encoding='utf-8') as json_file:
-                json_contents[file] = json.load(json_file)
+                json_contents.append(json.load(json_file))
         except json.JSONDecodeError as err:
             print('Error parsing JSON string:', err)
     return jsonify(json_contents)
@@ -135,33 +135,55 @@ def get_dataset_clusters(dataset):
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
-@app.route('/datasets/<dataset>/umaps/activate', methods=['GET'])
-def set_active_umap(dataset):
-    umap = request.args.get('umap')
-    file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
-        json_contents = json.load(json_file)
-    json_contents["active_umap"] = umap
-    # write the file back out
-    with open(file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(json_contents, json_file)
-    return jsonify(json_contents)
+@app.route('/datasets/<dataset>/clusters/<cluster>/labels', methods=['GET'])
+def get_dataset_cluster_labels(dataset, cluster):
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters", cluster + "-labels.parquet")
+    df = pd.read_parquet(file_path)
+    return df.to_json(orient="records")
 
-@app.route('/datasets/<dataset>/embeddings/activate', methods=['GET'])
-def set_active_embeddings(dataset):
-    model = request.args.get('model')
-    # TODO: unsanitize the model name with util function
-    model = model.replace("___", "/")
-    model = model.replace("_", "/")
-    file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
-        json_contents = json.load(json_file)
-    json_contents["active_embeddings"] = model
-    # write the file back out
-    with open(file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(json_contents, json_file)
-    return jsonify(json_contents)
+def get_next_scopes_number(dataset):
+    # figure out the latest scope number
+    scopes_files = [f for f in os.listdir(f"../data/{dataset}/scopes") if re.match(r"scopes-\d+\.json", f)]
+    if len(scopes_files) > 0:
+        last_scopes = sorted(scopes_files)[-1]
+        last_scopes_number = int(last_scopes.split("-")[1].split(".")[0])
+        next_scopes_number = last_scopes_number + 1
+    else:
+        next_scopes_number = 1
+    return next_scopes_number
 
+@app.route('/datasets/<dataset>/scopes', methods=['GET'])
+def get_dataset_scopes(dataset):
+    directory_path = os.path.join(os.getcwd(), '../data/', dataset, "scopes")
+    print("dataset", dataset, directory_path)
+    return scan_for_json_files(directory_path)
+
+@app.route('/datasets/<dataset>/scopes/save', methods=['POST'])
+def save_dataset_scope(dataset):
+    if not request.json:
+        return jsonify({"error": "Invalid data format, JSON expected"}), 400
+    name = request.json.get('name')
+    umap = request.json.get('umap')
+    cluster = request.json.get('cluster')
+    label = request.json.get('label')
+    description = request.json.get('description')
+    scope = {
+        "umap": umap,
+        "cluster": cluster,
+        "label": label,
+        "description": description
+    }
+    print("NAME", name)
+    if not name:
+        next_scopes_number = get_next_scopes_number(dataset)
+        # make the umap name from the number, zero padded to 3 digits
+        name = f"scopes-{next_scopes_number:03d}"
+    scope["name"] = name
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "scopes", name + ".json")
+    print("FILE PATH", file_path)
+    with open(file_path, 'w') as f:
+        json.dump(scope, f, indent=2)
+    return jsonify(scope)
 
 """
 Returns nearest neighbors for a given query string
