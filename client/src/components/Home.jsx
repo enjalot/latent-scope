@@ -98,7 +98,7 @@ function Home() {
       <ul>
         {datasets.map(dataset => (
           <li key={dataset.id}>
-            <Link to={`/datasets/${dataset.name}`}>{dataset.name}</Link>
+            <Link to={`/datasets/${dataset.name}/setup`}>{dataset.name}</Link>
           </li>
         ))}
       </ul>

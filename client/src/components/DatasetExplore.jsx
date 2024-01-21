@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 
-import './DatasetDetail.css';
+import './DatasetExplore.css';
 import DataTable from './DataTable';
 import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
@@ -17,27 +17,15 @@ const scopeHeight = 640
 
 function DatasetDetail() {
   const [dataset, setDataset] = useState(null);
-  const { dataset: datasetId } = useParams(); 
+  const { dataset: datasetId, scope: scopeId } = useParams(); 
 
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
       .then(response => response.json())
       .then(data => {
-        console.log("dataset meta", data)
         setDataset(data)
       });
   }, [datasetId]);
-
-  const [umaps, setUmaps] = useState([]);
-  useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
-      .then(response => response.json())
-      .then(data => {
-        console.log("UMAPS fetch", data)
-        const rows = Object.keys(data).map(umap => data[umap])
-        setUmaps(rows)
-      })
-  }, [datasetId])
 
   const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
@@ -49,55 +37,86 @@ function DatasetDetail() {
       });
   }, [datasetId]);
 
+  const [umaps, setUmaps] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
+      .then(response => response.json())
+      .then(data => {
+        setUmaps(data)
+      })
+  }, [datasetId])
+
+  const [clusters, setClusters] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/clusters`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("clusters", data)
+        setClusters(data)
+      });
+  }, [datasetId]);
+
+  // ====================================================================================================
+  // scopes
+  // the data for the page all depends on the scope
+  // it sets the embedding, umap, and cluster
+  // ====================================================================================================
+  const[scopes, setScopes] = useState([]);
+
+  const[ scope, setScope] = useState(null);
+  const [embedding, setEmbedding] = useState(null);
+  const [umap, setUmap] = useState(null);
+  // const [cluster, setCluster] = useState(null);
+
+  useEffect(() => {
+    fetch(`http://localhost:5001/datasets/${datasetId}/scopes`)
+      .then(response => response.json())
+      .then(data => {
+        setScopes(data.sort((a,b) => a.name.localeCompare(b.name)))
+      });
+  }, [datasetId, setScopes]);
+
+  useEffect(() => {
+    if(scopeId && scopes.length) {
+      const scope = scopes.find(d => d.name == scopeId)
+      if(scope) {
+        setScope(scope)
+        const selectedUmap = umaps.find(u => u.name === scope.umap);
+        // const selectedCluster = clusters.find(c => c.cluster_name === scope.cluster);
+        setEmbedding(scope.embeddings)
+        setUmap(selectedUmap);
+        // setCluster(selectedCluster);
+      }
+    } else {
+      setScope(null)
+    }
+  }, [scopeId, scopes, umaps, clusters, setScope, setUmap])
+
 
   // The search model is the embeddings model that we pass to the nearest neighbor query
   // we want to enable searching with any embedding set
   const [searchModel, setSearchModel] = useState(embeddings[0])
-  const [activeUmap, setActiveUmap] = useState(null)
+  // const [activeUmap, setActiveUmap] = useState(null)
   const handleModelSelect = (model) => {
     console.log("selected", model)
     setSearchModel(model)
   }
-  useEffect(() => {
-    if(dataset?.active_umap && umaps?.length) {
-      console.log("UMAPS", umaps, dataset?.active_umap)
-      const au = umaps.find(umap => umap.name === dataset.active_umap);
-      if(au) {
-        setActiveUmap(au)
-        const model = au.embeddings.replace("___", "/")
-        setSearchModel(model);
-      }
-    }
-  }, [dataset, umaps])
 
+  // ====================================================================================================
   // Points for rendering the scatterplot
+  // ====================================================================================================
   const [points, setPoints] = useState([]);
   const [loadingPoints, setLoadingPoints] = useState(false);
   useEffect(() => {
-    if(dataset?.active_umap) {
-      fetch(`http://localhost:5001/files/${dataset.id}/umaps/${dataset.active_umap}.parquet`)
-        .then(response => response.arrayBuffer())
-        .then(async buffer => {
-          setLoadingPoints(true)
-          const db = await instantiate()
-          const uint8 = new Uint8Array(buffer)
-          const name = dataset.active_umap
-          await db.registerFileBuffer(name, uint8);
-          const conn = await db.connect();
-          await conn.query(
-            `CREATE VIEW '${name}' AS SELECT * FROM parquet_scan('${name}')`
-          );
-          const results = await conn.query(`SELECT * FROM '${name}'`);
-          // await conn.close();
-          // let rows = results.toArray().map(Object.fromEntries);
-          // rows.columns = results.schema.fields.map((d) => d.name);
-          let rows = results.toArray().map(d => [d.x, d.y])
-          setPoints(rows);
-          setLoadingPoints(false)
+    if(umap) {
+      fetch(`http://localhost:5001/datasets/${dataset.id}/umaps/${umap.name}/points`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("umap points", data)
+          setPoints(data.map(d => [d.x, d.y]))
         })
-        .catch(err => console.log(err))
     }
-  }, [dataset]); 
+  }, [dataset, umap])
    
 
   const hydrateIndices = useCallback((indices, setter, distances = []) => {
@@ -122,7 +141,9 @@ function DatasetDetail() {
       })
   }, [dataset, datasetId])
 
+  // ====================================================================================================
   // Tags
+  // ====================================================================================================
   const [tagset, setTagset] = useState({});
   useEffect(() => {
     fetch(`http://localhost:5001/tags?dataset=${datasetId}`)
@@ -203,7 +224,9 @@ function DatasetDetail() {
     setSearchAnnotations(annots)
   }, [searchIndices, points])
 
+  // ====================================================================================================
   // Scatterplot related logic
+  // ====================================================================================================
   // this is a reference to the regl scatterplot instance
   // so we can do stuff like clear selections without re-rendering
   const [scatter, setScatter] = useState({})
@@ -213,12 +236,9 @@ function DatasetDetail() {
     setXDomain(xDomain);
     setYDomain(yDomain);
   })
-  
-   
   // Selection via Scatterplot
   // indices of items selected by the scatter plot
   const [selectedIndices, setSelectedIndices] = useState([]);
-
   const [selected, setSelected] = useState([]);
   useEffect(() => {
     hydrateIndices(selectedIndices, setSelected)
@@ -230,13 +250,12 @@ function DatasetDetail() {
     // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
     // scatter?.zoomToPoints(indices, { transition: true })
   })
-
-  // If only one item is selected, do a NN search for it
-  useEffect(() => {
-    if(selected.length === 1){
-      searchQuery(selected[0].text)
-    }
-  }, [selected])
+  // // If only one item is selected, do a NN search for it
+  // useEffect(() => {
+  //   if(selected.length === 1){
+  //     searchQuery(selected[0].text)
+  //   }
+  // }, [selected])
 
   // Hover via scatterplot or tables
   // index of item being hovered over
@@ -250,7 +269,6 @@ function DatasetDetail() {
     }
   }, [hoveredIndex, setHovered])
 
-
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
     if(hoveredIndex !== null && hoveredIndex !== undefined) {
@@ -259,7 +277,6 @@ function DatasetDetail() {
       setHoverAnnotations([])
     }
   }, [hoveredIndex, points])
-
 
   // Tabs
   const tabs = [
@@ -270,12 +287,27 @@ function DatasetDetail() {
   ]
   const [activeTab, setActiveTab] = useState(0)
 
-  // Slides
+  // ====================================================================================================
+  // Clusters
+  // ====================================================================================================
   // indices of items in a chosen slide
   const [slideIndices, setSlideIndices] = useState([]);
   const [slide, setSlide] = useState(null);
   const [slideHover, setSlideHover] = useState(null);
   const [slideRows, setSlideRows] = useState([]);
+  const [clusterLabels, setClusterLabels] = useState([]);
+  useEffect(() => {
+    if(scope) {
+      fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${scope.cluster}/labels`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("cluster labels", data)
+          setClusterLabels(data)
+        });
+      } else {
+        setClusterLabels([])
+      }
+  }, [scope, setClusterLabels, datasetId])
   useEffect(() => {
     if(slide) {
       fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(slide.indices)}`)
@@ -344,12 +376,13 @@ function DatasetDetail() {
   if (!dataset) return <div>Loading...</div>;
 
   return (
-    <div className="dataset--details">
+    <div className="dataset--explore">
       <h2>Dataset: {datasetId}</h2>
-      <div className="dataset--details-summary">
+      <div className="dataset--explore-summary">
 
-        [ {dataset.length} rows ][ {dataset.active_umap} ({activeUmap?.embeddings}) ] [ {dataset.active_slides} ]
-        [ <a href={`/datasets/${datasetId}/setup`}>setup</a> ]
+        [ {dataset.length} rows ]<br/>
+        {scope?.name}: [{embedding}][ {umap?.name} ] [ {scope?.cluster} ]
+        [ <a href={`/datasets/${datasetId}/setup/${scopeId}`}>setup</a> ]
         <br/>
 
         Tags: {tags.map(t => {
@@ -570,6 +603,7 @@ function DatasetDetail() {
 
       <SlideBar 
         dataset={dataset} 
+        slides={clusterLabels}
         selected={slide}
         onClick={handleSlideClick} 
         onHover={handleSlideHover}

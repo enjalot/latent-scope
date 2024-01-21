@@ -5,22 +5,12 @@ import './SlideBar.css';
 
 SlideBar.propTypes = {
   dataset: PropTypes.object.isRequired,
+  slides: PropTypes.array.isRequired,
   selected: PropTypes.object,
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
-function SlideBar({ dataset, selected, onHover, onClick }) {
-
-  const [slides, setSlides] = useState([]);
-  useEffect(() => {
-    if(dataset?.id)
-      fetch(`http://localhost:5001/slides?dataset=${dataset.id}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("SLIDES", data)
-          setSlides(data)
-        }).catch(e => console.log(e));
-  }, [dataset])
+function SlideBar({ dataset, slides, selected, onHover, onClick }) {
 
   return (
     <div className="slide-bar">

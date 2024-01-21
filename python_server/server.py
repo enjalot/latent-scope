@@ -129,6 +129,12 @@ def get_dataset_umaps(dataset):
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
+@app.route('/datasets/<dataset>/umaps/<umap>/points', methods=['GET'])
+def get_dataset_umap_points(dataset, umap):
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "umaps", umap + ".parquet")
+    df = pd.read_parquet(file_path)
+    return df.to_json(orient="records")
+
 @app.route('/datasets/<dataset>/clusters', methods=['GET'])
 def get_dataset_clusters(dataset):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters")
@@ -163,24 +169,24 @@ def save_dataset_scope(dataset):
     if not request.json:
         return jsonify({"error": "Invalid data format, JSON expected"}), 400
     name = request.json.get('name')
+    embeddings = request.json.get('embeddings')
     umap = request.json.get('umap')
     cluster = request.json.get('cluster')
     label = request.json.get('label')
     description = request.json.get('description')
     scope = {
+        "embeddings": embeddings,
         "umap": umap,
         "cluster": cluster,
         "label": label,
         "description": description
     }
-    print("NAME", name)
     if not name:
         next_scopes_number = get_next_scopes_number(dataset)
         # make the umap name from the number, zero padded to 3 digits
         name = f"scopes-{next_scopes_number:03d}"
     scope["name"] = name
     file_path = os.path.join(os.getcwd(), '../data/', dataset, "scopes", name + ".json")
-    print("FILE PATH", file_path)
     with open(file_path, 'w') as f:
         json.dump(scope, f, indent=2)
     return jsonify(scope)

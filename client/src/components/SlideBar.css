@@ -1,7 +1,7 @@
 .slide-bar {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  /* justify-content: space-between; */
   /* border: 1px solid lightgray; */
   /* border-radius: 5px; */
   /* padding: 5px; */

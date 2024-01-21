@@ -11,6 +11,7 @@ import { useStartJobPolling } from './JobRun';
 function DatasetSetup() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
+
   // Get the dataset meta data
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
@@ -35,7 +36,6 @@ function DatasetSetup() {
       });
   }, [datasetId])
  
-
   // get the list of available models
   const [models, setModels] = useState([]);
   useEffect(() => {
@@ -47,8 +47,9 @@ function DatasetSetup() {
       });
   }, []);
 
-  // setup the embeddings data
-  // The job allows us to create a new embedding and watch its progress
+  // ====================================================================================================
+  // embeddings 
+  // ====================================================================================================
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, 'http://localhost:5001/jobs/embed');
   // get the list of available embeddings, and refresh when a new one is created
@@ -79,7 +80,9 @@ function DatasetSetup() {
     startEmbeddingsJob(job)
   }
 
+  // ====================================================================================================
   // umaps
+  // ====================================================================================================
   const [umapJob, setUmapJob] = useState(null);
   const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/umap');
   const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/delete/umap');
@@ -114,7 +117,9 @@ function DatasetSetup() {
     startUmapJob({embeddings: embedding, neighbors, min_dist})
   }, [startUmapJob, embedding])
 
+  // ====================================================================================================
   // clusters
+  // ====================================================================================================
   const [clusterJob, setClusterJob] = useState(null);
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/cluster');
   const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/delete/cluster');
@@ -166,16 +171,16 @@ function DatasetSetup() {
     startClusterJob({umap_name: umap.name, samples, min_samples})
   }, [startClusterJob, umap])
 
-
-  // Get the available scopes
+  // ====================================================================================================
+  // scopes
+  // ====================================================================================================
   const[scopes, setScopes] = useState([]);
   const[scope, setScope] = useState(null);
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/scopes`)
       .then(response => response.json())
       .then(data => {
-        console.log("got scope data", data)
-        setScopes(data)
+        setScopes(data.sort((a,b) => a.name.localeCompare(b.name)))
       });
   }, [datasetId, setScopes]);
 
@@ -202,6 +207,7 @@ function DatasetSetup() {
     const form = event.target;
     const data = new FormData(form);
     const payload = {
+      embeddings: embedding,
       umap: umap.name,
       cluster: cluster.cluster_name,
       label: data.get('label'),
@@ -235,7 +241,7 @@ function DatasetSetup() {
     .catch(error => {
       console.error('Error saving scope:', error);
     });
-  }, [datasetId, cluster, umap, navigate, setScope, scope]);
+  }, [datasetId, cluster, umap, navigate, setScope, scope, embedding]);
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -435,6 +441,7 @@ function DatasetSetup() {
                     document.querySelector('input[name="action"]').value = 'new'; 
                   }}>New scope</button>
               </form>
+              { scope ? <a href={`/datasets/${datasetId}/explore/${scope.name}`}>Explore {scope.label} ({scope.name})</a> : null }
             </div>
 
 
