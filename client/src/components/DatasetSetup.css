@@ -52,7 +52,8 @@
   max-width: 640px;
 }
 .dataset--setup-right-column {
-  width: calc(100% - 640px - 64px);
+  /* width: calc(100% - 640px - 64px); */
+  width: 640px;
   /* flex-grow: 1; */
 }
 
