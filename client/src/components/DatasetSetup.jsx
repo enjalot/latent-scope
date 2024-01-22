@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import './DatasetSetup.css';
 // import DatasetUmaps from './DatasetUmaps';
 import DataTable from './DataTable';
+import Scatter from './Scatter';
 import JobProgress from './JobProgress';
 
 import { useStartJobPolling } from './JobRun';
@@ -11,6 +12,9 @@ import { useStartJobPolling } from './JobRun';
 function DatasetSetup() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
+
+  const scopeWidth = 640
+  const scopeHeight = 640
 
   // Get the dataset meta data
   useEffect(() => {
@@ -63,9 +67,14 @@ function DatasetSetup() {
   }, [datasetId, embeddingsJob]);
   const [embedding, setEmbedding] = useState(embeddings[0]);
   useEffect(() => {
-    if(embeddings.length)
-      setEmbedding(embeddings[0])
-  }, [embeddings]) 
+    if(embeddings.length){
+      if(embedding) {
+        setEmbedding(embedding)
+      } else {
+        setEmbedding(embeddings[0])
+      }
+    }
+  }, [embeddings, embedding]) 
 
   const handleNewEmbedding = e => {
     e.preventDefault()
@@ -116,6 +125,23 @@ function DatasetSetup() {
     const min_dist = data.get('min_dist')
     startUmapJob({embeddings: embedding, neighbors, min_dist})
   }, [startUmapJob, embedding])
+
+  // ====================================================================================================
+  // Points for rendering the scatterplot
+  // ====================================================================================================
+  const [points, setPoints] = useState([]);
+  // const [loadingPoints, setLoadingPoints] = useState(false);
+  useEffect(() => {
+    if(umap) {
+      fetch(`http://localhost:5001/datasets/${dataset.id}/umaps/${umap.name}/points`)
+        .then(response => response.json())
+        .then(data => {
+          // console.log("umap points", data)
+          setPoints(data.map(d => [d.x, d.y]))
+        })
+    }
+  }, [dataset, umap])
+   
 
   // ====================================================================================================
   // clusters
@@ -189,6 +215,7 @@ function DatasetSetup() {
       const scope = scopes.find(d => d.name == scopeId)
       if(scope) {
         setScope(scope)
+        setEmbedding(scope.embeddings)
         const selectedUmap = umaps.find(u => u.name === scope.umap);
         const selectedCluster = clusters.find(c => c.cluster_name === scope.cluster);
         setUmap(selectedUmap);
@@ -244,6 +271,7 @@ function DatasetSetup() {
   }, [datasetId, cluster, umap, navigate, setScope, scope, embedding]);
 
   if (!dataset) return <div>Loading...</div>;
+
 
   return (
     <div className="dataset--setup">
@@ -447,6 +475,15 @@ function DatasetSetup() {
 
           </div>
           <div className="dataset--setup-umap">
+            <Scatter 
+              points={points} 
+              width={scopeWidth} 
+              height={scopeHeight}
+              // onScatter={setScatter}
+              // onView={handleView} 
+              // onSelect={handleSelected}
+              // onHover={handleHover}
+              />
 
           </div>
         </div>

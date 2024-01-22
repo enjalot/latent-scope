@@ -36,30 +36,30 @@ const ScatterPlot = ({
 
     scatterplot.draw(points);
 
-    onView(xScale, yScale)
+    onView && onView(xScale, yScale)
     scatterplot.subscribe(
       "view",
       ({ camera, view, xScale: xs, yScale: ys }) => {
         xDomain.current = xs.domain();
         yDomain.current = ys.domain();
-        onView(xDomain.current, yDomain.current)
+        onView && onView(xDomain.current, yDomain.current)
      }
     );
     scatterplot.subscribe("select", ({ points }) => {
-      onSelect(points)
+      onSelect && onSelect(points)
     });
     scatterplot.subscribe("deselect", () => {
-      onSelect([])
+      onSelect && onSelect([])
     });
     scatterplot.subscribe("pointOver", (pointIndex) => {
-      onHover(pointIndex)
+      onHover && onHover(pointIndex)
     });
     scatterplot.subscribe("pointOut", () => {
-      onHover(null)
+      onHover && onHover(null)
     });
 
     // TODO: this may not be proper React
-    onScatter(scatterplot)
+    onScatter && onScatter(scatterplot)
 
     return () => {
       scatterplot.destroy();
