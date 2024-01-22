@@ -8,9 +8,9 @@ from .providers.voyageai import VoyageAIProvider
 
 models_path = os.path.join(os.path.dirname(__file__), "models.json")
 with open(models_path, "r") as f:
-    models = json.load(f)
+    model_list = json.load(f)
 
-model_dict = {model['id']: model for model in models}
+model_dict = {model['id']: model for model in model_list}
 
 
 def get_model(id):

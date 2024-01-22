@@ -1,10 +1,8 @@
 import re
 import os
 import json
-import torch
 import numpy as np
 import pandas as pd
-from transformers import AutoTokenizer, AutoModel
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -13,15 +11,15 @@ app = Flask(__name__)
 
 CORS(app)
 
-# in memory cache of dataset metadata, embeddings, models and tokenizers
-# only used in nearest neighbor search
-DATASETS = {}
 # in memory cache of dataframes loaded for each dataset
 # used in returning rows for a given index (indexed, get_tags)
 DATAFRAMES = {}
 
 from jobs import jobs_bp
 app.register_blueprint(jobs_bp, url_prefix='/jobs') 
+
+from search import search_bp
+app.register_blueprint(search_bp, url_prefix='/search') 
 
 
 # ===========================================================
@@ -191,67 +189,6 @@ def save_dataset_scope(dataset):
         json.dump(scope, f, indent=2)
     return jsonify(scope)
 
-"""
-Returns nearest neighbors for a given query string
-Hard coded to 150 results currently
-"""
-@app.route('/nn', methods=['GET'])
-def nn():
-    dataset = request.args.get('dataset')
-    model_name = request.args.get('model')
-    # TODO: make unsanitize a function in util
-    model_name = model_name.replace("___", "/") # to be sure
-    # TODO make sanitize a function in util
-    sanitized_model_name = model_name.replace("/", "___")
-    # meta = json.load(open(os.path.join("../data", dataset, "meta.json")))
-    num = 150
-    if dataset not in DATASETS or DATASETS[dataset]["active_embeddings"] != model_name:
-        # load the dataset embeddings
-        embeddings = np.load(os.path.join("../data", dataset, "embeddings", sanitized_model_name + ".npy"))
-        # print("embeddings", embeddings.shape)
-        # Load model from HuggingFace Hub
-        print("loading model", model_name)
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
-        model.eval()
-        # find nearest neighbors
-        print("fitting embeddings")
-        from sklearn.neighbors import NearestNeighbors
-        nne = NearestNeighbors(n_neighbors=num, metric="cosine")
-        nne.fit(embeddings)
-        DATASETS[dataset] = { "active_embeddings": model_name, "embeddings": embeddings, "model": model, "tokenizer": tokenizer, "nne": nne }
-    else:
-        embeddings = DATASETS[dataset]["embeddings"]
-        model = DATASETS[dataset]["model"]
-        tokenizer = DATASETS[dataset]["tokenizer"]
-        nne = DATASETS[dataset]["nne"]
-    
-    # embed the query string and find the nearest neighbor
-    query = request.args.get('query')
-    print("query", query)
-    encoded_input = tokenizer([query], padding=True, truncation=True, return_tensors='pt')
-    # Compute token embeddings
-    with torch.no_grad():
-        model_output = model(**encoded_input)
-        # Perform pooling. In this case, cls pooling.
-        sentence_embeddings = model_output[0][:, 0]
-        # Normalize embeddings
-        sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
-
-    embedding = sentence_embeddings.numpy()[0]
-    print("embedding", embedding.shape)
-
-    distances, indices = nne.kneighbors([embedding])
-    print("distances", distances)
-    # Filter distances and indices to only elements where distance is less than .4
-    # filtered_indices = indices[0][distances[0] < 0.4]
-    # filtered_distances = distances[0][distances[0] < 0.4]
-    filtered_indices = indices[0]
-    filtered_distances = distances[0]
-    indices = filtered_indices
-    distances = filtered_distances
-        
-    return jsonify(indices=indices.tolist(), distances=distances.tolist())
 
 """
 Given a list of indices (passed as a json array), return the rows from the dataset

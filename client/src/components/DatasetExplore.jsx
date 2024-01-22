@@ -68,6 +68,15 @@ function DatasetDetail() {
   const [umap, setUmap] = useState(null);
   // const [cluster, setCluster] = useState(null);
 
+  // The search model is the embeddings model that we pass to the nearest neighbor query
+  // we want to enable searching with any embedding set
+  const [searchModel, setSearchModel] = useState(embedding)
+  // const [activeUmap, setActiveUmap] = useState(null)
+  const handleModelSelect = (model) => {
+    console.log("selected", model)
+    setSearchModel(model)
+  }
+
   useEffect(() => {
     fetch(`http://localhost:5001/datasets/${datasetId}/scopes`)
       .then(response => response.json())
@@ -84,6 +93,7 @@ function DatasetDetail() {
         const selectedUmap = umaps.find(u => u.name === scope.umap);
         // const selectedCluster = clusters.find(c => c.cluster_name === scope.cluster);
         setEmbedding(scope.embeddings)
+        setSearchModel(scope.embeddings)
         setUmap(selectedUmap);
         // setCluster(selectedCluster);
       }
@@ -93,14 +103,7 @@ function DatasetDetail() {
   }, [scopeId, scopes, umaps, clusters, setScope, setUmap])
 
 
-  // The search model is the embeddings model that we pass to the nearest neighbor query
-  // we want to enable searching with any embedding set
-  const [searchModel, setSearchModel] = useState(embeddings[0])
-  // const [activeUmap, setActiveUmap] = useState(null)
-  const handleModelSelect = (model) => {
-    console.log("selected", model)
-    setSearchModel(model)
-  }
+
 
   // ====================================================================================================
   // Points for rendering the scatterplot
@@ -202,7 +205,7 @@ function DatasetDetail() {
   const [distances, setDistances] = useState([]);
 
   const searchQuery = useCallback((query) => {
-    fetch(`http://localhost:5001/nn?dataset=${datasetId}&query=${query}&model=${searchModel}`)
+    fetch(`http://localhost:5001/search/nn?dataset=${datasetId}&query=${query}&model=${searchModel}`)
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
