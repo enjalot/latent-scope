@@ -150,10 +150,32 @@ def get_dataset_clusters(dataset):
     return scan_for_json_files(directory_path)
 
 @app.route('/datasets/<dataset>/clusters/<cluster>/labels', methods=['GET'])
-def get_dataset_cluster_labels(dataset, cluster):
-    file_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters", cluster + "-labels.parquet")
+def get_dataset_cluster_labels_default(dataset, cluster):
+    file_name = cluster + "-labels.parquet"
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
+
+@app.route('/datasets/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
+def get_dataset_cluster_labels(dataset, cluster, model):
+    file_name = cluster + "-labels-" + model + ".parquet"
+    file_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters", file_name)
+    df = pd.read_parquet(file_path)
+    return df.to_json(orient="records")
+
+@app.route('/datasets/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
+def get_dataset_cluster_labels_available(dataset, cluster):
+    directory_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters")
+    try:
+        files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
+    except OSError as err:
+        print('Unable to scan directory:', err)
+        return jsonify({"error": "Unable to scan directory"}), 500
+
+    pattern = re.compile(r'^' + cluster + '-labels-(.*).parquet$')
+    model_names = [pattern.match(file).group(1) for file in files if pattern.match(file)]
+    return jsonify(model_names)
+
 
 def get_next_scopes_number(dataset):
     # figure out the latest scope number
@@ -180,12 +202,14 @@ def save_dataset_scope(dataset):
     embeddings = request.json.get('embeddings')
     umap = request.json.get('umap')
     cluster = request.json.get('cluster')
+    cluster_labels = request.json.get('cluster_labels')
     label = request.json.get('label')
     description = request.json.get('description')
     scope = {
         "embeddings": embeddings,
         "umap": umap,
         "cluster": cluster,
+        "cluster_labels": cluster_labels,
         "label": label,
         "description": description
     }

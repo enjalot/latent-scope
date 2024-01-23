@@ -146,7 +146,39 @@ function DatasetSetup() {
       setPoints([])
     }
   }, [dataset, umap])
+
+  const hydrateIndices = useCallback((indices, setter, distances = []) => {
+    fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
+      .then(response => response.json())
+      .then(data => {
+        if(!dataset) return;
+        // console.log("neighbors", data)
+        const text_column = dataset.text_column
+        let rows = data.map((row, index) => {
+          return {
+            index: indices[index],
+            ...row
+          }
+        })
+        rows.sort((a, b) => b.score - a.score)
+        setter(rows)
+        // console.log("rows", rows)
+      })
+  }, [dataset, datasetId])
+
    
+  const [selectedIndices, setSelectedIndices] = useState([]);
+  const [selected, setSelected] = useState([]);
+  useEffect(() => {
+    hydrateIndices(selectedIndices, setSelected)
+  }, [selectedIndices, setSelected, hydrateIndices])
+
+  const handleSelected = useCallback((indices) => {
+    setSelectedIndices(indices);
+  }, [setSelectedIndices])
+
+  const [scatter, setScatter] = useState({})
+
 
   // ====================================================================================================
   // clusters
@@ -154,6 +186,10 @@ function DatasetSetup() {
   const [clusterJob, setClusterJob] = useState(null);
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/cluster');
   const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/delete/cluster');
+
+  const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
+  const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, 'http://localhost:5001/jobs/cluster_label');
+
 
   const [clusters, setClusters] = useState([]);
   function fetchClusters(datasetId, callback) {
@@ -183,10 +219,28 @@ function DatasetSetup() {
     }
   }, [clusters, umap]) 
 
+  const [chatModels, setChatModels] = useState([]);
+  useEffect(() => {
+    fetch(`http://localhost:5001/chat_models`)
+      .then(response => response.json())
+      .then(data => {
+        setChatModels(data)
+      }).catch(err => {
+        console.log(err)
+        setChatModels([])
+      })
+  }, []);
+
+  // the models used to label a particular cluster (the ones the user has run)
+  const [clusterLabelModels, setClusterLabelModels] = useState([]);
+  // the currently chosen model used to label the active cluster
+  const [clusterLabelModel, setClusterLabelModel] = useState(null);
+  // the actual labels for the given cluster
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
     if(cluster) {
-      fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${cluster.cluster_name}/labels`)
+      const endpoint = clusterLabelModel ? `labels/${clusterLabelModel}` : 'labels'
+      fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${cluster.cluster_name}/${endpoint}`)
         .then(response => response.json())
         .then(data => {
           setClusterLabels(data)
@@ -197,7 +251,8 @@ function DatasetSetup() {
       } else {
         setClusterLabels([])
       }
-  }, [cluster, setClusterLabels, datasetId])
+  }, [clusterLabelModel, setClusterLabels, datasetId])
+
 
   const handleNewCluster = useCallback((e) => {
     e.preventDefault()
@@ -207,6 +262,17 @@ function DatasetSetup() {
     const min_samples = data.get('min_samples')
     startClusterJob({umap_name: umap.name, samples, min_samples})
   }, [startClusterJob, umap])
+
+  const handleNewLabels= useCallback((e) => {
+    e.preventDefault()
+    const form = e.target
+    const data = new FormData(form)
+    const model = data.get('chatModel')
+    const text_column = textColumn
+    const cluster_name = cluster.cluster_name
+    const context = data.get('context')
+    startClusterLabelsJob({model, cluster: cluster_name, text_column, context})
+  }, [cluster, textColumn, startClusterLabelsJob])
 
   // ====================================================================================================
   // scopes
@@ -235,6 +301,7 @@ function DatasetSetup() {
       const selectedCluster = tclusters.find(c => c.cluster_name === scope.cluster);
       setUmap(selectedUmap);
       setCluster(selectedCluster);
+      setClusterLabelModel(scope.cluster_labels)
     }
     if(scopeId && scopes.length) {
       const scope = scopes.find(d => d.name == scopeId)
@@ -256,6 +323,7 @@ function DatasetSetup() {
       embeddings: embedding,
       umap: umap.name,
       cluster: cluster.cluster_name,
+      cluster_labels: clusterLabelModel,
       label: data.get('label'),
       description: data.get('description')
     };
@@ -287,10 +355,40 @@ function DatasetSetup() {
     .catch(error => {
       console.error('Error saving scope:', error);
     });
-  }, [datasetId, cluster, umap, navigate, setScope, scope, embedding]);
+  }, [datasetId, cluster, clusterLabelModel, umap, navigate, setScope, scope, embedding]);
+
+  // TODO got to be a better way to make sure the cluster label matches the cluster
+  // and is either set by the scope or set when the cluster changes
+  useEffect(() => {
+    console.log("cluster changed, set label models", cluster?.cluster_name)
+    if(cluster) {
+      fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${cluster.cluster_name}/labels_available`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("cluster changed, set label models fetched", cluster.cluster_name, data)
+          setClusterLabelModels(data)
+          console.log("debug", scope, cluster, data.length)
+          if(scope && scope?.cluster == cluster?.cluster_name) {
+            setClusterLabelModel(scope.cluster_labels)
+          } else if(data.length){
+            setClusterLabelModel(data[0])
+          } else if(!data.length){
+              setClusterLabelModel(null)
+          }
+        }).catch(err => {
+          console.log(err)
+          setClusterLabelModels([])
+          setClusterLabelModel(null)
+        })
+    } else {
+      setClusterLabelModels([])
+      setClusterLabelModel(null)
+    }
+  }, [scope, cluster, clusterLabelsJob, setClusterLabelModels, datasetId])
+
+
 
   if (!dataset) return <div>Loading...</div>;
-
 
   return (
     <div className="dataset--setup">
@@ -338,7 +436,7 @@ function DatasetSetup() {
               <div>
                 <label htmlFor="modelName">Model:</label>
                 <select id="modelName" name="modelName" disabled={!!embeddingsJob}>
-                  {models.map((model, index) => (
+                  {models.filter(d => embeddings?.indexOf(d.id) < 0).map((model, index) => (
                     <option key={index} value={model.id}>{model.provider}: {model.name}</option>
                   ))}
                 </select>
@@ -435,15 +533,45 @@ function DatasetSetup() {
             </div>
           </div>
           {/* AUTO LABEL CLUSTERS */}
-          <div className="dataset--setup-slides">
+          <div className="dataset--setup-cluster-labels">
             <h3>4. Auto-Label Clusters</h3>
             {cluster && clusterLabels ? 
-            <div className="dataset--slides-new">
-              {cluster.cluster_name}
-              {/* TODO iterate over chat models  */}
-              <button>Auto Label</button>
-              <div className="dataset--setup-labels-list">
-                <DataTable data={clusterLabels.map(d => ({label: d.label, items: d.indices.length}))} />
+            <div className="dataset--setup-cluster-labels-content">
+              <div className="dataset--slides-new">
+                <p>Automatically create labels for each cluster in 
+                  {cluster.cluster_name}</p>
+                <form onSubmit={handleNewLabels}>
+                  <label>
+                    Chat Models:
+                    <select id="chatModel" name="chatModel" disabled={!!clusterLabelsJob}>
+                      {chatModels.filter(d => clusterLabelModels?.indexOf(d.id) < 0).map((model, index) => (
+                        <option key={index} value={model.id}>{model.provider} - {model.name}</option>
+                      ))}
+                    </select>
+                    <br></br>
+                    <textarea name="context" disabled={!!clusterLabelsJob}></textarea>
+                  </label>
+                  <button type="submit">Auto Label</button>
+                </form>
+                <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} />
+              </div>
+              <div className="dataset--setup-cluster-labels-list">
+                <label>
+                  View Labels:
+                  <select 
+                    name="model" 
+                    value={clusterLabelModel}
+                    onChange={(e) => setClusterLabelModel(e.target.value)}
+                  >
+                    <option value="">Default labels</option>
+                    {clusterLabelModels.map((model, index) => (
+                      <option key={index} value={model}>{model}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="dataset--setup-labels-list">
+                  <DataTable data={clusterLabels.map((d,i) => ({cluster: i, label: d.label, items: d.indices.length}))} />
+                </div>
               </div>
             </div> : null}
           </div>
@@ -454,7 +582,8 @@ function DatasetSetup() {
 
           <div className="dataset--setup-save-box">
             <div className="dataset--setup-save-box-title">
-              {embedding}
+              Embedding: {embedding}<br/>
+              Labels: {clusterLabelModel}
             </div>
             <div className="dataset--setup-save-box-boxes">
               { umap ? <div className="box-item">
@@ -465,7 +594,6 @@ function DatasetSetup() {
                 {cluster.cluster_name}
                 <img src={cluster.url} alt={cluster.name} />
               </div> : <div className="empty-box"></div> }
-
             </div>
             <div className="dataset--setup-save-box-nav">
               <form onSubmit={handleSaveScope}>
@@ -496,13 +624,38 @@ function DatasetSetup() {
               points={points} 
               width={scopeWidth} 
               height={scopeHeight}
-              // onScatter={setScatter}
+              onScatter={setScatter}
               // onView={handleView} 
-              // onSelect={handleSelected}
+              onSelect={handleSelected}
               // onHover={handleHover}
               />
-
-          </div>
+            </div>
+            <div className="dataset--selected">
+              <span>Points Selected: {selected.length} {!selected.length ? "(Hold shift and drag an area of the map to select)" : null}
+                {selected.length > 0 ? 
+                  <button className="deselect" onClick={() => {
+                    setSelectedIndices([])
+                    scatter?.select([])
+                    scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                  }
+                  }>X</button> 
+                : null}
+              </span>
+              {selected.length > 0 ? 
+              <div className="dataset--selected-table">
+                <DataTable 
+                  data={selected} 
+                  // tagset={tagset} 
+                  datasetId={datasetId} 
+                  maxRows={150} 
+                  // onTagset={(data) => setTagset(data)} 
+                  // onHover={handleHover} 
+                  // onClick={handleClicked}
+                  />
+              </div>
+              : null }
+            </div>
+        
         </div>
       </div>
         

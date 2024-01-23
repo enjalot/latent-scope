@@ -156,9 +156,25 @@ def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_name = request.args.get('cluster_name')
     job_id = str(uuid.uuid4())
-    command = f'rm -rf ../data/{dataset}/clusters/{cluster_name}.parquet; rm -rf ../data/{dataset}/clusters/{cluster_name}.json; rm -rf ../data/{dataset}/clusters/{cluster_name}.png rm -rf ../data/{dataset}/clusters/{cluster_name}-labels.parquet'
+    command = f'rm -rf ../data/{dataset}/clusters/{cluster_name}*'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
+
+@jobs_bp.route('/cluster_label')
+def run_cluster_label():
+    dataset = request.args.get('dataset')
+    model = request.args.get('model')
+    text_column = request.args.get('text_column')
+    cluster = request.args.get('cluster')
+    context = request.args.get('context')
+    print("run cluster label", dataset, model, text_column, cluster)
+    print("context", context)
+
+    job_id = str(uuid.uuid4())
+    command = f'python ../scripts/label-clusters.py {dataset} {text_column} {cluster} {model} "{context}"'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
 
 @jobs_bp.route('/slides')
 def run_slides():

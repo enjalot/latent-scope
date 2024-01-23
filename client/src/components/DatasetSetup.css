@@ -32,10 +32,12 @@
   padding: 6px;
   display: flex;
   flex-direction: column;
+  user-select: none;
 }
 .dataset--setup-scopes-item img {
   width: 120px;
   height: 120px;
+  pointer-events: none;
 }
 .dataset--setup-scopes-item.active {
   border: 3px solid orange;
@@ -73,23 +75,8 @@
   gap: 10px;
 }
 
-/* RIGHT COLUMN  */
-.dataset--setup-save-box {
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px;
-  margin: 12px;
-  width: 100%;
-}
 
-.dataset--setup-umap {
-  width: 640px;
-  height: 640px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px;
-  margin: 12px;
-}
+
 
 .dataset--setup-umaps-list, .dataset--setup-clusters-list {
   display: flex;
@@ -105,6 +92,7 @@
   padding: 6px;
   margin-top: 12px;
   width: 132px;
+  user-select: none;
 }
 .dataset--setup-umaps-item label, .dataset--setup-clusters-item label {
   cursor: pointer;
@@ -113,11 +101,42 @@
 .dataset--setup-umaps-item img, .dataset--setup-clusters-item img {
   width: 120px;
   height: 120px;
+  user-select: none;
 }
 
 .dataset--setup-labels-list {
   max-height: 400px;
   overflow-y: scroll;
+}
+
+/* RIGHT COLUMN  */
+.dataset--setup-save-box {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+  width: 100%;
+}
+
+/* in the right column */
+.dataset--setup-umap {
+  width: 640px;
+  height: 640px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+  user-select: none;
+}
+.dataset--selected {
+  width: 640px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+}
+.dataset--selected-table {
+  max-height: 640px;
+  overflow: scroll;
 }
 
 
@@ -138,3 +157,4 @@
   height: 120px;
 
 }
+
