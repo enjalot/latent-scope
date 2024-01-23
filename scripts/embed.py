@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 # TODO is this hacky way to import from the models directory?
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models import get_model
+from models import get_embedding_model
 
 def chunked_iterable(iterable, size):
     """Yield successive chunks from an iterable."""
@@ -19,7 +19,7 @@ def embedder(dataset_name, text_column="text", model_id="transformers-BAAI___bge
     df = pd.read_parquet(f"../data/{dataset_name}/input.parquet")
     sentences = df[text_column].tolist()
 
-    model = get_model(model_id)
+    model = get_embedding_model(model_id)
     print("loading", model.name)
     model.load_model()
 

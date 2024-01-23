@@ -43,7 +43,7 @@ function DatasetSetup() {
   // get the list of available models
   const [models, setModels] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/models`)
+    fetch(`http://localhost:5001/embedding_models`)
       .then(response => response.json())
       .then(data => {
         // console.log("models", data)
@@ -181,8 +181,12 @@ function DatasetSetup() {
       fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${cluster.cluster_name}/labels`)
         .then(response => response.json())
         .then(data => {
+          console.log("update labels", cluster, data)
           setClusterLabels(data)
-        });
+        }).catch(err => {
+          console.log(err)
+          setClusterLabels([])
+        })
       } else {
         setClusterLabels([])
       }

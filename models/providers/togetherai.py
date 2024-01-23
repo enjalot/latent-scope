@@ -3,11 +3,11 @@ import time
 import tiktoken
 import together
 from dotenv import load_dotenv
-from .base import ModelProvider
+from .base import EmbedModelProvider
 
 load_dotenv()
 
-class TogetherAIProvider(ModelProvider):
+class TogetherAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
         together.api_key = os.getenv("TOGETHER_API_KEY")
         self.client = together.Together()

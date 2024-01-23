@@ -3,14 +3,14 @@ import time
 import tiktoken
 from openai import OpenAI
 from dotenv import load_dotenv
-from .base import ModelProvider
+from .base import EmbedModelProvider, ChatModelProvider
 
 load_dotenv()
 
-class OpenAIProvider(ModelProvider):
+class OpenAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
+        self.encoder = tiktoken.encoding_for_model(self.name)
 
     def embed(self, inputs):
         time.sleep(0.01) # TODO proper rate limiting
@@ -20,7 +20,19 @@ class OpenAIProvider(ModelProvider):
         inputs = [enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b for b in inputs]
         response = self.client.embeddings.create(
             input=inputs,
-            model="text-embedding-ada-002",
+            model=self.name,
         )
         embeddings = [embedding.embedding for embedding in response.data]
         return embeddings
+
+class OpenAIChatProvider(ChatModelProvider):
+    def load_model(self):
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.encoder = tiktoken.encoding_for_model(self.name)
+
+    def chat(self, messages):
+        response = self.client.chat.completions.create(
+            model=self.name,
+            messages=messages
+        )
+        return response.choices[0].message.content

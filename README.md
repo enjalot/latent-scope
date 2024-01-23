@@ -35,7 +35,7 @@ npm run dev
 Now you can open your browser to the provided url and use Latent Scope!
 
 ## Embedding models
-The scripts below (which power the app) reference embedding models by an "id" which identifies models prepared in [models/models.json](models/models.json)
+The scripts below (which power the app) reference embedding models by an "id" which identifies models prepared in [models/embedding_models.json](models/embedding_models.json)
 
 There is a `get_model(id)` function which will load the appropriate class based on the model provider. See `providers/` for `transformers`, `openai`, `cohereai`, `togetherai`, `voyageai`
 
@@ -57,7 +57,7 @@ python ingest.py database-curated
 ```
 
 ### 1. embed.py 
-Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers. API services are supported as well, see [models/models.json](models/models.json) for model ids. 
+Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers. API services are supported as well, see [models/embedding_models.json](models/embedding_models.json) for model ids. 
 
 ```bash
 # python embed.py <dataset_name> <text_column> <model_id>

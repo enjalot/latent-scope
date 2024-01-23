@@ -2,11 +2,11 @@ import os
 import time
 import cohere
 from dotenv import load_dotenv
-from .base import ModelProvider
+from .base import EmbedModelProvider
 
 load_dotenv()
 
-class CohereAIProvider(ModelProvider):
+class CohereAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
         self.client = cohere.Client(os.getenv("COHERE_API_KEY"))
 

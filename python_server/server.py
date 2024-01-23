@@ -34,10 +34,10 @@ def send_file(datasetPath):
     print("req url", request.url)
     return send_from_directory(os.path.join(os.getcwd(), '../data/'), datasetPath)
 
-@app.route('/models', methods=['GET'])
+@app.route('/embeding_models', methods=['GET'])
 def get_models():
     directory_path = os.path.join(os.getcwd(), '../models/') 
-    file_path = os.path.join(directory_path, 'models.json')   
+    file_path = os.path.join(directory_path, 'embedding_models.json')   
     with open(file_path, 'r', encoding='utf-8') as file:
         models = json.load(file)
     return jsonify(models)

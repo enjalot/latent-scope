@@ -1,6 +1,6 @@
 import torch
-from .base import ModelProvider
-from transformers import AutoTokenizer, AutoModel
+from .base import EmbedModelProvider, ChatModelProvider
+from transformers import AutoTokenizer, AutoModel, pipeline
 
 def cls_pooling(model_output):
     return model_output[0][:, 0]
@@ -15,7 +15,7 @@ def mean_pooling(model_output, attention_mask):
     return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
 
-class TransformersProvider(ModelProvider):
+class TransformersEmbedProvider(EmbedModelProvider):
     def load_model(self):
         self.tokenizer = AutoTokenizer.from_pretrained(self.name)
         self.model = AutoModel.from_pretrained(self.name, trust_remote_code=True)
@@ -37,3 +37,19 @@ class TransformersProvider(ModelProvider):
         # Normalize embeddings
         normalized_embeedings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
         return normalized_embeedings.tolist()
+
+
+class TransformersChatProvider(ChatModelProvider):
+    def load_model(self):
+        # self.pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0", torch_dtype=torch.bfloat16, device_map="auto")
+        # self.pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0", torch_dtype=torch.bfloat16, device_map="cpu")
+        # TODO: support bfloat16 for non mac environmentss
+        self.pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0", torch_dtype=torch.float16, device_map="auto")
+        self.encoder = self.pipe.tokenizer
+
+    def chat(self, messages, max_new_tokens=24):
+        prompt = self.pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        outputs = self.pipe(prompt, max_new_tokens=max_new_tokens, do_sample=True, temperature=0.7, top_k=50, top_p=0.95)
+        generated_text = outputs[0]["generated_text"]
+        print("GENERATED TEXT", generated_text)
+        return generated_text.split("<|assistant|>")[1].strip()
