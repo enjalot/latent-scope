@@ -34,13 +34,22 @@ def send_file(datasetPath):
     print("req url", request.url)
     return send_from_directory(os.path.join(os.getcwd(), '../data/'), datasetPath)
 
-@app.route('/embeding_models', methods=['GET'])
-def get_models():
+@app.route('/embedding_models', methods=['GET'])
+def get_embedding_models():
     directory_path = os.path.join(os.getcwd(), '../models/') 
     file_path = os.path.join(directory_path, 'embedding_models.json')   
     with open(file_path, 'r', encoding='utf-8') as file:
         models = json.load(file)
     return jsonify(models)
+
+@app.route('/chat_models', methods=['GET'])
+def get_chat_models():
+    directory_path = os.path.join(os.getcwd(), '../models/') 
+    file_path = os.path.join(directory_path, 'chat_models.json')   
+    with open(file_path, 'r', encoding='utf-8') as file:
+        models = json.load(file)
+    return jsonify(models)
+
 
 """
 Get the essential metadata for all available datasets.
@@ -72,6 +81,7 @@ def scan_for_json_files(directory_path):
         return jsonify({"error": "Unable to scan directory"}), 500
 
     json_files = [file for file in files if file.endswith('.json')]
+    json_files.sort()
     print("files", files)
     print("json", json_files)
 

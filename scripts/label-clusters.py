@@ -69,6 +69,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
     # TODO we arent really batching these
     batch_size = 1
     labels = []
+    clean_labels = []
 
     for batch in tqdm(chunked_iterable(extracts, batch_size),  total=len(extracts)//batch_size):
         # print(batch[0])
@@ -77,17 +78,18 @@ Do not use punctuation, just return a few words that summarize the list."""}
                 system_prompt, {"role":"user", "content": batch[0]} # TODO hardcoded batch size
             ]
             label = model.chat(messages)
-            print("label", label)
-            # do some cleanup of the labels when the model doesn't follow instructions
-            label = label.replace("\n", " ")
-            label = label.replace('"', '')
-            label = label.replace("'", '')
-            # label = label.replace("-", '')
-            label = ' '.join(label.split())
-            label = " ".join(label.split(" ")[0:5])
-            
-            print("cut label", label)
             labels.append(label)
+            print("label:\n", label)
+            # do some cleanup of the labels when the model doesn't follow instructions
+            clean_label = label.replace("\n", " ")
+            clean_label = clean_label.replace('"', '')
+            clean_label = clean_label.replace("'", '')
+            # clean_label = clean_label.replace("-", '')
+            clean_label = ' '.join(clean_label.split())
+            clean_label = " ".join(clean_label.split(" ")[0:5])
+            
+            print("clean_label:\n", clean_label)
+            clean_labels.append(clean_label)
 
         except Exception as e: 
             print(e)
@@ -98,10 +100,11 @@ Do not use punctuation, just return a few words that summarize the list."""}
     print("labels:", len(labels))
     # add lables to slides df
     clusters_df = clusters.copy()
-    clusters_df['label'] = labels
+    clusters_df['label'] = clean_labels
+    clusters_df['label_raw'] = labels
 
     # write the df to parquet
-    clusters_df.to_parquet(f"../data/{dataset_name}/clusters/{cluster_name}-labels.parquet")
+    clusters_df.to_parquet(f"../data/{dataset_name}/clusters/{cluster_name}-labels-{model_id}.parquet")
     print("done")
 
 if __name__ == "__main__":

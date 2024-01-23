@@ -129,6 +129,13 @@
       }
   },
   {
+      "provider": "mistralai",
+      "name": "mistral-embed",
+      "id": "mistralai-mistral-embed",
+      "params": {
+      }
+  },
+  {
       "provider": "cohereai",
       "name": "embed-english-v3.0",
       "id": "cohereai-embed-english-v3.0",

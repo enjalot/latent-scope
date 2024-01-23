@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import uuid
 import subprocess
@@ -59,8 +60,13 @@ def get_job():
     job_id = request.args.get('job_id')
     progress_file = f"../data/{dataset}/jobs/{job_id}.json"
     if os.path.exists(progress_file):
-        with open(progress_file, 'r') as f:
-            job = json.load(f)
+        try:
+            with open(progress_file, 'r') as f:
+                job = json.load(f)
+        except:
+            time.sleep(0.1)
+            with open(progress_file, 'r') as f:
+                job = json.load(f)
         return jsonify(job)
     else:
         return jsonify({'status': 'not found'}), 404
@@ -125,8 +131,8 @@ def delete_umap():
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm ../data/{dataset}/umaps/{umap_name}.parquet; rm ../data/{dataset}/umaps/{umap_name}.json; rm ../data/{dataset}/umaps/{umap_name}.png'
-    # Create the rm commands from the clusters_to_delete list
+    command = f'rm -rf ../data/{dataset}/umaps/{umap_name}.parquet; rm -rf ../data/{dataset}/umaps/{umap_name}.json; rm -rf ../data/{dataset}/umaps/{umap_name}.png'
+    # Create the rm -rf commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
         command += f'; rm ../data/{dataset}/clusters/{cluster}.parquet; rm ../data/{dataset}/clusters/{cluster}.json; rm ../data/{dataset}/clusters/{cluster}.png rm ../data/{dataset}/clusters/{cluster}-labels.parquet'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
@@ -150,7 +156,7 @@ def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_name = request.args.get('cluster_name')
     job_id = str(uuid.uuid4())
-    command = f'rm ../data/{dataset}/clusters/{cluster_name}.parquet; rm ../data/{dataset}/clusters/{cluster_name}.json; rm ../data/{dataset}/clusters/{cluster_name}.png rm ../data/{dataset}/clusters/{cluster_name}-labels.parquet'
+    command = f'rm -rf ../data/{dataset}/clusters/{cluster_name}.parquet; rm -rf ../data/{dataset}/clusters/{cluster_name}.json; rm -rf ../data/{dataset}/clusters/{cluster_name}.png rm -rf ../data/{dataset}/clusters/{cluster_name}-labels.parquet'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

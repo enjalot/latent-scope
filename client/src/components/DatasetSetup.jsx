@@ -46,7 +46,7 @@ function DatasetSetup() {
     fetch(`http://localhost:5001/embedding_models`)
       .then(response => response.json())
       .then(data => {
-        // console.log("models", data)
+        console.log("models", data)
         setModels(data)
       });
   }, []);
@@ -97,7 +97,7 @@ function DatasetSetup() {
   const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/delete/umap');
 
   const [umaps, setUmaps] = useState([]);
-  useEffect(() => {
+  function fetchUmaps(datasetId, callback) {
     fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
       .then(response => response.json())
       .then(data => {
@@ -107,9 +107,12 @@ function DatasetSetup() {
             url: `http://localhost:5001/files/${datasetId}/umaps/${d.name}.png`,
           }
         })
-        setUmaps(array.reverse())
+        callback(array.reverse())
       });
-  }, [datasetId, umapJob]);
+  }
+  useEffect(() => {
+    fetchUmaps(datasetId, setUmaps)
+  }, [datasetId, setUmaps, umapJob]);
   
   const [umap, setUmap] = useState(umaps[0]);
     useEffect(() => {
@@ -139,6 +142,8 @@ function DatasetSetup() {
           // console.log("umap points", data)
           setPoints(data.map(d => [d.x, d.y]))
         })
+    } else {
+      setPoints([])
     }
   }, [dataset, umap])
    
@@ -151,7 +156,7 @@ function DatasetSetup() {
   const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/delete/cluster');
 
   const [clusters, setClusters] = useState([]);
-  useEffect(() => {
+  function fetchClusters(datasetId, callback) {
     fetch(`http://localhost:5001/datasets/${datasetId}/clusters`)
       .then(response => response.json())
       .then(data => {
@@ -162,9 +167,12 @@ function DatasetSetup() {
           }
         })
         // console.log("clusters", clusters)
-        setClusters(array.reverse())
+        callback(array.reverse())
       });
-  }, [datasetId, clusterJob]);
+  }
+  useEffect(() => {
+    fetchClusters(datasetId, setClusters)
+  }, [datasetId, setClusters, clusterJob]);
 
   const [cluster, setCluster] = useState(clusters[0]);
   useEffect(() => {
@@ -181,7 +189,6 @@ function DatasetSetup() {
       fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${cluster.cluster_name}/labels`)
         .then(response => response.json())
         .then(data => {
-          console.log("update labels", cluster, data)
           setClusterLabels(data)
         }).catch(err => {
           console.log(err)
@@ -215,21 +222,29 @@ function DatasetSetup() {
   }, [datasetId, setScopes]);
 
   useEffect(() => {
+    // TODO: this seems like a runaround on React.
+    // I want to have umap and cluster be set by the scope
+    // but i don't want to override any temporary changes to umap and cluster
+    // real solution probably involves some kind of staging state
+    async function setters(scope) {
+      setScope(scope)
+      setEmbedding(scope.embeddings)
+      const tumaps = await new Promise((resolve) => fetchUmaps(datasetId, (data) => resolve(data)));
+      const selectedUmap = tumaps.find(u => u.name === scope.umap);
+      const tclusters = await new Promise((resolve) => fetchClusters(datasetId, (data) => resolve(data)));
+      const selectedCluster = tclusters.find(c => c.cluster_name === scope.cluster);
+      setUmap(selectedUmap);
+      setCluster(selectedCluster);
+    }
     if(scopeId && scopes.length) {
       const scope = scopes.find(d => d.name == scopeId)
       if(scope) {
-        setScope(scope)
-        setEmbedding(scope.embeddings)
-        const selectedUmap = umaps.find(u => u.name === scope.umap);
-        const selectedCluster = clusters.find(c => c.cluster_name === scope.cluster);
-        setUmap(selectedUmap);
-        setCluster(selectedCluster);
+        setters(scope)
       }
-
     } else {
       setScope(null)
     }
-  }, [scopeId, scopes, umaps, clusters, setScope, setUmap, setCluster])
+  }, [datasetId, scopeId, scopes, setScope, setUmap, setCluster])
 
   const navigate = useNavigate();
   const handleSaveScope = useCallback((event) => {
@@ -319,19 +334,18 @@ function DatasetSetup() {
               <div>
                 Embedding on <b>{textColumn}</b>
               </div>
-            {!embeddingsJob  ? 
             <form onSubmit={handleNewEmbedding}>
               <div>
                 <label htmlFor="modelName">Model:</label>
-                <select id="modelName" name="modelName">
+                <select id="modelName" name="modelName" disabled={!!embeddingsJob}>
                   {models.map((model, index) => (
                     <option key={index} value={model.id}>{model.provider}: {model.name}</option>
                   ))}
                 </select>
               </div> 
-              <button type="submit">New Embedding</button>
-            </form> : 
-            <JobProgress job={embeddingsJob} clearJob={()=> setEmbeddingsJob(null)} /> }
+              <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
+            </form>
+            <JobProgress job={embeddingsJob} clearJob={()=> setEmbeddingsJob(null)} />
             <div className="dataset--setup-embeddings-list">
               {embeddings.map((emb, index) => (
                 <div key={index}>
@@ -352,24 +366,23 @@ function DatasetSetup() {
           <div className="dataset--setup-umaps">
             <h3>2. UMAP </h3>
             <div className="dataset--umaps-new">
-              {!umapJob  ? 
               <form onSubmit={handleNewUmap}>
                 <label>
                   Neighbors:
-                  <input type="number" name="neighbors" defaultValue="50"/>
+                  <input type="number" name="neighbors" defaultValue="50"disabled={!!umapJob} />
                 </label>
                 <label>
                   Min Dist:
-                  <input type="text" name="min_dist" defaultValue="0.1" />
+                  <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
                 </label>
-                <button type="submit">New UMAP</button>
+                <button type="submit" disabled={!!umapJob}>New UMAP</button>
               </form>
-              : <JobProgress job={umapJob} clearJob={()=>setUmapJob(null)}/> }
+              <JobProgress job={umapJob} clearJob={()=>setUmapJob(null)}/>
           </div>
             <div className="dataset--setup-umaps-list">
               {umaps.filter(d => d.embeddings == embedding).map((um, index) => (
                 <div className="dataset--setup-umaps-item" key={index}>
-                  <input type="radio" id={`umap${index}`} name="umap" value={um} checked={um === umap} onChange={() => setUmap(um)} />
+                  <input type="radio" id={`umap${index}`} name="umap" value={um} checked={um.name === umap?.name} onChange={() => setUmap(um)} />
                   <label htmlFor={`umap${index}`}>{um.name}
                   <br></br>
                     Neighbors: {um.neighbors}<br/>
@@ -386,18 +399,18 @@ function DatasetSetup() {
           <div className="dataset--setup-clusters">
             <h3>3. Clusters</h3>
             <div className="dataset--clusters-new">
-              {!clusterJob ? 
               <form onSubmit={(e) => handleNewCluster(e, umap)}>
                 <label>
                   Samples:
-                  <input type="number" name="samples" defaultValue="30"/>
+                  <input type="number" name="samples" defaultValue="30" disabled={!!clusterJob}/>
                 </label><br/>
                 <label>
                   Min Samples:
-                  <input type="number" name="min_samples" defaultValue="5" />
+                  <input type="number" name="min_samples" defaultValue="5" disabled={!!clusterJob} />
                 </label>
-                <button type="submit">New Clusters</button>
-              </form> : <JobProgress job={clusterJob} clearJob={()=>setClusterJob(null)} /> }
+                <button type="submit" disabled={!!clusterJob}>New Clusters</button>
+              </form> 
+              <JobProgress job={clusterJob} clearJob={()=>setClusterJob(null)} />
             </div>
             <div className="dataset--setup-clusters-list">
               {umap && clusters.filter(d => d.umap_name == umap.name).map((cl, index) => (
@@ -406,7 +419,7 @@ function DatasetSetup() {
                     id={`cluster${index}`} 
                     name="cluster" 
                     value={cluster} 
-                    checked={cl === cluster} 
+                    checked={cl.cluster_name === cluster?.cluster_name} 
                     onChange={() => setCluster(cl)} />
                   <label htmlFor={`cluster${index}`}>{cl.cluster_name}
                   <br></br>
