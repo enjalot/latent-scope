@@ -19,7 +19,7 @@
   width: 640px;
   max-width: 640px;
 }
-.dataset--setup-scopes {
+.dataset--setup-scopes-list {
   max-width: calc(100% - 640px);
   display: flex;
   flex-direction: rows;
@@ -63,7 +63,8 @@
 .dataset--setup-embeddings,
 .dataset--setup-umaps,
 .dataset--setup-clusters,
-.dataset--setup-slides
+.dataset--setup-cluster-labels,
+.dataset--setup-scopes
  {
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
@@ -74,6 +75,40 @@
   flex-direction: column;
   gap: 10px;
 }
+.setup-scope form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dataset--setup-save-box {
+  /* display: flex;
+  flex-direction: column; */
+  /* box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+  width: 100%; */
+}
+
+.dataset--setup-save-box-boxes {
+  display: flex;
+  flex-direction: row;
+}
+.box-item {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
+  padding: 6px;
+  margin: 6px;
+  width: 132px;
+}
+.box-item img {
+  width: 120px;
+  height: 120px;
+
+}
+
+
 
 
 
@@ -110,14 +145,7 @@
 }
 
 /* RIGHT COLUMN  */
-.dataset--setup-save-box {
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px;
-  margin: 12px;
-  width: 100%;
-}
+
 
 /* in the right column */
 .dataset--setup-umap {
@@ -139,22 +167,4 @@
   overflow: scroll;
 }
 
-
-.dataset--setup-save-box-boxes {
-  display: flex;
-  flex-direction: row;
-}
-.box-item {
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
-  padding: 6px;
-  margin: 6px;
-  width: 132px;
-}
-.box-item img {
-  width: 120px;
-  height: 120px;
-
-}
 

@@ -76,10 +76,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
           </label>
           <button type="submit" disabled={!!umapJob}>New UMAP</button>
         </form>
-        <JobProgress job={umapJob} clearJob={()=> {
-          
-          setUmapJob(null)
-        }}/>
+        <JobProgress job={umapJob} clearJob={()=> setUmapJob(null)}/>
         {/* The list of available UMAPS */}
         <div className={styles["umaps-list"]}>
           {umaps.filter(d => d.embeddings == embedding).map((um, index) => (
