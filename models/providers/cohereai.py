@@ -1,9 +1,9 @@
 import os
 import time
 import cohere
-from dotenv import load_dotenv
 from .base import EmbedModelProvider
 
+from dotenv import load_dotenv
 load_dotenv()
 
 class CohereAIEmbedProvider(EmbedModelProvider):

@@ -2,9 +2,9 @@ import os
 import time
 import tiktoken
 from openai import OpenAI
-from dotenv import load_dotenv
 from .base import EmbedModelProvider, ChatModelProvider
 
+from dotenv import load_dotenv
 load_dotenv()
 
 class OpenAIEmbedProvider(EmbedModelProvider):

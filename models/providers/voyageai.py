@@ -1,14 +1,13 @@
 import os
 import time
 import voyageai 
-from dotenv import load_dotenv
 from .base import EmbedModelProvider
 
+from dotenv import load_dotenv
 load_dotenv()
 
 class VoyageAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        # voyageai.api_key = os.getenv("VOYAGE_API_KEY")
         self.client = voyageai.Client(os.getenv("VOYAGE_API_KEY"))
 
     def embed(self, inputs):

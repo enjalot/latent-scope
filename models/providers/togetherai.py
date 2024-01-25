@@ -2,9 +2,9 @@ import os
 import time
 import tiktoken
 import together
-from dotenv import load_dotenv
 from .base import EmbedModelProvider
 
+from dotenv import load_dotenv
 load_dotenv()
 
 class TogetherAIEmbedProvider(EmbedModelProvider):
