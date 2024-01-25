@@ -2,6 +2,9 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import './DatasetSetup.css';
+import Embedding from './Setup/Embedding';
+import Umap from './Setup/Umap';
+
 // import DatasetUmaps from './DatasetUmaps';
 import DataTable from './DataTable';
 import Scatter from './Scatter';
@@ -28,6 +31,7 @@ function DatasetSetup() {
     if (!dataset) return "";
     return dataset.text_column || dataset.columns[0];
   }, [dataset])
+
   // set the text column on our dataset
   const handleChangeTextColumn = useCallback((event) => {
     const column = event.target.value;
@@ -40,94 +44,26 @@ function DatasetSetup() {
       });
   }, [datasetId])
  
-  // get the list of available models
-  const [models, setModels] = useState([]);
-  useEffect(() => {
-    fetch(`http://localhost:5001/embedding_models`)
-      .then(response => response.json())
-      .then(data => {
-        console.log("models", data)
-        setModels(data)
-      });
-  }, []);
 
   // ====================================================================================================
   // embeddings 
   // ====================================================================================================
-  const [embeddingsJob, setEmbeddingsJob] = useState(null);
-  const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, 'http://localhost:5001/jobs/embed');
   // get the list of available embeddings, and refresh when a new one is created
   const [embeddings, setEmbeddings] = useState([]);
-  useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings`)
-      .then(response => response.json())
-      .then(data => {
-        setEmbeddings(data)
-      });
-  }, [datasetId, embeddingsJob]);
   const [embedding, setEmbedding] = useState(embeddings[0]);
-  useEffect(() => {
-    if(embeddings.length){
-      if(embedding) {
-        setEmbedding(embedding)
-      } else {
-        setEmbedding(embeddings[0])
-      }
-    }
-  }, [embeddings, embedding]) 
-
-  const handleNewEmbedding = e => {
-    e.preventDefault()
-    const form = e.target
-    const data = new FormData(form)
-    const model = models.find(model => model.id === data.get('modelName'))
-    let job = { 
-      text_column: textColumn,
-      provider: model.provider,
-      model: model.id,
-    }
-    startEmbeddingsJob(job)
-  }
 
   // ====================================================================================================
   // umaps
   // ====================================================================================================
-  const [umapJob, setUmapJob] = useState(null);
-  const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/umap');
-  const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/delete/umap');
 
   const [umaps, setUmaps] = useState([]);
-  function fetchUmaps(datasetId, callback) {
-    fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
-      .then(response => response.json())
-      .then(data => {
-        const array = data.map(d=> {
-          return {
-            ...d,
-            url: `http://localhost:5001/files/${datasetId}/umaps/${d.name}.png`,
-          }
-        })
-        callback(array.reverse())
-      });
-  }
-  useEffect(() => {
-    fetchUmaps(datasetId, setUmaps)
-  }, [datasetId, setUmaps, umapJob]);
-  
   const [umap, setUmap] = useState(umaps[0]);
-    useEffect(() => {
+
+  useEffect(() => {
       if(umaps.length)
         setUmap(umaps.filter(d => d.embeddings == embedding)[0])
   }, [umaps, embedding]) 
 
-  const handleNewUmap = useCallback((e) => {
-    e.preventDefault()
-    const form = e.target
-    const data = new FormData(form)
-    const neighbors = data.get('neighbors')
-    const min_dist = data.get('min_dist')
-    startUmapJob({embeddings: embedding, neighbors, min_dist})
-  }, [startUmapJob, embedding])
 
   // ====================================================================================================
   // Points for rendering the scatterplot
@@ -313,6 +249,18 @@ function DatasetSetup() {
     }
   }, [datasetId, scopeId, scopes, setScope, setUmap, setCluster])
 
+  // The embedding is either set by the scope or by the first embedding in the list of available embeddings
+  // TODO: only want to set the scope embedding initially, if a new embedding is generated want that new one to be set
+  useEffect(() => {
+    if(embeddings.length){
+      if(scope && scope.embeddings) {
+        setEmbedding(scope.embeddings)
+      } else {
+        setEmbedding(embeddings[0])
+      }
+    }
+  }, [embeddings, scope]) 
+
   const navigate = useNavigate();
   const handleSaveScope = useCallback((event) => {
     event.preventDefault();
@@ -428,72 +376,14 @@ function DatasetSetup() {
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">
           <div className="dataset--setup-embeddings">
-            <h3>1. Embeddings</h3>
-              <div>
-                Embedding on <b>{textColumn}</b>
-              </div>
-            <form onSubmit={handleNewEmbedding}>
-              <div>
-                <label htmlFor="modelName">Model:</label>
-                <select id="modelName" name="modelName" disabled={!!embeddingsJob}>
-                  {models.filter(d => embeddings?.indexOf(d.id) < 0).map((model, index) => (
-                    <option key={index} value={model.id}>{model.provider}: {model.name}</option>
-                  ))}
-                </select>
-              </div> 
-              <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
-            </form>
-            <JobProgress job={embeddingsJob} clearJob={()=> setEmbeddingsJob(null)} />
-            <div className="dataset--setup-embeddings-list">
-              {embeddings.map((emb, index) => (
-                <div key={index}>
-                  <input type="radio" id={`embedding${index}`} name="embedding" value={emb} checked={emb === embedding} onChange={() => setEmbedding(emb)} />
-                  <label htmlFor={`embedding${index}`}>
-                    <span>
-                      {emb} [
-                        {umaps.filter(d => d.embeddings == emb).length} umaps,&nbsp;
-                        {clusters.filter(d => umaps.filter(d => d.embeddings == emb).map(d => d.name).indexOf(d.umap_name) >= 0).length} clusters 
-                      ]
-                    </span>
-                    </label>
-                </div>
-              ))}
-            </div>
-          
+            <h3>1. Embeddings</h3> 
+            <Embedding dataset={dataset} textColumn={textColumn} embedding={embedding} umaps={umaps} clusters={clusters} onNew={setEmbeddings} onChange={setEmbedding} />
           </div>
           <div className="dataset--setup-umaps">
             <h3>2. UMAP </h3>
-            <div className="dataset--umaps-new">
-              <form onSubmit={handleNewUmap}>
-                <label>
-                  Neighbors:
-                  <input type="number" name="neighbors" defaultValue="50"disabled={!!umapJob} />
-                </label>
-                <label>
-                  Min Dist:
-                  <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
-                </label>
-                <button type="submit" disabled={!!umapJob}>New UMAP</button>
-              </form>
-              <JobProgress job={umapJob} clearJob={()=>setUmapJob(null)}/>
+            <Umap dataset={dataset} umap={umap} embedding={embedding} clusters={clusters} onNew={setUmaps} onChange={setUmap} />
           </div>
-            <div className="dataset--setup-umaps-list">
-              {umaps.filter(d => d.embeddings == embedding).map((um, index) => (
-                <div className="dataset--setup-umaps-item" key={index}>
-                  <input type="radio" id={`umap${index}`} name="umap" value={um} checked={um.name === umap?.name} onChange={() => setUmap(um)} />
-                  <label htmlFor={`umap${index}`}>{um.name}
-                  <br></br>
-                    Neighbors: {um.neighbors}<br/>
-                    Min Dist: {um.min_dist}<br/>
-                  <img src={um.url} alt={um.name} />
-                  <br></br>
-                  {clusters.filter(d => d.umap_name == um.name).length} clusters
-                  <button onClick={() => deleteUmapJob({umap_name: um.name}) }>🗑️ umap</button>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
+
           <div className="dataset--setup-clusters">
             <h3>3. Clusters</h3>
             <div className="dataset--clusters-new">
