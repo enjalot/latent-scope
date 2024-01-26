@@ -118,7 +118,14 @@ function Home() {
       <ul>
         {datasets.map(dataset => (
           <li key={dataset.id}>
-            <Link to={`/datasets/${dataset.name}/setup`}>{dataset.name}</Link>
+            <Link to={`/datasets/${dataset.name}/setup`}>Setup {dataset.name}</Link>
+            {scopes[dataset.id] && scopes[dataset.id].map && scopes[dataset.id]?.map((scope,i) => (
+              <div key={i} >
+                <Link to={`/datasets/${dataset.name}/explore/${scope.id}`}>Explore {scope.name} - {scope.label}<br></br>
+                <img width="120px" src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster}.png`} />
+                </Link><br></br>
+              </div>
+            ))}
           </li>
         ))}
       </ul>
