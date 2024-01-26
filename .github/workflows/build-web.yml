@@ -24,7 +24,7 @@ jobs:
       working-directory: ./web
 
     - name: Build
-      run: npm run build
+      run: npm run production
       working-directory: ./web
 
     - name: Deploy to Built Branch
