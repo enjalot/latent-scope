@@ -16,10 +16,10 @@ CORS(app)
 DATAFRAMES = {}
 
 from jobs import jobs_bp
-app.register_blueprint(jobs_bp, url_prefix='/jobs') 
+app.register_blueprint(jobs_bp, url_prefix='/api/jobs') 
 
 from search import search_bp
-app.register_blueprint(search_bp, url_prefix='/search') 
+app.register_blueprint(search_bp, url_prefix='/api/search') 
 
 
 # ===========================================================
@@ -29,12 +29,12 @@ app.register_blueprint(search_bp, url_prefix='/search')
 """
 Allow fetching of dataset files directly from disk
 """
-@app.route('/files/<path:datasetPath>', methods=['GET'])
+@app.route('/api/files/<path:datasetPath>', methods=['GET'])
 def send_file(datasetPath):
     print("req url", request.url)
     return send_from_directory(os.path.join(os.getcwd(), '../data/'), datasetPath)
 
-@app.route('/embedding_models', methods=['GET'])
+@app.route('/api/embedding_models', methods=['GET'])
 def get_embedding_models():
     directory_path = os.path.join(os.getcwd(), '../models/') 
     file_path = os.path.join(directory_path, 'embedding_models.json')   
@@ -42,7 +42,7 @@ def get_embedding_models():
         models = json.load(file)
     return jsonify(models)
 
-@app.route('/chat_models', methods=['GET'])
+@app.route('/api/chat_models', methods=['GET'])
 def get_chat_models():
     directory_path = os.path.join(os.getcwd(), '../models/') 
     file_path = os.path.join(directory_path, 'chat_models.json')   
@@ -55,7 +55,7 @@ def get_chat_models():
 Get the essential metadata for all available datasets.
 Essential metadata is stored in meta.json
 """
-@app.route('/datasets', methods=['GET'])
+@app.route('/api/datasets', methods=['GET'])
 def get_datasets():
     directory_path = os.path.join(os.getcwd(), '../data/')  # Adjust the path as necessary
     datasets = []
@@ -94,14 +94,14 @@ def scan_for_json_files(directory_path):
             print('Error parsing JSON string:', err)
     return jsonify(json_contents)
 
-@app.route('/datasets/<dataset>/meta', methods=['GET'])
+@app.route('/api/datasets/<dataset>/meta', methods=['GET'])
 def get_dataset_meta(dataset):
     file_path = os.path.join(os.getcwd(), '../data/', dataset, "meta.json")
     with open(file_path, 'r', encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
-@app.route('/datasets/<dataset>/meta/update', methods=['GET'])
+@app.route('/api/datasets/<dataset>/meta/update', methods=['GET'])
 def update_dataset_meta(dataset):
     key = request.args.get('key')
     value = request.args.get('value')
@@ -115,7 +115,7 @@ def update_dataset_meta(dataset):
     return jsonify(json_contents)
 
 
-@app.route('/datasets/<dataset>/embeddings', methods=['GET'])
+@app.route('/api/datasets/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "embeddings")
     print("dataset", dataset, directory_path)
@@ -131,39 +131,39 @@ def get_dataset_embeddings(dataset):
     return jsonify(npy_files)
 
 
-@app.route('/datasets/<dataset>/umaps', methods=['GET'])
+@app.route('/api/datasets/<dataset>/umaps', methods=['GET'])
 def get_dataset_umaps(dataset):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "umaps")
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
-@app.route('/datasets/<dataset>/umaps/<umap>/points', methods=['GET'])
+@app.route('/api/datasets/<dataset>/umaps/<umap>/points', methods=['GET'])
 def get_dataset_umap_points(dataset, umap):
     file_path = os.path.join(os.getcwd(), '../data/', dataset, "umaps", umap + ".parquet")
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
 
-@app.route('/datasets/<dataset>/clusters', methods=['GET'])
+@app.route('/api/datasets/<dataset>/clusters', methods=['GET'])
 def get_dataset_clusters(dataset):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters")
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
-@app.route('/datasets/<dataset>/clusters/<cluster>/labels', methods=['GET'])
+@app.route('/api/datasets/<dataset>/clusters/<cluster>/labels', methods=['GET'])
 def get_dataset_cluster_labels_default(dataset, cluster):
     file_name = cluster + "-labels.parquet"
     file_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
 
-@app.route('/datasets/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
+@app.route('/api/datasets/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
 def get_dataset_cluster_labels(dataset, cluster, model):
     file_name = cluster + "-labels-" + model + ".parquet"
     file_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
 
-@app.route('/datasets/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
+@app.route('/api/datasets/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
 def get_dataset_cluster_labels_available(dataset, cluster):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "clusters")
     try:
@@ -188,13 +188,13 @@ def get_next_scopes_number(dataset):
         next_scopes_number = 1
     return next_scopes_number
 
-@app.route('/datasets/<dataset>/scopes', methods=['GET'])
+@app.route('/api/datasets/<dataset>/scopes', methods=['GET'])
 def get_dataset_scopes(dataset):
     directory_path = os.path.join(os.getcwd(), '../data/', dataset, "scopes")
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
-@app.route('/datasets/<dataset>/scopes/save', methods=['POST'])
+@app.route('/api/datasets/<dataset>/scopes/save', methods=['POST'])
 def save_dataset_scope(dataset):
     if not request.json:
         return jsonify({"error": "Invalid data format, JSON expected"}), 400
@@ -227,7 +227,7 @@ def save_dataset_scope(dataset):
 """
 Given a list of indices (passed as a json array), return the rows from the dataset
 """
-@app.route('/indexed', methods=['GET'])
+@app.route('/api/indexed', methods=['GET'])
 def indexed():
     dataset = request.args.get('dataset')
     indices = json.loads(request.args.get('indices'))
@@ -411,6 +411,19 @@ def slides():
     # return an object with the tags for a given dataset
     return slides_df.to_json(orient="records")
 
+
+# TODO: configure this
+MODE = "production" # or read_only
+
+dist_dir = '../web/dist/' + MODE
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    if path != "" and os.path.exists(os.path.join(dist_dir, path)):
+        return send_from_directory(dist_dir, path)
+    else:
+        return send_from_directory(dist_dir, 'index.html')
 
 # set port
 port = int(os.environ.get('PORT', 5001))

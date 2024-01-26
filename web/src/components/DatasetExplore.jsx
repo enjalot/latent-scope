@@ -7,7 +7,7 @@ import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
 import SlideBar from './SlideBar';
 
-import { instantiate } from '../lib/DuckDB'
+// import { instantiate } from '../lib/DuckDB'
 
 
 // TODO: decide how to deal with sizing
@@ -16,11 +16,12 @@ const scopeHeight = 640
 
 
 function DatasetDetail() {
+  const apiUrl = import.meta.env.VITE_API_URL
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams(); 
 
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
+    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
       .then(response => response.json())
       .then(data => {
         setDataset(data)
@@ -29,7 +30,7 @@ function DatasetDetail() {
 
   const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings`)
+    fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
       .then(response => response.json())
       .then(data => {
         // console.log("embeddings", data)
@@ -39,7 +40,7 @@ function DatasetDetail() {
 
   const [umaps, setUmaps] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
+    fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
       .then(response => response.json())
       .then(data => {
         setUmaps(data)
@@ -48,7 +49,7 @@ function DatasetDetail() {
 
   const [clusters, setClusters] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/clusters`)
+    fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
       .then(response => response.json())
       .then(data => {
         console.log("clusters", data)
@@ -78,7 +79,7 @@ function DatasetDetail() {
   }
 
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/scopes`)
+    fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
       .then(response => response.json())
       .then(data => {
         setScopes(data.sort((a,b) => a.name.localeCompare(b.name)))
@@ -112,7 +113,7 @@ function DatasetDetail() {
   const [loadingPoints, setLoadingPoints] = useState(false);
   useEffect(() => {
     if(umap) {
-      fetch(`http://localhost:5001/datasets/${dataset.id}/umaps/${umap.name}/points`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.name}/points`)
         .then(response => response.json())
         .then(data => {
           console.log("umap points", data)
@@ -123,7 +124,7 @@ function DatasetDetail() {
    
 
   const hydrateIndices = useCallback((indices, setter, distances = []) => {
-    fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
+    fetch(`${apiUrl}/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
       .then(response => response.json())
       .then(data => {
         if(!dataset) return;
@@ -149,7 +150,7 @@ function DatasetDetail() {
   // ====================================================================================================
   const [tagset, setTagset] = useState({});
   useEffect(() => {
-    fetch(`http://localhost:5001/tags?dataset=${datasetId}`)
+    fetch(`${apiUrl}/tags?dataset=${datasetId}`)
       .then(response => response.json())
       .then(data => setTagset(data));
   }, [datasetId])
@@ -166,7 +167,7 @@ function DatasetDetail() {
   const [tagrows, setTagrows] = useState([]);
   useEffect(() => {
     if(tagset[tag]) {
-      fetch(`http://localhost:5001/tags/rows?dataset=${dataset.id}&tag=${tag}`)
+      fetch(`${apiUrl}/tags/rows?dataset=${dataset.id}&tag=${tag}`)
         .then(response => response.json())
         .then(data => {
           const text_column = dataset.text_column
@@ -205,7 +206,7 @@ function DatasetDetail() {
   const [distances, setDistances] = useState([]);
 
   const searchQuery = useCallback((query) => {
-    fetch(`http://localhost:5001/search/nn?dataset=${datasetId}&query=${query}&model=${searchModel}`)
+    fetch(`${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&model=${searchModel}`)
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
@@ -301,7 +302,7 @@ function DatasetDetail() {
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
     if(scope) {
-      fetch(`http://localhost:5001/datasets/${datasetId}/clusters/${scope.cluster}/labels`)
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels`)
         .then(response => response.json())
         .then(data => {
           console.log("cluster labels", data)
@@ -313,7 +314,7 @@ function DatasetDetail() {
   }, [scope, setClusterLabels, datasetId])
   useEffect(() => {
     if(slide) {
-      fetch(`http://localhost:5001/indexed?dataset=${datasetId}&indices=${JSON.stringify(slide.indices)}`)
+      fetch(`${apiUrl}/indexed?dataset=${datasetId}&indices=${JSON.stringify(slide.indices)}`)
         .then(response => response.json())
         .then(data => {
           const text_column = dataset.text_column
@@ -400,7 +401,7 @@ function DatasetDetail() {
         <form className="new-tag" onSubmit={(e) => {
           e.preventDefault();
           const newTag = e.target.elements.newTag.value;
-          fetch(`http://localhost:5001/tags/new?dataset=${datasetId}&tag=${newTag}`)
+          fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
             .then(response => response.json())
             .then(data => {
               console.log("new tag", data)

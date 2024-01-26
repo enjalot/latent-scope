@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import JobProgress from '../JobProgress';
 import { useStartJobPolling } from '../JobRun';
+const apiUrl = import.meta.env.VITE_API_URL
 
 import PropTypes from 'prop-types';
 EmbeddingNew.propTypes = {
@@ -21,18 +22,18 @@ EmbeddingNew.propTypes = {
 function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, onChange}) {
   const [embeddings, setEmbeddings] = useState([]);
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
-  const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, 'http://localhost:5001/jobs/embed');
+  const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed`);
 
   const [models, setModels] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/embedding_models`)
+    fetch(`${apiUrl}/embedding_models`)
       .then(response => response.json())
       .then(setModels)
       .catch(console.error);
   }, []);
 
   const fetchEmbeddings = (datasetId, callback) => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/embeddings`)
+    fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
       .then(response => response.json())
       .then(data => {
         callback(data)

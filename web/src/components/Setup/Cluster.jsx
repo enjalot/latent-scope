@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback} from 'react';
 import JobProgress from '../JobProgress';
 import { useStartJobPolling } from '../JobRun';
+const apiUrl = import.meta.env.VITE_API_URL
 
 // import styles from './Cluster.module.css';
 
@@ -21,19 +22,19 @@ Cluster.propTypes = {
 // New embeddings update the list
 function Cluster({ dataset, cluster, umap, onNew, onChange}) {
   const [clusterJob, setClusterJob] = useState(null);
-  const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/cluster');
-  const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, 'http://localhost:5001/jobs/delete/cluster');
+  const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/cluster`);
+  const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/delete/cluster`);
 
   const [clusters, setClusters] = useState([]);
 
   function fetchClusters(datasetId, callback) {
-    fetch(`http://localhost:5001/datasets/${datasetId}/clusters`)
+    fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
       .then(response => response.json())
       .then(data => {
         const array = data.map(d => {
           return {
             ...d,
-            url: `http://localhost:5001/files/${datasetId}/clusters/${d.cluster_name}.png`,
+            url: `${apiUrl}/files/${datasetId}/clusters/${d.cluster_name}.png`,
           }
         })
         // console.log("clusters", clusters)

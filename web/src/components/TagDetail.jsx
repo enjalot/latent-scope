@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+const apiUrl = import.meta.env.VITE_API_URL
 
 import DataTable from './DataTable';
 
@@ -10,14 +11,14 @@ function TagDetail() {
   const { tag: tagId } = useParams();
 
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
+    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
       .then(response => response.json())
       .then(data => setDataset(data));
   }, [datasetId]);
 
   const [tagset, setTagset] = useState({});
   useEffect(() => {
-    fetch(`http://localhost:5001/tags?dataset=${datasetId}`)
+    fetch(`${apiUrl}/tags?dataset=${datasetId}`)
       .then(response => response.json())
       .then(data => setTagset(data));
   }, [datasetId])
@@ -32,7 +33,7 @@ function TagDetail() {
 
   const [tagrows, setTagrows] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/tags/rows?dataset=${datasetId}&tag=${tagId}`)
+    fetch(`${apiUrl}/tags/rows?dataset=${datasetId}&tag=${tagId}`)
       .then(response => response.json())
       .then(data => setTagrows(data));
   }, [datasetId, tagId])

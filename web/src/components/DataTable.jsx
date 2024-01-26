@@ -2,6 +2,7 @@
 import PropTypes from 'prop-types';
 
 import './DataTable.css';
+const apiUrl = import.meta.env.VITE_API_URL
 
 DataTable.propTypes = {
   data: PropTypes.array.isRequired,
@@ -27,7 +28,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
     console.log("tagset[tag]", tagset[tag])
     if(tagset[tag].includes(index)) {
       console.log("removing")
-      fetch(`http://localhost:5001/tags/remove?dataset=${datasetId}&tag=${tag}&index=${index}`)
+      fetch(`${apiUrl}/tags/remove?dataset=${datasetId}&tag=${tag}&index=${index}`)
         .then(response => response.json())
         .then(data => {
           console.log("removed", data)
@@ -35,7 +36,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
         });
     } else {
       console.log("adding")
-      fetch(`http://localhost:5001/tags/add?dataset=${datasetId}&tag=${tag}&index=${index}`)
+      fetch(`${apiUrl}/tags/add?dataset=${datasetId}&tag=${tag}&index=${index}`)
         .then(response => response.json())
         .then(data => {
           console.log("added", data)

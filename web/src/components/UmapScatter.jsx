@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Scatter from './Scatter';
+const apiUrl = import.meta.env.VITE_API_URL
 
 UmapScatter.propTypes = {
   dataset: PropTypes.object.isRequired,
@@ -19,7 +20,7 @@ function UmapScatter({dataset, umap, width, height, onScatter, onView, onSelect,
   // const [loadingPoints, setLoadingPoints] = useState(false);
   useEffect(() => {
     if(umap) {
-      fetch(`http://localhost:5001/datasets/${dataset.id}/umaps/${umap.name}/points`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.name}/points`)
         .then(response => response.json())
         .then(data => {
           // console.log("umap points", data)

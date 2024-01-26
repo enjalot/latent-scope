@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobPolling } from './JobRun';
 import JobProgress from './JobProgress';
+const apiUrl = import.meta.env.VITE_API_URL
 
 import './Home.css';
+
+console.log("ENV", import.meta.env)
 
 function Home() {
   const [datasets, setDatasets] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5001/datasets')
+    fetch(`${apiUrl}/datasets`)
       .then(response => response.json())
       .then(data => setDatasets(data));
   }, []);
@@ -24,7 +27,7 @@ function Home() {
     formData.append("dataset", dataset);
     formData.append('file', file);
 
-    fetch('http://localhost:5001/jobs/ingest', {
+    fetch(`${apiUrl}/jobs/ingest`, {
       method: 'POST',
       body: formData
     })

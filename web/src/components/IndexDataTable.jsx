@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import DataTable from './DataTable';
+const apiUrl = import.meta.env.VITE_API_URL
 
 IndexDataTable.propTypes = {
   dataset: PropTypes.object.isRequired,
@@ -18,7 +19,7 @@ function IndexDataTable({dataset, indices, distances = [], maxRows, tagset, onHo
   const [rows, setRows] = useState([]);
   const hydrateIndices = useCallback((indices) => {
     if(dataset)
-      fetch(`http://localhost:5001/indexed?dataset=${dataset.id}&indices=${JSON.stringify(indices)}`)
+      fetch(`${apiUrl}/indexed?dataset=${dataset.id}&indices=${JSON.stringify(indices)}`)
         .then(response => response.json())
         .then(data => {
           let rows = data.map((row, index) => {

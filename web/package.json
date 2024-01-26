@@ -5,13 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "production": "vite build --mode production",
+    "read_only": "vite build --mode read_only",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "^1.28.0",
-    "apache-arrow": "^14.0.2",
     "d3-scale": "^4.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

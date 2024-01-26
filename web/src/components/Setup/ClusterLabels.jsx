@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback} from 'react';
 import JobProgress from '../JobProgress';
 import { useStartJobPolling } from '../JobRun';
 import DataTable from '../DataTable';
+const apiUrl = import.meta.env.VITE_API_URL
 
 // import styles from './Cluster.module.css';
 
@@ -20,11 +21,11 @@ ClusterLabels.propTypes = {
 // New embeddings update the list
 function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
-  const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, 'http://localhost:5001/jobs/cluster_label');
+  const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
 
   const [chatModels, setChatModels] = useState([]);
   useEffect(() => {
-    fetch(`http://localhost:5001/chat_models`)
+    fetch(`${apiUrl}/chat_models`)
       .then(response => response.json())
       .then(data => {
         setChatModels(data)
@@ -41,7 +42,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
   useEffect(() => {
     if(dataset && cluster) {
       const endpoint = selectedModel ? `labels/${selectedModel}` : 'labels'
-      fetch(`http://localhost:5001/datasets/${dataset.id}/clusters/${cluster.cluster_name}/${endpoint}`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.cluster_name}/${endpoint}`)
         .then(response => response.json())
         .then(data => {
           setClusterLabels(data)
@@ -57,7 +58,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
   useEffect(() => {
     console.log("cluster changed, set label models", cluster?.cluster_name)
     if(cluster) {
-      fetch(`http://localhost:5001/datasets/${dataset.id}/clusters/${cluster.cluster_name}/labels_available`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.cluster_name}/labels_available`)
         .then(response => response.json())
         .then(data => {
           console.log("cluster changed, set label models fetched", cluster.cluster_name, data)

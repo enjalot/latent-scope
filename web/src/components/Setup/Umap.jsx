@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback} from 'react';
 import JobProgress from '../JobProgress';
 import { useStartJobPolling } from '../JobRun';
+const apiUrl = import.meta.env.VITE_API_URL
 
 import styles from './Umap.module.css';
 
@@ -21,18 +22,18 @@ Umap.propTypes = {
 // New embeddings update the list
 function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
   const [umapJob, setUmapJob] = useState(null);
-  const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/umap');
-  const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, 'http://localhost:5001/jobs/delete/umap');
+  const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, '${apiUrl}/jobs/umap');
+  const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, '${apiUrl}/jobs/delete/umap');
 
   const [umaps, setUmaps] = useState([]);
   function fetchUmaps(datasetId, callback) {
-    fetch(`http://localhost:5001/datasets/${datasetId}/umaps`)
+    fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
       .then(response => response.json())
       .then(data => {
         const array = data.map(d=> {
           return {
             ...d,
-            url: `http://localhost:5001/files/${datasetId}/umaps/${d.name}.png`,
+            url: `${apiUrl}/files/${datasetId}/umaps/${d.name}.png`,
           }
         })
         callback(array.reverse())

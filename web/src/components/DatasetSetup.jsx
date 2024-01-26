@@ -13,6 +13,7 @@ import IndexDataTable from './IndexDataTable';
 import UmapScatter from './UmapScatter';
 
 function DatasetSetup() {
+  const apiUrl = import.meta.env.VITE_API_URL
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
 
@@ -23,7 +24,7 @@ function DatasetSetup() {
 
   // Get the dataset meta data
   useEffect(() => {
-    fetch(`http://localhost:5001/datasets/${datasetId}/meta`)
+    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
       .then(response => response.json())
       .then(data => setDataset(data));
   }, [datasetId]);
@@ -38,7 +39,7 @@ function DatasetSetup() {
   const handleChangeTextColumn = useCallback((event) => {
     const column = event.target.value;
     console.log("setting column", column)
-    fetch(`http://localhost:5001/datasets/${datasetId}/meta/update?key=text_column&value=${column}`)
+    fetch(`${apiUrl}/datasets/${datasetId}/meta/update?key=text_column&value=${column}`)
       .then(response => response.json())
       .then(data => {
         // console.log("updated meta", data)

@@ -1,6 +1,7 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
 import { useNavigate } from 'react-router-dom';
+const apiUrl = import.meta.env.VITE_API_URL
 
 
 import PropTypes from 'prop-types';
@@ -23,7 +24,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
 
   useEffect(() => {
     if(dataset)
-    fetch(`http://localhost:5001/datasets/${dataset.id}/scopes`)
+    fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
       .then(response => response.json())
       .then(data => {
         const sorted = data.sort((a,b) => a.name.localeCompare(b.name))
@@ -52,7 +53,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
       payload.name = scope.name
     }
 
-    fetch(`http://localhost:5001/datasets/${dataset.id}/scopes/save`, {
+    fetch(`${apiUrl}/datasets/${dataset.id}/scopes/save`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -62,7 +63,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
     .then(response => response.json())
     .then(data => {
       const tscope = data
-      fetch(`http://localhost:5001/datasets/${dataset.id}/scopes`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
         .then(response => response.json())
         .then(data => {
           // setScopes(data)

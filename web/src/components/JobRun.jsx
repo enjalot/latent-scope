@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+const apiUrl = import.meta.env.VITE_API_URL
 
 function jobPolling(dataset, setJob, jobId) {
   let intervalId = null
   console.log("start polling", jobId);
   intervalId = setInterval(() => {
-    fetch(`http://localhost:5001/jobs/job?dataset=${dataset.id}&job_id=${jobId}`)
+    fetch(`${apiUrl}/jobs/job?dataset=${dataset.id}&job_id=${jobId}`)
       .then(response => {
         if (!response.ok) {
           clearInterval(intervalId);
