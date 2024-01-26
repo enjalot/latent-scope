@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 Scope.propTypes = {
   dataset: PropTypes.shape({
-    id: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired,
   scope: PropTypes.object,
   umap: PropTypes.object,

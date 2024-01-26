@@ -1,19 +1,40 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import createScatterplot from 'regl-scatterplot';
-import { scaleLinear } from 'd3-scale';
+import { scaleLinear, scaleLog } from 'd3-scale';
+import PropTypes from 'prop-types';
 
 import "./Scatter.css"
 
-const ScatterPlot = ({ 
+ScatterPlot.propTypes = {
+  points: PropTypes.array.isRequired,
+  width: PropTypes.number.isRequired,
+  height: PropTypes.number.isRequired,
+  onScatter: PropTypes.func,
+  onView: PropTypes.func,
+  onSelect: PropTypes.func,
+  onHover: PropTypes.func,
+};
+
+const calculatePointSize = (numPoints) => {
+      const minPoints = 100; // Minimum number of points to start scaling
+      const minSize = 8; // Minimum size of points
+      const maxSize = 1; // Maximum size of points when number of points is very large
+      const scale = scaleLog()
+        .domain([minPoints, Infinity])
+        .range([minSize, maxSize])
+        .clamp(true);
+      return scale(numPoints);
+    };
+
+function ScatterPlot ({ 
   points, 
-  pointsLoading, 
   width, 
   height, 
   onScatter,
   onView,
   onSelect,
   onHover,
-}) => {
+}) {
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -23,11 +44,14 @@ const ScatterPlot = ({
     .domain(yDomain.current)
 
   useEffect(() => {
+    
+    const pointSize = calculatePointSize(points.length);
+    console.log("point size", pointSize)
     const scatterplot = createScatterplot({ 
       canvas: container.current,
       width,
       height,
-      pointSize: 3,
+      pointSize,
       opacity: 0.75,
       pointColorHover: [0.1, 0.1, 0.1, 0.9],
       xScale,
@@ -67,6 +91,6 @@ const ScatterPlot = ({
   }, [points]);
 
   return <canvas className="scatter" ref={container} />;
-};
+}
 
 export default ScatterPlot;

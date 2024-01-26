@@ -31,7 +31,7 @@ function UmapScatter({dataset, umap, width, height, onScatter, onView, onSelect,
   }, [dataset, umap])
 
   return (
-    <div>
+    <div style={{ width: `${width}px`, height: `${height}px`}}>
       <Scatter 
         points={points} 
         width={width} 

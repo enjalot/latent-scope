@@ -8,10 +8,10 @@ import styles from './Umap.module.css';
 import PropTypes from 'prop-types';
 Umap.propTypes = {
   dataset: PropTypes.shape({
-    id: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired,
   umap: PropTypes.object,
-  embedding: PropTypes.object,
+  embedding: PropTypes.string,
   clusters: PropTypes.array.isRequired,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,

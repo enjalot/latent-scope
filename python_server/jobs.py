@@ -131,10 +131,10 @@ def delete_umap():
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf ../data/{dataset}/umaps/{umap_name}.parquet; rm -rf ../data/{dataset}/umaps/{umap_name}.json; rm -rf ../data/{dataset}/umaps/{umap_name}.png'
+    command = f'rm -rf ../data/{dataset}/umaps/{umap_name}*'
     # Create the rm -rf commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
-        command += f'; rm ../data/{dataset}/clusters/{cluster}.parquet; rm ../data/{dataset}/clusters/{cluster}.json; rm ../data/{dataset}/clusters/{cluster}.png rm ../data/{dataset}/clusters/{cluster}-labels.parquet'
+        command += f'; rm ../data/{dataset}/clusters/{cluster}*'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

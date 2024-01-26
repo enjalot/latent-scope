@@ -1,14 +1,19 @@
 .dataset--setup {
   max-width: 100%;
   width: 100%;
-  padding: 10px;
+  /* account for nav bar */
+  height: calc(100vh - 40px);  
+  display: flex;
+  flex-direction: column;
+
 }
+/* Top row */
 .dataset--setup-summary {
   display: flex;
   flex-direction: row;
   max-width: calc(100% - 64px);
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px;
+  padding: 12px 24px;
   margin: 12px;
 }
 .dataset--setup-info {
@@ -44,32 +49,26 @@
 }
 
 
+/* Bottom row */
 .dataset--setup-layout {
   display: flex;
   flex-direction: row;
   width: 100%;
+  /* flex: 1; */
+  min-height: 0;
+  flex-grow: 1;
 }
 .dataset--setup-left-column {
-  width: 640px;
-  max-width: 640px;
-}
-.dataset--setup-right-column {
-  /* width: calc(100% - 640px - 64px); */
-  width: 640px;
-  /* flex-grow: 1; */
+  /* width: 640px; */
+  /* max-width: 640px; */
+  flex-grow: 1;
+  height: 100%;
+  overflow-y: scroll;
 }
 
+
 /* LEFT COLUMN  */
-.dataset--setup-embeddings,
-.dataset--setup-umaps,
-.dataset--setup-clusters,
-.dataset--setup-cluster-labels,
-.dataset--setup-scopes
- {
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px;
-  margin: 12px;
-}
+
 .dataset--setup-embeddings form {
   display: flex;
   flex-direction: column;
@@ -80,6 +79,18 @@
   flex-direction: column;
   gap: 10px;
 }
+
+/* .active-stage {
+  border: 1px solid orange;
+}
+.active-stage h3 {
+  background-color: orange;
+}
+.active-stage h3::before {
+  content: '→';
+  margin-right: 5px;
+} */
+
 
 .dataset--setup-save-box {
   /* display: flex;
@@ -145,12 +156,18 @@
 }
 
 /* RIGHT COLUMN  */
-
+.dataset--setup-right-column {
+  width: 640px;
+  margin-right: 48px;
+  height: 100%;
+  overflow-y: none;
+  display: flex;
+  flex-direction: column;
+}
 
 /* in the right column */
 .dataset--setup-umap {
   width: 640px;
-  height: 640px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
   margin: 12px;
@@ -158,12 +175,15 @@
 }
 .dataset--selected {
   width: 640px;
+  flex-grow: 1;
+  overflow-y: hidden;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
   margin: 12px;
 }
 .dataset--selected-table {
-  max-height: 640px;
+  /* max-height: 640px; */
+  height: 100%;
   overflow: scroll;
 }
 

@@ -122,7 +122,15 @@
   
   {
       "provider": "openai",
-      "name": "text-embedding-ada-002",
+      "name": "text-embedding-3-small",
+      "id": "openai-text-embedding-3-small",
+      "params": {
+          "max_tokens": 8192
+      }
+  },
+{
+      "provider": "openai",
+      "name": "text-embedding-3-large",
       "id": "openai-text-embedding-ada-002",
       "params": {
           "max_tokens": 8192
@@ -147,6 +155,14 @@
       "provider": "voyageai",
       "name": "voyage-02",
       "id": "voyageai-voyage-02",
+      "params": {
+          "truncation": true
+      }
+  },
+    {
+      "provider": "voyageai",
+      "name": "voyage-2",
+      "id": "voyageai-voyage-2",
       "params": {
           "truncation": true
       }

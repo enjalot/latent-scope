@@ -27,10 +27,10 @@
     },
     {
         "provider": "openai",
-        "name": "gpt-4-1106-preview",
-        "id": "openai-gpt-4-1106-preview",
+        "name": "gpt-4-preview",
+        "id": "openai-gpt-4-preview",
         "params": {
-            "max_tokens": 8192
+            "max_tokens": 131072
         }
     },
     {

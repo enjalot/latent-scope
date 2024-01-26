@@ -8,11 +8,11 @@ import { useStartJobPolling } from '../JobRun';
 import PropTypes from 'prop-types';
 Cluster.propTypes = {
   dataset: PropTypes.shape({
-    id: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired,
   cluster: PropTypes.object,
   umap: PropTypes.object,
-  clusters: PropTypes.array.isRequired,
+  clusters: PropTypes.array,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
 };
@@ -72,13 +72,13 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
       <form onSubmit={(e) => handleNewCluster(e, umap)}>
         <label>
           Samples:
-          <input type="number" name="samples" defaultValue="5" disabled={!!clusterJob}/>
+          <input type="number" name="samples" defaultValue="5" disabled={!!clusterJob || !umap}/>
         </label><br/>
         <label>
           Min Samples:
-          <input type="number" name="min_samples" defaultValue="5" disabled={!!clusterJob} />
+          <input type="number" name="min_samples" defaultValue="5" disabled={!!clusterJob || !umap} />
         </label>
-        <button type="submit" disabled={!!clusterJob}>New Clusters</button>
+        <button type="submit" disabled={!!clusterJob || !umap}>New Clusters</button>
       </form> 
 
       <JobProgress job={clusterJob} clearJob={()=>setClusterJob(null)} />

@@ -1,0 +1,38 @@
+.stage {
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  /* padding: 12px; */
+  margin: 12px;
+}
+.stage h3 {
+  background-color: #efefef;
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+  padding: 4px 12px;
+}
+.stage .content {
+  padding: 12px;
+}
+
+.complete {
+  border: 1px solid lightblue;
+}
+.complete h3 {
+  background-color: lightblue;
+}
+.complete h3::before {
+  content: '✅';
+  margin-right: 5px;
+}
+
+.active {
+  border: 1px solid lightslategray;
+}
+.active h3 {
+  background-color: lightslategray;
+}
+.active h3::before {
+  content: '👉';
+  margin-right: 5px;
+}
+

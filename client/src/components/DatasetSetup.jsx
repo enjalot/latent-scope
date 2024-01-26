@@ -7,6 +7,7 @@ import Umap from './Setup/Umap';
 import Cluster from './Setup/Cluster';
 import ClusterLabels from './Setup/ClusterLabels';
 import Scope from './Setup/Scope';
+import Stage from './Setup/Stage';
 
 import IndexDataTable from './IndexDataTable';
 import UmapScatter from './UmapScatter';
@@ -138,6 +139,28 @@ function DatasetSetup() {
   }, [setSelectedIndices])
 
   const [scatter, setScatter] = useState({})
+
+  // ====================================================================================================
+  // progress indicator through stages
+  // determine which section (if any) to highlight based on what has been set
+  // ====================================================================================================
+  const [stage, setStage] = useState(1);
+  useEffect(() => {
+    if(!embedding) {
+      setStage(1)
+    } else if(!umap) {
+      setStage(2)
+    } else if(!cluster) {
+      setStage(3)
+    } else if(!clusterLabelModel) {
+      setStage(4)
+    } else if(!scope) {
+      setStage(5)
+    } else {
+      setStage(6)
+    }
+    console.log("sup", scope, clusterLabelModel)
+  }, [embedding, umap, cluster, clusterLabelModel, scope])
  
 
   if (!dataset) return <div>Loading...</div>;
@@ -183,30 +206,22 @@ function DatasetSetup() {
 
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">
-          <div className="dataset--setup-embeddings">
-            <h3>1. Embeddings</h3> 
+          <Stage active={stage == 1} complete={stage > 1} title="1. Embeddings">
             <Embedding dataset={dataset} textColumn={textColumn} embedding={embedding} umaps={umaps} clusters={clusters} onNew={setEmbeddings} onChange={setEmbedding} />
-          </div>
-          <div className="dataset--setup-umaps">
-            <h3>2. UMAP </h3>
+          </Stage>
+          <Stage active={stage == 2} complete={stage > 2} title="2. UMAP">
             <Umap dataset={dataset} umap={umap} embedding={embedding} clusters={clusters} onNew={setUmaps} onChange={setUmap} />
-          </div>
+          </Stage>
 
-          <div className="dataset--setup-clusters">
-            <h3>3. Clusters</h3>
+          <Stage active={stage == 3} complete={stage > 3} title="3. Clusters">
             <Cluster dataset={dataset} cluster={cluster} umap={umap} onNew={setClusters} onChange={setCluster} />
-          </div>
-          {/* AUTO LABEL CLUSTERS */}
-          <div className="dataset--setup-cluster-labels">
-            <h3>4. Auto-Label Clusters</h3>
-            {cluster ?
+          </Stage>
+          <Stage active={stage == 4} complete={stage > 4} title="4. Auto-Label Clusters">
             <ClusterLabels dataset={dataset} cluster={cluster} selectedModel={clusterLabelModel} onChange={setClusterLabelModel} />
-             : null}
-          </div>
-          <div className="dataset--setup-scopes">
-            <h3>5. Save Scope</h3>
-            <Scope dataset={dataset} scope={scope} embedding={embedding} umap={umap} cluster={cluster} onNew={setScopes} onChange={setScope} />
-          </div>
+          </Stage>
+          <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope">
+            <Scope dataset={dataset} scope={scope} embedding={embedding} umap={umap} cluster={cluster} clusterLabelModel={clusterLabelModel} onNew={setScopes} onChange={setScope} />
+          </Stage>
         </div>
 
         {/* RIGHT COLUMN */}

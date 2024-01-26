@@ -9,11 +9,10 @@ import DataTable from '../DataTable';
 import PropTypes from 'prop-types';
 ClusterLabels.propTypes = {
   dataset: PropTypes.shape({
-    id: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired,
   cluster: PropTypes.object,
   selectedModel: PropTypes.string,
-  onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
 };
 
@@ -72,29 +71,14 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
     }
   }, [dataset, cluster, clusterLabelsJob, setClusterLabelModels])
 
-  
-  // useEffect(() => {
-  //   fetchClusters(dataset.id, (clstrs) => {
-  //     setClusters(clstrs)
-  //     onNew(clstrs)
-  //   })
-  // }, [dataset, onNew]);
 
-  // useEffect(() => {
-  //   if(clusterJob?.status == "completed") {
-  //     fetchClusters(dataset.id, (clstrs) => {
-  //       setClusters(clstrs)
-  //       onNew(clstrs)
-  //     })
-  //   }
-  // }, [clusterJob, dataset, setClusters, onNew]);
   const handleNewLabels= useCallback((e) => {
     e.preventDefault()
     const form = e.target
     const data = new FormData(form)
     const model = data.get('chatModel')
     const text_column = dataset.text_column
-    const cluster_name = cluster.cluster_name
+    const cluster_name = cluster?.cluster_name
     const context = data.get('context')
     startClusterLabelsJob({model, cluster: cluster_name, text_column, context})
   }, [cluster, startClusterLabelsJob])
@@ -102,8 +86,8 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
   return (
     <div className="dataset--setup-cluster-labels-content">
       <div className="dataset--slides-new">
-        <p>Automatically create labels for each cluster in 
-          {cluster.cluster_name}</p>
+        <p>Automatically create labels for each cluster
+          {cluster ? ` in ${cluster.cluster_name}` : ''} using a chat model. </p>
         <form onSubmit={handleNewLabels}>
           <label>
             Chat Models:
@@ -113,15 +97,15 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
               ))}
             </select>
             <br></br>
-            <textarea name="context" disabled={!!clusterLabelsJob}></textarea>
+            <textarea name="context" disabled={!!clusterLabelsJob || !cluster}></textarea>
           </label>
-          <button type="submit">Auto Label</button>
+          <button type="submit" disabled={!!clusterLabelsJob || !cluster}>Auto Label</button>
         </form>
 
         <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} />
 
       </div>
-      <div className="dataset--setup-cluster-labels-list">
+      {cluster ? <div className="dataset--setup-cluster-labels-list">
         <label>
           View Labels:
           <select 
@@ -138,7 +122,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
         <div className="dataset--setup-labels-list">
           <DataTable data={clusterLabels.map((d,i) => ({cluster: i, label: d.label, items: d.indices.length}))} />
         </div>
-      </div>
+      </div> : null}
     </div>
   );
 }

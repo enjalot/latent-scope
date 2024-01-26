@@ -6,7 +6,7 @@ import { useStartJobPolling } from '../JobRun';
 import PropTypes from 'prop-types';
 EmbeddingNew.propTypes = {
   dataset: PropTypes.shape({
-    id: PropTypes.number.isRequired
+    id: PropTypes.string.isRequired
   }).isRequired,
   textColumn: PropTypes.string.isRequired,
   embedding: PropTypes.string,
