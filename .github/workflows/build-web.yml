@@ -39,4 +39,4 @@ jobs:
         git checkout -b built
         git add -f web/dist/production
         git commit -m "Deploying build"
-        git push --force https://${{ secrets.BUILD_TOKEN }}@github.com/enjalot/latent-scope.git built
+        git push --force https://${{ secrets.MY_PERSONAL_TOKEN }}:x-oauth-basic@github.com/enjalot/latent-scope.git built
