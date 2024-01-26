@@ -16,6 +16,23 @@ function Home() {
       .then(response => response.json())
       .then(data => setDatasets(data));
   }, []);
+  
+  const [scopes, setScopes] = useState({});
+
+  useEffect(() => {
+    datasets.forEach(dataset => {
+      fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
+        .then(response => response.json())
+        .then(data => setScopes(prevScopes => {
+          const ret = {...prevScopes};
+          ret[dataset.id] = data;
+          return ret
+        }))
+    });
+  }, [datasets]);
+  useEffect(() => {
+    console.log("scopes", scopes)
+  }, [scopes]);
 
   const [ingestJob, setIngestJob] = useState(null);
   const handleNewDataset = (event) => {
