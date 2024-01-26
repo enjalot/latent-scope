@@ -38,7 +38,7 @@ jobs:
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.BUILD_TOKEN }}
-        publish_dir: ./web/dist/production
+        publish_dir: .
         publish_branch: built
         keep_files: true
     # - name: Deploy to Built Branch
