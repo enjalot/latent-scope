@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import styles from './Stage.module.css';
-console.log("STYLES", styles)
 
 function Stage({ active, complete, title, children }) {
   return (

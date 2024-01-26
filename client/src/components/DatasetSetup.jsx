@@ -18,8 +18,8 @@ function DatasetSetup() {
 
   const navigate = useNavigate();
 
-  const scopeWidth = 640
-  const scopeHeight = 640
+  const scopeWidth = 500
+  const scopeHeight = 500
 
   // Get the dataset meta data
   useEffect(() => {
@@ -169,22 +169,24 @@ function DatasetSetup() {
     <div className="dataset--setup">
       <div className="dataset--setup-summary">
         <div className="dataset--setup-info">
-          <h2>{datasetId}</h2>
-          [ {dataset.length} rows ]<br/>
-          Columns: {dataset.columns.join(", ")}
-          <div className="dataset--details-text-column">
-            Set Text Column: 
-            <select value={textColumn} onChange={handleChangeTextColumn}>
-              {dataset.columns.map((column, index) => (
-                <option key={index} value={column}>{column}</option>
-              ))}
-            </select>
+          <h3>{datasetId}</h3>
+          <div className="dataset--setup-info-content">
+            [ {dataset.length} rows ] 
+            Columns: {dataset.columns.join(", ")}
+            <div className="dataset--details-text-column">
+              Set Text Column: 
+              <select value={textColumn} onChange={handleChangeTextColumn}>
+                {dataset.columns.map((column, index) => (
+                  <option key={index} value={column}>{column}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
         
         { scope ? <a href={`/datasets/${dataset?.id}/explore/${scope.name}`}>Explore {scope.label} ({scope.name})</a> : null }
 
-        <div className="dataset--setup-scopes-list">
+        {/* <div className="dataset--setup-scopes-list">
             {scopes && scopes.map((s, index) => {
               const cl = clusters.find(c => c.cluster_name == s.cluster) || {}
               return (
@@ -197,12 +199,12 @@ function DatasetSetup() {
                 <span>{s.label} </span>
                 <span>{s.description}</span>
                 <img src={cl.url} alt={cl.name} /> 
-                <span>{s.embeddings}</span>
+                <span>{s.embeddings}</span> 
               </div>
             )})}
             
-        </div>
-      </div>
+        </div>*/}
+      </div> 
 
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">

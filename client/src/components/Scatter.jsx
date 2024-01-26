@@ -3,7 +3,7 @@ import createScatterplot from 'regl-scatterplot';
 import { scaleLinear, scaleLog } from 'd3-scale';
 import PropTypes from 'prop-types';
 
-import "./Scatter.css"
+import styles from  "./Scatter.module.css"
 
 ScatterPlot.propTypes = {
   points: PropTypes.array.isRequired,
@@ -16,15 +16,28 @@ ScatterPlot.propTypes = {
 };
 
 const calculatePointSize = (numPoints) => {
-      const minPoints = 100; // Minimum number of points to start scaling
-      const minSize = 8; // Minimum size of points
-      const maxSize = 1; // Maximum size of points when number of points is very large
-      const scale = scaleLog()
-        .domain([minPoints, Infinity])
-        .range([minSize, maxSize])
-        .clamp(true);
-      return scale(numPoints);
-    };
+  const minPoints = 100; // Minimum number of points to start scaling
+  const maxPoints = 1000000
+  const minSize = 6; // Minimum size of points
+  const maxSize = 1; // Maximum size of points when number of points is very large
+  const scale = scaleLog()
+    .domain([minPoints, maxPoints])
+    .range([minSize, maxSize])
+    .clamp(true);
+  return scale(numPoints);
+};
+const calculatePointOpacity = (numPoints) => {
+  const minPoints = 100; // Minimum number of points to start scaling
+  const maxPoints = 1000000
+  const minOpacity = 0.2; 
+  const maxOpacity = 0.7; 
+  const scale = scaleLog()
+    .domain([minPoints, maxPoints])
+    .range([maxOpacity, minOpacity])
+    .clamp(true);
+  return scale(numPoints);
+};
+
 
 function ScatterPlot ({ 
   points, 
@@ -46,14 +59,16 @@ function ScatterPlot ({
   useEffect(() => {
     
     const pointSize = calculatePointSize(points.length);
-    console.log("point size", pointSize)
+    const opacity = calculatePointOpacity(points.length);
+    console.log("point size", pointSize, opacity)
     const scatterplot = createScatterplot({ 
       canvas: container.current,
       width,
       height,
       pointSize,
-      opacity: 0.75,
-      pointColorHover: [0.1, 0.1, 0.1, 0.9],
+      opacity,
+      pointColor: [250/255, 128/255, 114/255, 1], //salmon
+      pointColorHover: [0.1, 0.1, 0.1, 0.5],
       xScale,
       yScale,
     });
@@ -90,7 +105,7 @@ function ScatterPlot ({
     };
   }, [points]);
 
-  return <canvas className="scatter" ref={container} />;
+  return <canvas className={styles.scatter} ref={container} />;
 }
 
 export default ScatterPlot;

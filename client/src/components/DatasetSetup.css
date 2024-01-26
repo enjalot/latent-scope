@@ -1,3 +1,9 @@
+:root {
+  --umap-width: 500px;
+}
+
+
+
 .dataset--setup {
   max-width: 100%;
   width: 100%;
@@ -21,11 +27,21 @@
   flex-direction: column;
   flex-wrap: wrap;
   gap: 10px;
-  width: 640px;
-  max-width: 640px;
+  /* width: var(--umap-width); */
+  /* max-width: var(--umap-width); */
+}
+.dataset--setup-info h3 {
+  background-color: #efefef;
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+  padding: 4px 12px;
+}
+.dataset--setup-info .content {
+  padding: 12px;
 }
 .dataset--setup-scopes-list {
-  max-width: calc(100% - 640px);
+  max-width: calc(100% - var(--umap-width));
   display: flex;
   flex-direction: rows;
 }
@@ -119,11 +135,6 @@
 
 }
 
-
-
-
-
-
 .dataset--setup-umaps-list, .dataset--setup-clusters-list {
   display: flex;
   flex-direction: row;
@@ -155,9 +166,12 @@
   overflow-y: scroll;
 }
 
+
+
+
 /* RIGHT COLUMN  */
 .dataset--setup-right-column {
-  width: 640px;
+  width: var(--umap-width);
   margin-right: 48px;
   height: 100%;
   overflow-y: none;
@@ -167,14 +181,14 @@
 
 /* in the right column */
 .dataset--setup-umap {
-  width: 640px;
+  width: var(--umap-width);
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
   margin: 12px;
   user-select: none;
 }
 .dataset--selected {
-  width: 640px;
+  width: var(--umap-width);
   flex-grow: 1;
   overflow-y: hidden;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
