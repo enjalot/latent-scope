@@ -32,7 +32,6 @@ jobs:
         git config --global user.name 'Ian Johnson'
         git config --global user.email 'enjalot@gmail.com'
         git checkout -b built
-        git rm -r --cached .
-        git add -f web/dist
+        git add -f web/dist/production
         git commit -m "Deploying build"
         git push origin built --force
