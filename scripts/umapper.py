@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import umap
+import pickle
 import argparse
 import numpy as np
 import pandas as pd
@@ -76,6 +77,10 @@ def umapper(dataset_name, model_unsanitized, neighbors=25, min_dist=0.075):
             "neighbors": neighbors, 
             "min_dist": min_dist}, f, indent=2)
     f.close()
+
+    # save a pickle of the umap
+    with open(f'../data/{dataset_name}/umaps/{umap_name}.pkl', 'wb') as f:
+        pickle.dump(reducer, f)
     print("done")
     
 
