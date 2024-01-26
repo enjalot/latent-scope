@@ -16,3 +16,14 @@
   background-color: #f9f9f9;
   cursor: pointer;
 }
+
+.home .scope-links {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.home .scope-link {
+  padding: 12px;
+
+
+}
