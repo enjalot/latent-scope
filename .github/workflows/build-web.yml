@@ -31,6 +31,9 @@ jobs:
       run: ls -lah dist/production
       working-directory: ./web
 
+    - name: Remove dist from .gitignore
+      run: sed -i '/dist/d' ./web/.gitignore
+
     - name: Deploy to Dist Branch
       uses: peaceiris/actions-gh-pages@v3
       with:
