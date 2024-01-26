@@ -17,7 +17,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v1
       with:
-        node-version: '14'
+        node-version: '18'
 
     - name: Install Dependencies
       run: npm install
@@ -28,7 +28,8 @@ jobs:
       working-directory: ./web
     
     - name: List build directory contents
-      run: ls -lah web/dist/production
+      run: ls -lah dist/production
+      working-directory: ./web
 
     - name: Deploy to Built Branch
       run: |
