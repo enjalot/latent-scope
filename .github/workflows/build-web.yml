@@ -26,9 +26,13 @@ jobs:
     - name: Build
       run: npm run production
       working-directory: ./web
+    
+    - name: List build directory contents
+      run: ls -lah web/dist/production
 
     - name: Deploy to Built Branch
       run: |
+        pwd
         git config --global user.name 'Ian Johnson'
         git config --global user.email 'enjalot@gmail.com'
         git checkout -b built
