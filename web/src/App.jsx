@@ -2,13 +2,13 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/Home';
 import DatasetExplore from './components/DatasetExplore';
 import DatasetSetup from './components/DatasetSetup';
-import TagDetail from './components/TagDetail';
 import Nav from './components/Nav';
 import './App.css';
 
 function App() {
+  const env = import.meta.env;
   return (
-    <Router>
+    <Router basename={env.BASE_NAME}>
       <Nav />
       <div className="page">
       <Routes>
