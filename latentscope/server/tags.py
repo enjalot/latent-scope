@@ -30,7 +30,7 @@ def tags():
     for f in os.listdir(tagdir):
         if f.endswith(".indices"):
             tag = f.split(".")[0]
-            indices = np.loadtxt(os.path.join("../data", dataset, "tags", tag + ".indices"), dtype=int).tolist()
+            indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
             if type(indices) == int:
                 indices = [indices]
             tagsets[dataset][tag] = indices
@@ -49,10 +49,10 @@ def new_tag():
         tagsets[dataset] = {}
     # search the dataset directory for all files ending in .indices
     tags = []
-    for f in os.listdir(os.path.join("../data", dataset)):
+    for f in os.listdir(os.path.join(DATA_DIR, dataset)):
         if f.endswith(".indices"):
             dtag = f.split(".")[0]
-            indices = np.loadtxt(os.path.join("../data", dataset, "tags", dtag + ".indices"), dtype=int).tolist()
+            indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", dtag + ".indices"), dtype=int).tolist()
             if type(indices) == int:
                 indices = [indices]
             tagsets[dataset][dtag] = indices
@@ -60,7 +60,7 @@ def new_tag():
     if tag not in tagsets[dataset]:
         tagsets[dataset][tag] = []
         # create an empty file
-        filename = os.path.join("../data", dataset, "tags", tag + ".indices")
+        filename = os.path.join(DATA_DIR, dataset, "tags", tag + ".indices")
         with open(filename, 'w') as f:
             f.write("")
             f.close()

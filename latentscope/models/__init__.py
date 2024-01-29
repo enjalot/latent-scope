@@ -1,5 +1,6 @@
 import os
 import json
+import pkg_resources
 from .providers.transformers import TransformersEmbedProvider, TransformersChatProvider
 from .providers.openai import OpenAIEmbedProvider, OpenAIChatProvider
 from .providers.mistralai import MistralAIEmbedProvider, MistralAIChatProvider
@@ -10,8 +11,8 @@ from .providers.voyageai import VoyageAIEmbedProvider
 
 def get_embedding_model(id):
     """Returns a ModelProvider instance for the given model id."""
-    embed_models_path = os.path.join(os.path.dirname(__file__), "embedding_models.json")
-    with open(embed_models_path, "r") as f:
+    embedding_path = pkg_resources.resource_filename('latentscope.models', 'embedding_models.json')
+    with open(embedding_path, "r") as f:
         embed_model_list = json.load(f)
     embed_model_dict = {model['id']: model for model in embed_model_list}
     model = embed_model_dict[id]
@@ -34,8 +35,8 @@ def get_embedding_model(id):
 
 def get_chat_model(id):
     """Returns a ModelProvider instance for the given model id."""
-    chat_models_path = os.path.join(os.path.dirname(__file__), "chat_models.json")
-    with open(chat_models_path, "r") as f:
+    chat_path = pkg_resources.resource_filename('latentscope.models', 'chat_models.json')
+    with open(chat_path, "r") as f:
         chat_model_list = json.load(f)
     chat_model_dict = {model['id']: model for model in chat_model_list}
     model = chat_model_dict[id]

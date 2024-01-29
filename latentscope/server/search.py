@@ -3,12 +3,11 @@ import sys
 import numpy as np
 from flask import Blueprint, jsonify, request
 
-# TODO is this hacky way to import from the models directory?
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from latentscope.models import get_embedding_model
 
 # Create a Blueprint
 search_bp = Blueprint('search_bp', __name__)
+DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 # in memory cache of dataset metadata, embeddings, models and tokenizers
 DATASETS = {}
@@ -34,7 +33,7 @@ def nn():
 
     if dataset not in DATASETS or model_id not in DATASETS[dataset]:
         # load the dataset embeddings
-        embeddings = np.load(os.path.join("../data", dataset, "embeddings", model_id + ".npy"))
+        embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", model_id + ".npy"))
         print("fitting embeddings")
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")

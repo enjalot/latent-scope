@@ -50,6 +50,10 @@ setup(
         'console_scripts': [
             'ls-serve=latentscope.server:serve',
             'ls-ingest=latentscope.scripts.ingest:main',
+            'ls-embed=latentscope.scripts.embed:main',
+            'ls-umap=latentscope.scripts.umapper:main',
+            'ls-cluster=latentscope.scripts.cluster:main',
+            'ls-label=latentscope.scripts.label_clusters:main',
         ],
     },
     include_package_data=True,

@@ -5,7 +5,8 @@ from dotenv import load_dotenv, set_key
 def get_data_dir():
     DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
     if DATA_DIR is None:
-        print("LATENT_SCOPE_DATA environment variable not set. Please set it to the directory where you want to store your data.")
+        print("""LATENT_SCOPE_DATA environment variable not set. Please set it to the directory where you want to store your data.
+e.g.: export LATENT_SCOPE_DATA=~/latentscope-data""")
         sys.exit(1)
     return DATA_DIR
 
@@ -19,6 +20,10 @@ def update_data_dir(directory, env_file=".env"):
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
+
+def get_key(key, env_file=".env"):
+    load_dotenv(env_file)
+    return os.getenv(key)
 
 def set_openai_key(openai_key, env_file=".env"):
     # Load existing .env file, or create one if it doesn't exist

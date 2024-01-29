@@ -1,15 +1,22 @@
-# Usage: python ingest.py <dataset_name>
+# Usage: ls-ingest <dataset_name>
 import os
-import sys
 import json
+import argparse
 import pandas as pd
 
 from latentscope.util import get_data_dir
 
+# TODO: somehow optionally accept a pandas dataframe as input
 def main():
+    parser = argparse.ArgumentParser(description='Ingest a dataset')
+    parser.add_argument('name', type=str, help='Dataset name (directory name in data folder)')
+    args = parser.parse_args()
+    ingest(args.name)
+
+def ingest(dataset_name):
     DATA_DIR = get_data_dir()
-    dataset_name = sys.argv[1]
     directory = os.path.join(DATA_DIR, dataset_name)
+    # TODO: inspect the incoming data to see if it is a csv or parquet file
     csv_file = os.path.join(directory, "input.csv")
     print("reading", csv_file)
     df = pd.read_csv(csv_file)

@@ -4,12 +4,11 @@ import tiktoken
 from openai import OpenAI
 from .base import EmbedModelProvider, ChatModelProvider
 
-from dotenv import load_dotenv
-load_dotenv()
+from latentscope.util import get_key
 
 class OpenAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
         self.encoder = tiktoken.encoding_for_model(self.name)
 
     def embed(self, inputs):
@@ -27,7 +26,7 @@ class OpenAIEmbedProvider(EmbedModelProvider):
 
 class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
         self.encoder = tiktoken.encoding_for_model(self.name)
 
     def chat(self, messages):

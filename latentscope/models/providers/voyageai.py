@@ -3,12 +3,11 @@ import time
 import voyageai 
 from .base import EmbedModelProvider
 
-from dotenv import load_dotenv
-load_dotenv()
+from latentscope.util import get_key
 
 class VoyageAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.client = voyageai.Client(os.getenv("VOYAGE_API_KEY"))
+        self.client = voyageai.Client(get_key("VOYAGE_API_KEY"))
 
     def embed(self, inputs):
         time.sleep(0.1) # TODO proper rate limiting

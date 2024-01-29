@@ -133,10 +133,11 @@ function DatasetDetail() {
         let rows = data.map((row, index) => {
           return {
             index: indices[index],
-            text: row[text_column],
-            score: row.score, // TODO: this is custom to one dataset
-            distance: distances[index],
-            date: row.date,
+            ...row
+            // text: row[text_column],
+            // score: row.score, // TODO: this is custom to one dataset
+            // distance: distances[index],
+            // date: row.date,
           }
         })
         rows.sort((a, b) => b.score - a.score)
@@ -167,21 +168,22 @@ function DatasetDetail() {
   const [tagrows, setTagrows] = useState([]);
   useEffect(() => {
     if(tagset[tag]) {
-      fetch(`${apiUrl}/tags/rows?dataset=${dataset.id}&tag=${tag}`)
-        .then(response => response.json())
-        .then(data => {
-          const text_column = dataset.text_column
-          let rows = data.map((row, index) => {
-            return {
-              index: tagset[tag][index],
-              text: row[text_column],
-              score: row.score, // TODO: this is custom to one dataset
-              date: row.date,
-            }
-          })
-          rows.sort((a, b) => b.score - a.score)
-          setTagrows(rows)
-        }).catch(e => console.log(e));
+      hydrateIndices(tagset[tag], setTagrows)
+      // fetch(`${apiUrl}/tags/rows?dataset=${dataset.id}&tag=${tag}`)
+      //   .then(response => response.json())
+      //   .then(data => {
+      //     const text_column = dataset.text_column
+      //     let rows = data.map((row, index) => {
+      //       return {
+      //         index: tagset[tag][index],
+      //         text: row[text_column],
+      //         score: row.score, // TODO: this is custom to one dataset
+      //         date: row.date,
+      //       }
+      //     })
+      //     rows.sort((a, b) => b.score - a.score)
+      //     setTagrows(rows)
+      //   }).catch(e => console.log(e));
       } else {
         setTagrows([])
       }

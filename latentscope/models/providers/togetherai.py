@@ -4,12 +4,11 @@ import tiktoken
 import together
 from .base import EmbedModelProvider
 
-from dotenv import load_dotenv
-load_dotenv()
+from latentscope.util import get_key
 
 class TogetherAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        together.api_key = os.getenv("TOGETHER_API_KEY")
+        together.api_key = get_key("TOGETHER_API_KEY")
         self.client = together.Together()
         self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
 

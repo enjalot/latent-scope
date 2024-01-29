@@ -3,12 +3,11 @@ import time
 import cohere
 from .base import EmbedModelProvider
 
-from dotenv import load_dotenv
-load_dotenv()
+from latentscope.util import get_key
 
 class CohereAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.client = cohere.Client(os.getenv("COHERE_API_KEY"))
+        self.client = cohere.Client(get_key("COHERE_API_KEY"))
 
     def embed(self, inputs):
         time.sleep(0.01) # TODO proper rate limiting

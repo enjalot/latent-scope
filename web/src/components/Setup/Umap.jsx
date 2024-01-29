@@ -22,8 +22,8 @@ Umap.propTypes = {
 // New embeddings update the list
 function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
   const [umapJob, setUmapJob] = useState(null);
-  const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, '${apiUrl}/jobs/umap');
-  const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, '${apiUrl}/jobs/delete/umap');
+  const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/umap`);
+  const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/delete/umap`);
 
   const [umaps, setUmaps] = useState([]);
   function fetchUmaps(datasetId, callback) {
@@ -69,7 +69,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
         <form onSubmit={handleNewUmap}>
           <label>
             Neighbors:
-            <input type="number" name="neighbors" defaultValue="50"disabled={!!umapJob} />
+            <input type="number" name="neighbors" defaultValue="25"disabled={!!umapJob} />
           </label>
           <label>
             Min Dist:

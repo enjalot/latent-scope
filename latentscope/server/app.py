@@ -58,7 +58,6 @@ def serve():
 
     @app.route('/api/chat_models', methods=['GET'])
     def get_chat_models():
-        file_path = os.path.join(os.getcwd(), 'models', 'chat_models.json')   
         chat_path = pkg_resources.resource_filename('latentscope.models', 'chat_models.json')
         with open(chat_path, 'r', encoding='utf-8') as file:
             models = json.load(file)
@@ -92,14 +91,17 @@ def serve():
         return rows.to_json(orient="records")
 
 
-    dist_dir = './web/dist'
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def catch_all(path):
-        if path != "" and os.path.exists(os.path.join(dist_dir, path)):
-            return send_from_directory(dist_dir, path)
+        if path != "":
+            pth = pkg_resources.resource_filename('latentscope', f"web/dist/{path}")
+            directory = os.path.dirname(pth)
+            return send_from_directory(directory, os.path.basename(pth))
         else:
-            return send_from_directory(dist_dir, 'index.html')
+            pth = pkg_resources.resource_filename('latentscope', "web/dist/index.html")
+            directory = os.path.dirname(pth)
+            return send_from_directory(directory, os.path.basename(pth))
 
 
     app.run(host=host, port=port, debug=debug)

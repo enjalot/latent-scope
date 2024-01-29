@@ -17,8 +17,11 @@ def run_job(dataset, job_id, command):
       os.makedirs(job_dir)
 
     progress_file = os.path.join(job_dir, f"{job_id}.json")
+    print("command", command)
     # job_name = command.replace("python ../scripts/", "").replace(".py", "!!!").split("!!!")[0],
-    job_name = command.split(" ")[0].split("-")[1]
+    job_name = command.split(" ")[0]
+    if "ls-" in job_name:
+        job_name = job_name.replace("ls-", "")
     job = {
         "dataset": dataset,
         "job_name": job_name,
@@ -96,7 +99,7 @@ def run_embed():
     model = request.args.get('model') # model id
 
     job_id = str(uuid.uuid4())
-    command = f'python ../scripts/embed.py {dataset} {text_column} {model}'
+    command = f'ls-embed {dataset} {text_column} {model}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -110,7 +113,7 @@ def run_umap():
     print("run umap", dataset, embeddings, neighbors, min_dist)
 
     job_id = str(uuid.uuid4())
-    command = f'python ../scripts/umapper.py {dataset} {embeddings} {neighbors} {min_dist}'
+    command = f'ls-umap {dataset} {embeddings} {neighbors} {min_dist}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -147,7 +150,7 @@ def run_cluster():
     print("run cluster", dataset, umap_name, samples, min_samples)
 
     job_id = str(uuid.uuid4())
-    command = f'python ../scripts/cluster.py {dataset} {umap_name} {samples} {min_samples}'
+    command = f'ls-cluster {dataset} {umap_name} {samples} {min_samples}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -171,6 +174,6 @@ def run_cluster_label():
     print("context", context)
 
     job_id = str(uuid.uuid4())
-    command = f'python ../scripts/label-clusters.py {dataset} {text_column} {cluster} {model} "{context}"'
+    command = f'ls-label {dataset} {text_column} {cluster} {model} "{context}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})

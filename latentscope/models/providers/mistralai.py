@@ -5,8 +5,7 @@ from mistralai.models.chat_completion import ChatMessage
 from transformers import AutoTokenizer
 from .base import EmbedModelProvider,ChatModelProvider
 
-from dotenv import load_dotenv
-load_dotenv()
+from latentscope.util import get_key
 
 # TODO verify these tokenizers somehow
 # derived from:
@@ -20,7 +19,7 @@ encoders = {
 
 class MistralAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.client = MistralClient(os.getenv("MISTRAL_API_KEY"))
+        self.client = MistralClient(get_key("MISTRAL_API_KEY"))
 
     def embed(self, inputs):
         time.sleep(0.1) # TODO proper rate limiting
@@ -29,7 +28,7 @@ class MistralAIEmbedProvider(EmbedModelProvider):
 
 class MistralAIChatProvider(ChatModelProvider):
     def load_model(self):
-        self.client = MistralClient(api_key=os.getenv("MISTRAL_API_KEY"))
+        self.client = MistralClient(api_key=get_key("MISTRAL_API_KEY"))
         self.encoder = AutoTokenizer.from_pretrained(encoders[self.name])
 
     def chat(self, messages):
