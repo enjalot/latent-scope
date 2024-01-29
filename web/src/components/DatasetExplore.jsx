@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 
 import './DatasetExplore.css';
 import DataTable from './DataTable';
@@ -388,7 +388,7 @@ function DatasetDetail() {
 
         [ {dataset.length} rows ]<br/>
         {scope?.name}: [{embedding}][ {umap?.name} ] [ {scope?.cluster} ]
-        [ <a href={`/datasets/${datasetId}/setup/${scopeId}`}>setup</a> ]
+        [ <Link to={`/datasets/${dataset?.id}/setup/${scope?.name}`}>Setup</Link> ]
         <br/>
 
         Tags: {tags.map(t => {

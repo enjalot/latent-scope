@@ -43,7 +43,7 @@ jobs:
         publish_dir: web/dist/read_only # puts the index.html and assets in root of repo
         # publish_branch: built
         publish_branch: gh-pages
-        keep_files: true
+        keep_files: false
     # - name: Deploy to Built Branch
     #   run: |
     #     pwd

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 
 import './DatasetSetup.css';
 import Embedding from './Setup/Embedding';
@@ -185,7 +185,7 @@ function DatasetSetup() {
           </div>
         </div>
         
-        { scope ? <a href={`/datasets/${dataset?.id}/explore/${scope.name}`}>Explore {scope.label} ({scope.name})</a> : null }
+        { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.name}`}> Explore {scope.label} ({scope.name})</Link> : null }
 
         {/* <div className="dataset--setup-scopes-list">
             {scopes && scopes.map((s, index) => {
