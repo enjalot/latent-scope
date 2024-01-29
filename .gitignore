@@ -2,4 +2,8 @@ node_modules
 .DS_Store
 __pycache__
 venv
+testenv
 .env
+dist
+build
+*.egg-info

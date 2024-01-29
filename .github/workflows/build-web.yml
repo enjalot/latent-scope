@@ -24,22 +24,25 @@ jobs:
       working-directory: ./web
 
     - name: Build
-      run: npm run production
+      # run: npm run production
+      run: npm run read_only
       working-directory: ./web
     
     - name: List build directory contents
-      run: ls -lah dist/production
+      run: ls -lah dist/read_only
       working-directory: ./web
 
-    - name: Remove dist from .gitignore
-      run: sed -i '/dist/d' ./web/.gitignore
+    # - name: Remove dist from .gitignore
+    #   run: sed -i '/dist/d' ./web/.gitignore
 
     - name: Deploy to Dist Branch
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.BUILD_TOKEN }}
-        publish_dir: .
-        publish_branch: built
+        # publish_dir: .
+        publish_dir: web/dist/read_only # puts the index.html and assets in root of repo
+        # publish_branch: built
+        publish_branch: gh-pages
         keep_files: true
     # - name: Deploy to Built Branch
     #   run: |

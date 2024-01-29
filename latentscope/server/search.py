@@ -5,7 +5,7 @@ from flask import Blueprint, jsonify, request
 
 # TODO is this hacky way to import from the models directory?
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from models import get_embedding_model
+from latentscope.models import get_embedding_model
 
 # Create a Blueprint
 search_bp = Blueprint('search_bp', __name__)
@@ -26,7 +26,7 @@ def nn():
     num = 150
     if model_id not in MODELS:
         print("loading model", model_id)
-        model = get_embed_model(model_id)
+        model = get_embedding_model(model_id)
         model.load_model()
         MODELS[model_id] = model
     else:

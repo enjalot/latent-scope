@@ -9,14 +9,16 @@ from flask import Blueprint, jsonify, request
 
 # Create a Blueprint
 jobs_bp = Blueprint('jobs_bp', __name__)
-
+DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 def run_job(dataset, job_id, command):
-    if not os.path.exists(f"../data/{dataset}/jobs"):
-      os.makedirs(f"../data/{dataset}/jobs")
+    job_dir = os.path.join(DATA_DIR, dataset, "jobs")
+    if not os.path.exists(job_dir):
+      os.makedirs(job_dir)
 
-    progress_file = f"../data/{dataset}/jobs/{job_id}.json"
-    job_name = command.replace("python ../scripts/", "").replace(".py", "!!!").split("!!!")[0],
+    progress_file = os.path.join(job_dir, f"{job_id}.json")
+    # job_name = command.replace("python ../scripts/", "").replace(".py", "!!!").split("!!!")[0],
+    job_name = command.split(" ")[0].split("-")[1]
     job = {
         "dataset": dataset,
         "job_name": job_name,
@@ -58,7 +60,7 @@ def run_job(dataset, job_id, command):
 def get_job():
     dataset = request.args.get('dataset')
     job_id = request.args.get('job_id')
-    progress_file = f"../data/{dataset}/jobs/{job_id}.json"
+    progress_file = os.path.join(DATA_DIR, dataset, "jobs", f"{job_id}.json")
     if os.path.exists(progress_file):
         try:
             with open(progress_file, 'r') as f:
@@ -71,19 +73,17 @@ def get_job():
     else:
         return jsonify({'status': 'not found'}), 404
 
-#@jobs_bp.route('/jobs')
-
 @jobs_bp.route('/ingest', methods=['POST'])
 def run_ingest():
     dataset = request.form.get('dataset')
     file = request.files.get('file')
-    print("name", dataset)
-    if not os.path.exists(f"../data/{dataset}"):
-        os.makedirs(f"../data/{dataset}")
-    file.save(f"../data/{dataset}/input.csv")
+    dataset_dir = os.path.join(DATA_DIR, dataset)
+    if not os.path.exists(dataset_dir):
+        os.makedirs(dataset_dir)
+    file.save(os.path.join(dataset_dir, "input.csv"))
 
     job_id = str(uuid.uuid4())
-    command = f'python ../scripts/ingest.py {dataset}'
+    command = f'ls-ingest {dataset}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -120,7 +120,7 @@ def delete_umap():
     umap_name = request.args.get('umap_name')
 
     # Get a list of all the clusters that have umap_name in their .json so we can delete them too
-    cluster_dir = f'../data/{dataset}/clusters'
+    cluster_dir = os.path.join(DATA_DIR, dataset, 'clusters')
     clusters_to_delete = []
     for file in os.listdir(cluster_dir):
         if file.endswith(".json"):
@@ -131,10 +131,10 @@ def delete_umap():
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf ../data/{dataset}/umaps/{umap_name}*'
+    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "umaps", f"{umap_name}*")}'
     # Create the rm -rf commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
-        command += f'; rm ../data/{dataset}/clusters/{cluster}*'
+        command += f'; rm {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*")}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -156,7 +156,7 @@ def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_name = request.args.get('cluster_name')
     job_id = str(uuid.uuid4())
-    command = f'rm -rf ../data/{dataset}/clusters/{cluster_name}*'
+    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_name}*")}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -172,15 +172,5 @@ def run_cluster_label():
 
     job_id = str(uuid.uuid4())
     command = f'python ../scripts/label-clusters.py {dataset} {text_column} {cluster} {model} "{context}"'
-    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
-    return jsonify({"job_id": job_id})
-
-
-@jobs_bp.route('/slides')
-def run_slides():
-    dataset = request.args.get('dataset')
-    cluster_name = request.args.get('cluster_name')
-    job_id = str(uuid.uuid4())
-    command = f'python ../scripts/slides.py {dataset} {cluster_name}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
