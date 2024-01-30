@@ -7,6 +7,7 @@ import './App.css';
 
 function App() {
   const env = import.meta.env;
+  console.log("ENV", env)
   return (
     <Router basename={env.BASE_NAME}>
       <Nav />

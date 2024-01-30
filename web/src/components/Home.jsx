@@ -6,8 +6,6 @@ const apiUrl = import.meta.env.VITE_API_URL
 
 import './Home.css';
 
-console.log("ENV", import.meta.env)
-
 function Home() {
   const [datasets, setDatasets] = useState([]);
 

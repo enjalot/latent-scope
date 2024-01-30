@@ -1,89 +1,92 @@
 # Latent Scope
 
-Quickly embed, project, cluster and explore a dataset. I think of this as somewhere between a microscope and a workbench for visualizing and exploring datasets through the lens of embedding model latent spaces. 
+Quickly embed, project, cluster and explore a dataset. I think of this project as a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 ### Demo
-TODO (walk through website, youtube video)
+This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in live demos:
+* TODO: OpenOrca
+* TODO: Dolly 15k
+* TODO: r/DadJokes
+
+TODO: YouTube getting started video
+
+### Quick Start
+To get started, install the [latent-scope module]() and run the server:
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install latent-scope
+ls-serve ~/local-scope-data
+```
+Then open your browser to http://localhost:5001 and upload your first dataset!
+
+### Notebooks
+You can also configure and run the server from inside python, see these notebooks for examples of preparing and loading data:
+* [dvs-survey](notebooks/dvs-survey.ipynb)
+* [dadabase](notebooks/dadabase.ipynb)
+
 
 ### Repository overview
 This repository is currently meant to run locally, with a React frontend that communicates with a python server backend. We support several popular open source embedding models that can run locally as well as proprietary API embedding services. Adding new models and services should be quick and easy.
 
-### Python setup
-The following directories depend on a virtual env
-
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### python_server
-A python server that provides access to the data as well as on-demand nearest neighbor search and simple queries into larger datasets.
-This starts a development server used by the web client on port 5001.
-```bash
-cd python_server
-python server.py
-```
-
-### Web client
-A React app that provides the interface for operating the scope and running the various scripts 
-```bash
-cd client
-npm install
-npm run dev
-```
-Now you can open your browser to the provided url and use Latent Scope!
-
-## Embedding models
-The scripts below (which power the app) reference embedding models by an "id" which identifies models prepared in [models/embedding_models.json](models/embedding_models.json)
-
-There is a `get_model(id)` function which will load the appropriate class based on the model provider. See `providers/` for `transformers`, `openai`, `cohereai`, `togetherai`, `voyageai`
+To learn more about customizing, extending and contributing see [DEVELOPMENT.md](DEVELOPMENT.md)
 
 
-## Notebooks
-There are some example notebooks for preparing data in CSV format for ingesting into latent scope:
-* [dvs-survey](notebooks/dvs-survey.ipynb)
-* [dadabase](notebooks/dadabase.ipynb)
+### Design principles
+This tool is meant to be a part of a larger process. Something that hopefully helps you see things in your data that you wouldn't otherwise have. That means it needs to be easy to get data in, and easily get useful data out.
+
+1. Flat files
+  - All of the data that drives the app is stored in flat files. This is so that both final and intermediate outputs can easily be exported for other uses. It also makes it easy to see the status of any part of the process.
+2. Remember everything
+  - This tool is intended to aid in research, the purpose is experimentation and exploration. I developed it because far too often I try a lot of things and then I forget what parameters lead me down a promising path in the first place. All choices you make in the process are recorded in metadata files along with the output of the process.
+3. It's all about the indices
+  - We consider an input dataset the source of truth, a list of rows that can be indexed into. So all downstream operations, whether its embeddings, pointing to nearest neighbors or assigning data points to clusters, all use indices into the input dataset.
+
 
 ## Scripts
-The scripts should be run in order once you have an `input.csv` file in your folder. Alternatively the Setup page in the web UI will run these scripts via API calls to the server for you.
+If you want to use the CLI instead of the web UI you can use the following scripts.
 
-### ingest.py
-This script turns the input.csv into input.parquet and sets up the directories and `meta.json` which run the app
+The scripts should be run in order once you have an `input.csv` file in your folder. Alternatively the Setup page in the web UI will run these scripts via API calls to the server for you.  
+These scripts expect at the least a `LATENT_SCOPE_DATA` environment variable with a path to where you want to store your data. If you run `ls-serve` it will set the variable and put it in a `.env` file. You can add API keys to the .env file to enable usage of the various API services, see [.env.example](.env.example) for the structure.
 
-```bash
-#python ingest.py <dataset_name>
-python ingest.py database-curated
-```
 
-### 1. embed.py 
-Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers. API services are supported as well, see [models/embedding_models.json](models/embedding_models.json) for model ids. 
+### 0. ingest
+This script turns the `input.csv` into `input.parquet` and sets up the directories and `meta.json` which run the app.
 
 ```bash
-# python embed.py <dataset_name> <text_column> <model_id>
-python embed.py dadabase-curated joke transformers-intfloat___e5-small-v2
+# ls-ingest <dataset_name>
+ls-ingest database-curated
 ```
 
-### 2. umapper.py
+### 1. embed
+Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers. API services are supported as well, see [latentscope/models/embedding_models.json](latentscope/models/embedding_models.json) for model ids. 
+
+```bash
+# ls-embed <dataset_name> <text_column> <model_id>
+ls-embed dadabase-curated joke transformers-intfloat___e5-small-v2
+```
+
+### 2. umap
 Map the embeddings from high-dimensional space to 2D with UMAP. Will generate a thumbnail of the scatterplot.
 ```bash
-# python umapper.py <dataset_name> <neighbors> <min_dist>
-python umapper.py dadabase-curated 50 0.1
+# ls-umap <dataset_name> <model_id> <neighbors> <min_dist>
+ls-umap dadabase-curated transformers-intfloat___e5-small-v2 50 0.1
 ```
 
 
-### 3. clusters.py
+### 3. cluster
 Cluster the UMAP points using HDBSCAN. This will label each point with a cluster label
 ```bash
-# python cluster.py <dataset_name> <umap_name> <samples> <min-samples>
-slides.py dadabase-curated umap-005 5 3
+# ls-cluster <dataset_name> <umap_name> <samples> <min-samples>
+ls-cluster dadabase-curated umap-005 5 3
 ```
 
-### 4. slides.py
-Create a datastructure that allows us to annotate clusters
+### 4. label
+We support auto-labeling clusters by summarizing them with an LLM. Supported models and APIs are listed in [latentscope/models/chat_models.json](latentscope/models/chat_models.json). 
+You can pass context that will be injected into the system prompt for your dataset.
 ```bash
-# python cluster.py <dataset_name> <cluster_name>
-cluster.py dadabase-curated cluster-005
+# ls-label <dataset_name> <cluster_name> <model_id> <context>
+ls-label dadabase-curated cluster-005 openai-gpt-3.5-turbo ""
 ```
 
 ## Dataset directory structure
