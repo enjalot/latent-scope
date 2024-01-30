@@ -48,7 +48,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'ls-serve=latentscope.server:serve',
+            'ls-serve=latentscope.server:start',
             'ls-ingest=latentscope.scripts.ingest:main',
             'ls-embed=latentscope.scripts.embed:main',
             'ls-umap=latentscope.scripts.umapper:main',
