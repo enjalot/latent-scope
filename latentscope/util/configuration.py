@@ -2,7 +2,8 @@ import os
 import sys
 from dotenv import load_dotenv, set_key
 
-def get_data_dir():
+def get_data_dir(env_file=".env"):
+    load_dotenv(env_file)
     DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
     if DATA_DIR is None:
         print("""LATENT_SCOPE_DATA environment variable not set. Please set it to the directory where you want to store your data.
