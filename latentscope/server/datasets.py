@@ -91,6 +91,13 @@ def get_dataset_umaps(dataset):
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
+@datasets_bp.route('/<dataset>/umaps/<umap>', methods=['GET'])
+def get_dataset_umap(dataset, umap):
+    file_path = os.path.join(DATA_DIR, dataset, "umaps", umap + ".json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    return jsonify(json_contents)
+
 @datasets_bp.route('/<dataset>/umaps/<umap>/points', methods=['GET'])
 def get_dataset_umap_points(dataset, umap):
     file_path = os.path.join(DATA_DIR, dataset, "umaps", umap + ".parquet")
@@ -103,6 +110,13 @@ def get_dataset_clusters(dataset):
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
+@datasets_bp.route('/<dataset>/clusters/<cluster>', methods=['GET'])
+def get_dataset_cluster(dataset, cluster):
+    file_path = os.path.join(DATA_DIR, dataset, "clusters", cluster + ".json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    return jsonify(json_contents)
+
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels', methods=['GET'])
 def get_dataset_cluster_labels_default(dataset, cluster):
     file_name = cluster + "-labels.parquet"
@@ -112,6 +126,8 @@ def get_dataset_cluster_labels_default(dataset, cluster):
 
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
 def get_dataset_cluster_labels(dataset, cluster, model):
+    if model == "default":
+        return get_dataset_cluster_labels_default(dataset, cluster)
     file_name = cluster + "-labels-" + model + ".parquet"
     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
@@ -147,6 +163,14 @@ def get_dataset_scopes(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "scopes")
     print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
+
+@datasets_bp.route('/<dataset>/scopes/<scope>', methods=['GET'])
+def get_dataset_scope(dataset, scope):
+    directory_path = os.path.join(DATA_DIR, dataset, "scopes")
+    file_path = os.path.join(directory_path, scope + ".json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    return jsonify(json_contents)
 
 @datasets_bp.route('/<dataset>/scopes/save', methods=['POST'])
 def save_dataset_scope(dataset):

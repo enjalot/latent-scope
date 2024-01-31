@@ -21,9 +21,47 @@ function DatasetDetail() {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
       .then(response => response.json())
       .then(data => {
+        console.log("dataset", data)
         setDataset(data)
       });
-  }, [datasetId]);
+  }, [datasetId, setDataset]);
+
+  const[ scope, setScope] = useState(null);
+  useEffect(() => {
+    fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("scope", data)
+        setScope(data)
+      });
+  }, [datasetId, scopeId, setScope]);
+
+  const [embedding, setEmbedding] = useState(null);
+  const [umap, setUmap] = useState(null);
+  const [clusterLabels, setClusterLabels] = useState([]);
+  // The search model is the embeddings model that we pass to the nearest neighbor query
+  // we want to enable searching with any embedding set
+  const [searchModel, setSearchModel] = useState(embedding)
+
+  useEffect(() => {
+    if(scope) {
+      setEmbedding(scope.embeddings)
+      setSearchModel(scope.embeddings)
+      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("umap", data)
+          setUmap(data)
+        });
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels/${scope.cluster_labels || 'default'}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("umap", data)
+          setClusterLabels(data)
+        });
+    }
+  }, [datasetId, scope, setUmap, setClusterLabels, setEmbedding, setSearchModel]);
+
 
   const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
@@ -33,75 +71,13 @@ function DatasetDetail() {
         // console.log("embeddings", data)
         setEmbeddings(data)
       });
-  }, [datasetId]);
+  }, [datasetId, setEmbeddings]);
 
-  const [umaps, setUmaps] = useState([]);
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
-      .then(response => response.json())
-      .then(data => {
-        setUmaps(data)
-      })
-  }, [datasetId])
-
-  const [clusters, setClusters] = useState([]);
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
-      .then(response => response.json())
-      .then(data => {
-        console.log("clusters", data)
-        setClusters(data)
-      });
-  }, [datasetId]);
-
-  // ====================================================================================================
-  // scopes
-  // the data for the page all depends on the scope
-  // it sets the embedding, umap, and cluster
-  // ====================================================================================================
-  const[scopes, setScopes] = useState([]);
-
-  const[ scope, setScope] = useState(null);
-  const [embedding, setEmbedding] = useState(null);
-  const [umap, setUmap] = useState(null);
-  // const [cluster, setCluster] = useState(null);
-
-  // The search model is the embeddings model that we pass to the nearest neighbor query
-  // we want to enable searching with any embedding set
-  const [searchModel, setSearchModel] = useState(embedding)
   // const [activeUmap, setActiveUmap] = useState(null)
   const handleModelSelect = (model) => {
     console.log("selected", model)
     setSearchModel(model)
   }
-
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
-      .then(response => response.json())
-      .then(data => {
-        setScopes(data.sort((a,b) => a.name.localeCompare(b.name)))
-      });
-  }, [datasetId, setScopes]);
-
-  useEffect(() => {
-    if(scopeId && scopes.length) {
-      const scope = scopes.find(d => d.name == scopeId)
-      if(scope) {
-        setScope(scope)
-        const selectedUmap = umaps.find(u => u.name === scope.umap);
-        // const selectedCluster = clusters.find(c => c.cluster_name === scope.cluster);
-        setEmbedding(scope.embeddings)
-        setSearchModel(scope.embeddings)
-        setUmap(selectedUmap);
-        // setCluster(selectedCluster);
-      }
-    } else {
-      setScope(null)
-    }
-  }, [scopeId, scopes, umaps, clusters, setScope, setUmap])
-
-
-
 
   // ====================================================================================================
   // Points for rendering the scatterplot
@@ -166,21 +142,7 @@ function DatasetDetail() {
   useEffect(() => {
     if(tagset[tag]) {
       hydrateIndices(tagset[tag], setTagrows)
-      // fetch(`${apiUrl}/tags/rows?dataset=${dataset.id}&tag=${tag}`)
-      //   .then(response => response.json())
-      //   .then(data => {
-      //     const text_column = dataset.text_column
-      //     let rows = data.map((row, index) => {
-      //       return {
-      //         index: tagset[tag][index],
-      //         text: row[text_column],
-      //         score: row.score, // TODO: this is custom to one dataset
-      //         date: row.date,
-      //       }
-      //     })
-      //     rows.sort((a, b) => b.score - a.score)
-      //     setTagrows(rows)
-      //   }).catch(e => console.log(e));
+
       } else {
         setTagrows([])
       }
@@ -285,10 +247,10 @@ function DatasetDetail() {
   const tabs = [
     { id: 0, name: "Selected"},
     { id: 1, name: "Search"},
-    { id: 2, name: "Slide"},
-    { id: 3, name: "Tag"},
+    { id: 2, name: "Clusters"},
+    { id: 3, name: "Tags"},
   ]
-  const [activeTab, setActiveTab] = useState(0)
+  const [activeTab, setActiveTab] = useState(2)
 
   // ====================================================================================================
   // Clusters
@@ -298,19 +260,18 @@ function DatasetDetail() {
   const [slide, setSlide] = useState(null);
   const [slideHover, setSlideHover] = useState(null);
   const [slideRows, setSlideRows] = useState([]);
-  const [clusterLabels, setClusterLabels] = useState([]);
-  useEffect(() => {
-    if(scope) {
-      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("cluster labels", data)
-          setClusterLabels(data)
-        });
-      } else {
-        setClusterLabels([])
-      }
-  }, [scope, setClusterLabels, datasetId])
+  // useEffect(() => {
+  //   if(scope) {
+  //     fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels`)
+  //       .then(response => response.json())
+  //       .then(data => {
+  //         console.log("cluster labels", data)
+  //         setClusterLabels(data)
+  //       });
+  //     } else {
+  //       setClusterLabels([])
+  //     }
+  // }, [scope, setClusterLabels, datasetId])
   useEffect(() => {
     if(slide) {
       fetch(`${apiUrl}/indexed?dataset=${datasetId}&indices=${JSON.stringify(slide.indices)}`)
@@ -404,7 +365,7 @@ function DatasetDetail() {
               <AnnotationPlot 
                 points={searchAnnotations} 
                 fill="black"
-                size="5"
+                size="8"
                 xDomain={xDomain} 
                 yDomain={yDomain} 
                 width={scopeWidth} 
@@ -413,7 +374,7 @@ function DatasetDetail() {
               <AnnotationPlot 
                 points={slideAnnotations} 
                 fill="darkred"
-                size="5"
+                size="8"
                 xDomain={xDomain} 
                 yDomain={yDomain} 
                 width={scopeWidth} 
@@ -422,7 +383,7 @@ function DatasetDetail() {
               <AnnotationPlot 
                 points={slideHoverAnnotations} 
                 fill="red"
-                size="8"
+                size="12"
                 xDomain={xDomain} 
                 yDomain={yDomain} 
                 width={scopeWidth} 
@@ -431,7 +392,7 @@ function DatasetDetail() {
               <AnnotationPlot 
                 points={tagAnnotations} 
                 symbol={tag}
-                size="10"
+                size="20"
                 xDomain={xDomain} 
                 yDomain={yDomain} 
                 width={scopeWidth} 
@@ -441,7 +402,7 @@ function DatasetDetail() {
                 points={hoverAnnotations} 
                 stroke="black"
                 fill="orange"
-                size="6"
+                size="16"
                 xDomain={xDomain} 
                 yDomain={yDomain} 
                 width={scopeWidth} 
@@ -464,56 +425,9 @@ function DatasetDetail() {
       </div>
 
       <div className="column">
-        <div className="first-row search-tags">
+        <div className="second-row tab-tables">
 
-          <div className="tags-box">
-            <div className="tags-select">
-              Tags: {tags.map(t => {
-                return <button className="dataset--tag-link" key={t} onClick={() => {
-                  setTag(t)
-                  setActiveTab(3)
-                  scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
-                }}>{t}({tagset[t].length})</button>
-              })}
-            </div>
-            <div className="new-tag">
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const newTag = e.target.elements.newTag.value;
-                fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
-                  .then(response => response.json())
-                  .then(data => {
-                    console.log("new tag", data)
-                    setTagset(data);
-                  });
-              }}>
-                <input type="text" id="newTag" />
-                <button type="submit">New Tag</button>
-              </form>
-            </div>
-          </div>
-          <div className="search-box">
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              searchQuery(e.target.elements.searchBox.value);
-              setActiveTab(1)
-            }}>
-              <input type="text" id="searchBox" />
-              <button type="submit">Similarity Search</button>
-              <label htmlFor="embeddingModel">Using:</label>
-              <select id="embeddingModel" 
-                onChange={(e) => handleModelSelect(e.target.value)} 
-                value={searchModel}>
-                {embeddings.map((embedding, index) => (
-                  <option key={index} value={embedding}>{embedding}</option>
-                ))}
-              </select>
-              
-            </form>
-          </div>
-        </div>
-        <div className="second-row dataset--tabs">
-          <div className="dataset--tab-header">
+          <div className="tab-header">
             {tabs.map(tab => (
               <button 
                 key={tab.id} 
@@ -524,9 +438,8 @@ function DatasetDetail() {
             ))}
           </div>
 
-          <div className="dataset--tab-content">
             {activeTab === 0 ?
-            <div className="dataset--selected-table">
+            <div className="tab-content tab-selected">
               <span>Selected: {selected.length} 
                 {selected.length > 0 ? 
                   <button className="deselect" onClick={() => {
@@ -552,8 +465,29 @@ function DatasetDetail() {
             : null }
 
             {activeTab === 1 ? 
-            <div className="dataset--neighbors">
-              <span>Nearest Neighbors: {searchIndices.length}
+            <div className="tab-content tab-neighbors">
+              <div className="search-box">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  searchQuery(e.target.elements.searchBox.value);
+                  setActiveTab(1)
+                }}>
+                  <input type="text" id="searchBox" />
+                  <button type="submit">Similarity Search</button>
+                  <br/>
+                  <label htmlFor="embeddingModel"></label>
+                  <select id="embeddingModel" 
+                    onChange={(e) => handleModelSelect(e.target.value)} 
+                    value={searchModel}>
+                    {embeddings.map((embedding, index) => (
+                      <option key={index} value={embedding}>{embedding}</option>
+                    ))}
+                  </select>
+                  
+                </form>
+              </div>
+              <span>
+              { searchIndices.length ? <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span> : null }
                 {searchIndices.length > 0 ? 
                   <button className="deselect" onClick={() => {
                     setSearchIndices([])
@@ -576,69 +510,93 @@ function DatasetDetail() {
             : null }
 
             {activeTab === 2 ? 
-             <div className="dataset--slide">
-              <span>{slide?.label} {slide?.indices.length}
+             <div className="tab-content tab-cluster">
+              <div className="clusters-select">
+                <select onChange={(e) => {
+                    const cl = clusterLabels.find(cluster=> cluster.label === e.target.value)
+                    if(cl)
+                      setSlide(cl)
+                  }} value={slide?.label}>
+                    <option value="">Select a cluster</option>
+                  {clusterLabels.map((cluster, index) => (
+                    <option key={index} value={cluster.label}>{cluster.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="cluster-selected">
+                <span>{slide?.indices.length} {slide?.indices.length ? "Rows" :""}
                 { slide ? <button className="deselect" onClick={() => {
+                  console.log("SLIDE", slide)
                     setSlide(null)
                   }
                   }>X</button> 
                 : null}
               </span>
-              { slideRows.length ? 
-                <DataTable 
-                  data={slideRows} 
-                  tagset={tagset} 
-                  datasetId={datasetId} 
-                  onTagset={(data) => setTagset(data)} 
-                  onHover={handleHover} 
-                  onClick={handleClicked}
-                />
-              : null }
+              </div>
+              <div className="cluster-table">
+                { slideRows.length ? 
+                  <DataTable 
+                    data={slideRows} 
+                    tagset={tagset} 
+                    datasetId={datasetId} 
+                    onTagset={(data) => setTagset(data)} 
+                    onHover={handleHover} 
+                    onClick={handleClicked}
+                  />
+                : null }
+                </div>
               </div>
             : null }
 
             {activeTab === 3 ? 
-              <div className="dataset--tag">
-              <span>{tag} {tagset[tag]?.length}
-                { tag ? <button className="deselect" onClick={() => {
-                    setTag(null)
-                  }
-                  }>X</button> 
-                : null}
-              </span>
-              { tagrows.length ? 
-                <DataTable 
-                  data={tagrows} 
-                  tagset={tagset} 
-                  datasetId={datasetId} 
-                  onTagset={(data) => setTagset(data)} 
-                  onHover={handleHover} 
-                  onClick={handleClicked}
-                />
-              : null }
+              <div className="tab-content tab-tag">
+                <div className="tags-box">
+                  <div className="tags-select">
+                    Tags: {tags.map(t => {
+                      return <button className="dataset--tag-link" key={t} onClick={() => {
+                        setTag(t)
+                        setActiveTab(3)
+                        scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
+                      }}>{t}({tagset[t].length})</button>
+                    })}
+                  </div>
+                  <div className="new-tag">
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const newTag = e.target.elements.newTag.value;
+                      fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
+                        .then(response => response.json())
+                        .then(data => {
+                          console.log("new tag", data)
+                          setTagset(data);
+                        });
+                    }}>
+                      <input type="text" id="newTag" />
+                      <button type="submit">New Tag</button>
+                    </form>
+                  </div>
+                </div>
+                <span>{tag} {tagset[tag]?.length}
+                  { tag ? <button className="deselect" onClick={() => {
+                      setTag(null)
+                    }
+                    }>X</button> 
+                  : null}
+                </span>
+                { tagrows.length ? 
+                  <DataTable 
+                    data={tagrows} 
+                    tagset={tagset} 
+                    datasetId={datasetId} 
+                    onTagset={(data) => setTagset(data)} 
+                    onHover={handleHover} 
+                    onClick={handleClicked}
+                  />
+                : null }
               </div>
             : null }
-            
-          </div>
         </div>
       </div>
-
-
-      <div className="column">
-        <div className="first-row cluster-select">
-          Cluster Select
-        </div>
-
-        <div className="second-row clusters">
-          <SlideBar 
-            dataset={dataset} 
-            slides={clusterLabels}
-            selected={slide}
-            onClick={handleSlideClick} 
-            onHover={handleSlideHover}
-            />
-        </div>
-      </div> 
     </div>
   );
 }

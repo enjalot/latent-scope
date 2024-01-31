@@ -1,6 +1,6 @@
 .dataset--explore {
   display: grid;
-  grid-template-columns: 548px 1.5fr 1fr; /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
+  grid-template-columns: 548px 1fr; /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
   gap: 6px; /* This adds space between your columns */
   height: 100%; 
   overflow: hidden;
@@ -9,19 +9,24 @@
 .dataset--explore .column {
   display: flex;
   flex-direction: column;
+  overflow-y: hidden;
+  height: 100%;
 }
 
 .dataset--explore .first-row {
   margin: 6px 12px;
   padding: 6px;
-  height: 124px; /* Fixed height for the first row */
+  height: 148px; /* Fixed height for the first row */
   border: 1px solid lightgray;
   border-radius: 5px;
 }
 
 .dataset--explore .second-row {
   margin: 6px 12px;
-  flex-grow: 1; /* Takes up the remaining space */
+  /* flex-grow: 1; */
+  height: 100%;
+  overflow-y: hidden;
+  min-height: 0;
 }
 
 
@@ -29,7 +34,6 @@
 /* FIRST ROW: Dataset summary */
 .dataset--explore .summary {
   max-width: 500px;
-  border-radius: 5px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -67,67 +71,116 @@
 
 
 /* MIDDLE COLUMN */
-/* FIRST ROW: Search & Tags */
-.dataset--explore .search-tags {
+.dataset--explore .tab-tables {
+  /* padding: 12px 0; */
+
+}
+/* SECOND ROW: Tabs */
+.dataset--explore .tab-tables {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 10px;
+}
+.dataset--explore .tab-header {
+  height: 32px;
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  /* padding: 10px 20px; */
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.dataset--explore .tab-header button {
+  height: 32px;
+  display: inline-block;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+}
+.dataset--explore .tab-header button:hover {
+  background-color: #ddd;
+  border-color: none;
+}
+.dataset--explore .tab-header button:focus,
+.dataset--explore .tab-header button:focus-visible {
+  outline: none;
+}
+.dataset--explore .tab-header .tab-active {
+  background-color: white;
+  border-top: 2px solid seagreen;
+  border-bottom: none;
+  font-weight: bold;
 }
 
-.dataset--explore .search-tags .new-tag {
+.dataset--explore .tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* max-width: 650px; */
+  /* width: 650px; */
+  /* flex-grow: 1; */
+  height: calc(100% - 32px);
+  overflow-y: auto;
+  border: 1px solid lightgray;
+  padding: 12px;
+}
+
+/* 
+.dataset--explore .tab-content table {
+  height: 100%;
+}
+.dataset--explore .tab-content table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.dataset--explore .tab-content tbody {
+  display: block;
+  max-height: 100%;
+  overflow-y: scroll;
+} */
+/* .dataset--explore .tab-content tbody tr {
+} */
+
+
+/* .dataset--explore .tab-active {
+  color: seagreen;
+  font-weight: bold;
+  background-color: lightgray; 
+} */
+
+
+.dataset--explore .tags-box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+.dataset--explore .new-tag {
   margin: 6px 0;
 }
-.dataset--explore .search-tags .new-tag form {
+.dataset--explore .new-tag form {
   display: inline;
   width: 160px;
   border: 1px solid lightgray;
   padding: 7px;
 }
-.dataset--explore .search-tags .new-tag input {
+.dataset--explore .new-tag input {
   width: 60px;
 }
 
-/* SECOND ROW: Tabs */
-.dataset--tab-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 650px;
-  width: 650px;
-  max-height: 610px;
-  height: 610px;
-  overflow-y: scroll;
-  border: 1px solid lightgray;
-}
-
-.dataset--tab-content table, 
-.dataset--tab-content tbody, 
-.dataset--tab-content tr {
-  max-width: 650px;
-}
-
-.tab-active {
-  color: seagreen;
-  font-weight: bold;
-  background-color: lightgray; 
-}
-
-
-
 /* Styling for nearest neighbors section */
-.dataset--neighbors {
-  max-width: 760px;
+.dataset--explore .search-box input {
+  /* height: 24px; */
+  width: 290px;
 }
-.dataset--neighbors input {
-  padding: 10px;
-  border: 1px solid #999;
-  border-radius: 8px;
-  font-size: 1em;
-}
-.dataset--neighbors button {
-  margin: 5px;
+.dataset--explore .search-box select {
+  width: 298px;
 
+}
+
+.tab-neighbors .deselect {
+  display: inline-block;
+  margin: 5px;
+  width: 32px;
 }
 
 
@@ -137,10 +190,7 @@
 /* SECOND ROW: Clusters */
 
 
-
-
-
 .dataset--explore .slide-bar {
   padding: 6px;
-  height: 100%;
+  /* height: 100%; */
 }
