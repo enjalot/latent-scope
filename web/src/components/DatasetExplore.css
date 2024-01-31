@@ -1,28 +1,94 @@
-/* General styling for dataset summary */
-.dataset--details {
-  max-width: 100%;
-  width: 100%;
-  padding: 10px;
-}
-.dataset--details-summary {
-  margin: 10px 0px;
+.dataset--explore {
+  display: grid;
+  grid-template-columns: 548px 1.5fr 1fr; /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
+  gap: 6px; /* This adds space between your columns */
+  height: 100%; 
+  overflow: hidden;
 }
 
-.dataset--scope-container {
+.dataset--explore .column {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-  max-height: 650px;
+  flex-direction: column;
 }
-/* Styling for the scope */
-.dataset--scope {
+
+.dataset--explore .first-row {
+  margin: 6px 12px;
+  padding: 6px;
+  height: 124px; /* Fixed height for the first row */
+  border: 1px solid lightgray;
+  border-radius: 5px;
+}
+
+.dataset--explore .second-row {
+  margin: 6px 12px;
+  flex-grow: 1; /* Takes up the remaining space */
+}
+
+
+/* LEFT COLUMN */
+/* FIRST ROW: Dataset summary */
+.dataset--explore .summary {
+  max-width: 500px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.dataset--explore .summary h3 {
+  margin: 0;
+}
+.dataset--explore .summary h3 a {
+  margin-left: 12px;
+}
+
+/* SECOND ROW: UMAP */
+.dataset--explore .umap-container {
+  /* max-height: 500px; */
+}
+.dataset--explore .scatters {
   position: relative;
   border: 1px solid gray;
   border-radius: 5px;
-  padding: 5px;
+  padding: 6px;
 }
 
+/* THIRD ROW: hovered data point */
+.dataset--explore .hovered-point {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+.dataset--explore .hovered-point .key {
+  font-weight: bold;
+}
+.dataset--explore .hovered-point .value {
+  margin-left: 10px;
+}
+
+
+/* MIDDLE COLUMN */
+/* FIRST ROW: Search & Tags */
+.dataset--explore .search-tags {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dataset--explore .search-tags .new-tag {
+  margin: 6px 0;
+}
+.dataset--explore .search-tags .new-tag form {
+  display: inline;
+  width: 160px;
+  border: 1px solid lightgray;
+  padding: 7px;
+}
+.dataset--explore .search-tags .new-tag input {
+  width: 60px;
+}
+
+/* SECOND ROW: Tabs */
 .dataset--tab-content {
   display: flex;
   flex-direction: column;
@@ -47,22 +113,6 @@
   background-color: lightgray; 
 }
 
-.dataset--hovered-table {
-  border: 1px solid lightgray;
-  border-radius: 5px;
-  width: calc(100% - 30px);
-  height: 100%;
-  padding: 5px;
-  margin: 10px 0;
-  /* max-height: 50px; */
-  /* height: 50px; */
-  /* overflow-y: hidden; */
-  /* flex-basis: 650px; not sure why this is the number */
-}
-.dataset--selected-table {
-  /* flex-grow: 1; */
-  /* overflow-y: auto; */
-}
 
 
 /* Styling for nearest neighbors section */
@@ -80,20 +130,17 @@
 
 }
 
-.new-tag {
-  display: inline;
-  width: 160px;
-  border: 1px solid lightgray;
-  padding: 7px;
-}
-.new-tag input {
-  width: 40px;
-}
+
+/* RIGHT COLUMN */
+/* FIRST ROW: Selector */
+
+/* SECOND ROW: Clusters */
+
+
+
+
 
 .dataset--explore .slide-bar {
-  position: fixed;
-  right: 0;
-  top: 40px;
-  width: 350px;
+  padding: 6px;
   height: 100%;
 }

@@ -7,13 +7,10 @@ import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
 import SlideBar from './SlideBar';
 
-// import { instantiate } from '../lib/DuckDB'
-
 
 // TODO: decide how to deal with sizing
-const scopeWidth = 640
-const scopeHeight = 640
-
+const scopeWidth = 500
+const scopeHeight = 500
 
 function DatasetDetail() {
   const apiUrl = import.meta.env.VITE_API_URL
@@ -383,120 +380,139 @@ function DatasetDetail() {
 
   return (
     <div className="dataset--explore">
-      <h2>Dataset: {datasetId}</h2>
-      <div className="dataset--explore-summary">
-
-        [ {dataset.length} rows ]<br/>
-        {scope?.name}: [{embedding}][ {umap?.name} ] [ {scope?.cluster} ]
-        [ <Link to={`/datasets/${dataset?.id}/setup/${scope?.name}`}>Setup</Link> ]
-        <br/>
-
-        Tags: {tags.map(t => {
-          const href = `/datasets/${datasetId}/tags/${t}`
-          return <button className="dataset--tag-link" key={t} onClick={() => {
-            setTag(t)
-            setActiveTab(3)
-            scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
-          }}>{t}({tagset[t].length})</button>
-        })}
-        {/* NEW TAG FORM */}
-        <form className="new-tag" onSubmit={(e) => {
-          e.preventDefault();
-          const newTag = e.target.elements.newTag.value;
-          fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
-            .then(response => response.json())
-            .then(data => {
-              console.log("new tag", data)
-              setTagset(data);
-            });
-        }}>
-          <input type="text" id="newTag" />
-          <button type="submit">New Tag</button>
-        </form>
-        <br/>
-      </div>
-
-      <div className="dataset--search-box">
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          searchQuery(e.target.elements.searchBox.value);
-          setActiveTab(1)
-        }}>
-          <input type="text" id="searchBox" />
-          <button type="submit">Similarity Search</button>
-          <label htmlFor="embeddingModel">Using:</label>
-          <select id="embeddingModel" 
-            onChange={(e) => handleModelSelect(e.target.value)} 
-            value={searchModel}>
-            {embeddings.map((embedding, index) => (
-              <option key={index} value={embedding}>{embedding}</option>
-            ))}
-          </select>
-          
-        </form>
-      </div>
-
-      <div className="dataset--scope-container">
-        <div className="dataset--scope" style={{ width: scopeWidth, height: scopeHeight }}>
-          <Scatter 
-            points={points} 
-            loading={loadingPoints} 
-            width={scopeWidth} 
-            height={scopeHeight}
-            onScatter={setScatter}
-            onView={handleView} 
-            onSelect={handleSelected}
-            onHover={handleHover}
-            />
-          <AnnotationPlot 
-            points={searchAnnotations} 
-            fill="black"
-            size="5"
-            xDomain={xDomain} 
-            yDomain={yDomain} 
-            width={scopeWidth} 
-            height={scopeHeight} 
-            />
-          <AnnotationPlot 
-            points={slideAnnotations} 
-            fill="darkred"
-            size="5"
-            xDomain={xDomain} 
-            yDomain={yDomain} 
-            width={scopeWidth} 
-            height={scopeHeight} 
-            />
-          <AnnotationPlot 
-            points={slideHoverAnnotations} 
-            fill="red"
-            size="8"
-            xDomain={xDomain} 
-            yDomain={yDomain} 
-            width={scopeWidth} 
-            height={scopeHeight} 
-            />
-          <AnnotationPlot 
-            points={tagAnnotations} 
-            symbol={tag}
-            size="10"
-            xDomain={xDomain} 
-            yDomain={yDomain} 
-            width={scopeWidth} 
-            height={scopeHeight} 
-            />
-          <AnnotationPlot 
-            points={hoverAnnotations} 
-            stroke="black"
-            fill="orange"
-            size="6"
-            xDomain={xDomain} 
-            yDomain={yDomain} 
-            width={scopeWidth} 
-            height={scopeHeight} 
-            />
-          
+      <div className="column">
+        <div className="first-row summary">
+          <h3> {datasetId}  [{scope?.name}]
+              <Link to={`/datasets/${dataset?.id}/setup/${scope?.name}`}>Configure</Link> 
+          </h3>
+          {dataset?.length} rows<br/>
+          Embedding model:<br/> {embedding}<br/>
         </div>
-        <div className="dataset--tabs">
+        <div className="second-row">
+          <div className="umap-container">
+            <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
+              <Scatter 
+                points={points} 
+                loading={loadingPoints} 
+                width={scopeWidth} 
+                height={scopeHeight}
+                onScatter={setScatter}
+                onView={handleView} 
+                onSelect={handleSelected}
+                onHover={handleHover}
+                />
+              <AnnotationPlot 
+                points={searchAnnotations} 
+                fill="black"
+                size="5"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} 
+                />
+              <AnnotationPlot 
+                points={slideAnnotations} 
+                fill="darkred"
+                size="5"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} 
+                />
+              <AnnotationPlot 
+                points={slideHoverAnnotations} 
+                fill="red"
+                size="8"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} 
+                />
+              <AnnotationPlot 
+                points={tagAnnotations} 
+                symbol={tag}
+                size="10"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} 
+                />
+              <AnnotationPlot 
+                points={hoverAnnotations} 
+                stroke="black"
+                fill="orange"
+                size="6"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} 
+                />
+              
+            </div>
+          </div>
+          <div className="hovered-point">
+            {/* Hovered: &nbsp; */}
+            {hovered[0] && Object.keys(hovered[0]).map((key) => (
+              <span key={key}>
+                <span className="key">{key}:</span> 
+                <span className="value">{hovered[0][key]}</span>
+              </span>
+            ))}
+            {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
+          </div>
+        </div>
+      </div>
+
+      <div className="column">
+        <div className="first-row search-tags">
+
+          <div className="tags-box">
+            <div className="tags-select">
+              Tags: {tags.map(t => {
+                return <button className="dataset--tag-link" key={t} onClick={() => {
+                  setTag(t)
+                  setActiveTab(3)
+                  scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
+                }}>{t}({tagset[t].length})</button>
+              })}
+            </div>
+            <div className="new-tag">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const newTag = e.target.elements.newTag.value;
+                fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
+                  .then(response => response.json())
+                  .then(data => {
+                    console.log("new tag", data)
+                    setTagset(data);
+                  });
+              }}>
+                <input type="text" id="newTag" />
+                <button type="submit">New Tag</button>
+              </form>
+            </div>
+          </div>
+          <div className="search-box">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              searchQuery(e.target.elements.searchBox.value);
+              setActiveTab(1)
+            }}>
+              <input type="text" id="searchBox" />
+              <button type="submit">Similarity Search</button>
+              <label htmlFor="embeddingModel">Using:</label>
+              <select id="embeddingModel" 
+                onChange={(e) => handleModelSelect(e.target.value)} 
+                value={searchModel}>
+                {embeddings.map((embedding, index) => (
+                  <option key={index} value={embedding}>{embedding}</option>
+                ))}
+              </select>
+              
+            </form>
+          </div>
+        </div>
+        <div className="second-row dataset--tabs">
           <div className="dataset--tab-header">
             {tabs.map(tab => (
               <button 
@@ -607,19 +623,22 @@ function DatasetDetail() {
         </div>
       </div>
 
-      <SlideBar 
-        dataset={dataset} 
-        slides={clusterLabels}
-        selected={slide}
-        onClick={handleSlideClick} 
-        onHover={handleSlideHover}
-        />
 
-      <div className="dataset--hovered-table">
-        {/* Hovered: &nbsp; */}
-        <span>{hovered[0]?.text}</span>
-        {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
-      </div>
+      <div className="column">
+        <div className="first-row cluster-select">
+          Cluster Select
+        </div>
+
+        <div className="second-row clusters">
+          <SlideBar 
+            dataset={dataset} 
+            slides={clusterLabels}
+            selected={slide}
+            onClick={handleSlideClick} 
+            onHover={handleSlideHover}
+            />
+        </div>
+      </div> 
     </div>
   );
 }
