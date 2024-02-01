@@ -124,6 +124,13 @@ def get_dataset_cluster_labels_default(dataset, cluster):
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
 
+@datasets_bp.route('/<dataset>/clusters/<cluster>/indices', methods=['GET'])
+def get_dataset_cluster_indices(dataset, cluster):
+    file_name = cluster + ".parquet"
+    file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
+    df = pd.read_parquet(file_path)
+    return df.to_json(orient="records")
+
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
 def get_dataset_cluster_labels(dataset, cluster, model):
     if model == "default":

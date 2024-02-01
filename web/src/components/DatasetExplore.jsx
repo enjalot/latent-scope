@@ -3,19 +3,28 @@ import { useParams, Link } from 'react-router-dom';
 
 import './DatasetExplore.css';
 import DataTable from './DataTable';
+import IndexDataTable from './IndexDataTable';
 import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
-import SlideBar from './SlideBar';
 
 
 // TODO: decide how to deal with sizing
 const scopeWidth = 500
 const scopeHeight = 500
+const apiUrl = import.meta.env.VITE_API_URL
 
 function DatasetDetail() {
-  const apiUrl = import.meta.env.VITE_API_URL
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams(); 
+
+  // Tabs
+  const tabs = [
+    { id: 0, name: "Selected"},
+    { id: 1, name: "Search"},
+    { id: 2, name: "Clusters"},
+    { id: 3, name: "Tags"},
+  ]
+  const [activeTab, setActiveTab] = useState(2)
 
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -38,6 +47,7 @@ function DatasetDetail() {
 
   const [embedding, setEmbedding] = useState(null);
   const [umap, setUmap] = useState(null);
+  const [clusterIndices, setClusterIndices] = useState([]); // the cluster number for each point
   const [clusterLabels, setClusterLabels] = useState([]);
   // The search model is the embeddings model that we pass to the nearest neighbor query
   // we want to enable searching with any embedding set
@@ -56,8 +66,14 @@ function DatasetDetail() {
       fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels/${scope.cluster_labels || 'default'}`)
         .then(response => response.json())
         .then(data => {
-          console.log("umap", data)
+          console.log("labels", data)
           setClusterLabels(data)
+        });
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/indices`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("cluster indices", data)
+          setClusterIndices(data)
         });
     }
   }, [datasetId, scope, setUmap, setClusterLabels, setEmbedding, setSearchModel]);
@@ -101,23 +117,75 @@ function DatasetDetail() {
       .then(response => response.json())
       .then(data => {
         if(!dataset) return;
-        // console.log("neighbors", data)
-        const text_column = dataset.text_column
         let rows = data.map((row, index) => {
           return {
             index: indices[index],
             ...row
-            // text: row[text_column],
-            // score: row.score, // TODO: this is custom to one dataset
-            // distance: distances[index],
-            // date: row.date,
           }
         })
-        rows.sort((a, b) => b.score - a.score)
         setter(rows)
-        // console.log("rows", rows)
       })
   }, [dataset, datasetId])
+
+
+
+  // ====================================================================================================
+  // Scatterplot related logic
+  // ====================================================================================================
+  // this is a reference to the regl scatterplot instance
+  // so we can do stuff like clear selections without re-rendering
+  const [scatter, setScatter] = useState({})
+  const [xDomain, setXDomain] = useState([-1, 1]);
+  const [yDomain, setYDomain] = useState([-1, 1]);
+  const handleView = useCallback((xDomain, yDomain) => {
+    setXDomain(xDomain);
+    setYDomain(yDomain);
+  }, [setXDomain, setYDomain])
+  // Selection via Scatterplot
+  // indices of items selected by the scatter plot
+  const [selectedIndices, setSelectedIndices] = useState([]);
+
+  const handleSelected = useCallback((indices) => {
+    setSelectedIndices(indices);
+    setActiveTab(0)
+    // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
+    // scatter?.zoomToPoints(indices, { transition: true })
+  }, [setSelectedIndices, setActiveTab])
+
+  // Hover via scatterplot or tables
+  // index of item being hovered over
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [hovered, setHovered] = useState(null);
+  useEffect(() => {
+    if(hoveredIndex !== null && hoveredIndex !== undefined) {
+      hydrateIndices([hoveredIndex], (results) => {
+        setHovered(results[0])
+      })
+    } else {
+      setHovered(null)
+    }
+  }, [hoveredIndex, setHovered, hydrateIndices])
+
+  const [hoveredCluster, setHoveredCluster] = useState(null);
+  useEffect(() => {
+    if(hovered && clusterIndices.length && clusterLabels.length){
+      const index = hovered.index
+      const cluster = clusterIndices[index]
+      const label = clusterLabels[cluster?.cluster]?.label
+      setHoveredCluster({label, cluster: cluster.cluster})
+    } else {
+      setHoveredCluster(null)
+    }
+  }, [hovered, clusterIndices, clusterLabels, setHoveredCluster])
+
+  const [hoverAnnotations, setHoverAnnotations] = useState([]);
+  useEffect(() => {
+    if(hoveredIndex !== null && hoveredIndex !== undefined) {
+      setHoverAnnotations([points[hoveredIndex]])
+    } else {
+      setHoverAnnotations([])
+    }
+  }, [hoveredIndex, points])
 
   // ====================================================================================================
   // Tags
@@ -138,15 +206,6 @@ function DatasetDetail() {
   }, [tagset])
 
   const [tag, setTag] = useState(tags[0]);
-  const [tagrows, setTagrows] = useState([]);
-  useEffect(() => {
-    if(tagset[tag]) {
-      hydrateIndices(tagset[tag], setTagrows)
-
-      } else {
-        setTagrows([])
-      }
-  }, [dataset, tag, tagset])
 
   const [tagAnnotations, setTagAnnotations] = useState([]);
   useEffect(() => {
@@ -159,7 +218,7 @@ function DatasetDetail() {
         scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
       } 
     }
-  }, [tagset, tag, points])
+  }, [tagset, tag, points, scatter, setTagAnnotations])
 
   // Search
   // the indices returned from similarity search
@@ -173,15 +232,9 @@ function DatasetDetail() {
         // console.log("search", data)
         setDistances(data.distances);
         setSearchIndices(data.indices);
-        console.log("SEARCH RESULTS", data)
         scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
-  }, [searchModel]);
-
-  const [neighbors, setNeighbors] = useState([]);
-  useEffect(() => {
-    hydrateIndices(searchIndices, setNeighbors, distances)
-  }, [searchIndices, setNeighbors, distances])
+  }, [searchModel, datasetId, scatter, setDistances, setSearchIndices]);
 
   const [searchAnnotations, setSearchAnnotations] = useState([]);
   useEffect(() => {
@@ -190,110 +243,10 @@ function DatasetDetail() {
   }, [searchIndices, points])
 
   // ====================================================================================================
-  // Scatterplot related logic
-  // ====================================================================================================
-  // this is a reference to the regl scatterplot instance
-  // so we can do stuff like clear selections without re-rendering
-  const [scatter, setScatter] = useState({})
-  const [xDomain, setXDomain] = useState([-1, 1]);
-  const [yDomain, setYDomain] = useState([-1, 1]);
-  const handleView = useCallback((xDomain, yDomain) => {
-    setXDomain(xDomain);
-    setYDomain(yDomain);
-  })
-  // Selection via Scatterplot
-  // indices of items selected by the scatter plot
-  const [selectedIndices, setSelectedIndices] = useState([]);
-  const [selected, setSelected] = useState([]);
-  useEffect(() => {
-    hydrateIndices(selectedIndices, setSelected)
-  }, [selectedIndices, setSelected])
-
-  const handleSelected = useCallback((indices) => {
-    setSelectedIndices(indices);
-    setActiveTab(0)
-    // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-    // scatter?.zoomToPoints(indices, { transition: true })
-  })
-  // // If only one item is selected, do a NN search for it
-  // useEffect(() => {
-  //   if(selected.length === 1){
-  //     searchQuery(selected[0].text)
-  //   }
-  // }, [selected])
-
-  // Hover via scatterplot or tables
-  // index of item being hovered over
-  const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [hovered, setHovered] = useState([]);
-  useEffect(() => {
-    if(hoveredIndex !== null && hoveredIndex !== undefined) {
-      hydrateIndices([hoveredIndex], setHovered)
-    } else {
-      setHovered([])
-    }
-  }, [hoveredIndex, setHovered])
-
-  const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  useEffect(() => {
-    if(hoveredIndex !== null && hoveredIndex !== undefined) {
-      setHoverAnnotations([points[hoveredIndex]])
-    } else {
-      setHoverAnnotations([])
-    }
-  }, [hoveredIndex, points])
-
-  // Tabs
-  const tabs = [
-    { id: 0, name: "Selected"},
-    { id: 1, name: "Search"},
-    { id: 2, name: "Clusters"},
-    { id: 3, name: "Tags"},
-  ]
-  const [activeTab, setActiveTab] = useState(2)
-
-  // ====================================================================================================
   // Clusters
   // ====================================================================================================
   // indices of items in a chosen slide
-  const [slideIndices, setSlideIndices] = useState([]);
   const [slide, setSlide] = useState(null);
-  const [slideHover, setSlideHover] = useState(null);
-  const [slideRows, setSlideRows] = useState([]);
-  // useEffect(() => {
-  //   if(scope) {
-  //     fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels`)
-  //       .then(response => response.json())
-  //       .then(data => {
-  //         console.log("cluster labels", data)
-  //         setClusterLabels(data)
-  //       });
-  //     } else {
-  //       setClusterLabels([])
-  //     }
-  // }, [scope, setClusterLabels, datasetId])
-  useEffect(() => {
-    if(slide) {
-      fetch(`${apiUrl}/indexed?dataset=${datasetId}&indices=${JSON.stringify(slide.indices)}`)
-        .then(response => response.json())
-        .then(data => {
-          const text_column = dataset.text_column
-          let rows = data.map((row, index) => {
-            return {
-              index: slide.indices[index],
-              text: row[text_column],
-              score: row.score, // TODO: this is custom to one dataset
-              date: row.date,
-            }
-          })
-          rows.sort((a, b) => b.score - a.score)
-          setSlideRows(rows)
-        }).catch(e => console.log(e));
-      } else {
-        setSlideRows([])
-      }
-  }, [datasetId, slide])
-
   const [slideAnnotations, setSlideAnnotations] = useState([]);
   useEffect(() => {
     if(slide) {
@@ -305,37 +258,15 @@ function DatasetDetail() {
         scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
       } 
     }
-  }, [slide, points])
-  const [slideHoverAnnotations, setSlideHoverAnnotations] = useState([]);
-  useEffect(() => {
-    if(slideHover) {
-      const annots = slideHover.indices.map(index => points[index])
-      setSlideHoverAnnotations(annots)
-    } else {
-      setSlideHoverAnnotations([])
-    }
-  }, [slideHover, points])
-
-
-
-  const handleSlideClick = useCallback((slide) => {
-    setSlide(slide)
-    setActiveTab(2)
-    scatter?.zoomToPoints(slide.indices, { transition: true, padding: 0.5, transitionDuration: 1500 })
-  })
-
-  const handleSlideHover = useCallback((slide) => {
-    setSlideHover(slide)
-  })
-
+  }, [slide, points, scatter, setSlideAnnotations])
 
   // Handlers for responding to individual data points
   const handleClicked = useCallback((index) => {
     scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 })
-  })
+  }, [scatter])
   const handleHover = useCallback((index) => {
     setHoveredIndex(index);
-  })
+  }, [setHoveredIndex])
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -380,15 +311,7 @@ function DatasetDetail() {
                 width={scopeWidth} 
                 height={scopeHeight} 
                 />
-              <AnnotationPlot 
-                points={slideHoverAnnotations} 
-                fill="red"
-                size="12"
-                xDomain={xDomain} 
-                yDomain={yDomain} 
-                width={scopeWidth} 
-                height={scopeHeight} 
-                />
+              
               <AnnotationPlot 
                 points={tagAnnotations} 
                 symbol={tag}
@@ -413,12 +336,13 @@ function DatasetDetail() {
           </div>
           <div className="hovered-point">
             {/* Hovered: &nbsp; */}
-            {hovered[0] && Object.keys(hovered[0]).map((key) => (
+            {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span> 
-                <span className="value">{hovered[0][key]}</span>
+                <span className="value">{hovered[key]}</span>
               </span>
             ))}
+            {hoveredCluster ? <span><span className="key">Cluster:</span><span className="value">{hoveredCluster.label}</span></span> : null }
             {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
           </div>
         </div>
@@ -451,10 +375,12 @@ function DatasetDetail() {
                 : null}
               </span>
               {selected.length > 0 ? 
-                <DataTable 
-                  data={selected} 
+                <IndexDataTable 
+                  indices={selectedIndices}
+                  clusterIndices={clusterIndices}
+                  clusterLabels={clusterLabels}
                   tagset={tagset} 
-                  datasetId={datasetId} 
+                  dataset={dataset} 
                   maxRows={150} 
                   onTagset={(data) => setTagset(data)} 
                   onHover={handleHover} 
@@ -496,11 +422,14 @@ function DatasetDetail() {
                   }>X</button> 
                 : null}
               </span>
-              {neighbors.length > 0 ?
-                <DataTable 
-                  data={neighbors} 
+              {searchIndices.length > 0 ?
+                <IndexDataTable 
+                  indices={searchIndices} 
+                  distances={distances}
+                  clusterIndices={clusterIndices}
+                  clusterLabels={clusterLabels}
                   tagset={tagset} 
-                  datasetId={datasetId} 
+                  dataset={dataset} 
                   onTagset={(data) => setTagset(data)} 
                   onHover={handleHover} 
                   onClick={handleClicked}
@@ -526,7 +455,6 @@ function DatasetDetail() {
               <div className="cluster-selected">
                 <span>{slide?.indices.length} {slide?.indices.length ? "Rows" :""}
                 { slide ? <button className="deselect" onClick={() => {
-                  console.log("SLIDE", slide)
                     setSlide(null)
                   }
                   }>X</button> 
@@ -534,11 +462,13 @@ function DatasetDetail() {
               </span>
               </div>
               <div className="cluster-table">
-                { slideRows.length ? 
-                  <DataTable 
-                    data={slideRows} 
+                { slide?.indices ? 
+                  <IndexDataTable 
+                    indices={slide?.indices} 
+                    clusterIndices={clusterIndices}
+                    clusterLabels={clusterLabels}
+                    dataset={dataset} 
                     tagset={tagset} 
-                    datasetId={datasetId} 
                     onTagset={(data) => setTagset(data)} 
                     onHover={handleHover} 
                     onClick={handleClicked}
@@ -583,11 +513,13 @@ function DatasetDetail() {
                     }>X</button> 
                   : null}
                 </span>
-                { tagrows.length ? 
-                  <DataTable 
-                    data={tagrows} 
+                { tagset[tag] ? 
+                  <IndexDataTable 
+                    indices={tagset[tag]}
+                    clusterIndices={clusterIndices}
+                    clusterLabels={clusterLabels}
                     tagset={tagset} 
-                    datasetId={datasetId} 
+                    dataset={dataset} 
                     onTagset={(data) => setTagset(data)} 
                     onHover={handleHover} 
                     onClick={handleClicked}

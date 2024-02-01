@@ -95,6 +95,7 @@
   border: none;
   border-radius: 0;
   margin: 0;
+  padding: 6px 24px;
 }
 .dataset--explore .tab-header button:hover {
   background-color: #ddd;
