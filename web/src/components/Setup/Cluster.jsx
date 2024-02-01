@@ -34,7 +34,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
         const array = data.map(d => {
           return {
             ...d,
-            url: `${apiUrl}/files/${datasetId}/clusters/${d.cluster_name}.png`,
+            url: `${apiUrl}/files/${datasetId}/clusters/${d.id}.png`,
           }
         })
         // console.log("clusters", clusters)
@@ -64,7 +64,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
     const data = new FormData(form)
     const samples = data.get('samples')
     const min_samples = data.get('min_samples')
-    startClusterJob({umap_name: umap.name, samples, min_samples})
+    startClusterJob({umap_id: umap.id, samples, min_samples})
   }, [startClusterJob, umap])
 
 
@@ -85,22 +85,22 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
       <JobProgress job={clusterJob} clearJob={()=>setClusterJob(null)} />
 
       <div className="dataset--setup-clusters-list">
-        {umap && clusters.filter(d => d.umap_name == umap.name).map((cl, index) => (
+        {umap && clusters.filter(d => d.umap_id == umap.id).map((cl, index) => (
           <div className="dataset--setup-clusters-item" key={index}>
             <input type="radio" 
               id={`cluster${index}`} 
               name="cluster" 
               value={cluster} 
-              checked={cl.cluster_name === cluster?.cluster_name} 
+              checked={cl.id === cluster?.id} 
               onChange={() => onChange(cl)} />
-            <label htmlFor={`cluster${index}`}>{cl.cluster_name}
+            <label htmlFor={`cluster${index}`}>{cl.id}
             <br></br>
               Clusters: {cl.n_clusters}<br/>
               Noise points: {cl.n_noise}<br/>
               Samples: {cl.samples}<br/>
               Min Samples: {cl.min_samples}<br/>
-            <img src={cl.url} alt={cl.name} />
-            <button onClick={() => deleteClusterJob({cluster_name: cl.cluster_name}) }>🗑️ cluster</button>
+            <img src={cl.url} alt={cl.id} />
+            <button onClick={() => deleteClusterJob({cluster_id: cl.id}) }>🗑️ cluster</button>
             </label>
           </div>
         ))}

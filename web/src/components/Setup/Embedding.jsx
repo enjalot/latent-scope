@@ -61,10 +61,11 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     const form = e.target;
     const data = new FormData(form);
     const model = models.find(model => model.id === data.get('modelName'));
+    const prefix = data.get('prefix')
     let job = { 
       text_column: textColumn,
-      provider: model.provider,
-      model: model.id,
+      embedding_id: model.id,
+      prefix
     };
     startEmbeddingsJob(job);
   };
@@ -82,6 +83,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
               <option key={index} value={model.id}>{model.provider}: {model.name}</option>
             ))}
           </select>
+          <textarea name="prefix" placeholder="Optional prefix to prepend to each sentence" disabled={!!embeddingsJob}></textarea>
         </div> 
         <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
       </form>
@@ -96,8 +98,8 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
           <label htmlFor={`embedding${index}`}>
             <span>
               {emb} [
-                {umaps.filter(d => d.embeddings == emb).length} umaps,&nbsp;
-                {clusters.filter(d => umaps.filter(d => d.embeddings == emb).map(d => d.name).indexOf(d.umap_name) >= 0).length} clusters 
+                {umaps.filter(d => d.embedding_id == emb).length} umaps,&nbsp;
+                {clusters.filter(d => umaps.filter(d => d.embedding_id == emb).map(d => d.id).indexOf(d.umap_id) >= 0).length} clusters 
               ]
             </span>
           </label>

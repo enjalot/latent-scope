@@ -11,9 +11,10 @@ import Stage from './Setup/Stage';
 
 import IndexDataTable from './IndexDataTable';
 import UmapScatter from './UmapScatter';
+  
+const apiUrl = import.meta.env.VITE_API_URL
 
 function DatasetSetup() {
-  const apiUrl = import.meta.env.VITE_API_URL
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
 
@@ -73,8 +74,8 @@ function DatasetSetup() {
 
   useEffect(() => {
       if(umaps.length) {
-        const embeddingUmaps = umaps.filter(d => d.embeddings == embedding)
-        const found = embeddingUmaps.find(d => d.name == selectedUmap)
+        const embeddingUmaps = umaps.filter(d => d.embedding_id == embedding)
+        const found = embeddingUmaps.find(d => d.id == selectedUmap)
         if(selectedUmap && found) {
           setUmap(found)
         } else {
@@ -93,8 +94,8 @@ function DatasetSetup() {
 
   useEffect(() => {
     if(clusters.length && umap) {
-      const umapClusters = clusters.filter(d => d.umap_name == umap.name)
-      const found = umapClusters.find(d => d.cluster_name == selectedCluster)
+      const umapClusters = clusters.filter(d => d.umap_id == umap.id)
+      const found = umapClusters.find(d => d.cluster_id == selectedCluster)
       if(selectedCluster && found) {
         setCluster(found)
       } else {
@@ -106,7 +107,7 @@ function DatasetSetup() {
   }, [selectedCluster, clusters, umap]) 
 
   // the currently chosen model used to label the active cluster
-  const [clusterLabelModel, setClusterLabelModel] = useState(null); 
+  const [clusterLabelModel, setClusterLabelModel] = useState("default"); 
 
   // ====================================================================================================
   // scopes
@@ -117,13 +118,13 @@ function DatasetSetup() {
   // When the scopeId changes, update the scope and set all the default selections
   useEffect(() => {
     if(scopeId && scopes?.length) {
-      const scope = scopes.find(d => d.name == scopeId)
+      const scope = scopes.find(d => d.id == scopeId)
       if(scope) {
         setScope(scope)
         setEmbedding(scope.embeddings)
         setSelectedUmap(scope.umap)
         setSelectedCluster(scope.cluster)
-        setClusterLabelModel(scope.cluster_labels)
+        setClusterLabelModel(scope.cluster_labels_id)
       }
     } else {
       setScope(null)
@@ -160,7 +161,7 @@ function DatasetSetup() {
     } else {
       setStage(6)
     }
-    console.log("sup", scope, clusterLabelModel)
+    console.log("SCOPE", scope, embedding, umap, cluster, clusterLabelModel)
   }, [embedding, umap, cluster, clusterLabelModel, scope])
  
 
@@ -172,7 +173,9 @@ function DatasetSetup() {
         <div className="dataset--setup-info">
           <h3>{datasetId}</h3>
           <div className="dataset--setup-info-content">
-            [ {dataset.length} rows ] 
+            { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id})</Link> : null }
+            <br/>
+            {dataset.length} rows <br/>
             Columns: {dataset.columns.join(", ")}
             <div className="dataset--details-text-column">
               Set Text Column: 
@@ -185,22 +188,21 @@ function DatasetSetup() {
           </div>
         </div>
         
-        { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.name}`}> Explore {scope.label} ({scope.name})</Link> : null }
 
         {/* <div className="dataset--setup-scopes-list">
             {scopes && scopes.map((s, index) => {
-              const cl = clusters.find(c => c.cluster_name == s.cluster) || {}
+              const cl = clusters.find(c => c.cluster_id== s.cluster_id) || {}
               return (
               <div 
                 key={index} 
-                className={ "dataset--setup-scopes-item" + (s.name == scope?.name ? " active" : "") }
-                onClick={() => navigate(`/datasets/${datasetId}/setup/${s.name}`)}
+                className={ "dataset--setup-scopes-item" + (s.id == scope?.id ? " active" : "") }
+                onClick={() => navigate(`/datasets/${datasetId}/setup/${s.id}`)}
                 >
-                <span>{s.name}</span>
+                <span>{s.id}</span>
                 <span>{s.label} </span>
                 <span>{s.description}</span>
-                <img src={cl.url} alt={cl.name} /> 
-                <span>{s.embeddings}</span> 
+                <img src={cl.url} alt={cl.id} /> 
+                <span>{s.embedding_id}</span> 
               </div>
             )})}
             

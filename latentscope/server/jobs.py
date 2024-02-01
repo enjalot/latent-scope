@@ -95,11 +95,11 @@ def run_ingest():
 def run_embed():
     dataset = request.args.get('dataset')
     text_column = request.args.get('text_column')
-    provider = request.args.get('provider')
-    model = request.args.get('model') # model id
+    embedding_id = request.args.get('embedding_id') # model id
+    prefix = request.args.get('prefix')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed {dataset} {text_column} {model}'
+    command = f'ls-embed {dataset} {text_column} {embedding_id} "{prefix}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -107,20 +107,20 @@ def run_embed():
 @jobs_bp.route('/umap')
 def run_umap():
     dataset = request.args.get('dataset')
-    embeddings = request.args.get('embeddings')
+    embedding_id = request.args.get('embedding_id')
     neighbors = request.args.get('neighbors')
     min_dist = request.args.get('min_dist')
-    print("run umap", dataset, embeddings, neighbors, min_dist)
+    print("run umap", dataset, embedding_id, neighbors, min_dist)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-umap {dataset} {embeddings} {neighbors} {min_dist}'
+    command = f'ls-umap {dataset} {embedding_id} {neighbors} {min_dist}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
 @jobs_bp.route('/delete/umap')
 def delete_umap():
     dataset = request.args.get('dataset')
-    umap_name = request.args.get('umap_name')
+    umap_id = request.args.get('umap_id')
 
     # Get a list of all the clusters that have umap_name in their .json so we can delete them too
     cluster_dir = os.path.join(DATA_DIR, dataset, 'clusters')
@@ -129,12 +129,12 @@ def delete_umap():
         if file.endswith(".json"):
             with open(os.path.join(cluster_dir, file), 'r') as f:
                 cluster_data = json.load(f)
-            if cluster_data.get('umap_name') == umap_name:
+            if cluster_data.get('umap_id') == umap_id:
                 clusters_to_delete.append(file.replace('.json', ''))
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "umaps", f"{umap_name}*")}'
+    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}*")}'
     # Create the rm -rf commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
         command += f'; rm {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*")}'
@@ -144,36 +144,36 @@ def delete_umap():
 @jobs_bp.route('/cluster')
 def run_cluster():
     dataset = request.args.get('dataset')
-    umap_name = request.args.get('umap_name')
+    umap_id = request.args.get('umap_id')
     samples = request.args.get('samples')
     min_samples = request.args.get('min_samples')
-    print("run cluster", dataset, umap_name, samples, min_samples)
+    print("run cluster", dataset, umap_id, samples, min_samples)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-cluster {dataset} {umap_name} {samples} {min_samples}'
+    command = f'ls-cluster {dataset} {umap_id} {samples} {min_samples}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
 @jobs_bp.route('/delete/cluster')
 def delete_cluster():
     dataset = request.args.get('dataset')
-    cluster_name = request.args.get('cluster_name')
+    cluster_id = request.args.get('cluster_id')
     job_id = str(uuid.uuid4())
-    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_name}*")}'
+    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_id}*")}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
 @jobs_bp.route('/cluster_label')
 def run_cluster_label():
     dataset = request.args.get('dataset')
-    model = request.args.get('model')
+    chat_id = request.args.get('chat_id')
     text_column = request.args.get('text_column')
-    cluster = request.args.get('cluster')
+    cluster_id = request.args.get('cluster_id')
     context = request.args.get('context')
-    print("run cluster label", dataset, model, text_column, cluster)
+    print("run cluster label", dataset, chat_id, text_column, cluster_id)
     print("context", context)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-label {dataset} {text_column} {cluster} {model} "{context}"'
+    command = f'ls-label {dataset} {text_column} {cluster_id} {chat_id} "{context}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})

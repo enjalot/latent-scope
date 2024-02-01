@@ -1,4 +1,4 @@
-# Usage: python umapper.py <dataset_name> <model> <neighbors> <min_dist>
+# Usage: python umapper.py <dataset_id> <model> <neighbors> <min_dist>
 # Example: python umapper.py dadabase-curated BAAI_bge-small-en-v1.5 50 0.075
 import os
 import re
@@ -15,14 +15,14 @@ from latentscope.util import get_data_dir
 
 def main():
     parser = argparse.ArgumentParser(description='UMAP embeddings for a dataset')
-    parser.add_argument('name', type=str, help='Dataset name (directory name in data/)')
-    parser.add_argument('model', type=str, help='Name of embedding model to use')
+    parser.add_argument('dataset_id', type=str, help='Dataset name (directory name in data/)')
+    parser.add_argument('embedding_id', type=str, help='Name of embedding model to use')
     parser.add_argument('neighbors', type=int, help='Output file', default=25)
     parser.add_argument('min_dist', type=float, help='Output file', default=0.075)
 
     # Parse arguments
     args = parser.parse_args()
-    umapper(args.name, args.model, args.neighbors, args.min_dist)
+    umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist)
 
 
 # TODO move this into shared space
@@ -37,12 +37,12 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
         return min(min_size + min_size * np.log(num_points / base_num_points), max_size)
 
 
-def umapper(dataset_name, model_id, neighbors=25, min_dist=0.075):
+def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.075):
     DATA_DIR = get_data_dir()
     # read in the embeddings
-    embeddings = np.load(os.path.join(DATA_DIR, dataset_name, "embeddings", f"{model_id}.npy"))
+    embeddings = np.load(os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.npy"))
 
-    umap_dir = os.path.join(DATA_DIR, dataset_name, "umaps")
+    umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
     if not os.path.exists(umap_dir):
         os.makedirs(umap_dir)
 
@@ -98,8 +98,8 @@ def umapper(dataset_name, model_id, neighbors=25, min_dist=0.075):
     # save a json file with the umap parameters
     with open(os.path.join(umap_dir, f'{umap_name}.json'), 'w') as f:
         json.dump({
-            "name": umap_name, 
-            "embeddings": model_id,
+            "id": umap_name, 
+            "embedding_id": embedding_id,
             "neighbors": neighbors, 
             "min_dist": min_dist
         }, f, indent=2)

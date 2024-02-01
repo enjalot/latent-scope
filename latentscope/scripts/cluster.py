@@ -1,4 +1,4 @@
-# Usage: python cluster.py <dataset_name> <umap_name> <samples> <min_samples>
+# Usage: python cluster.py <dataset_id> <umap_id> <samples> <min_samples>
 # Example: python cluster.py dadabase-curated umap-001 50 5
 import os
 import re
@@ -27,18 +27,18 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
 
 def main():
     parser = argparse.ArgumentParser(description='Cluster UMAP embeddings')
-    parser.add_argument('dataset_name', type=str, help='Name of the dataset')
-    parser.add_argument('umap_name', type=str, help='Name of the UMAP file')
+    parser.add_argument('dataset_id', type=str, help='ID of the dataset')
+    parser.add_argument('umap_id', type=str, help='ID of the UMAP file')
     parser.add_argument('samples', type=int, help='Minimum cluster size')
     parser.add_argument('min_samples', type=int, help='Minimum samples for HDBSCAN')
     
     args = parser.parse_args()
-    clusterer(args.dataset_name, args.umap_name, args.samples, args.min_samples)
+    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples)
 
 
-def clusterer(dataset_name, umap_name, samples, min_samples):
+def clusterer(dataset_id, umap_id, samples, min_samples):
     DATA_DIR = get_data_dir()
-    cluster_dir = os.path.join(DATA_DIR, dataset_name, "clusters")
+    cluster_dir = os.path.join(DATA_DIR, dataset_id, "clusters")
     # Check if clusters directory exists, if not, create it
     if not os.path.exists(cluster_dir):
         os.makedirs(cluster_dir)
@@ -55,9 +55,9 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
         next_cluster_number = 1
 
     # make the umap name from the number, zero padded to 3 digits
-    cluster_name = f"cluster-{next_cluster_number:03d}"
+    cluster_id = f"cluster-{next_cluster_number:03d}"
 
-    umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_name, "umaps", f"{umap_name}.parquet"))
+    umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
     umap_embeddings = umap_embeddings_df.to_numpy()
 
     clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean')
@@ -89,7 +89,7 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
 
     # save umap embeddings to a parquet file with columns x,y
     df = pd.DataFrame({"cluster": cluster_labels, "raw_cluster": raw_cluster_labels})
-    output_file = os.path.join(cluster_dir, f"{cluster_name}.parquet")
+    output_file = os.path.join(cluster_dir, f"{cluster_id}.parquet")
     df.to_parquet(output_file)
     print(df.head())
     print("wrote", output_file)
@@ -100,20 +100,24 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
     print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
     plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5, c=cluster_labels, cmap='Spectral')
     # plot a convex hull around each cluster
+    hulls = []
     for label in non_noise_labels:
         points = umap_embeddings[cluster_labels == label]
         hull = ConvexHull(points)
+        hull_list = hull.vertices.tolist()
+        hulls.append(hull_list)
         for simplex in hull.simplices:
             plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
 
+    print("HULL", hulls[0])
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
-    plt.savefig(os.path.join(cluster_dir, f"{cluster_name}.png"))
+    plt.savefig(os.path.join(cluster_dir, f"{cluster_id}.png"))
 
-    with open(os.path.join(cluster_dir,f"{cluster_name}.json"), 'w') as f:
+    with open(os.path.join(cluster_dir,f"{cluster_id}.json"), 'w') as f:
         json.dump({
-            "cluster_name": cluster_name,
-            "umap_name": umap_name, 
+            "id": cluster_id,
+            "umap_id": umap_id, 
             "samples": samples, 
             "min_samples": min_samples,
             "n_clusters": len(non_noise_labels),
@@ -130,11 +134,11 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
     for cluster, indices in cluster_indices.items():
         label = f"Cluster {cluster}"
         description = f"This is cluster {cluster} with {len(indices)} items."
-        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)]})
+        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hulls': [hulls[cluster]]})
         slides_df = pd.concat([slides_df, new_row], ignore_index=True)
 
     # write the df to parquet
-    slides_df.to_parquet(os.path.join(cluster_dir, f"{cluster_name}-labels.parquet"))
+    slides_df.to_parquet(os.path.join(cluster_dir, f"{cluster_id}-labels-default.parquet"))
     print("done")
 
 if __name__ == "__main__":

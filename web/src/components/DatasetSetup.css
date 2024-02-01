@@ -17,16 +17,17 @@
 .dataset--setup-summary {
   display: flex;
   flex-direction: row;
-  max-width: calc(100% - 64px);
+  max-width: calc(100% - 24px);
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  padding: 12px 24px;
   margin: 12px;
+  width: 100%;
 }
 .dataset--setup-info {
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
   gap: 10px;
+  width: 100%;
   /* width: var(--umap-width); */
   /* max-width: var(--umap-width); */
 }
@@ -35,10 +36,11 @@
   font-size: 1.2em;
   font-weight: bold;
   margin: 0;
-  padding: 4px 12px;
+  padding: 6px 12px;
+  width: calc(100% - 24px);
 }
-.dataset--setup-info .content {
-  padding: 12px;
+.dataset--setup-info-content {
+  padding: 12px 12px;
 }
 .dataset--setup-scopes-list {
   max-width: calc(100% - var(--umap-width));

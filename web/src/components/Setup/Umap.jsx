@@ -33,7 +33,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
         const array = data.map(d=> {
           return {
             ...d,
-            url: `${apiUrl}/files/${datasetId}/umaps/${d.name}.png`,
+            url: `${apiUrl}/files/${datasetId}/umaps/${d.id}.png`,
           }
         })
         callback(array.reverse())
@@ -61,7 +61,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
     const data = new FormData(form)
     const neighbors = data.get('neighbors')
     const min_dist = data.get('min_dist')
-    startUmapJob({embeddings: embedding, neighbors, min_dist})
+    startUmapJob({embedding_id: embedding, neighbors, min_dist})
   }, [startUmapJob, embedding])
 
   return (
@@ -80,20 +80,20 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
         <JobProgress job={umapJob} clearJob={()=> setUmapJob(null)}/>
         {/* The list of available UMAPS */}
         <div className={styles["umaps-list"]}>
-          {umaps.filter(d => d.embeddings == embedding).map((um, index) => (
+          {umaps.filter(d => d.embedding_id == embedding).map((um, index) => (
             <div className={styles["umaps-item"]} key={index}>
               <input type="radio" 
                 id={`umap${index}`} 
                 name="umap" 
-                value={um} checked={um.name === umap?.name} onChange={() => onChange(um)} />
-              <label htmlFor={`umap${index}`}>{um.name}
+                value={um} checked={um.id === umap?.id} onChange={() => onChange(um)} />
+              <label htmlFor={`umap${index}`}>{um.id}
               <br></br>
                 Neighbors: {um.neighbors}<br/>
                 Min Dist: {um.min_dist}<br/>
-              <img src={um.url} alt={um.name} />
+              <img src={um.url} alt={um.id} />
               <br></br>
-              {clusters.filter(d => d.umap_name == um.name).length} clusters
-              <button onClick={() => deleteUmapJob({umap_name: um.name}) } disabled={umapJob && umapJob.status !== "completed"}>🗑️ umap</button>
+              {clusters.filter(d => d.umap_id == um.id).length} clusters
+              <button onClick={() => deleteUmapJob({umap_id: um.id}) } disabled={umapJob && umapJob.status !== "completed"}>🗑️ umap</button>
               </label>
             </div>
           ))}

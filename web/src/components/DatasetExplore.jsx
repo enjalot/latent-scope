@@ -55,21 +55,21 @@ function DatasetDetail() {
 
   useEffect(() => {
     if(scope) {
-      setEmbedding(scope.embeddings)
-      setSearchModel(scope.embeddings)
-      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap}`)
+      setEmbedding(scope.embedding_id)
+      setSearchModel(scope.embedding_id)
+      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`)
         .then(response => response.json())
         .then(data => {
           console.log("umap", data)
           setUmap(data)
         });
-      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/labels/${scope.cluster_labels || 'default'}`)
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id || 'default'}`)
         .then(response => response.json())
         .then(data => {
           console.log("labels", data)
           setClusterLabels(data)
         });
-      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster}/indices`)
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`)
         .then(response => response.json())
         .then(data => {
           console.log("cluster indices", data)
@@ -102,7 +102,7 @@ function DatasetDetail() {
   const [loadingPoints, setLoadingPoints] = useState(false);
   useEffect(() => {
     if(umap) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.name}/points`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.id}/points`)
         .then(response => response.json())
         .then(data => {
           console.log("umap points", data)
@@ -274,8 +274,8 @@ function DatasetDetail() {
     <div className="dataset--explore">
       <div className="column">
         <div className="first-row summary">
-          <h3> {datasetId}  [{scope?.name}]
-              <Link to={`/datasets/${dataset?.id}/setup/${scope?.name}`}>Configure</Link> 
+          <h3> {datasetId}  [{scope?.id}]
+              <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> 
           </h3>
           {dataset?.length} rows<br/>
           Embedding model:<br/> {embedding}<br/>

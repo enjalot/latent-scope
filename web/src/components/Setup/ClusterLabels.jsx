@@ -41,8 +41,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
     if(dataset && cluster) {
-      const endpoint = selectedModel ? `labels/${selectedModel}` : 'labels'
-      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.cluster_name}/${endpoint}`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${selectedModel}`)
         .then(response => response.json())
         .then(data => {
           setClusterLabels(data)
@@ -53,15 +52,14 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
       } else {
         setClusterLabels([])
       }
-  }, [selectedModel, setClusterLabels, dataset, cluster])
+  }, [selectedModel, setClusterLabels, dataset, cluster, clusterLabelModels])
 
   useEffect(() => {
-    console.log("cluster changed, set label models", cluster?.cluster_name)
     if(cluster) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.cluster_name}/labels_available`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels_available`)
         .then(response => response.json())
         .then(data => {
-          console.log("cluster changed, set label models fetched", cluster.cluster_name, data)
+          console.log("cluster changed, set label models fetched", cluster.id, data)
           setClusterLabelModels(data)
         }).catch(err => {
           console.log(err)
@@ -79,16 +77,16 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
     const data = new FormData(form)
     const model = data.get('chatModel')
     const text_column = dataset.text_column
-    const cluster_name = cluster?.cluster_name
+    const cluster_id = cluster?.id
     const context = data.get('context')
-    startClusterLabelsJob({model, cluster: cluster_name, text_column, context})
-  }, [cluster, startClusterLabelsJob])
+    startClusterLabelsJob({chat_id: model, cluster_id: cluster_id, text_column, context})
+  }, [dataset, cluster, startClusterLabelsJob])
 
   return (
     <div className="dataset--setup-cluster-labels-content">
       <div className="dataset--slides-new">
         <p>Automatically create labels for each cluster
-          {cluster ? ` in ${cluster.cluster_name}` : ''} using a chat model. </p>
+          {cluster ? ` in ${cluster.cluster_id}` : ''} using a chat model. </p>
         <form onSubmit={handleNewLabels}>
           <label>
             Chat Models:
@@ -114,7 +112,6 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
             value={selectedModel}
             onChange={(e) => onChange(e.target.value)}
           >
-            <option value="">Default labels</option>
             {clusterLabelModels.map((model, index) => (
               <option key={index} value={model}>{model}</option>
             ))}

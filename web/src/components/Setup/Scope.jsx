@@ -27,7 +27,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
     fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
       .then(response => response.json())
       .then(data => {
-        const sorted = data.sort((a,b) => a.name.localeCompare(b.name))
+        const sorted = data.sort((a,b) => a.id.localeCompare(b.id))
         // setScopes(sorted)
         onNew(sorted)
       });
@@ -39,10 +39,10 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
     const form = event.target;
     const data = new FormData(form);
     const payload = {
-      embeddings: embedding,
-      umap: umap.name,
-      cluster: cluster.cluster_name,
-      cluster_labels: clusterLabelModel,
+      embedding_id: embedding,
+      umap_id: umap.id,
+      cluster_id: cluster.id,
+      cluster_labels_id: clusterLabelModel,
       label: data.get('label'),
       description: data.get('description')
     };
@@ -50,7 +50,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
     const action = data.get('action')
     console.log("action", action)
     if(action == "save") {
-      payload.name = scope.name
+      payload.id = scope.id
     }
 
     fetch(`${apiUrl}/datasets/${dataset.id}/scopes/save`, {
@@ -68,14 +68,14 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
         .then(data => {
           // setScopes(data)
           onNew(data)
-          onChange(data.find(s => s.name == tscope.name))
+          onChange(data.find(s => s.id == tscope.id))
         });
-      navigate(`/datasets/${dataset.id}/setup/${data.name}`);
+      navigate(`/datasets/${dataset.id}/setup/${data.id}`);
     })
     .catch(error => {
       console.error('Error saving scope:', error);
     });
-  }, [dataset, cluster, clusterLabelModel, umap, embedding , navigate, onNew, onChange]);
+  }, [dataset, scope, cluster, clusterLabelModel, umap, embedding , navigate, onNew, onChange]);
 
   return (
     <div className="setup-scope">
@@ -85,12 +85,12 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
       </div>
       <div className="dataset--setup-save-box-boxes">
         { umap ? <div className="box-item">
-          {umap.name}
-          <img src={umap.url} alt={umap.name} />
+          {umap.id}
+          <img src={umap.url} alt={umap.id} />
         </div> : <div className="empty-box"></div> }
         { cluster ? <div className="box-item">
-          {cluster.cluster_name}
-          <img src={cluster.url} alt={cluster.name} />
+          {cluster.id}
+          <img src={cluster.url} alt={cluster.id} />
         </div> : <div className="empty-box"></div> }
       </div>
       <div className="dataset--setup-save-box-nav">
@@ -106,10 +106,10 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
           <input type="hidden" name="action" value="" />
         {scope ? <div className="previous-scope">
           <h4>Previous Scope Settings</h4>
-          Embedding: {scope.embeddings}<br/>
-          Umap: { scope.umap }<br/>
-          Cluster: { scope.cluster }<br/>
-          Labels: { scope.cluster_labels || "Default" }<br/>
+          Embedding: {scope.embedding_id}<br/>
+          Umap: { scope.umap_id }<br/>
+          Cluster: { scope.cluster_id }<br/>
+          Labels: { scope.cluster_labels_id || "Default" }<br/>
 
         </div> : null }
           {scope ? 

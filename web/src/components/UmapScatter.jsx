@@ -20,7 +20,7 @@ function UmapScatter({dataset, umap, width, height, onScatter, onView, onSelect,
   // const [loadingPoints, setLoadingPoints] = useState(false);
   useEffect(() => {
     if(umap) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.name}/points`)
+      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.id}/points`)
         .then(response => response.json())
         .then(data => {
           // console.log("umap points", data)

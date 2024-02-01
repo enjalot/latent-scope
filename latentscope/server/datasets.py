@@ -21,7 +21,7 @@ def get_datasets():
         if os.path.isfile(file_path):
             with open(file_path, 'r', encoding='utf-8') as file:
                 jsonData = json.load(file)
-                jsonData['name'] = dir
+                jsonData['id'] = dir
                 datasets.append(jsonData)
 
     return jsonify(datasets)
@@ -117,12 +117,12 @@ def get_dataset_cluster(dataset, cluster):
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
-@datasets_bp.route('/<dataset>/clusters/<cluster>/labels', methods=['GET'])
-def get_dataset_cluster_labels_default(dataset, cluster):
-    file_name = cluster + "-labels.parquet"
-    file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
-    df = pd.read_parquet(file_path)
-    return df.to_json(orient="records")
+# @datasets_bp.route('/<dataset>/clusters/<cluster>/labels', methods=['GET'])
+# def get_dataset_cluster_labels_default(dataset, cluster):
+#     file_name = cluster + "-labels.parquet"
+#     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
+#     df = pd.read_parquet(file_path)
+#     return df.to_json(orient="records")
 
 @datasets_bp.route('/<dataset>/clusters/<cluster>/indices', methods=['GET'])
 def get_dataset_cluster_indices(dataset, cluster):
@@ -133,8 +133,8 @@ def get_dataset_cluster_indices(dataset, cluster):
 
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
 def get_dataset_cluster_labels(dataset, cluster, model):
-    if model == "default":
-        return get_dataset_cluster_labels_default(dataset, cluster)
+    # if model == "default":
+    #     return get_dataset_cluster_labels_default(dataset, cluster)
     file_name = cluster + "-labels-" + model + ".parquet"
     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
@@ -183,27 +183,27 @@ def get_dataset_scope(dataset, scope):
 def save_dataset_scope(dataset):
     if not request.json:
         return jsonify({"error": "Invalid data format, JSON expected"}), 400
-    name = request.json.get('name')
-    embeddings = request.json.get('embeddings')
-    umap = request.json.get('umap')
-    cluster = request.json.get('cluster')
-    cluster_labels = request.json.get('cluster_labels')
+    id = request.json.get('id')
+    embedding_id = request.json.get('embedding_id')
+    umap_id = request.json.get('umap_id')
+    cluster_id = request.json.get('cluster_id')
+    cluster_labels_id = request.json.get('cluster_labels_id')
     label = request.json.get('label')
     description = request.json.get('description')
     scope = {
-        "embeddings": embeddings,
-        "umap": umap,
-        "cluster": cluster,
-        "cluster_labels": cluster_labels,
+        "embedding_id": embedding_id,
+        "umap_id": umap_id,
+        "cluster_id": cluster_id,
+        "cluster_labels_id": cluster_labels_id,
         "label": label,
         "description": description
     }
-    if not name:
+    if not id:
         next_scopes_number = get_next_scopes_number(dataset)
         # make the umap name from the number, zero padded to 3 digits
-        name = f"scopes-{next_scopes_number:03d}"
-    scope["name"] = name
-    file_path = os.path.join(DATA_DIR, dataset, "scopes", name + ".json")
+        id = f"scopes-{next_scopes_number:03d}"
+    scope["id"] = id
+    file_path = os.path.join(DATA_DIR, dataset, "scopes", id + ".json")
     with open(file_path, 'w') as f:
         json.dump(scope, f, indent=2)
     return jsonify(scope)
