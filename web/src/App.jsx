@@ -5,17 +5,19 @@ import DatasetSetup from './components/DatasetSetup';
 import Nav from './components/Nav';
 import './App.css';
 
+const env = import.meta.env;
+console.log("ENV", env)
+const readonly = import.meta.env.MODE == "read_only"
+
 function App() {
-  const env = import.meta.env;
-  console.log("ENV", env)
   return (
     <Router basename={env.BASE_NAME}>
       <Nav />
       <div className="page">
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/datasets/:dataset/setup" element={<DatasetSetup/>} />
-        <Route path="/datasets/:dataset/setup/:scope" element={<DatasetSetup/>} />
+        {readonly ? null : <Route path="/datasets/:dataset/setup" element={<DatasetSetup/>} />}
+        {readonly ? null : <Route path="/datasets/:dataset/setup/:scope" element={<DatasetSetup/>} />}
         <Route path="/datasets/:dataset/explore/:scope" element={<DatasetExplore />} />
       </Routes>
       </div>

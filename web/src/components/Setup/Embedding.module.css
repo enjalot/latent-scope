@@ -1,0 +1,15 @@
+
+.embeddings-form {
+
+}
+.embeddings-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.embeddings-list input, .embeddings-list label {
+  cursor: pointer;
+
+}

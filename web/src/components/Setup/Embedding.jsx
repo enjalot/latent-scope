@@ -4,6 +4,9 @@ import JobProgress from '../JobProgress';
 import { useStartJobPolling } from '../JobRun';
 const apiUrl = import.meta.env.VITE_API_URL
 
+import styles from './Embedding.module.css';
+console.log("EMBEDDING STYLES", styles)
+
 import PropTypes from 'prop-types';
 EmbeddingNew.propTypes = {
   dataset: PropTypes.shape({
@@ -73,28 +76,26 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
 
   return (
     <div>
-      <div>
+      <div className={styles["embeddings-form"]}>
         Embedding on column: <b>{textColumn}</b>
-      </div>
       <form onSubmit={handleNewEmbedding}>
-        <div>
-          <label htmlFor="modelName">Model:</label>
+          <label htmlFor="modelName">Model:
           <select id="modelName" name="modelName" disabled={!!embeddingsJob}>
             {models.map((model, index) => (
               <option key={index} value={model.id}>{model.provider}: {model.name}</option>
             ))}
-          </select>
-          <textarea name="prefix" placeholder="Optional prefix to prepend to each sentence" disabled={!!embeddingsJob}></textarea>
-        </div> 
+          </select></label>
+          <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
         <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
       </form>
+      </div>
       <JobProgress job={embeddingsJob} clearJob={()=> {
         
         setEmbeddingsJob(null)
       }} />
-      <div className="embeddings-list">
+      <div className={styles["embeddings-list"]}>
       {embeddings.map((emb, index) => (
-        <div key={index}>
+        <div className="item" key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
           <label htmlFor={`embedding${index}`}>
             <span>

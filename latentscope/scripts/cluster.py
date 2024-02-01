@@ -100,9 +100,11 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
     # plot a convex hull around each cluster
     hulls = []
     for label in non_noise_labels:
-        points = umap_embeddings[cluster_labels == label]
+        indices = np.where(cluster_labels == label)[0]
+        points = umap_embeddings[indices]
+        # points = umap_embeddings[cluster_labels == label]
         hull = ConvexHull(points)
-        hull_list = hull.vertices.tolist()
+        hull_list = [indices[s] for s in hull.vertices.tolist()]
         hulls.append(hull_list)
         for simplex in hull.simplices:
             plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
@@ -131,7 +133,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
     for cluster, indices in cluster_indices.items():
         label = f"Cluster {cluster}"
         description = f"This is cluster {cluster} with {len(indices)} items."
-        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hulls': [hulls[cluster]]})
+        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hull': [hulls[cluster]]})
         slides_df = pd.concat([slides_df, new_row], ignore_index=True)
 
     # write the df to parquet

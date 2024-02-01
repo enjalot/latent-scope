@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { jobPolling } from './JobRun';
 import JobProgress from './JobProgress';
 const apiUrl = import.meta.env.VITE_API_URL
+const readonly = import.meta.env.MODE == "read_only"
 
 import './Home.css';
 
@@ -91,7 +92,7 @@ function Home() {
 
   return (
     <div className="home">
-      <div className="new-dataset">
+      {readonly ? null : <div className="new-dataset">
         <h3>Create new dataset</h3>
         <form onSubmit={handleNewDataset} onDragOver={handleDragOver} onDrop={handleDrop}>
           <label htmlFor="upload-button">
@@ -111,18 +112,20 @@ function Home() {
           <button type="submit">Submit</button>
         </form>
         <JobProgress job={ingestJob} clearJob={() => setIngestJob(null)} />
-      </div>
+      </div> }
       <h3>Datasets</h3>
       <ul>
         {datasets.map(dataset => (
           <li key={dataset.id}>
-            <Link to={`/datasets/${dataset.id}/setup`}>Setup {dataset.id}</Link>
+            <h3> {dataset.id} - {dataset.length} rows</h3>
+            {readonly ? null : <Link to={`/datasets/${dataset.id}/setup`}>Setup {dataset.id}</Link> }
             <div className="scope-links">
             {scopes[dataset.id] && scopes[dataset.id].map && scopes[dataset.id]?.map((scope,i) => (
               <div className="scope-link" key={i} >
-                <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>Explore {scope.id} - {scope.label}<br></br>
-                <img width="120px" src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} />
+                <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>Explore {scope.id} <br/> {scope.label}<br/>
+                <img src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} />
                 </Link><br></br>
+                {readonly ? null : <Link to={`/datasets/${dataset.id}/setup/${scope.id}`}>Setup {scope.id}</Link> }
               </div>
             ))}
             </div>

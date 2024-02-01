@@ -20,6 +20,8 @@
 .complete h3 {
   background-color: lightblue;
 }
+
+
 .complete h3::before {
   content: '✅';
   margin-right: 5px;
@@ -36,3 +38,22 @@
   margin-right: 5px;
 }
 
+@media (prefers-color-scheme: dark) {
+  .stage h3 {
+    background-color: #444;
+  }
+  .complete {
+    border: 1px solid darkslategray;
+  }
+  .complete h3 {
+    background-color: darkslategray;
+  }
+  .active {
+    border: 1px solid lightslategray;
+  }
+  .active h3 {
+    background-color: lightslategray;
+  }
+  
+
+}

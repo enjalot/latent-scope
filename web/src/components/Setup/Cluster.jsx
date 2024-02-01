@@ -74,7 +74,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
         <label>
           Samples:
           <input type="number" name="samples" defaultValue="5" disabled={!!clusterJob || !umap}/>
-        </label><br/>
+        </label>
         <label>
           Min Samples:
           <input type="number" name="min_samples" defaultValue="5" disabled={!!clusterJob || !umap} />
@@ -86,7 +86,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
 
       <div className="dataset--setup-clusters-list">
         {umap && clusters.filter(d => d.umap_id == umap.id).map((cl, index) => (
-          <div className="dataset--setup-clusters-item" key={index}>
+          <div className="item dataset--setup-clusters-item" key={index}>
             <input type="radio" 
               id={`cluster${index}`} 
               name="cluster" 

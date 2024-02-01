@@ -1,5 +1,5 @@
 import os
-import sys
+import json
 import numpy as np
 from flask import Blueprint, jsonify, request
 
@@ -11,7 +11,7 @@ DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 # in memory cache of dataset metadata, embeddings, models and tokenizers
 DATASETS = {}
-MODELS = {}
+EMBEDDINGS = {}
 
 """
 Returns nearest neighbors for a given query string
@@ -20,29 +20,33 @@ Hard coded to 150 results currently
 @search_bp.route('/nn', methods=['GET'])
 def nn():
     dataset = request.args.get('dataset')
-    model_id = request.args.get('model')
+    embedding_id = request.args.get('embedding_id')
 
     num = 150
-    if model_id not in MODELS:
-        print("loading model", model_id)
+    if embedding_id not in EMBEDDINGS:
+        print("loading model", embedding_id)
+        with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json"), 'r') as f:
+            metadata = json.load(f)
+        model_id = metadata.get('model_id')
+        print("Model ID:", model_id)
         model = get_embedding_model(model_id)
         model.load_model()
-        MODELS[model_id] = model
+        EMBEDDINGS[embedding_id] = model
     else:
-        model = MODELS[model_id]
+        model = EMBEDDINGS[embedding_id]
 
-    if dataset not in DATASETS or model_id not in DATASETS[dataset]:
+    if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
         # load the dataset embeddings
-        embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", model_id + ".npy"))
+        embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".npy"))
         print("fitting embeddings")
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
         if dataset not in DATASETS:
           DATASETS[dataset] = {}
-        DATASETS[dataset][model_id] = nne
+        DATASETS[dataset][embedding_id] = nne
     else:
-        nne = DATASETS[dataset][model_id]
+        nne = DATASETS[dataset][embedding_id]
     
     # embed the query string and find the nearest neighbor
     query = request.args.get('query')

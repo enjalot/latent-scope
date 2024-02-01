@@ -8,9 +8,10 @@ import Cluster from './Setup/Cluster';
 import ClusterLabels from './Setup/ClusterLabels';
 import Scope from './Setup/Scope';
 import Stage from './Setup/Stage';
+import HullPlot from './HullPlot';
 
 import IndexDataTable from './IndexDataTable';
-import UmapScatter from './UmapScatter';
+import Scatter from './Scatter';
   
 const apiUrl = import.meta.env.VITE_API_URL
 
@@ -122,7 +123,7 @@ function DatasetSetup() {
       console.log("finding the scope", scope)
       if(scope) {
         setScope(scope)
-        setEmbedding(scope.embedding_id)
+        setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
         setSelectedUmap(scope.umap_id)
         setSelectedCluster(scope.cluster_id)
         setClusterLabelModel(scope.cluster_labels_id)
@@ -130,7 +131,7 @@ function DatasetSetup() {
     } else {
       setScope(null)
     } 
-  }, [scopeId, scopes])
+  }, [scopeId, scopes, embeddings])
 
 
   // ====================================================================================================
@@ -142,6 +143,97 @@ function DatasetSetup() {
   }, [setSelectedIndices])
 
   const [scatter, setScatter] = useState({})
+  const [xDomain, setXDomain] = useState([-1, 1]);
+  const [yDomain, setYDomain] = useState([-1, 1]);
+  const handleView = useCallback((xDomain, yDomain) => {
+    setXDomain(xDomain);
+    setYDomain(yDomain);
+  }, [setXDomain, setYDomain])
+
+
+  const hydrateIndices = useCallback((indices, setter, distances = []) => {
+    fetch(`${apiUrl}/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
+      .then(response => response.json())
+      .then(data => {
+        if(!dataset) return;
+        let rows = data.map((row, index) => {
+          return {
+            index: indices[index],
+            ...row
+          }
+        })
+        setter(rows)
+      })
+  }, [dataset, datasetId])
+
+  // Hover via scatterplot or tables
+  // index of item being hovered over
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const handleHovered = useCallback((index) => {
+      setHoveredIndex(index);
+  }, [setHoveredIndex])
+
+  const [hovered, setHovered] = useState(null);
+  useEffect(() => {
+    if(hoveredIndex >= 0 && hoveredIndex != null) {
+      hydrateIndices([hoveredIndex], (results) => {
+        setHovered(results[0])
+      })
+    } else {
+      setHovered(null)
+    }
+  }, [hoveredIndex, setHovered, hydrateIndices])
+
+  const [clusterIndices, setClusterIndices] = useState([]);
+  const [clusterLabels, setClusterLables] = useState([]);
+  useEffect(() => {
+    if(cluster) {
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${cluster.id}/indices`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("cluster indices", data)
+          setClusterIndices(data)
+        });
+      } else {
+        setClusterIndices([])
+      }
+  }, [cluster, setClusterIndices, datasetId])
+
+  const memoClusterIndices = useMemo(() => {
+    return clusterIndices.map(d => d.cluster)
+  }, [clusterIndices])
+
+
+
+  const [hoveredCluster, setHoveredCluster] = useState(null);
+  useEffect(() => {
+    if(hovered && clusterIndices.length && clusterLabels.length){
+      const index = hovered.index
+      const cluster = clusterIndices[index]
+      const label = clusterLabels[cluster?.cluster]
+      setHoveredCluster({...label, cluster: cluster.cluster})
+    } else {
+      setHoveredCluster(null)
+    }
+  }, [hovered, clusterIndices, clusterLabels, setHoveredCluster])
+
+
+  const [points, setPoints] = useState([]);
+  // const [loadingPoints, setLoadingPoints] = useState(false);
+  useEffect(() => {
+    if(umap) {
+      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.id}/points`)
+        .then(response => response.json())
+        .then(data => {
+          // console.log("umap points", data)
+          setPoints(data.map(d => [d.x, d.y]))
+        })
+    } else {
+      setPoints([])
+    }
+  }, [dataset, umap])
+
+
 
   // ====================================================================================================
   // progress indicator through stages
@@ -223,7 +315,7 @@ function DatasetSetup() {
             <Cluster dataset={dataset} cluster={cluster} umap={umap} onNew={setClusters} onChange={setCluster} />
           </Stage>
           <Stage active={stage == 4} complete={stage > 4} title="4. Auto-Label Clusters">
-            <ClusterLabels dataset={dataset} cluster={cluster} selectedModel={clusterLabelModel} onChange={setClusterLabelModel} />
+            <ClusterLabels dataset={dataset} cluster={cluster} selectedModel={clusterLabelModel} onChange={setClusterLabelModel} onLabels={setClusterLables} onHoverLabel={setHoveredCluster} />
           </Stage>
           <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope">
             <Scope dataset={dataset} scope={scope} embedding={embedding} umap={umap} cluster={cluster} clusterLabelModel={clusterLabelModel} onNew={setScopes} onChange={setScope} />
@@ -233,38 +325,69 @@ function DatasetSetup() {
         {/* RIGHT COLUMN */}
         <div className="dataset--setup-right-column">
           <div className="dataset--setup-umap">
-            <UmapScatter 
-              dataset={dataset} 
-              umap={umap}
+
+            <Scatter 
+              points={points} 
+              colors={memoClusterIndices}
               width={scopeWidth} 
               height={scopeHeight}
               onScatter={setScatter}
+              onView={handleView} 
               onSelect={handleSelected}
+              onHover={handleHovered}
               />
-            </div>
+            { hoveredCluster && hoveredCluster.hull ? <HullPlot
+              points={points}
+              hulls={[hoveredCluster?.hull]}
+              fill="lightgray"
+              xDomain={xDomain} 
+              yDomain={yDomain} 
+              width={scopeWidth} 
+              height={scopeHeight} /> : null }
+            <HullPlot
+              points={points}
+              hulls={clusterLabels.map(d => d.hull)}
+              stroke="lightgray"
+              xDomain={xDomain} 
+              yDomain={yDomain} 
+              width={scopeWidth} 
+              height={scopeHeight} /> 
+          </div>
 
-            <div className="dataset--selected">
-              <span>Points Selected: {selectedIndices.length} {!selectedIndices.length ? "(Hold shift and drag an area of the map to select)" : null}
-                {selectedIndices.length > 0 ? 
-                  <button className="deselect" onClick={() => {
-                    setSelectedIndices([])
-                    scatter?.select([])
-                    scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                  }
-                  }>X</button> 
-                : null}
+          <div className="dataset--hovered">
+            {/* Hovered: &nbsp; */}
+            {hovered && Object.keys(hovered).map((key) => (
+              <span key={key}>
+                <span className="key">{key}:</span> 
+                <span className="value">{hovered[key]}</span>
               </span>
+            ))}
+            {hoveredCluster ? <span><span className="key">Cluster:</span><span className="value">{hoveredCluster.label}</span></span> : null }
+            {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
+          </div>
+
+          <div className="dataset--selected">
+            <span>Points Selected: {selectedIndices.length} {!selectedIndices.length ? "(Hold shift and drag an area of the map to select)" : null}
               {selectedIndices.length > 0 ? 
-              <div className="dataset--selected-table">
-                <IndexDataTable 
-                  dataset={dataset}
-                  indices={selectedIndices} 
-                  datasetId={datasetId} 
-                  maxRows={150} 
-                  />
-              </div>
-              : null }
+                <button className="deselect" onClick={() => {
+                  setSelectedIndices([])
+                  scatter?.select([])
+                  scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                }
+                }>X</button> 
+              : null}
+            </span>
+            {selectedIndices.length > 0 ? 
+            <div className="dataset--selected-table">
+              <IndexDataTable 
+                dataset={dataset}
+                indices={selectedIndices} 
+                datasetId={datasetId} 
+                maxRows={150} 
+                />
             </div>
+            : null }
+          </div>
         
         </div>
       </div>

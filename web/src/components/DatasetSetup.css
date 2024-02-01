@@ -2,8 +2,6 @@
   --umap-width: 500px;
 }
 
-
-
 .dataset--setup {
   max-width: 100%;
   width: 100%;
@@ -38,6 +36,12 @@
   margin: 0;
   padding: 6px 12px;
   width: calc(100% - 24px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dataset--setup-info h3 {
+    background-color: #333;
+  }
 }
 .dataset--setup-info-content {
   padding: 12px 12px;
@@ -86,17 +90,42 @@
 
 
 /* LEFT COLUMN  */
+.dataset--setup form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+  padding-bottom: 12px;
+}
+.dataset--setup form select, .dataset--setup form input {
+  margin: 0 6px;
+  padding: 3px;
+}
 
-.dataset--setup-embeddings form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.dataset--setup form button {
+  max-width: 220px;
+  background-color: lightcyan;
+  border: 1px solid darkcyan;
 }
-.setup-scope form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.dataset--setup form button:hover {
+  background-color: steelblue;
+  color: white;
 }
+.dataset--setup .item {
+  background-color: #f1f1f1;
+  border-radius: 5px;
+  padding: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  .dataset--setup form button {
+    color: #111;
+  }
+  .dataset--setup .item {
+    background-color: #333;
+  }
+}
+
+
 
 /* .active-stage {
   border: 1px solid orange;
@@ -183,12 +212,34 @@
 
 /* in the right column */
 .dataset--setup-umap {
+  position: relative;
   width: var(--umap-width);
+  height: var(--umap-width);
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
   margin: 12px;
   user-select: none;
 }
+.dataset--hovered {
+  width: var(--umap-width);
+  overflow-y: hidden;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+
+}
+.dataset--hovered {
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+.dataset--hovered .key {
+  font-weight: bold;
+}
+.dataset--hovered .value {
+  margin-left: 10px;
+}
+
 .dataset--selected {
   width: var(--umap-width);
   flex-grow: 1;

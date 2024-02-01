@@ -16,6 +16,13 @@
   background-color: #f9f9f9;
   cursor: pointer;
 }
+@media (prefers-color-scheme: dark) {
+  
+.home label[for="upload-button"] {
+  background-color: #555;
+}
+
+}
 
 .home .scope-links {
   display: flex;
@@ -26,5 +33,7 @@
   padding: 12px;
   margin: 12px;
   border: 1px solid lightsalmon;
-  
+}
+.home .scope-link img {
+  width: 240px;
 }

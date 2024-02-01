@@ -6,12 +6,14 @@ import DataTable from './DataTable';
 import IndexDataTable from './IndexDataTable';
 import Scatter from './Scatter';
 import AnnotationPlot from './AnnotationPlot';
+import HullPlot from './HullPlot';
 
 
 // TODO: decide how to deal with sizing
 const scopeWidth = 500
 const scopeHeight = 500
 const apiUrl = import.meta.env.VITE_API_URL
+const readonly = import.meta.env.MODE == "read_only"
 
 function DatasetDetail() {
   const [dataset, setDataset] = useState(null);
@@ -51,12 +53,23 @@ function DatasetDetail() {
   const [clusterLabels, setClusterLabels] = useState([]);
   // The search model is the embeddings model that we pass to the nearest neighbor query
   // we want to enable searching with any embedding set
-  const [searchModel, setSearchModel] = useState(embedding)
+  const [searchModel, setSearchModel] = useState(embedding?.id)
+
+
+  const [embeddings, setEmbeddings] = useState([]);
+  useEffect(() => {
+    fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
+      .then(response => response.json())
+      .then(data => {
+        // console.log("embeddings", data)
+        setEmbeddings(data)
+      });
+  }, [datasetId, setEmbeddings]);
+
 
   useEffect(() => {
     if(scope) {
-      setEmbedding(scope.embedding_id)
-      setSearchModel(scope.embedding_id)
+      setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
       fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`)
         .then(response => response.json())
         .then(data => {
@@ -76,18 +89,19 @@ function DatasetDetail() {
           setClusterIndices(data)
         });
     }
-  }, [datasetId, scope, setUmap, setClusterLabels, setEmbedding, setSearchModel]);
+  }, [datasetId, scope, embeddings, setUmap, setClusterLabels, setEmbedding, setSearchModel]);
+
+  const memoClusterIndices = useMemo(() => {
+    return clusterIndices.map(d => d.cluster)
+  }, [clusterIndices])
 
 
-  const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
-      .then(response => response.json())
-      .then(data => {
-        // console.log("embeddings", data)
-        setEmbeddings(data)
-      });
-  }, [datasetId, setEmbeddings]);
+    if(embedding) {
+      setSearchModel(embedding.id)
+    }
+  }, [embedding, setSearchModel])
+
 
   // const [activeUmap, setActiveUmap] = useState(null)
   const handleModelSelect = (model) => {
@@ -146,6 +160,7 @@ function DatasetDetail() {
   const [selectedIndices, setSelectedIndices] = useState([]);
 
   const handleSelected = useCallback((indices) => {
+    console.log("handle selected", indices)
     setSelectedIndices(indices);
     setActiveTab(0)
     // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
@@ -171,8 +186,8 @@ function DatasetDetail() {
     if(hovered && clusterIndices.length && clusterLabels.length){
       const index = hovered.index
       const cluster = clusterIndices[index]
-      const label = clusterLabels[cluster?.cluster]?.label
-      setHoveredCluster({label, cluster: cluster.cluster})
+      const label = clusterLabels[cluster?.cluster]
+      setHoveredCluster({cluster: cluster.cluster, ...label})
     } else {
       setHoveredCluster(null)
     }
@@ -226,7 +241,7 @@ function DatasetDetail() {
   const [distances, setDistances] = useState([]);
 
   const searchQuery = useCallback((query) => {
-    fetch(`${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&model=${searchModel}`)
+    fetch(`${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&embedding_id=${searchModel}`)
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
@@ -275,16 +290,17 @@ function DatasetDetail() {
       <div className="column">
         <div className="first-row summary">
           <h3> {datasetId}  [{scope?.id}]
-              <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> 
+              {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> }
           </h3>
           {dataset?.length} rows<br/>
-          Embedding model:<br/> {embedding}<br/>
+          Embedding model:<br/> {embedding?.model_id}<br/>
         </div>
         <div className="second-row">
           <div className="umap-container">
             <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
               <Scatter 
                 points={points} 
+                colors={memoClusterIndices}
                 loading={loadingPoints} 
                 width={scopeWidth} 
                 height={scopeHeight}
@@ -293,6 +309,31 @@ function DatasetDetail() {
                 onSelect={handleSelected}
                 onHover={handleHover}
                 />
+              { hoveredCluster && hoveredCluster.hull ? <HullPlot
+                points={points}
+                hulls={[hoveredCluster?.hull]}
+                fill="lightgray"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} /> : null }
+
+              { slide && slide.hull ? <HullPlot
+                points={points}
+                hulls={[slide?.hull]}
+                fill="darkgray"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} /> : null }
+              <HullPlot
+                points={points}
+                hulls={clusterLabels.map(d => d.hull)}
+                stroke="lightgray"
+                xDomain={xDomain} 
+                yDomain={yDomain} 
+                width={scopeWidth} 
+                height={scopeHeight} />
               <AnnotationPlot 
                 points={searchAnnotations} 
                 fill="black"
@@ -332,6 +373,8 @@ function DatasetDetail() {
                 height={scopeHeight} 
                 />
               
+              
+              
             </div>
           </div>
           <div className="hovered-point">
@@ -364,8 +407,8 @@ function DatasetDetail() {
 
             {activeTab === 0 ?
             <div className="tab-content tab-selected">
-              <span>Selected: {selected.length} 
-                {selected.length > 0 ? 
+              <span>Selected: {selectedIndices?.length} 
+                {selectedIndices?.length > 0 ? 
                   <button className="deselect" onClick={() => {
                     setSelectedIndices([])
                     scatter?.select([])
@@ -374,7 +417,7 @@ function DatasetDetail() {
                   }>X</button> 
                 : null}
               </span>
-              {selected.length > 0 ? 
+              {selectedIndices?.length > 0 ? 
                 <IndexDataTable 
                   indices={selectedIndices}
                   clusterIndices={clusterIndices}
@@ -405,8 +448,8 @@ function DatasetDetail() {
                   <select id="embeddingModel" 
                     onChange={(e) => handleModelSelect(e.target.value)} 
                     value={searchModel}>
-                    {embeddings.map((embedding, index) => (
-                      <option key={index} value={embedding}>{embedding}</option>
+                    {embeddings.map((emb, index) => (
+                      <option key={index} value={emb.id}>{emb.id} - {emb.model_id}</option>
                     ))}
                   </select>
                   
@@ -490,7 +533,7 @@ function DatasetDetail() {
                       }}>{t}({tagset[t].length})</button>
                     })}
                   </div>
-                  <div className="new-tag">
+                  {readonly ? null : <div className="new-tag">
                     <form onSubmit={(e) => {
                       e.preventDefault();
                       const newTag = e.target.elements.newTag.value;
@@ -504,7 +547,7 @@ function DatasetDetail() {
                       <input type="text" id="newTag" />
                       <button type="submit">New Tag</button>
                     </form>
-                  </div>
+                  </div>}
                 </div>
                 <span>{tag} {tagset[tag]?.length}
                   { tag ? <button className="deselect" onClick={() => {

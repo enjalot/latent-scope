@@ -25,3 +25,17 @@ table.datatable {
   filter: grayscale(100%);
   opacity: 0.5;
 }
+
+@media (prefers-color-scheme: dark) {
+  .datatable th {
+    background-color: #141414;
+  }
+
+  .datatable .tag-active {
+    background-color: #111;
+    border: 1px solid gray;
+  }
+  .datatable .tag-inactive {
+    background-color: #333;
+  }
+}

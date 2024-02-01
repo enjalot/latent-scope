@@ -3,3 +3,8 @@
   position: absolute;
   background-color: #fefefe;
 }
+@media (prefers-color-scheme: dark) {
+  .scatter {
+    background-color: #111;
+  }
+}

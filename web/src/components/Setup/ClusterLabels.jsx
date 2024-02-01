@@ -15,11 +15,13 @@ ClusterLabels.propTypes = {
   cluster: PropTypes.object,
   selectedModel: PropTypes.string,
   onChange: PropTypes.func.isRequired,
+  onLabels: PropTypes.func,
+  onHoverLabel: PropTypes.func,
 };
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
+function ClusterLabels({ dataset, cluster, selectedModel, onChange, onLabels, onHoverLabel}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
 
@@ -69,6 +71,12 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
       setClusterLabelModels([])
     }
   }, [dataset, cluster, clusterLabelsJob, setClusterLabelModels])
+  
+  useEffect(() => {
+    if(clusterLabels?.length) {
+      onLabels(clusterLabels)
+    }
+  }, [clusterLabels, onLabels])
 
 
   const handleNewLabels= useCallback((e) => {
@@ -89,15 +97,14 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
           {cluster ? ` in ${cluster.cluster_id}` : ''} using a chat model. </p>
         <form onSubmit={handleNewLabels}>
           <label>
-            Chat Models:
+            Chat Model:
             <select id="chatModel" name="chatModel" disabled={!!clusterLabelsJob}>
               {chatModels.filter(d => clusterLabelModels?.indexOf(d.id) < 0).map((model, index) => (
                 <option key={index} value={model.id}>{model.provider} - {model.name}</option>
               ))}
             </select>
-            <br></br>
-            <textarea name="context" disabled={!!clusterLabelsJob || !cluster}></textarea>
           </label>
+          <textarea name="context" placeholder="Optional context for system prompt" disabled={!!clusterLabelsJob || !cluster}></textarea>
           <button type="submit" disabled={!!clusterLabelsJob || !cluster}>Auto Label</button>
         </form>
 
@@ -118,7 +125,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange}) {
           </select>
         </label>
         <div className="dataset--setup-labels-list">
-          <DataTable data={clusterLabels.map((d,i) => ({cluster: i, label: d.label, items: d.indices.length}))} />
+          <DataTable data={clusterLabels.map((d,i) => ({index: i, label: d.label, items: d.indices.length}))} onHover={(index) => onHoverLabel(clusterLabels[index])}/>
         </div>
       </div> : null}
     </div>

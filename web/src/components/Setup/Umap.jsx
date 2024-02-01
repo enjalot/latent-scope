@@ -81,7 +81,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
         {/* The list of available UMAPS */}
         <div className={styles["umaps-list"]}>
           {umaps.filter(d => d.embedding_id == embedding?.id).map((um, index) => (
-            <div className={styles["umaps-item"]} key={index}>
+            <div className={`${styles["umaps-item"]} item`} key={index}>
               <input type="radio" 
                 id={`umap${index}`} 
                 name="umap" 

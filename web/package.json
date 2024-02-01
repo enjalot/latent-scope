@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "d3-scale": "^4.0.2",
+    "d3-scale-chromatic": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",

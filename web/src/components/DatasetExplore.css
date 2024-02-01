@@ -112,6 +112,18 @@
   font-weight: bold;
 }
 
+@media (prefers-color-scheme: dark) {
+  .dataset--explore .tab-header {
+    background-color: #333;
+  }
+  .dataset--explore .tab-header button:hover {
+    background-color: #333;
+  }
+  .dataset--explore .tab-header .tab-active {
+    background-color: #444;
+  }
+}
+
 .dataset--explore .tab-content {
   display: flex;
   flex-direction: column;
@@ -171,10 +183,10 @@
 /* Styling for nearest neighbors section */
 .dataset--explore .search-box input {
   /* height: 24px; */
-  width: 290px;
+  width: 350px;
 }
 .dataset--explore .search-box select {
-  width: 298px;
+  width: 358px;
 
 }
 
