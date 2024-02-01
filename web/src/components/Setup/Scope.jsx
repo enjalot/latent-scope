@@ -11,7 +11,7 @@ Scope.propTypes = {
   }).isRequired,
   scope: PropTypes.object,
   umap: PropTypes.object,
-  embedding: PropTypes.string,
+  embedding: PropTypes.object,
   cluster: PropTypes.object,
   clusterLabelModel: PropTypes.string,
   onNew: PropTypes.func.isRequired,
@@ -39,7 +39,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
     const form = event.target;
     const data = new FormData(form);
     const payload = {
-      embedding_id: embedding,
+      embedding_id: embedding.id,
       umap_id: umap.id,
       cluster_id: cluster.id,
       cluster_labels_id: clusterLabelModel,
@@ -80,7 +80,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
   return (
     <div className="setup-scope">
       <div className="dataset--setup-save-box-title">
-        Embedding: {embedding}<br/>
+        Embedding: {embedding?.id} - {embedding?.model_id}<br/>
         Labels: {clusterLabelModel || "Default"}
       </div>
       <div className="dataset--setup-save-box-boxes">

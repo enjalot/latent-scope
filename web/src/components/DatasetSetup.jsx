@@ -73,8 +73,8 @@ function DatasetSetup() {
   const [selectedUmap, setSelectedUmap] = useState(null);
 
   useEffect(() => {
-      if(umaps.length) {
-        const embeddingUmaps = umaps.filter(d => d.embedding_id == embedding)
+      if(umaps.length && embedding) {
+        const embeddingUmaps = umaps.filter(d => d.embedding_id == embedding.id)
         const found = embeddingUmaps.find(d => d.id == selectedUmap)
         if(selectedUmap && found) {
           setUmap(found)
@@ -119,11 +119,12 @@ function DatasetSetup() {
   useEffect(() => {
     if(scopeId && scopes?.length) {
       const scope = scopes.find(d => d.id == scopeId)
+      console.log("finding the scope", scope)
       if(scope) {
         setScope(scope)
-        setEmbedding(scope.embeddings)
-        setSelectedUmap(scope.umap)
-        setSelectedCluster(scope.cluster)
+        setEmbedding(scope.embedding_id)
+        setSelectedUmap(scope.umap_id)
+        setSelectedCluster(scope.cluster_id)
         setClusterLabelModel(scope.cluster_labels_id)
       }
     } else {

@@ -45,11 +45,9 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
     # determine the index of the last cluster run by looking in the dataset directory
     # for files named umap-<number>.json
     cluster_files = [f for f in os.listdir(cluster_dir) if re.match(r"cluster-\d+\.json", f)]
-    print("cluster files", sorted(cluster_files))
     if len(cluster_files) > 0:
         last_cluster = sorted(cluster_files)[-1]
         last_cluster_number = int(last_cluster.split("-")[1].split(".")[0])
-        print("lastcluster", last_cluster, last_cluster_number)
         next_cluster_number = last_cluster_number + 1
     else:
         next_cluster_number = 1
@@ -109,7 +107,6 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
         for simplex in hull.simplices:
             plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
 
-    print("HULL", hulls[0])
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
     plt.savefig(os.path.join(cluster_dir, f"{cluster_id}.png"))

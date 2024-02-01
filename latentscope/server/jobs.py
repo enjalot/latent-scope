@@ -95,14 +95,36 @@ def run_ingest():
 def run_embed():
     dataset = request.args.get('dataset')
     text_column = request.args.get('text_column')
-    embedding_id = request.args.get('embedding_id') # model id
+    model_id = request.args.get('model_id') # model id
     prefix = request.args.get('prefix')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed {dataset} {text_column} {embedding_id} "{prefix}"'
+    command = f'ls-embed {dataset} {text_column} {model_id} "{prefix}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
+@jobs_bp.route('/delete/embedding')
+def delete_embedding():
+    dataset = request.args.get('dataset')
+    embedding_id = request.args.get('embedding_id')
+
+    # Get a list of all the umaps that have embedding_id in their .json so we can delete them too
+    umap_dir = os.path.join(DATA_DIR, dataset, 'umaps')
+    umaps_to_delete = []
+    for file in os.listdir(umap_dir):
+        if file.endswith(".json"):
+            with open(os.path.join(umap_dir, file), 'r') as f:
+                umap_data = json.load(f)
+            if umap_data.get('embedding_id') == embedding_id:
+                umaps_to_delete.append(file.replace('.json', ''))
+    
+
+    job_id = str(uuid.uuid4())
+    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}*")}'
+    for umap in umaps_to_delete:
+        delete_umap(dataset, umap)
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
 
 @jobs_bp.route('/umap')
 def run_umap():
@@ -118,10 +140,12 @@ def run_umap():
     return jsonify({"job_id": job_id})
 
 @jobs_bp.route('/delete/umap')
-def delete_umap():
+def delete_umap_request():
     dataset = request.args.get('dataset')
     umap_id = request.args.get('umap_id')
+    return delete_umap(dataset, umap_id)
 
+def delete_umap(dataset, umap_id):
     # Get a list of all the clusters that have umap_name in their .json so we can delete them too
     cluster_dir = os.path.join(DATA_DIR, dataset, 'clusters')
     clusters_to_delete = []

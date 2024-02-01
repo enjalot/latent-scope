@@ -10,7 +10,7 @@ EmbeddingNew.propTypes = {
     id: PropTypes.string.isRequired
   }).isRequired,
   textColumn: PropTypes.string.isRequired,
-  embedding: PropTypes.string,
+  embedding: PropTypes.object,
   umaps: PropTypes.array,
   clusters: PropTypes.array,
   onNew: PropTypes.func.isRequired,
@@ -23,6 +23,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   const [embeddings, setEmbeddings] = useState([]);
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed`);
+  const { startJob: deleteEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/delete/embedding`);
 
   const [models, setModels] = useState([]);
   useEffect(() => {
@@ -64,7 +65,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     const prefix = data.get('prefix')
     let job = { 
       text_column: textColumn,
-      embedding_id: model.id,
+      model_id: model.id,
       prefix
     };
     startEmbeddingsJob(job);
@@ -79,7 +80,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         <div>
           <label htmlFor="modelName">Model:</label>
           <select id="modelName" name="modelName" disabled={!!embeddingsJob}>
-            {models.filter(d => embeddings?.indexOf(d.id) < 0).map((model, index) => (
+            {models.map((model, index) => (
               <option key={index} value={model.id}>{model.provider}: {model.name}</option>
             ))}
           </select>
@@ -94,13 +95,14 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
       <div className="embeddings-list">
       {embeddings.map((emb, index) => (
         <div key={index}>
-          <input type="radio" id={`embedding${index}`} name="embedding" value={emb} checked={emb === embedding} onChange={() => onChange(emb)} />
+          <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
           <label htmlFor={`embedding${index}`}>
             <span>
-              {emb} [
+              {emb?.id} - {emb?.model_id} [
                 {umaps.filter(d => d.embedding_id == emb).length} umaps,&nbsp;
                 {clusters.filter(d => umaps.filter(d => d.embedding_id == emb).map(d => d.id).indexOf(d.umap_id) >= 0).length} clusters 
               ]
+              <button onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
             </span>
           </label>
         </div>

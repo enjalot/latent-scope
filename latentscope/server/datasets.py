@@ -74,15 +74,18 @@ def update_dataset_meta(dataset):
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "embeddings")
+    # directory_path = os.path.join(DATA_DIR, dataset, "umaps")
     print("dataset", dataset, directory_path)
-    try:
-        files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
-    except OSError as err:
-        print('Unable to scan directory:', err)
-        return jsonify({"error": "Unable to scan directory"}), 500
+    return scan_for_json_files(directory_path)
+    # print("dataset", dataset, directory_path)
+    # try:
+    #     files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
+    # except OSError as err:
+    #     print('Unable to scan directory:', err)
+    #     return jsonify({"error": "Unable to scan directory"}), 500
 
-    npy_files = [file.replace(".npy", "") for file in files if file.endswith('.npy')]
-    return jsonify(npy_files)
+    # npy_files = [file.replace(".npy", "") for file in files if file.endswith('.npy')]
+    # return jsonify(npy_files)
 
 
 @datasets_bp.route('/<dataset>/umaps', methods=['GET'])

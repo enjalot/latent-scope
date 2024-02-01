@@ -12,7 +12,7 @@ Umap.propTypes = {
     id: PropTypes.string.isRequired
   }).isRequired,
   umap: PropTypes.object,
-  embedding: PropTypes.string,
+  embedding: PropTypes.object,
   clusters: PropTypes.array.isRequired,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
@@ -61,7 +61,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
     const data = new FormData(form)
     const neighbors = data.get('neighbors')
     const min_dist = data.get('min_dist')
-    startUmapJob({embedding_id: embedding, neighbors, min_dist})
+    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist})
   }, [startUmapJob, embedding])
 
   return (
@@ -80,7 +80,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
         <JobProgress job={umapJob} clearJob={()=> setUmapJob(null)}/>
         {/* The list of available UMAPS */}
         <div className={styles["umaps-list"]}>
-          {umaps.filter(d => d.embedding_id == embedding).map((um, index) => (
+          {umaps.filter(d => d.embedding_id == embedding?.id).map((um, index) => (
             <div className={styles["umaps-item"]} key={index}>
               <input type="radio" 
                 id={`umap${index}`} 
@@ -90,10 +90,9 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
               <br></br>
                 Neighbors: {um.neighbors}<br/>
                 Min Dist: {um.min_dist}<br/>
+              [{clusters.filter(d => d.umap_id == um.id).length} clusters]<br/>
               <img src={um.url} alt={um.id} />
-              <br></br>
-              {clusters.filter(d => d.umap_id == um.id).length} clusters
-              <button onClick={() => deleteUmapJob({umap_id: um.id}) } disabled={umapJob && umapJob.status !== "completed"}>🗑️ umap</button>
+              <button onClick={() => deleteUmapJob({umap_id: um.id}) } disabled={umapJob && umapJob.status !== "completed"}>🗑️</button>
               </label>
             </div>
           ))}

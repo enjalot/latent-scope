@@ -99,8 +99,8 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
               Noise points: {cl.n_noise}<br/>
               Samples: {cl.samples}<br/>
               Min Samples: {cl.min_samples}<br/>
-            <img src={cl.url} alt={cl.id} />
-            <button onClick={() => deleteClusterJob({cluster_id: cl.id}) }>🗑️ cluster</button>
+            <img src={cl.url} alt={cl.id} /><br/>
+            <button onClick={() => deleteClusterJob({cluster_id: cl.id}) }>🗑️</button>
             </label>
           </div>
         ))}

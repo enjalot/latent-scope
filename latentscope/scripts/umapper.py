@@ -40,6 +40,7 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.075):
     DATA_DIR = get_data_dir()
     # read in the embeddings
+    print("loading embeddings")
     embeddings = np.load(os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.npy"))
 
     umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
@@ -68,6 +69,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.075):
         verbose=True,
     )
 
+    print("reducing", embeddings.shape[0], "embeddings to 2 dimensions")
     umap_embeddings = reducer.fit_transform(embeddings)
 
     min_values = np.min(umap_embeddings, axis=0)
@@ -79,6 +81,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.075):
     # Scale the embeddings to the range [-1, 1]
     umap_embeddings = 2 * umap_embeddings - 1
 
+    print("writing normalized umap")
     # save umap embeddings to a parquet file with columns x,y
     df = pd.DataFrame(umap_embeddings, columns=['x', 'y'])
     output_file = os.path.join(umap_dir, f"{umap_name}.parquet")
