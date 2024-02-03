@@ -5,7 +5,15 @@ import json
 import argparse
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+try:
+    # Check if the runtime environment is a Jupyter notebook
+    if 'ipykernel' in sys.modules and 'IPython' in sys.modules:
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
+except ImportError as e:
+    # Fallback to the standard console version if import fails
+    from tqdm import tqdm
 
 from latentscope.util import get_data_dir
 from latentscope.models import get_chat_model
@@ -38,7 +46,7 @@ def main():
     labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.context)
 
 
-def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="gpt-3.5-turbo", context=""):
+def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", context=""):
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
     # TODO This should be done in the preprocessing step
@@ -129,7 +137,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
             "max_tokens": max_tokens
         }, f, indent=2)
     f.close()
-    print("done")
+    print("done with", cluster_id, model_id)
 
 if __name__ == "__main__":
     main()

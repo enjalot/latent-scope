@@ -37,7 +37,7 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
         return min(min_size + min_size * np.log(num_points / base_num_points), max_size)
 
 
-def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.075):
+def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1):
     DATA_DIR = get_data_dir()
     # read in the embeddings
     print("loading embeddings")
@@ -111,7 +111,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.075):
     # save a pickle of the umap
     with open(os.path.join(umap_dir, f'{umap_name}.pkl'), 'wb') as f:
         pickle.dump(reducer, f)
-    print("done")
+    print("done with", umap_name)
 
 
 if __name__ == "__main__":

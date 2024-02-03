@@ -8,12 +8,16 @@ from .providers.cohereai import CohereAIEmbedProvider
 from .providers.togetherai import TogetherAIEmbedProvider
 from .providers.voyageai import VoyageAIEmbedProvider
 
-
-def get_embedding_model(id):
-    """Returns a ModelProvider instance for the given model id."""
+def get_embedding_model_list():
+    """Returns a list of available embedding models."""
     embedding_path = pkg_resources.resource_filename('latentscope.models', 'embedding_models.json')
     with open(embedding_path, "r") as f:
         embed_model_list = json.load(f)
+    return embed_model_list
+
+def get_embedding_model(id):
+    """Returns a ModelProvider instance for the given model id."""
+    embed_model_list = get_embedding_model_list()
     embed_model_dict = {model['id']: model for model in embed_model_list}
     model = embed_model_dict[id]
     if not model:
@@ -31,13 +35,18 @@ def get_embedding_model(id):
         return TogetherAIEmbedProvider(model['name'], model['params'])
     if model['provider'] == "voyageai":
         return VoyageAIEmbedProvider(model['name'], model['params'])
-  
 
-def get_chat_model(id):
-    """Returns a ModelProvider instance for the given model id."""
+
+def get_chat_model_list():
+    """Returns a list of available chat models."""
     chat_path = pkg_resources.resource_filename('latentscope.models', 'chat_models.json')
     with open(chat_path, "r") as f:
         chat_model_list = json.load(f)
+    return chat_model_list
+
+def get_chat_model(id):
+    """Returns a ModelProvider instance for the given model id."""
+    chat_model_list = get_chat_model_list()
     chat_model_dict = {model['id']: model for model in chat_model_list}
     model = chat_model_dict[id]
     if model['provider'] == "transformers":

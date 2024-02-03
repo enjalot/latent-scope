@@ -366,7 +366,7 @@ function DatasetSetup() {
             {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
           </div>
 
-          <div className="dataset--selected">
+          {/* <div className="dataset--selected">
             <span>Points Selected: {selectedIndices.length} {!selectedIndices.length ? "(Hold shift and drag an area of the map to select)" : null}
               {selectedIndices.length > 0 ? 
                 <button className="deselect" onClick={() => {
@@ -389,9 +389,9 @@ function DatasetSetup() {
             : null }
           </div>
         
+         */}
         </div>
       </div>
-        
     </div>
   );
 }

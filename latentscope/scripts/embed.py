@@ -1,11 +1,20 @@
 # Usage: ls-embed <dataset_id> <text_column> <model_id>
 import os
 import re
+import sys
 import json
 import argparse
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+try:
+    # Check if the runtime environment is a Jupyter notebook
+    if 'ipykernel' in sys.modules and 'IPython' in sys.modules:
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
+except ImportError as e:
+    # Fallback to the standard console version if import fails
+    from tqdm import tqdm
 
 from latentscope.models import get_embedding_model
 from latentscope.util import get_data_dir
@@ -89,7 +98,7 @@ def embed(dataset_id, text_column, model_id, prefix):
 
 
     np.save(os.path.join(embedding_dir, f"{embedding_id}.npy"), np_embeds)
-    print("done")
+    print("done with", embedding_id)
 
 if __name__ == "__main__":
    main() 

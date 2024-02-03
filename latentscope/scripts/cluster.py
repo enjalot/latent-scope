@@ -138,7 +138,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
 
     # write the df to parquet
     slides_df.to_parquet(os.path.join(cluster_dir, f"{cluster_id}-labels-default.parquet"))
-    print("done")
+    print("done with", cluster_id)
 
 if __name__ == "__main__":
     main()

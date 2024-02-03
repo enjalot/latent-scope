@@ -49,7 +49,9 @@ setup(
     entry_points={
         'console_scripts': [
             'ls-serve=latentscope.server:start',
-            'ls-ingest=latentscope.scripts.ingest:main',
+            'ls-init=latentscope:main',
+            'ls-ingest-csv=latentscope.scripts.ingest:csv',
+            'ls-list-models=latentscope:list_models',
             'ls-embed=latentscope.scripts.embed:main',
             'ls-umap=latentscope.scripts.umapper:main',
             'ls-cluster=latentscope.scripts.cluster:main',

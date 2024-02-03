@@ -6,20 +6,32 @@ import pandas as pd
 
 from latentscope.util import get_data_dir
 
-# TODO: somehow optionally accept a pandas dataframe as input
-def main():
+# TODO make a parquet version of these
+def csv():
     parser = argparse.ArgumentParser(description='Ingest a dataset')
     parser.add_argument('id', type=str, help='Dataset id (directory name in data folder)')
+    parser.add_argument('--path', type=str, help='Path to csv file, otherwise assumes input.csv in dataset directory')
     args = parser.parse_args()
-    ingest(args.id)
+    ingest(args.id, args.path)
 
-def ingest(dataset_id):
+def ingest_csv(dataset_id, csv_path):
     DATA_DIR = get_data_dir()
     directory = os.path.join(DATA_DIR, dataset_id)
-    # TODO: inspect the incoming data to see if it is a csv or parquet file
-    csv_file = os.path.join(directory, "input.csv")
+    if not csv_path:
+        csv_path = os.path.join(directory, "input.csv")
+    csv_file = os.path.join(csv_path)
     print("reading", csv_file)
     df = pd.read_csv(csv_file)
+    ingest(dataset_id, df)
+
+
+def ingest(dataset_id, df, text_column = None):
+    DATA_DIR = get_data_dir()
+    print("DATA DIR", DATA_DIR)
+    directory = os.path.join(DATA_DIR, dataset_id)
+    print("DIRECTORY", directory)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     df = df.reset_index(drop=True)
     print(df.head())
     print(df.tail())
@@ -28,7 +40,8 @@ def ingest(dataset_id):
     df.to_parquet(output_file)
     print("wrote", output_file)
     # write out a json file with the model name and shape of the embeddings
-    text_column = "text" in df.columns and "text" or df.columns[0]
+    if text_column is None:
+        text_column = "text" in df.columns and "text" or df.columns[0]
     with open(os.path.join(directory,'meta.json'), 'w') as f:
         json.dump({
             "id": dataset_id,

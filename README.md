@@ -25,6 +25,29 @@ You can also configure and run the server from inside python, see these notebook
 * [dvs-survey](notebooks/dvs-survey.ipynb)
 * [dadabase](notebooks/dadabase.ipynb)
 
+### Command line scripts
+When latent-scope is installed, it creates a suite of command line scripts
+
+```bash
+# like above, we make sure to install latent-scope
+python -m venv venv
+source venv/bin/activate
+pip install latent-scope
+
+# prepare some data
+wget "https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/datavis-misunderstood.csv" > ~/Downloads/datavis-misunderstood.csv
+
+ls-init "~/latent-scope-data"
+# ls-ingest dataset_id csv_path
+ls-ingest-csv "datavis-misunderstood" "~/Downloadsdatavis-misunderstood.csv"
+# get a list of model ids available
+ls-list-models
+# ls-embed dataset_id text_column model_id prefix
+ls-embed datavis-misunderstood "answer" transformers-intfloat___e5-small-v2 ""
+ls-umap
+ls-cluster
+ls-label
+```
 
 ### Repository overview
 This repository is currently meant to run locally, with a React frontend that communicates with a python server backend. We support several popular open source embedding models that can run locally as well as proprietary API embedding services. Adding new models and services should be quick and easy.

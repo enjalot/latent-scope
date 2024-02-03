@@ -86,7 +86,7 @@ def run_ingest():
     file.save(os.path.join(dataset_dir, "input.csv"))
 
     job_id = str(uuid.uuid4())
-    command = f'ls-ingest {dataset}'
+    command = f'ls-ingest-csv {dataset}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

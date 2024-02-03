@@ -14,6 +14,8 @@ e.g.: export LATENT_SCOPE_DATA=~/latentscope-data""")
 def update_data_dir(directory, env_file=".env"):
     # Load existing .env file, or create one if it doesn't exist
     load_dotenv(env_file)
+    if "~" in directory:
+        directory = os.path.expanduser(directory)
     # Update the .env file with the new directory
     set_key(env_file, 'LATENT_SCOPE_DATA', directory)
     # Update the environment variable for the current process
