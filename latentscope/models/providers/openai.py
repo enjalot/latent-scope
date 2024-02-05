@@ -9,7 +9,11 @@ from latentscope.util import get_key
 class OpenAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
         self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
-        self.encoder = tiktoken.encoding_for_model(self.name)
+        # special case for the new embedding models
+        if self.name in ["text-embedding-3-small", "text-embedding-3-large"]:
+            self.encoder = tiktoken.get_encoding("cl100k_base")
+        else:
+            self.encoder = tiktoken.encoding_for_model(self.name)
 
     def embed(self, inputs):
         time.sleep(0.01) # TODO proper rate limiting

@@ -114,6 +114,7 @@
 .dataset--setup .item {
   background-color: #f1f1f1;
   border-radius: 5px;
+  margin: 6px;
   padding: 6px;
 }
 @media (prefers-color-scheme: dark) {

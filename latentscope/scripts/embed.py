@@ -69,7 +69,6 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
         prefixed.append(prefix + s)
     sentences = prefixed #[prefix + s for s in sentences]
 
-
     # determine the embedding id
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
     if not os.path.exists(embedding_dir):
@@ -110,14 +109,12 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
             print(f"skipping batch {i}/{total_batches}")
             continue
         try:
-            print("embed", time.time())
             embeddings = np.array(model.embed(batch))
-            print("save", time.time())
             append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
-            print("saved", time.time())
         except Exception as e:
             print(batch)
             print("error embedding batch", i, e)
+            print("exiting prematurely", embedding_id)
             sys.exit(1)
         # sentence_embeddings.extend(embeddings)
 

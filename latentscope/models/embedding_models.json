@@ -49,6 +49,18 @@
   },
   {
       "provider": "transformers",
+      "name": "nomic-ai/nomic-embed-text-v1",
+      "sanitized_name": "nomic-ai___nomic-embed-text-v1",
+      "id": "transformers-nomic-ai___nomic-embed-text-v1",
+      "modality": "text",
+      "params": {
+          "truncation": true,
+          "padding": true,
+          "pooling": "mean"
+      }
+  },
+  {
+      "provider": "transformers",
       "name": "BAAI/bge-small-en-v1.5",
       "sanitized_name": "BAAI___bge-small-en-v1.5",
       "id": "transformers-BAAI___bge-small-en-v1.5",
@@ -149,14 +161,6 @@
       "id": "cohereai-embed-english-v3.0",
       "params": {
           "input_type": "clustering"
-      }
-  },
-  {
-      "provider": "voyageai",
-      "name": "voyage-02",
-      "id": "voyageai-voyage-02",
-      "params": {
-          "truncation": true
       }
   },
     {

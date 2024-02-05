@@ -56,7 +56,7 @@ function Job() {
   return (
     <div className="jobs-page">
       <h2><Link to={`/datasets/${datasetId}/jobs`}>Job List</Link></h2>
-      <h3>{dataset?.id} job {job.id}</h3>
+      <h3>{dataset?.id} job {job?.id}</h3>
       {job ? <div>
           <span className="job-status" style={{fontWeight:"bold", padding: "5px"}}>{job.status}</span>
           { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀</button> : null}

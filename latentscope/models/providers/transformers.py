@@ -17,7 +17,10 @@ def mean_pooling(model_output, attention_mask):
 
 class TransformersEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(self.name)
+        if self.name == "nomic-ai/nomic-embed-text-v1":
+            self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.name)
         self.model = AutoModel.from_pretrained(self.name, trust_remote_code=True)
         self.model.eval()
 
