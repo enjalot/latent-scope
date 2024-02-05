@@ -50,8 +50,8 @@ ls-umap datavis-misunderstood embedding-001 25 .1
 ls-cluster datavis-misunderstood umap-001 5 5
 # ls-label dataset_id text_column cluster_id model_id context
 ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta
-# ls-scope  dataset_id labels_id
-ls-scope datavis-misunderstood cluster-001-labels-001
+# ls-scope  dataset_id labels_id name description
+ls-scope datavis-misunderstood cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by Zephyr 7B"
 ls-serve
 ```
 
