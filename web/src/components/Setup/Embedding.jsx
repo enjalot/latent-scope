@@ -27,6 +27,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed`);
   const { startJob: deleteEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/delete/embedding`);
+  const { startJob: rerunEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/rerun`);
 
   const [models, setModels] = useState([]);
   useEffect(() => {
@@ -74,6 +75,10 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     startEmbeddingsJob(job);
   };
 
+  const handleRerunEmbedding = (job) => {
+    rerunEmbeddingsJob({job_id: job?.id});
+  }
+
   return (
     <div>
       <div className={styles["embeddings-form"]}>
@@ -90,9 +95,8 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
       </form>
       </div>
       <JobProgress job={embeddingsJob} clearJob={()=> {
-        
         setEmbeddingsJob(null)
-      }} />
+      }} rerunJob={handleRerunEmbedding} />
       <div className={styles["embeddings-list"]}>
       {embeddings.map((emb, index) => (
         <div className="item" key={index}>

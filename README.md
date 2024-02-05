@@ -40,15 +40,18 @@ wget "https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/d
 ls-init "~/latent-scope-data"
 # ls-ingest dataset_id csv_path
 ls-ingest-csv "datavis-misunderstood" "~/Downloads/datavis-misunderstood.csv"
-# get a list of model ids available
+# get a list of model ids available (lists both embedding and chat models available)
 ls-list-models
 # ls-embed dataset_id text_column model_id prefix
 ls-embed datavis-misunderstood "answer" transformers-intfloat___e5-small-v2 ""
 # ls-umap dataset_id embedding_id n_neighbors min_dist
 ls-umap datavis-misunderstood embedding-001 25 .1
 # ls-cluster dataset_id umap_id samples min_samples
-ls-cluster
-ls-label
+ls-cluster datavis-misunderstood umap-001 5 5
+# ls-label dataset_id text_column cluster_id model_id context
+ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta
+# ls-scope  dataset_id labels_id
+ls-scope datavis-misunderstood cluster-001-labels-001
 ls-serve
 ```
 

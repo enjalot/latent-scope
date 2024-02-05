@@ -5,6 +5,7 @@ import re
 import sys
 import json
 import umap
+import h5py
 import pickle
 import argparse
 import numpy as np
@@ -41,7 +42,10 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1):
     DATA_DIR = get_data_dir()
     # read in the embeddings
     print("loading embeddings")
-    embeddings = np.load(os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.npy"))
+    embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
+    with h5py.File(embedding_path, 'r') as f:
+        dataset = f["embeddings"]
+        embeddings = np.array(dataset)
 
     umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
     if not os.path.exists(umap_dir):

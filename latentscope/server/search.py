@@ -1,5 +1,6 @@
 import os
 import json
+import h5py
 import numpy as np
 from flask import Blueprint, jsonify, request
 
@@ -37,7 +38,11 @@ def nn():
 
     if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
         # load the dataset embeddings
-        embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".npy"))
+        # embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".npy"))
+        embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
+        with h5py.File(embedding_path, 'r') as f:
+            dataset = f["embeddings"]
+            embeddings = np.array(dataset)
         print("fitting embeddings")
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")

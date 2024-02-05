@@ -18,11 +18,11 @@ def run_job(dataset, job_id, command):
 
     progress_file = os.path.join(job_dir, f"{job_id}.json")
     print("command", command)
-    # job_name = command.replace("python ../scripts/", "").replace(".py", "!!!").split("!!!")[0],
     job_name = command.split(" ")[0]
     if "ls-" in job_name:
         job_name = job_name.replace("ls-", "")
     job = {
+        "id": job_id,
         "dataset": dataset,
         "job_name": job_name,
         "command": command, 
@@ -44,6 +44,10 @@ def run_job(dataset, job_id, command):
             break
         if output:
             print(output.strip())
+            if("RUNNING:" in output):
+                run_id = output.strip().split("RUNNING: ")[1]
+                print("found the id", run_id)
+                job["run_id"] = run_id
             job["progress"].append(output.strip())
             job["times"].append(str(datetime.now()))
             job["last_update"] = str(datetime.now())
@@ -100,6 +104,19 @@ def run_embed():
 
     job_id = str(uuid.uuid4())
     command = f'ls-embed {dataset} {text_column} {model_id} "{prefix}"'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+@jobs_bp.route('/rerun')
+def rerun():
+    dataset = request.args.get('dataset')
+    job_id = request.args.get('job_id')
+    # read the job file to get the command
+    progress_file = os.path.join(DATA_DIR, dataset, "jobs", f"{job_id}.json")
+    with open(progress_file, 'r') as f:
+        job = json.load(f)
+    command = job.get('command')
+    command += f' --rerun {job.get("run_id")}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
