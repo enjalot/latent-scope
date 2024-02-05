@@ -17,8 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description='UMAP embeddings for a dataset')
     parser.add_argument('dataset_id', type=str, help='Dataset name (directory name in data/)')
     parser.add_argument('embedding_id', type=str, help='Name of embedding model to use')
-    parser.add_argument('neighbors', type=int, help='Output file', default=25)
-    parser.add_argument('min_dist', type=float, help='Output file', default=0.075)
+    parser.add_argument('neighbors', type=int, nargs="?", help='Output file', default=25)
+    parser.add_argument('min_dist', type=float, nargs="?", help='Output file', default=0.075)
 
     # Parse arguments
     args = parser.parse_args()

@@ -14,6 +14,13 @@ e.g.: export LATENT_SCOPE_DATA=~/latentscope-data""")
 def update_data_dir(directory, env_file=".env"):
     # Load existing .env file, or create one if it doesn't exist
     load_dotenv(env_file)
+    if not directory or directory == "":
+        directory = os.getenv('LATENT_SCOPE_DATA')
+        if not directory:
+            print("ERROR: Please specify a directory")
+            return
+        else:
+            print("No directory specified, current directory is:", directory)
     if "~" in directory:
         directory = os.path.expanduser(directory)
     # Update the .env file with the new directory

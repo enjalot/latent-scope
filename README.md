@@ -22,8 +22,8 @@ Then open your browser to http://localhost:5001 and upload your first dataset!
 
 ### Notebooks
 You can also configure and run the server from inside python, see these notebooks for examples of preparing and loading data:
-* [dvs-survey](notebooks/dvs-survey.ipynb)
-* [dadabase](notebooks/dadabase.ipynb)
+* [dvs-survey](notebooks/dvs-survey.ipynb) - a small test dataset of 700 rows to quickly illustrate the process
+* [dadabase](notebooks/dadabase.ipynb) - a more interesting (and funny) dataset of 50k rows
 
 ### Command line scripts
 When latent-scope is installed, it creates a suite of command line scripts
@@ -39,14 +39,17 @@ wget "https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/d
 
 ls-init "~/latent-scope-data"
 # ls-ingest dataset_id csv_path
-ls-ingest-csv "datavis-misunderstood" "~/Downloadsdatavis-misunderstood.csv"
+ls-ingest-csv "datavis-misunderstood" "~/Downloads/datavis-misunderstood.csv"
 # get a list of model ids available
 ls-list-models
 # ls-embed dataset_id text_column model_id prefix
 ls-embed datavis-misunderstood "answer" transformers-intfloat___e5-small-v2 ""
-ls-umap
+# ls-umap dataset_id embedding_id n_neighbors min_dist
+ls-umap datavis-misunderstood embedding-001 25 .1
+# ls-cluster dataset_id umap_id samples min_samples
 ls-cluster
 ls-label
+ls-serve
 ```
 
 ### Repository overview
