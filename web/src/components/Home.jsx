@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { jobPolling } from './JobRun';
-import JobProgress from './JobProgress';
+import { jobPolling } from './Job/Run';
+import JobProgress from './Job/Progress';
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
 

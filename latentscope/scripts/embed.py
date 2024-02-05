@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import json
+import time
 import h5py
 import argparse
 import numpy as np
@@ -81,11 +82,10 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
     if rerun is not None:
         embedding_id = rerun
         starting_batch = get_last_batch(os.path.join(embedding_dir, f"{embedding_id}.h5")) // batch_size
-        print("Rerunning starting at batch", starting_batch)
     else:
         # determine the index of the last umap run by looking in the dataset directory
         # for files named umap-<number>.json
-        embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.json", f)]
+        embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
         if len(embedding_files) > 0:
             last_umap = sorted(embedding_files)[-1]
             last_embedding_number = int(last_umap.split("-")[1].split(".")[0])
@@ -102,13 +102,19 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
     model.load_model()
 
     print("embedding", len(sentences), "sentences", "in", total_batches, "batches")
+    if starting_batch > 0:
+        print("Rerunning starting at batch", starting_batch)
+
     for i, batch in enumerate(tqdm(chunked_iterable(sentences, batch_size), total=total_batches)):
         if i < starting_batch:
             print(f"skipping batch {i}/{total_batches}")
             continue
         try:
+            print("embed", time.time())
             embeddings = np.array(model.embed(batch))
+            print("save", time.time())
             append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
+            print("saved", time.time())
         except Exception as e:
             print(batch)
             print("error embedding batch", i, e)

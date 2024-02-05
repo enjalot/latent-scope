@@ -41,8 +41,7 @@ def nn():
         # embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".npy"))
         embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
         with h5py.File(embedding_path, 'r') as f:
-            dataset = f["embeddings"]
-            embeddings = np.array(dataset)
+            embeddings = np.array(f["embeddings"])
         print("fitting embeddings")
         from sklearn.neighbors import NearestNeighbors
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")

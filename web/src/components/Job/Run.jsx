@@ -17,7 +17,7 @@ function jobPolling(dataset, setJob, jobId) {
       .then(jobData => {
         console.log("polling job status", jobData);
         setJob(jobData);
-        if (jobData.status === "completed" || jobData.status === "error") {
+        if (jobData.status === "completed" || jobData.status === "error" || jobData.status == "dead") {
           clearInterval(intervalId);
           setTimeout(() => {
             setJob(null);

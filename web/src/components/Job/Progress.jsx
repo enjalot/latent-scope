@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-import './JobProgress.css';
+import './Progress.css';
 
 JobProgress.propTypes = {
   job: PropTypes.object,

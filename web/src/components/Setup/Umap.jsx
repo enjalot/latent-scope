@@ -1,7 +1,7 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
-import JobProgress from '../JobProgress';
-import { useStartJobPolling } from '../JobRun';
+import JobProgress from '../Job/Progress';
+import { useStartJobPolling } from '../Job/Run';
 const apiUrl = import.meta.env.VITE_API_URL
 
 import styles from './Umap.module.css';

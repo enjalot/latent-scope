@@ -11,6 +11,8 @@ from flask import Blueprint, jsonify, request
 jobs_bp = Blueprint('jobs_bp', __name__)
 DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
+PROCESSES = {}
+
 def run_job(dataset, job_id, command):
     job_dir = os.path.join(DATA_DIR, dataset, "jobs")
     if not os.path.exists(job_dir):
@@ -37,6 +39,7 @@ def run_job(dataset, job_id, command):
 
     # TODO: need to watch for exploits in command if using shell=True for security reasons
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True)
+    PROCESSES[job_id] = process
 
     while True:
         output = process.stdout.readline()
@@ -80,6 +83,20 @@ def get_job():
     else:
         return jsonify({'status': 'not found'}), 404
 
+@jobs_bp.route('/all')
+def get_jobs():
+    dataset = request.args.get('dataset')
+    job_dir = os.path.join(DATA_DIR, dataset, "jobs")
+    jobs = []
+    if os.path.exists(job_dir):
+        for file in os.listdir(job_dir):
+            if file.endswith(".json"):
+                with open(os.path.join(job_dir, file), 'r') as f:
+                    print("file", file)
+                    job = json.load(f)
+                jobs.append(job)
+    return jsonify(jobs)
+
 @jobs_bp.route('/ingest', methods=['POST'])
 def run_ingest():
     dataset = request.form.get('dataset')
@@ -108,7 +125,7 @@ def run_embed():
     return jsonify({"job_id": job_id})
 
 @jobs_bp.route('/rerun')
-def rerun():
+def rerun_job():
     dataset = request.args.get('dataset')
     job_id = request.args.get('job_id')
     # read the job file to get the command
@@ -119,6 +136,27 @@ def rerun():
     command += f' --rerun {job.get("run_id")}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
+
+@jobs_bp.route('/kill')
+def kill_job():
+    dataset = request.args.get('dataset')
+    job_id = request.args.get('job_id')
+    # load the job file
+    progress_file = os.path.join(DATA_DIR, dataset, "jobs", f"{job_id}.json")
+    job = json.load(open(progress_file, 'r'))
+    if job_id in PROCESSES:
+        PROCESSES[job_id].kill()
+        job["status"] = "dead"
+        job["cause_of_death"] = "killed"
+        with open(progress_file, 'w') as f:
+            json.dump(job, f)
+        return jsonify(job)
+    else:
+        job["status"] = "dead"
+        job["cause_of_death"] = "process not found, presumed dead"
+        with open(progress_file, 'w') as f:
+            json.dump(job, f)
+        return jsonify(job)
 
 @jobs_bp.route('/delete/embedding')
 def delete_embedding():
