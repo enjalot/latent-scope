@@ -43,7 +43,6 @@ def run_job(dataset, job_id, command):
 
     while True:
         output = process.stdout.readline()
-        print("process poll", process.poll())
         if output == '' and process.poll() is not None:
             break
         if output:
@@ -93,7 +92,6 @@ def get_jobs():
         for file in os.listdir(job_dir):
             if file.endswith(".json"):
                 with open(os.path.join(job_dir, file), 'r') as f:
-                    print("file", file)
                     job = json.load(f)
                 jobs.append(job)
     return jsonify(jobs)
@@ -136,8 +134,9 @@ def rerun_job():
     command = job.get('command')
     command += f' --rerun {job.get("run_id")}'
     new_job_id = str(uuid.uuid4())
+    print("new job id", new_job_id)
     threading.Thread(target=run_job, args=(dataset, new_job_id, command)).start()
-    return jsonify({"job_id": job_id})
+    return jsonify({"job_id": new_job_id})
 
 @jobs_bp.route('/kill')
 def kill_job():

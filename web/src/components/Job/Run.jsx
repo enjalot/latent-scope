@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 const apiUrl = import.meta.env.VITE_API_URL
 
-function jobPolling(dataset, setJob, jobId) {
+function jobPolling(dataset, setJob, jobId, intervalms = 200) {
   let intervalId = null
   console.log("start polling", jobId);
   intervalId = setInterval(() => {
-    fetch(`${apiUrl}/jobs/job?dataset=${dataset.id}&job_id=${jobId}`)
+    fetch(`${apiUrl}/jobs/job?dataset=${dataset?.id}&job_id=${jobId}`)
       .then(response => {
         if (!response.ok) {
           clearInterval(intervalId);
@@ -22,7 +22,7 @@ function jobPolling(dataset, setJob, jobId) {
           setTimeout(() => {
             setJob(null);
             setJob(jobData);
-          }, 200)
+          }, intervalms)
         }
       })
       .catch(error => {
@@ -41,14 +41,14 @@ function jobPolling(dataset, setJob, jobId) {
   }
 }
 
-function useStartJobPolling(dataset, setJob, url) {
+function useStartJobPolling(dataset, setJob, url, intervalms = 200) {
   // const [cleanup, setCleanup] = useState(() => {})
   const startJob = useCallback((params) => {
     fetch(`${url}?dataset=${dataset.id}&${new URLSearchParams(params)}`)
       .then(response => response.json())
       .then(data => {
         const jobId = data.job_id;
-        const cleanup = jobPolling(dataset, setJob, jobId)
+        const cleanup = jobPolling(dataset, setJob, jobId, intervalms)
         // console.log("start job cleanup", cleanup)
         // setCleanup(cleanup)
       });

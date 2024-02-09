@@ -63,6 +63,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1):
 
     # make the umap name from the number, zero padded to 3 digits
     umap_name = f"umap-{next_umap_number:03d}"
+    print("RUNNING:", umap_name)
 
     reducer = umap.UMAP(
         n_neighbors=neighbors,

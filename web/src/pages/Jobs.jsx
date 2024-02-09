@@ -23,7 +23,9 @@ function Jobs() {
     fetch(`${apiUrl}/jobs/all?dataset=${datasetId}`)
       .then(response => response.json())
       .then((data) => {
-        data.sort((a,b) => +new Date(b.last_updated) - +new Date(a.last_updated))
+        console.log(data)
+        data.sort((a,b) => +new Date(b.last_update) - +new Date(a.last_update))
+        console.log("jobs list", data.map(d => d.last_update))
         setJobs(data)
       })
       .catch(console.error);

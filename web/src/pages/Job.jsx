@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 
-import { useStartJobPolling } from '../components/Job/Run';
+import { useStartJobPolling, jobPolling } from '../components/Job/Run';
 import JobProgress from '../components/Job/Progress';
 
 const apiUrl = import.meta.env.VITE_API_URL
@@ -11,8 +11,15 @@ function Job() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, job: jobId } = useParams(); 
 
+  const navigate = useNavigate()
   const [job, setJob] = useState(null);
-  const { startJob: rerunJob } = useStartJobPolling(dataset, setJob, `${apiUrl}/jobs/rerun`);
+
+  const jobCB = useCallback((job) => {
+    console.log("new job", job)
+    if(job)
+      navigate(`/datasets/${datasetId}/jobs/${job.id}`)
+  }, [datasetId, navigate])
+  const { startJob: rerunJob } = useStartJobPolling(dataset, jobCB, `${apiUrl}/jobs/rerun`);
 
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -27,9 +34,13 @@ function Job() {
       .then((data) => {
         console.log("job", data)
         setJob(data)
+        if(data?.status === "running") {
+          // start polling
+          jobPolling(dataset, setJob, data.id, 200)
+        }
       })
       .catch(console.error);
-  }, [datasetId, jobId, setJob]);
+  }, [datasetId, jobId, setJob, dataset]);
 
 
   function handleKill(job) {

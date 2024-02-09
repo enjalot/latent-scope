@@ -54,6 +54,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
 
     # make the umap name from the number, zero padded to 3 digits
     cluster_id = f"cluster-{next_cluster_number:03d}"
+    print("RUNNING:", cluster_id)
 
     umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
     umap_embeddings = umap_embeddings_df.to_numpy()

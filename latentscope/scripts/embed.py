@@ -115,6 +115,15 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
             print(batch)
             print("error embedding batch", i, e)
             print("exiting prematurely", embedding_id)
+            # extract the rows from the last batch from df
+            df_batch = df.iloc[i*batch_size:(i+1)*batch_size].copy()
+            df_batch["_ls_text_"] = batch
+            batch_path = os.path.join(embedding_dir, f"{embedding_id}-batch-{i}.parquet")
+            df_batch.to_parquet(batch_path)
+            print("wrote original data for batch along with processed inputs in _ls_sentences_ column to\n", batch_path)
+            print("debug with command:")
+            print("ls-embed-debug", batch_path, model_id)
+
             sys.exit(1)
         # sentence_embeddings.extend(embeddings)
 
@@ -137,6 +146,34 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
 
     # np.save(os.path.join(embedding_dir, f"{embedding_id}.npy"), np_embeds)
     print("done with", embedding_id)
+
+
+def debug():
+    parser = argparse.ArgumentParser(description='Debug embedding a batch')
+    parser.add_argument('parquet_file', type=str, help='Parquet file output by embed process')
+    parser.add_argument('model_id', type=str, help='ID of embedding model to use')
+    parser.add_argument('--text_column', type=str, help='Column name for text data', default="_ls_text_")
+    args = parser.parse_args()
+    embed_debug(args.parquet_file, args.model_id, args.text_column)
+
+def embed_debug(parquet_file, model_id, text_column):
+    df = pd.read_parquet(parquet_file)
+    model = get_embedding_model(model_id)
+    print("loading", model.name)
+    model.load_model()
+
+    for i,row in enumerate(df.iterrows()):
+        if(i != 34):
+            continue
+        print("batch index:", i)
+        print("original index:", row[0])
+        text = row[1][text_column]
+        print("text:", text)
+        # print("tokens:", len(model.tokenizer.encode(text)))
+        # print("batch index:", i, "DataFrame index:", row[0], "Text:", row[1][text_column])
+        embedding = model.embed([text])
+        print("embedding", embedding)
+        
 
 if __name__ == "__main__":
    main() 
