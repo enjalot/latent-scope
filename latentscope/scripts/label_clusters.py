@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import json
+import time
 import argparse
 import numpy as np
 import pandas as pd
@@ -124,9 +125,11 @@ Do not use punctuation, just return a few words that summarize the list."""}
         if(unlabeled_row > 0):
             if clusters.loc[i, 'labeled']:
                 print("skipping", i, "already labeled", clusters.loc[i, 'label'])
+                time.sleep(0.01)
                 continue
 
         try:
+            time.sleep(0.01)
             messages=[
                 system_prompt, {"role":"user", "content": batch[0]} # TODO hardcoded batch size
             ]
