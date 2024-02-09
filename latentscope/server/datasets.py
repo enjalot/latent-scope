@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 
 # Create a Blueprint
 datasets_bp = Blueprint('datasets_bp', __name__)
+datasets_write_bp = Blueprint('datasets_write_bp', __name__)
 DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 """
@@ -57,7 +58,7 @@ def get_dataset_meta(dataset):
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
-@datasets_bp.route('/<dataset>/meta/update', methods=['GET'])
+@datasets_write_bp.route('/<dataset>/meta/update', methods=['GET'])
 def update_dataset_meta(dataset):
     key = request.args.get('key')
     value = request.args.get('value')
@@ -182,7 +183,7 @@ def get_dataset_scope(dataset, scope):
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
-@datasets_bp.route('/<dataset>/scopes/save', methods=['POST'])
+@datasets_write_bp.route('/<dataset>/scopes/save', methods=['POST'])
 def save_dataset_scope(dataset):
     if not request.json:
         return jsonify({"error": "Invalid data format, JSON expected"}), 400

@@ -6,8 +6,6 @@ from .scripts.umapper import umapper as umap
 from .scripts.cluster import clusterer as cluster
 from .scripts.label_clusters import labeler as label
 
-from .server.app import serve
-
 from .util import update_data_dir, get_data_dir, set_openai_key, set_voyage_key, set_together_key, set_cohere_key, set_mistral_key
 
 def init(data_dir, env_file=".env", **kwargs):

@@ -5,6 +5,7 @@ from flask import Blueprint, jsonify, request
 
 # Create a Blueprint
 tags_bp = Blueprint('tags_bp', __name__)
+tags_write_bp = Blueprint('tags_write_bp', __name__)
 DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 # ===========================================================
@@ -41,7 +42,7 @@ def tags():
 """
 Create a new tag for a given dataset
 """
-@tags_bp.route("/new", methods=['GET'])
+@tags_write_bp.route("/new", methods=['GET'])
 def new_tag():
     dataset = request.args.get('dataset')
     tag = request.args.get('tag')
@@ -72,7 +73,7 @@ def new_tag():
 """
 Add a data index to a tag
 """
-@tags_bp.route("/add", methods=['GET'])
+@tags_write_bp.route("/add", methods=['GET'])
 def add_tag():
     dataset = request.args.get('dataset')
     tag = request.args.get('tag')
@@ -103,7 +104,7 @@ def add_tag():
 """
 Remove a data index from a tag
 """
-@tags_bp.route("/remove", methods=['GET'])
+@tags_write_bp.route("/remove", methods=['GET'])
 def remove_tag():
     dataset = request.args.get('dataset')
     tag = request.args.get('tag')

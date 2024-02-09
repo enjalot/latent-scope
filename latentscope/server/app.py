@@ -19,21 +19,35 @@ DATA_DIR = get_data_dir()
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
+# We enable a read only mode of the server
+def str_to_bool(s):
+    return s.lower() in ['true', '1', 't', 'y', 'yes']
+# export LATENT_SCOPE_READ_ONLY=1  
+READ_ONLY = str_to_bool(os.getenv("LATENT_SCOPE_READ_ONLY"))
+print("READ ONLY?", READ_ONLY, not READ_ONLY)
+
 # in memory cache of dataframes loaded for each dataset
 # used in returning rows for a given index (indexed, get_tags)
 DATAFRAMES = {}
 
-from .jobs import jobs_bp
+from .jobs import jobs_bp, jobs_write_bp
 app.register_blueprint(jobs_bp, url_prefix='/api/jobs') 
+if(not READ_ONLY):
+    app.register_blueprint(jobs_write_bp, url_prefix='/api/jobs') 
 
 from .search import search_bp
 app.register_blueprint(search_bp, url_prefix='/api/search') 
 
-from .tags import tags_bp
+from .tags import tags_bp, tags_write_bp
 app.register_blueprint(tags_bp, url_prefix='/api/tags') 
+if(not READ_ONLY):
+    app.register_blueprint(tags_write_bp, url_prefix='/api/tags') 
 
-from .datasets import datasets_bp
+from .datasets import datasets_bp, datasets_write_bp
 app.register_blueprint(datasets_bp, url_prefix='/api/datasets')
+if(not READ_ONLY):
+    app.register_blueprint(datasets_write_bp, url_prefix='/api/datasets')
+
 
 
 # ===========================================================

@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request
 
 # Create a Blueprint
 jobs_bp = Blueprint('jobs_bp', __name__)
+jobs_write_bp = Blueprint('jobs_write_bp', __name__)
 DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 PROCESSES = {}
@@ -96,7 +97,7 @@ def get_jobs():
                 jobs.append(job)
     return jsonify(jobs)
 
-@jobs_bp.route('/ingest', methods=['POST'])
+@jobs_write_bp.route('/ingest', methods=['POST'])
 def run_ingest():
     dataset = request.form.get('dataset')
     file = request.files.get('file')
@@ -111,7 +112,7 @@ def run_ingest():
     return jsonify({"job_id": job_id})
 
 
-@jobs_bp.route('/embed')
+@jobs_write_bp.route('/embed')
 def run_embed():
     dataset = request.args.get('dataset')
     text_column = request.args.get('text_column')
@@ -123,7 +124,7 @@ def run_embed():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@jobs_bp.route('/rerun')
+@jobs_write_bp.route('/rerun')
 def rerun_job():
     dataset = request.args.get('dataset')
     job_id = request.args.get('job_id')
@@ -138,7 +139,7 @@ def rerun_job():
     threading.Thread(target=run_job, args=(dataset, new_job_id, command)).start()
     return jsonify({"job_id": new_job_id})
 
-@jobs_bp.route('/kill')
+@jobs_write_bp.route('/kill')
 def kill_job():
     dataset = request.args.get('dataset')
     job_id = request.args.get('job_id')
@@ -159,7 +160,7 @@ def kill_job():
             json.dump(job, f)
         return jsonify(job)
 
-@jobs_bp.route('/delete/embedding')
+@jobs_write_bp.route('/delete/embedding')
 def delete_embedding():
     dataset = request.args.get('dataset')
     embedding_id = request.args.get('embedding_id')
@@ -182,7 +183,7 @@ def delete_embedding():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@jobs_bp.route('/umap')
+@jobs_write_bp.route('/umap')
 def run_umap():
     dataset = request.args.get('dataset')
     embedding_id = request.args.get('embedding_id')
@@ -195,7 +196,7 @@ def run_umap():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@jobs_bp.route('/delete/umap')
+@jobs_write_bp.route('/delete/umap')
 def delete_umap_request():
     dataset = request.args.get('dataset')
     umap_id = request.args.get('umap_id')
@@ -221,7 +222,7 @@ def delete_umap(dataset, umap_id):
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@jobs_bp.route('/cluster')
+@jobs_write_bp.route('/cluster')
 def run_cluster():
     dataset = request.args.get('dataset')
     umap_id = request.args.get('umap_id')
@@ -234,7 +235,7 @@ def run_cluster():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@jobs_bp.route('/delete/cluster')
+@jobs_write_bp.route('/delete/cluster')
 def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_id = request.args.get('cluster_id')
@@ -243,7 +244,7 @@ def delete_cluster():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
-@jobs_bp.route('/cluster_label')
+@jobs_write_bp.route('/cluster_label')
 def run_cluster_label():
     dataset = request.args.get('dataset')
     chat_id = request.args.get('chat_id')
