@@ -1,6 +1,6 @@
 # Latent Scope
 
-Quickly embed, project, cluster and explore a dataset. I think of this project as a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
+Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 ### Demo
 This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in live demos:

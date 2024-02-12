@@ -20,10 +20,11 @@ def main():
     parser.add_argument('embedding_id', type=str, help='Name of embedding model to use')
     parser.add_argument('neighbors', type=int, nargs="?", help='Output file', default=25)
     parser.add_argument('min_dist', type=float, nargs="?", help='Output file', default=0.075)
+    parser.add_argument('--save', action='store_true', help='Save the UMAP model')
 
     # Parse arguments
     args = parser.parse_args()
-    umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist)
+    umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist, args.save)
 
 
 # TODO move this into shared space
@@ -38,7 +39,7 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
         return min(min_size + min_size * np.log(num_points / base_num_points), max_size)
 
 
-def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1):
+def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False):
     DATA_DIR = get_data_dir()
     # read in the embeddings
     print("loading embeddings")
@@ -113,9 +114,10 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1):
         }, f, indent=2)
     f.close()
 
-    # save a pickle of the umap
-    with open(os.path.join(umap_dir, f'{umap_name}.pkl'), 'wb') as f:
-        pickle.dump(reducer, f)
+    if save:
+        # save a pickle of the umap
+        with open(os.path.join(umap_dir, f'{umap_name}.pkl'), 'wb') as f:
+            pickle.dump(reducer, f)
     print("done with", umap_name)
 
 
