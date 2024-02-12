@@ -105,10 +105,25 @@ function DatasetSetup() {
     } else {
       setCluster(null)
     }
-  }, [selectedCluster, clusters, umap]) 
+  }, [selectedCluster, clusters, umap, setCluster]) 
 
   // the currently chosen model used to label the active cluster
-  const [clusterLabelModel, setClusterLabelModel] = useState("default"); 
+  const [clusterLabelId, setClusterLabelId] = useState("default"); 
+  const [clusterLabelIds, setClusterLabelIds] = useState([]); 
+  const [selectedClusterLabelId, setSelectedClusterLabelId] = useState(null);
+
+  useEffect(() => {
+    if(clusterLabelIds && cluster) {
+      const found = clusterLabelIds.filter(d => d.cluster_id == cluster.id)
+      if(selectedClusterLabelId && found) {
+        setClusterLabelId(found.id)
+      } else {
+        setClusterLabelId(clusterLabelIds[0]?.id)
+      }
+    } else {
+      setClusterLabelId(null)
+    }
+  }, [selectedClusterLabelId, clusterLabelIds, setClusterLabelId])
 
   // ====================================================================================================
   // scopes
@@ -126,7 +141,8 @@ function DatasetSetup() {
         setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
         setSelectedUmap(scope.umap_id)
         setSelectedCluster(scope.cluster_id)
-        setClusterLabelModel(scope.cluster_labels_id)
+        // setClusterLabelId(scope.cluster_labels_id)
+        setSelectedClusterLabelId(scope.cluster_labels_id)
       }
     } else {
       setScope(null)
@@ -185,18 +201,18 @@ function DatasetSetup() {
   }, [hoveredIndex, setHovered, hydrateIndices])
 
   const [clusterIndices, setClusterIndices] = useState([]);
-  const [clusterLabels, setClusterLables] = useState([]);
+  const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
     if(cluster) {
       fetch(`${apiUrl}/datasets/${datasetId}/clusters/${cluster.id}/indices`)
         .then(response => response.json())
         .then(data => {
-          console.log("cluster indices", data)
+          // console.log("cluster indices", data)
           setClusterIndices(data)
         });
-      } else {
-        setClusterIndices([])
-      }
+    } else {
+      setClusterIndices([])
+    }
   }, [cluster, setClusterIndices, datasetId])
 
   const memoClusterIndices = useMemo(() => {
@@ -229,6 +245,7 @@ function DatasetSetup() {
           setPoints(data.map(d => [d.x, d.y]))
         })
     } else {
+      console.log("set points empty")
       setPoints([])
     }
   }, [dataset, umap])
@@ -247,16 +264,53 @@ function DatasetSetup() {
       setStage(2)
     } else if(!cluster) {
       setStage(3)
-    } else if(!clusterLabelModel) {
+    } else if(!clusterLabelId) {
       setStage(4)
     } else if(!scope) {
       setStage(5)
     } else {
       setStage(6)
     }
-    console.log("SCOPE", scope, embedding, umap, cluster, clusterLabelModel)
-  }, [embedding, umap, cluster, clusterLabelModel, scope])
+    console.log("SCOPE", scope, embedding, umap, cluster, clusterLabelId)
+  }, [embedding, umap, cluster, clusterLabelId, scope])
+
+
+  const handleNewEmbeddings = useCallback((embs, emb) => {
+    setEmbeddings(embs)
+    if(emb) setEmbedding(emb)
+  }, [setEmbeddings, setEmbedding])
+
+  const handleNewUmaps = useCallback((umaps, ump) => {
+    setUmaps(umaps)
+    if(ump) setUmap(ump)
+    // if no umaps for the current embedding, unset the umap
+    if(!umaps.filter(d => d.embedding_id == embedding?.id).length) {
+      setUmap(null)
+    }
+  }, [setUmaps, setUmap, embedding])
+
+  const handleNewClusters = useCallback((clusters, cls) => {
+    setClusters(clusters)
+    if(cls) setCluster(cls)
+    // if no clusters for the current umap, unset the cluster
+    if(!clusters.filter(d => d.umap_id == umap?.id).length) {
+      console.log("unset cluster")
+      setCluster(null)
+    }
+  }, [setClusters, setCluster, umap])
  
+  const handleNewClusterLabelIds = useCallback((labels, lbl) => {
+    setClusterLabelIds(labels)
+    if(lbl) setClusterLabelId(lbl)
+    console.log("LABEL IDS", labels)
+    // if no labels for the current cluster, unset the labels
+    if(!labels.filter(d => d.cluster_id == cluster?.id).length) {
+      console.log("unset labels")
+      setClusterLabelId(null)
+      setClusterLabels([])
+    }
+  }, [setClusterLabelIds, setClusterLabelId, cluster])
+
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -306,20 +360,19 @@ function DatasetSetup() {
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">
           <Stage active={stage == 1} complete={stage > 1} title="1. Embeddings">
-            <Embedding dataset={dataset} textColumn={textColumn} embedding={embedding} umaps={umaps} clusters={clusters} onNew={setEmbeddings} onChange={setEmbedding} />
+            <Embedding dataset={dataset} textColumn={textColumn} embedding={embedding} umaps={umaps} clusters={clusters} onNew={handleNewEmbeddings} onChange={setEmbedding} />
           </Stage>
           <Stage active={stage == 2} complete={stage > 2} title="2. UMAP">
-            <Umap dataset={dataset} umap={umap} embedding={embedding} clusters={clusters} onNew={setUmaps} onChange={setUmap} />
+            <Umap dataset={dataset} umap={umap} embedding={embedding} clusters={clusters} onNew={handleNewUmaps} onChange={setUmap} />
           </Stage>
-
           <Stage active={stage == 3} complete={stage > 3} title="3. Clusters">
-            <Cluster dataset={dataset} cluster={cluster} umap={umap} onNew={setClusters} onChange={setCluster} />
+            <Cluster dataset={dataset} cluster={cluster} umap={umap} onNew={handleNewClusters} onChange={setCluster} />
           </Stage>
           <Stage active={stage == 4} complete={stage > 4} title="4. Auto-Label Clusters">
-            <ClusterLabels dataset={dataset} cluster={cluster} selectedModel={clusterLabelModel} onChange={setClusterLabelModel} onLabels={setClusterLables} onHoverLabel={setHoveredCluster} />
+            <ClusterLabels dataset={dataset} cluster={cluster} selectedLabelId={clusterLabelId} onChange={setClusterLabelId} onLabelIds={handleNewClusterLabelIds} onLabels={setClusterLabels} onHoverLabel={setHoveredCluster} />
           </Stage>
           <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope">
-            <Scope dataset={dataset} scope={scope} embedding={embedding} umap={umap} cluster={cluster} clusterLabelModel={clusterLabelModel} onNew={setScopes} onChange={setScope} />
+            <Scope dataset={dataset} scope={scope} embedding={embedding} umap={umap} cluster={cluster} clusterLabelId={clusterLabelId} onNew={setScopes} onChange={setScope} />
           </Stage>
         </div>
 
@@ -327,7 +380,7 @@ function DatasetSetup() {
         <div className="dataset--setup-right-column">
           <div className="dataset--setup-umap">
 
-            <Scatter 
+            { points.length ? <Scatter 
               points={points} 
               colors={memoClusterIndices}
               width={scopeWidth} 
@@ -336,7 +389,7 @@ function DatasetSetup() {
               onView={handleView} 
               onSelect={handleSelected}
               onHover={handleHovered}
-              />
+              /> : null }
             { hoveredCluster && hoveredCluster.hull ? <HullPlot
               points={points}
               hulls={[hoveredCluster?.hull]}
@@ -345,14 +398,14 @@ function DatasetSetup() {
               yDomain={yDomain} 
               width={scopeWidth} 
               height={scopeHeight} /> : null }
-            <HullPlot
+            { clusterLabels.length ? <HullPlot
               points={points}
               hulls={clusterLabels.map(d => d.hull)}
               stroke="lightgray"
               xDomain={xDomain} 
               yDomain={yDomain} 
               width={scopeWidth} 
-              height={scopeHeight} /> 
+              height={scopeHeight} /> : null } 
           </div>
 
           <div className="dataset--hovered">

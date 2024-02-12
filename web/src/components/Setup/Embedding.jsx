@@ -5,7 +5,6 @@ import { useStartJobPolling } from '../Job/Run';
 const apiUrl = import.meta.env.VITE_API_URL
 
 import styles from './Embedding.module.css';
-console.log("EMBEDDING STYLES", styles)
 
 import PropTypes from 'prop-types';
 EmbeddingNew.propTypes = {
@@ -56,7 +55,13 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     if(embeddingsJob?.status === "completed") {
       fetchEmbeddings(dataset.id, (embs) => {
         setEmbeddings(embs)
-        onNew(embs)
+        let emb;
+        if(embeddingsJob.job_name == "embed"){
+          emb = embs.find(d => d.id == embeddingsJob.run_id)
+        } else if(embeddingsJob.job_name == "rm") {
+          emb = embs[embs.length - 1]
+        }
+        onNew(embs, emb)
       })
     }
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
@@ -103,11 +108,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
           <label htmlFor={`embedding${index}`}>
             <span>
-              <span>{emb?.id} - {emb?.model_id} </span><br></br>
-              <span>Dimensions: {emb?.dimensions}</span>
+              <span>{emb.id} - {emb.model_id} </span><br></br>
+              <span>Dimensions: {emb.dimensions}</span><br/>
+              { emb.prefix ? <span>Prefix: {emb.prefix}<br/></span> : null }
               <span>[
-                {umaps.filter(d => d.embedding_id == emb).length} umaps,&nbsp;
-                {clusters.filter(d => umaps.filter(d => d.embedding_id == emb).map(d => d.id).indexOf(d.umap_id) >= 0).length} clusters 
+                {umaps.filter(d => d.embedding_id == emb.id).length} umaps,&nbsp;
+                {clusters.filter(d => umaps.filter(d => d.embedding_id == emb.id).map(d => d.id).indexOf(d.umap_id) >= 0).length} clusters 
               ]</span>
               <button onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
             </span>

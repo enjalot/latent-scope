@@ -53,7 +53,13 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
     if(clusterJob?.status == "completed") {
       fetchClusters(dataset.id, (clstrs) => {
         setClusters(clstrs)
-        onNew(clstrs)
+        let cls;
+        if(clusterJob.job_name == "cluster"){
+          cls = clstrs.find(d => d.id == clusterJob.run_id)
+        } else if(clusterJob.job_name == "rm") {
+          cls = clstrs[0]
+        }
+        onNew(clstrs, cls)
       })
     }
   }, [clusterJob, dataset, setClusters, onNew]);

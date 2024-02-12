@@ -50,7 +50,13 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
     if(umapJob?.status == "completed") {
       fetchUmaps(dataset.id, (umps) => {
         setUmaps(umps)
-        onNew(umps)
+        let ump;
+        if(umapJob.job_name == "umap"){
+          ump = umps.find(d => d.id == umapJob.run_id)
+        } else if(umapJob.job_name == "rm") {
+          ump = umps[0]
+        }
+        onNew(umps, ump)
       })
     }
   }, [umapJob, dataset, setUmaps, onNew]);

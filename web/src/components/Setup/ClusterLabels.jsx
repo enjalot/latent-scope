@@ -13,15 +13,16 @@ ClusterLabels.propTypes = {
     id: PropTypes.string.isRequired
   }).isRequired,
   cluster: PropTypes.object,
-  selectedModel: PropTypes.string,
+  selectedLabelId: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   onLabels: PropTypes.func,
+  onLabelIds: PropTypes.func,
   onHoverLabel: PropTypes.func,
 };
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function ClusterLabels({ dataset, cluster, selectedModel, onChange, onLabels, onHoverLabel}) {
+function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelIds, onHoverLabel}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
 
@@ -42,8 +43,8 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange, onLabels, on
   // the actual labels for the given cluster
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
-    if(dataset && cluster) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${selectedModel}`)
+    if(dataset && cluster && selectedLabelId) {
+      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${selectedLabelId}`)
         .then(response => response.json())
         .then(data => {
           setClusterLabels(data)
@@ -54,7 +55,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange, onLabels, on
       } else {
         setClusterLabels([])
       }
-  }, [selectedModel, setClusterLabels, dataset, cluster, clusterLabelModels])
+  }, [selectedLabelId, setClusterLabels, dataset, cluster, clusterLabelModels])
 
   useEffect(() => {
     if(cluster) {
@@ -62,15 +63,29 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange, onLabels, on
         .then(response => response.json())
         .then(data => {
           console.log("cluster changed, set label models fetched", cluster.id, data)
+          if(clusterLabelsJob && clusterLabelsJob.status == "completed") {
+            let lbl;
+            if(clusterLabelsJob?.job_name == "cluster_label"){
+              lbl = data.find(d => d.id == clusterLabelsJob.run_id)
+            } else if(clusterLabelsJob.job_name == "rm") {
+              lbl = data[0]
+            }
+            onLabelIds(data.map(id => ({cluster_id: cluster.id, id: id})), lbl)
+            // onChange(lbl)
+          }  else {
+            onLabelIds(data.map(id => ({cluster_id: cluster.id, id: id})))
+          }
           setClusterLabelModels(data)
         }).catch(err => {
           console.log(err)
           setClusterLabelModels([])
+          onLabelIds([])
         })
     } else {
       setClusterLabelModels([])
+      onLabelIds([])
     }
-  }, [dataset, cluster, clusterLabelsJob, setClusterLabelModels])
+  }, [dataset, cluster, clusterLabelsJob, setClusterLabelModels, onLabelIds])
   
   useEffect(() => {
     if(clusterLabels?.length) {
@@ -116,7 +131,7 @@ function ClusterLabels({ dataset, cluster, selectedModel, onChange, onLabels, on
           View Labels:
           <select 
             name="model" 
-            value={selectedModel}
+            value={selectedLabelId}
             onChange={(e) => onChange(e.target.value)}
           >
             {clusterLabelModels.map((model, index) => (

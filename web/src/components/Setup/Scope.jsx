@@ -13,12 +13,12 @@ Scope.propTypes = {
   umap: PropTypes.object,
   embedding: PropTypes.object,
   cluster: PropTypes.object,
-  clusterLabelModel: PropTypes.string,
+  clusterLabelId: PropTypes.string,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
 };
 
-function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, onNew, onChange}) {
+function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew, onChange}) {
   // const[scopes, setScopes] = useState([]);
   const navigate = useNavigate();
 
@@ -42,7 +42,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
       embedding_id: embedding.id,
       umap_id: umap.id,
       cluster_id: cluster.id,
-      cluster_labels_id: clusterLabelModel,
+      cluster_labels_id: clusterLabelId,
       label: data.get('label'),
       description: data.get('description')
     };
@@ -75,23 +75,26 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelModel, on
     .catch(error => {
       console.error('Error saving scope:', error);
     });
-  }, [dataset, scope, cluster, clusterLabelModel, umap, embedding , navigate, onNew, onChange]);
+  }, [dataset, scope, cluster, clusterLabelId, umap, embedding , navigate, onNew, onChange]);
 
   return (
     <div className="setup-scope">
       <div className="dataset--setup-save-box-title">
         Embedding: {embedding?.id} - {embedding?.model_id}<br/>
-        Labels: {clusterLabelModel || "Default"}
+        Umap: {umap?.id}<br/>
+        Cluster: {cluster?.id}<br/>
+        Labels: {clusterLabelId || "Default"}
       </div>
       <div className="dataset--setup-save-box-boxes">
-        { umap ? <div className="box-item">
-          {umap.id}
-          <img src={umap.url} alt={umap.id} />
-        </div> : <div className="empty-box"></div> }
         { cluster ? <div className="box-item">
-          {cluster.id}
+          {/* {cluster.id} */}
           <img src={cluster.url} alt={cluster.id} />
-        </div> : <div className="empty-box"></div> }
+        </div> : 
+          umap ? <div className="box-item">
+            {/* {umap.id} */}
+            <img src={umap.url} alt={umap.id} />
+          </div> : <div className="empty-box"></div> 
+        }
       </div>
       <div className="dataset--setup-save-box-nav">
         <form onSubmit={handleSaveScope}>
