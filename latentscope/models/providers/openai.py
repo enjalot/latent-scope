@@ -8,7 +8,11 @@ from latentscope.util import get_key
 
 class OpenAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
+        api_key = get_key("OPENAI_API_KEY")
+        if api_key is None:
+            print("ERROR: No API key found for OpenAI")
+            print("Missing 'OPENAI_API_KEY' variable in:", f"{os.getcwd()}/.env")
+        self.client = OpenAI(api_key=api_key)
         # special case for the new embedding models
         if self.name in ["text-embedding-3-small", "text-embedding-3-large"]:
             self.encoder = tiktoken.get_encoding("cl100k_base")

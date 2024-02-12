@@ -2,8 +2,9 @@ import os
 import sys
 from dotenv import load_dotenv, set_key
 
-def get_data_dir(env_file=".env"):
-    load_dotenv(env_file)
+def get_data_dir():
+    print("Loading environment variables from:", os.path.join(os.getcwd(), '.env'))
+    load_dotenv()
     DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
     if DATA_DIR is None:
         print("""LATENT_SCOPE_DATA environment variable not set. Please set it to the directory where you want to store your data.
@@ -32,6 +33,7 @@ def update_data_dir(directory, env_file=".env"):
     return directory
 
 def get_key(key, env_file=".env"):
+    print("get key", os.getcwd())
     load_dotenv(env_file)
     return os.getenv(key)
 

@@ -39,8 +39,9 @@ Flask-Cors==4.0.0
 fonttools==4.47.2
 fqdn==1.5.1
 frozenlist==1.4.1
-fsspec==2023.12.2
+fsspec==2023.10.0
 h11==0.14.0
+h5py==3.10.0
 hdbscan==0.8.33
 httpcore==1.0.2
 httpx==0.25.2

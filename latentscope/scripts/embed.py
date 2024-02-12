@@ -39,9 +39,12 @@ def append_to_hdf5(file_path, new_data):
             dataset = f.create_dataset(dataset_name, data=new_data, maxshape=maxshape, chunks=True)
 
 def get_last_batch(file_path):
-    with h5py.File(file_path, 'r') as f:
-        dataset = f["embeddings"]
-        return dataset.shape[0]
+    try:
+        with h5py.File(file_path, 'r') as f:
+            dataset = f["embeddings"]
+            return dataset.shape[0]
+    except FileNotFoundError:
+        return 0
 
 
 def main():
@@ -59,26 +62,14 @@ def main():
 def embed(dataset_id, text_column, model_id, prefix, rerun):
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
-    sentences = df[text_column].tolist()
-    prefixed = []
-    if prefix is None:
-        prefix = ""
-    for i,s in enumerate(sentences):
-        if s is None:
-            print(i,s)
-            s = ""
-        prefixed.append(prefix + s)
-    sentences = prefixed #[prefix + s for s in sentences]
-
-    # determine the embedding id
+    
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
     if not os.path.exists(embedding_dir):
         os.makedirs(embedding_dir)
 
     batch_size = 100
-    # sentence_embeddings = []
-    total_batches = len(sentences)//batch_size
 
+    # determine the embedding id
     if rerun is not None:
         embedding_id = rerun
         starting_batch = get_last_batch(os.path.join(embedding_dir, f"{embedding_id}.h5")) // batch_size
@@ -100,6 +91,20 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
     model = get_embedding_model(model_id)
     print("loading", model.name)
     model.load_model()
+
+    print("Checking for empty inputs")
+    sentences = df[text_column].tolist()
+    prefixed = []
+    if prefix is None:
+        prefix = ""
+    for i,s in enumerate(sentences):
+        if s is None or s == "":
+            print(i,s, "text is empty, adding a [space]")
+            s = " "
+        prefixed.append(prefix + s)
+    sentences = prefixed #[prefix + s for s in sentences]
+
+    total_batches = len(sentences)//batch_size
 
     print("embedding", len(sentences), "sentences", "in", total_batches, "batches")
     if starting_batch > 0:
@@ -164,8 +169,6 @@ def embed_debug(parquet_file, model_id, text_column):
     model.load_model()
 
     for i,row in enumerate(df.iterrows()):
-        if(i != 34):
-            continue
         print("batch index:", i)
         print("original index:", row[0])
         text = row[1][text_column]

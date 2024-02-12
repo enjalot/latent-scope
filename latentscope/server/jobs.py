@@ -104,10 +104,11 @@ def run_ingest():
     dataset_dir = os.path.join(DATA_DIR, dataset)
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
-    file.save(os.path.join(dataset_dir, "input.csv"))
+    file_path = os.path.join(dataset_dir, file.filename)
+    file.save(file_path)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-ingest-csv {dataset}'
+    command = f'ls-ingest {dataset} --path={file_path}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

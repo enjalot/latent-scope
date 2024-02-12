@@ -8,7 +8,11 @@ from latentscope.util import get_key
 
 class TogetherAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        together.api_key = get_key("TOGETHER_API_KEY")
+        api_key = get_key("TOGETHER_API_KEY")
+        if api_key is None:
+            print("ERROR: No API key found for Together")
+            print("Missing 'TOGETHER_API_KEY' variable in:", f"{os.getcwd()}/.env")
+        together.api_key = api_key
         self.client = together.Together()
         self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
 

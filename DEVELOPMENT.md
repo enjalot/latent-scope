@@ -41,7 +41,15 @@ TODO: flesh out these instructions
 ```
 python setup.py sdist bdist_wheel
 ```
-This builds the package, including the React app, and bundles it all up. This allows yo
+This builds the package, including the React app, and bundles it all up. 
+
+```
+deactivate
+python setup.py sdist bdist_wheel
+source testenv/bin/activate
+pip install dist/latentscope-0.1.0-py3-none-any.whl
+
+```
 
 
 # Python Code

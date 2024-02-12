@@ -19,7 +19,11 @@ encoders = {
 
 class MistralAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        self.client = MistralClient(get_key("MISTRAL_API_KEY"))
+        api_key = get_key("MISTRAL_API_KEY")
+        if api_key is None:
+            print("ERROR: No API key found for Mistral")
+            print("Missing 'MISTRAL_API_KEY' variable in:", f"{os.getcwd()}/.env")
+        self.client = MistralClient(api_key=api_key)
 
     def embed(self, inputs):
         time.sleep(0.1) # TODO proper rate limiting
@@ -28,7 +32,11 @@ class MistralAIEmbedProvider(EmbedModelProvider):
 
 class MistralAIChatProvider(ChatModelProvider):
     def load_model(self):
-        self.client = MistralClient(api_key=get_key("MISTRAL_API_KEY"))
+        api_key = get_key("MISTRAL_API_KEY")
+        if api_key is None:
+            print("ERROR: No API key found for Mistral")
+            print("Missing 'MISTRAL_API_KEY' variable in:", f"{os.getcwd()}/.env")
+        self.client = MistralClient(api_key=api_key)
         self.encoder = AutoTokenizer.from_pretrained(encoders[self.name])
 
     def chat(self, messages):

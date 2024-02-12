@@ -7,21 +7,32 @@ import pandas as pd
 from latentscope.util import get_data_dir
 
 # TODO make a parquet version of these
-def csv():
+def main():
     parser = argparse.ArgumentParser(description='Ingest a dataset')
     parser.add_argument('id', type=str, help='Dataset id (directory name in data folder)')
-    parser.add_argument('--path', type=str, help='Path to csv file, otherwise assumes input.csv in dataset directory')
+    parser.add_argument('--path', type=str, help='Path to csv or parquet file, otherwise assumes input.csv in dataset directory')
     args = parser.parse_args()
-    ingest(args.id, args.path)
+    ingest_file(args.id, args.path)
 
-def ingest_csv(dataset_id, csv_path):
+def ingest_file(dataset_id, file_path):
     DATA_DIR = get_data_dir()
     directory = os.path.join(DATA_DIR, dataset_id)
-    if not csv_path:
-        csv_path = os.path.join(directory, "input.csv")
-    csv_file = os.path.join(csv_path)
-    print("reading", csv_file)
-    df = pd.read_csv(csv_file)
+    if not file_path:
+        file_path = os.path.join(directory, "input.csv")
+    file_type = file_path.split('.')[-1]
+    print(f"File type detected: {file_type}")
+    file = os.path.join(file_path)
+    print("reading", file)
+    if file_type == "csv":
+        df = pd.read_csv(file)
+    elif file_type == "parquet":
+        df = pd.read_parquet(file)
+    elif file_type == "jsonl":
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            df = pd.DataFrame([json.loads(line) for line in lines])
+    else:
+        raise ValueError(f"Unsupported file type: {file_type}")
     ingest(dataset_id, df)
 
 

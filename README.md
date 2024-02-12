@@ -4,21 +4,33 @@ Quickly embed, project, cluster and explore a dataset. I think of this project a
 
 ### Demo
 This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in live demos:
-* TODO: OpenOrca
+* TODO: datavis survey responses
 * TODO: Dolly 15k
 * TODO: r/DadJokes
+* TODO: emotion
 
 TODO: YouTube getting started video
 
 ### Quick Start
 To get started, install the [latent-scope module]() and run the server:
+
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install latent-scope
 ls-serve ~/local-scope-data
 ```
+
 Then open your browser to http://localhost:5001 and upload your first dataset!
+
+You can also ingest data from a Pandas dataframe:
+```python
+from latentscope import ls
+ls.init("~/latent-scope-data")
+ls.ingest("dadabase", df, text_column="joke")
+ls.serve()
+```
+See the notebooks linked below for detailed examples of using the Python interface.
 
 ### Notebooks
 You can also configure and run the server from inside python, see these notebooks for examples of preparing and loading data:
@@ -26,7 +38,7 @@ You can also configure and run the server from inside python, see these notebook
 * [dadabase](notebooks/dadabase.ipynb) - a more interesting (and funny) dataset of 50k rows
 
 ### Command line scripts
-When latent-scope is installed, it creates a suite of command line scripts
+When latent-scope is installed, it creates a suite of command line scripts that can be used to setup scopes for exploring and running the web application.
 
 ```bash
 # like above, we make sure to install latent-scope
@@ -50,8 +62,9 @@ ls-umap datavis-misunderstood embedding-001 25 .1
 ls-cluster datavis-misunderstood umap-001 5 5
 # ls-label dataset_id text_column cluster_id model_id context
 ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta
-# ls-scope  dataset_id labels_id name description
+# ls-scope  dataset_id embedding_id umap_id cluster_id cluster_labels_id label description
 ls-scope datavis-misunderstood cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by Zephyr 7B"
+# start the server to explore your scope
 ls-serve
 ```
 

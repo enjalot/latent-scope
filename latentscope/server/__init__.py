@@ -13,3 +13,7 @@ def start():
   update_data_dir(args.data_dir)
   from .app import serve
   serve(args.host, args.port, args.debug)
+
+def serve(host="0.0.0.0", port=5001, debug=False):
+  from .app import serve
+  serve(host, port, debug)

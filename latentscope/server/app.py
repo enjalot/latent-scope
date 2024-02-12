@@ -20,10 +20,12 @@ if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
 # We enable a read only mode of the server
-def str_to_bool(s):
+def check_read_only(s):
+    if s is None:
+        return False
     return s.lower() in ['true', '1', 't', 'y', 'yes']
 # export LATENT_SCOPE_READ_ONLY=1  
-READ_ONLY = str_to_bool(os.getenv("LATENT_SCOPE_READ_ONLY"))
+READ_ONLY = check_read_only(os.getenv("LATENT_SCOPE_READ_ONLY"))
 print("READ ONLY?", READ_ONLY, not READ_ONLY)
 
 # in memory cache of dataframes loaded for each dataset
