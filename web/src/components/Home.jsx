@@ -92,7 +92,7 @@ function Home() {
 
   return (
     <div className="home">
-      {readonly ? null : <div className="new-dataset">
+      {readonly ? null : <div className="new-dataset section">
         <h3>Create new dataset</h3>
         <form onSubmit={handleNewDataset} onDragOver={handleDragOver} onDrop={handleDrop}>
           <label htmlFor="upload-button">
@@ -113,25 +113,29 @@ function Home() {
         </form>
         <JobProgress job={ingestJob} clearJob={() => setIngestJob(null)} />
       </div> }
-      <h3>Datasets</h3>
-      <ul>
-        {datasets.map(dataset => (
-          <li key={dataset.id}>
-            <h3> {dataset.id} - {dataset.length} rows</h3>
-            {readonly ? null : <Link to={`/datasets/${dataset.id}/setup`}>Setup {dataset.id}</Link> }
-            <div className="scope-links">
-            {scopes[dataset.id] && scopes[dataset.id].map && scopes[dataset.id]?.map((scope,i) => (
-              <div className="scope-link" key={i} >
-                <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>Explore {scope.id} <br/> {scope.label}<br/>
-                <img src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} />
-                </Link><br></br>
-                {readonly ? null : <Link to={`/datasets/${dataset.id}/setup/${scope.id}`}>Setup {scope.id}</Link> }
+      <div className="section datasets">
+        <h3>Datasets</h3>
+        <div className="datasets-content">
+          {datasets.map(dataset => (
+            <div className="dataset" key={dataset.id}>
+              <h3> {dataset.id} &nbsp;
+              {readonly ? null : <Link to={`/datasets/${dataset.id}/setup`}>Setup</Link> }
+              </h3>
+              <span>{dataset.length} rows</span>
+              <div className="scope-links">
+              {scopes[dataset.id] && scopes[dataset.id].map && scopes[dataset.id]?.map((scope,i) => (
+                <div className="scope-link" key={i} >
+                  <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>{scope.label || scope.id}<br/>
+                  <img src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} />
+                  </Link><br></br>
+                  {readonly ? null : <Link to={`/datasets/${dataset.id}/setup/${scope.id}`}>Configure</Link> }
+                </div>
+              ))}
               </div>
-            ))}
             </div>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -255,4 +255,16 @@
   overflow: scroll;
 }
 
+.dataset--setup-preview {
+  width: var(--umap-width);
+  max-height: 340px;
+  flex-grow: 1;
+  height: 100%;
+  overflow: scroll;
+
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 12px;
+
+}
 

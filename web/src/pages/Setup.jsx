@@ -1,21 +1,23 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 
-import './DatasetSetup.css';
-import Embedding from './Setup/Embedding';
-import Umap from './Setup/Umap';
-import Cluster from './Setup/Cluster';
-import ClusterLabels from './Setup/ClusterLabels';
-import Scope from './Setup/Scope';
-import Stage from './Setup/Stage';
-import HullPlot from './HullPlot';
+import { range } from 'd3-array';
 
-import IndexDataTable from './IndexDataTable';
-import Scatter from './Scatter';
+import './Setup.css';
+import Embedding from '../components/Setup/Embedding';
+import Umap from '../components/Setup/Umap';
+import Cluster from '../components/Setup/Cluster';
+import ClusterLabels from '../components/Setup/ClusterLabels';
+import Scope from '../components/Setup/Scope';
+import Stage from '../components/Setup/Stage';
+import HullPlot from '../components/HullPlot';
+
+import IndexDataTable from '../components/IndexDataTable';
+import Scatter from '../components/Scatter';
   
 const apiUrl = import.meta.env.VITE_API_URL
 
-function DatasetSetup() {
+function Setup() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
 
@@ -378,6 +380,14 @@ function DatasetSetup() {
 
         {/* RIGHT COLUMN */}
         <div className="dataset--setup-right-column">
+          <div className="dataset--setup-preview">
+              <IndexDataTable 
+                dataset={dataset}
+                indices={range(0, 100)} 
+                datasetId={datasetId} 
+                maxRows={100} 
+                />
+          </div>
           <div className="dataset--setup-umap">
 
             { points.length ? <Scatter 
@@ -450,4 +460,4 @@ function DatasetSetup() {
   );
 }
 
-export default DatasetSetup;
+export default Setup;

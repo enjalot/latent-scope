@@ -2,12 +2,16 @@
   padding: 12px 12px;
 }
 
+.home .section {
+  margin: 12px 24px;
+}
+
 .home .new-dataset form {
   display: flex;
   flex-direction: column;
   max-width: 420px;
   gap: 10px;
-  margin: 0 36px;
+  /* margin: 0 36px; */
   padding: 24px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
 }
@@ -21,8 +25,7 @@
 }
 
 
-.home li {
-  list-style: none;
+.home .dataset {
   padding: 12px;
   margin: 12px 0;
   border-radius: 5px;

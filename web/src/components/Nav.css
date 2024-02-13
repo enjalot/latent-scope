@@ -21,6 +21,7 @@ nav li {
 nav li a {
   color: black;
   text-decoration: none;
+  font-family: 'Orbitron', sans-serif;
   font-size: 1.2em;
   font-weight: bold;
 }

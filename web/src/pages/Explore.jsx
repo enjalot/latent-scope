@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 
-import './DatasetExplore.css';
-import DataTable from './DataTable';
-import IndexDataTable from './IndexDataTable';
-import Scatter from './Scatter';
-import AnnotationPlot from './AnnotationPlot';
-import HullPlot from './HullPlot';
+import './Explore.css';
+import DataTable from '../components/DataTable';
+import IndexDataTable from '../components/IndexDataTable';
+import Scatter from '../components/Scatter';
+import AnnotationPlot from '../components/AnnotationPlot';
+import HullPlot from '../components/HullPlot';
 
 
 // TODO: decide how to deal with sizing
@@ -15,9 +15,11 @@ const scopeHeight = 500
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
 
-function DatasetDetail() {
+function Explore() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams(); 
+
+  const navigate = useNavigate();
 
   // Tabs
   const tabs = [
@@ -36,6 +38,16 @@ function DatasetDetail() {
         setDataset(data)
       });
   }, [datasetId, setDataset]);
+
+  const[ scopes, setScopes] = useState([]);
+  useEffect(() => {
+    fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
+      .then(response => response.json())
+      .then(data => {
+        setScopes(data)
+      });
+  }, [datasetId, setScopes]);
+
 
   const[ scope, setScope] = useState(null);
   useEffect(() => {
@@ -289,11 +301,25 @@ function DatasetDetail() {
     <div className="dataset--explore">
       <div className="column">
         <div className="first-row summary">
-          <h3> {datasetId}  [{scope?.id}]
-              {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> }
-          </h3>
-          {dataset?.length} rows<br/>
-          Embedding model:<br/> {embedding?.model_id}<br/>
+          <div className="scope-card">
+            <h3> {scope?.label || scope?.id}
+                {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> }
+
+              <select className="scope-selector" onChange={(e) => navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)}>
+                {scopes.map((scopeOption, index) => (
+                  <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
+                    {scopeOption.label || scopeOption.id}
+                  </option>
+                ))}
+              </select>
+            </h3>
+            <span>Embeddings: {embedding?.model_id}</span>
+            <span>Clusters: {clusterLabels?.length}</span>
+          </div>
+          <div className="dataset-card">
+            <b>{datasetId}</b>
+            <span>{dataset?.length} rows</span>
+          </div>
         </div>
         <div className="second-row">
           <div className="umap-container">
@@ -576,4 +602,4 @@ function DatasetDetail() {
   );
 }
 
-export default DatasetDetail;
+export default Explore;

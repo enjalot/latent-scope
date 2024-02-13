@@ -44,6 +44,18 @@
 .dataset--explore .summary h3 a {
   margin-left: 12px;
 }
+.dataset--explore .scope-card {
+  display: flex;
+  flex-direction: column;
+}
+.dataset--explore .scope-card .scope-selector {
+  margin: 0 6px;
+}
+.dataset--explore .dataset-card {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
 
 /* SECOND ROW: UMAP */
 .dataset--explore .umap-container {
