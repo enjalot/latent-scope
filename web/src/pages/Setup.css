@@ -167,6 +167,10 @@
 
 }
 
+/* .dataset--setup label {
+  width: 120px;
+} */
+
 .dataset--setup-umaps-list, .dataset--setup-clusters-list {
   display: flex;
   flex-direction: row;
@@ -266,5 +270,9 @@
   padding: 12px;
   margin: 12px;
 
+}
+
+.dataset--setup .job-history {
+  padding: 6px 0;
 }
 

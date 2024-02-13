@@ -322,7 +322,6 @@ function Setup() {
         <div className="dataset--setup-info">
           <h3>{datasetId}</h3>
           <div className="dataset--setup-info-content">
-            <Link to={`/datasets/${dataset?.id}/jobs`}> Job history</Link><br/>
             { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id})</Link> : null }
             <br/>
             {dataset.length} rows <br/>
@@ -334,6 +333,9 @@ function Setup() {
                   <option key={index} value={column}>{column}</option>
                 ))}
               </select>
+            </div>
+            <div className="job-history">
+              <Link to={`/datasets/${dataset?.id}/jobs`}> Job history</Link><br/>
             </div>
           </div>
         </div>
