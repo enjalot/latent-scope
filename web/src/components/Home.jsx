@@ -96,7 +96,7 @@ function Home() {
         <h3>Create new dataset</h3>
         <form onSubmit={handleNewDataset} onDragOver={handleDragOver} onDrop={handleDrop}>
           <label htmlFor="upload-button">
-            <span>Import a CSV, Parquet or JSONL file to create a new dataset</span>
+            <span>Import a CSV or Parquet file to create a new dataset</span>
           </label>
           <input
             hidden
@@ -127,7 +127,10 @@ function Home() {
                 <div className="scope-link" key={i} >
                   <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>{scope.label || scope.id}<br/>
                   <img src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} />
-                  </Link><br></br>
+                  </Link>
+                  <br/>
+                  <span className="scope-description">{scope.description}</span>
+                  <br/>
                   {readonly ? null : <Link to={`/datasets/${dataset.id}/setup/${scope.id}`}>Configure</Link> }
                 </div>
               ))}

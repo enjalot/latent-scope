@@ -48,6 +48,10 @@
   width: 240px;
   margin: 6px 0;
 }
+.home .scope-description {
+  display: inline-block;
+  max-width: 240px;
+}
 
 @media (prefers-color-scheme: dark) {
   .home label[for="upload-button"] {
