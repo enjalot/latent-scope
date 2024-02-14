@@ -36,6 +36,7 @@ const AnnotationPlot = ({
       let rw = zScale(size)
       if(!points.length) return
       points.map(point => {
+        if(!point) return;
         if(fill)
           ctx.fillRect(xScale(point[0]) - rw/2, yScale(point[1]) - rw/2, rw, rw)
         if(stroke)

@@ -25,6 +25,7 @@ def get_datasets():
                 jsonData['id'] = dir
                 datasets.append(jsonData)
 
+    datasets.sort(key=lambda x: x.get('length'))
     return jsonify(datasets)
 
 """
@@ -142,7 +143,32 @@ def get_dataset_cluster_labels(dataset, cluster, model):
     file_name = cluster + "-labels-" + model + ".parquet"
     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
+    df.reset_index(inplace=True)
     return df.to_json(orient="records")
+
+@datasets_write_bp.route('/<dataset>/clusters/<cluster>/labels/<model>/label/<index>', methods=['GET'])
+def overwrite_dataset_cluster_label(dataset, cluster, model, index):
+    index = int(index)
+    new_label = request.args.get('label')
+    print("write label", index, new_label)
+    if new_label is None:
+        return jsonify({"error": "Missing 'label' in request data"}), 400
+
+    file_name = cluster + "-labels-" + model + ".parquet"
+    file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
+    try:
+        df = pd.read_parquet(file_path)
+    except FileNotFoundError:
+        return jsonify({"error": "File not found"}), 404
+
+    if index >= len(df):
+        return jsonify({"error": "Index out of range"}), 400
+
+    df.at[index, 'label'] = new_label
+    df.to_parquet(file_path)
+
+    return jsonify({"success": True, "message": "Label updated successfully"})
+
 
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
 def get_dataset_cluster_labels_available(dataset, cluster):

@@ -7,6 +7,8 @@ import JobProgress from '../components/Job/Progress';
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
 
+import './Jobs.css';
+
 function Jobs() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId } = useParams(); 
@@ -54,20 +56,29 @@ function Jobs() {
 
   return (
     <div className="jobs-page">
-      <h2>Dataset: {dataset?.id} Jobs</h2>
-      <ul>
+      <div className="jobs-header">
+        <h2>{dataset?.id} jobs</h2>
+        <Link to={`/datasets/${datasetId}/setup`}>Setup {dataset?.id}</Link>
+      </div>
+      <div className="jobs-list">
       {jobs.map(job => (
-        <li key={job.id}>
-          <Link to={`/datasets/${datasetId}/jobs/${job.id}`}>Job Details</Link>
-          <span className="job-status" style={{fontWeight:"bold", padding: "5px"}}>{job.status}</span>
-          <code>{job.command}</code>
+        <div className="job" key={job.id}>
+          <span><Link to={`/datasets/${datasetId}/jobs/${job.id}`}>Job Details</Link></span>
+          <span className="job-name">{job.job_name}</span>
+          <span className="job-status" style={{fontWeight:"bold", padding: "5px"}}>
+            {job.status == "completed" ? "👍" : ""} 
+            {job.status == "error" ? "🤬" : ""} 
+            {job.status == "running" ? "🏃‍♂️" : ""} 
+            {/* {job.status} */}
+            </span>
           <span className="job-id" style={{fontSize: "10px", padding: "5px"}}>{job.id}</span>
-          { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀</button> : null}
-          { job.status == "error" || job.status == "dead" ? <button onClick={() => {handleRerun(job)}}>🔁</button> : null}
+          <span><code>{job.command}</code></span>
+          {/* { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀</button> : null} */}
+          {/* { job.status == "error" || job.status == "dead" ? <button onClick={() => {handleRerun(job)}}>🔁</button> : null} */}
           {/* <JobProgress job={job} clearJob={() => {}} /> */}
-        </li>
+        </div>
       ))}
-      </ul>
+      </div>
     </div>
   );
 }

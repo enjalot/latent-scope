@@ -70,9 +70,9 @@ function Job() {
       <h3>{dataset?.id} job {job?.id}</h3>
       {job ? <div>
           <span className="job-status" style={{fontWeight:"bold", padding: "5px"}}>{job.status}</span>
-          { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀</button> : null}
-          { job.status == "error" || job.status == "dead" ? <button onClick={() => {handleRerun(job)}}>🔁</button> : null}
-          <JobProgress job={job} clearJob={() => {}} />
+          { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀 Kill</button> : null}
+          {/* { job.status == "error" || job.status == "dead" ? <button onClick={() => {handleRerun(job)}}>🔁 Rerun</button> : null} */}
+          <JobProgress job={job} rerunJob={handleRerun} killJob={handleKill} />
       </div> : null }
     </div>
   );

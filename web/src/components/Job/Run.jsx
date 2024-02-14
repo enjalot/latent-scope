@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 const apiUrl = import.meta.env.VITE_API_URL
 
-function jobPolling(dataset, setJob, jobId, intervalms = 200) {
+function jobPolling(dataset, setJob, jobId, intervalms = 500) {
   let intervalId = null
   console.log("start polling", jobId);
   intervalId = setInterval(() => {
@@ -31,7 +31,7 @@ function jobPolling(dataset, setJob, jobId, intervalms = 200) {
         setJob(null)
         // TODO: have some kind of error state persist
       });
-  }, 200);
+  }, intervalms);
   console.log("returning jobPolling cleanup")
   return () => {
     console.log("inside cleanup", intervalId)
@@ -41,7 +41,7 @@ function jobPolling(dataset, setJob, jobId, intervalms = 200) {
   }
 }
 
-function useStartJobPolling(dataset, setJob, url, intervalms = 200) {
+function useStartJobPolling(dataset, setJob, url, intervalms = 500) {
   // const [cleanup, setCleanup] = useState(() => {})
   const startJob = useCallback((params) => {
     fetch(`${url}?dataset=${dataset.id}&${new URLSearchParams(params)}`)

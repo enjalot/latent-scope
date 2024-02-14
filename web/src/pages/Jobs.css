@@ -1,0 +1,37 @@
+
+.jobs-page {
+
+}
+.jobs-page .jobs-header {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+}
+.jobs-page .jobs-header  h2 {
+  margin: 0;
+  padding: 0;
+}
+.jobs-page .jobs-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+}
+
+.jobs-page .jobs-list .job {
+  padding: 12px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
+}
+.jobs-page .jobs-list .job span {
+  padding: 6px 12px;
+  display: inline-block;
+}
+.jobs-page .jobs-list .job .job-status {
+  width: 30px;
+}
+.jobs-page .jobs-list .job .job-name {
+  width: 80px;
+}

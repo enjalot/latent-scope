@@ -12,6 +12,8 @@ jobs_bp = Blueprint('jobs_bp', __name__)
 jobs_write_bp = Blueprint('jobs_write_bp', __name__)
 DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
+TIMEOUT = 60 * 5 # 5 minute timeout TODO: make this a config option
+
 PROCESSES = {}
 
 def run_job(dataset, job_id, command):
@@ -42,8 +44,14 @@ def run_job(dataset, job_id, command):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True)
     PROCESSES[job_id] = process
 
+    last_output_time = time.time()  # Initialize with the current time
+
     while True:
         output = process.stdout.readline()
+        current_time = time.time()  # Update current time on each iteration
+        print(current_time, current_time - last_output_time, TIMEOUT)
+        print("output", output)
+
         if output == '' and process.poll() is not None:
             break
         if output:
@@ -57,6 +65,14 @@ def run_job(dataset, job_id, command):
             job["last_update"] = str(datetime.now())
             with open(progress_file, 'w') as f:
                 json.dump(job, f)
+            last_output_time = current_time
+        elif current_time - last_output_time > TIMEOUT:
+            print(f"Timeout: No output for more than {TIMEOUT} seconds.")
+            print("OUTPUT", output)
+            job["progress"].append(output.strip())
+            job["progress"].append(f"Timeout: No output for more than {TIMEOUT} seconds.")
+            job["status"] = "error"
+            break  # Break the loop
 
     if process.returncode != 0:
         job["status"] = "error"

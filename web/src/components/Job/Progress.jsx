@@ -6,11 +6,12 @@ import './Progress.css';
 JobProgress.propTypes = {
   job: PropTypes.object,
   onlyLast: PropTypes.bool,
-  clearJob: PropTypes.func.isRequired,
+  clearJob: PropTypes.func,
   rerunJob: PropTypes.func,
+  killJob: PropTypes.func,
 };
 
-function JobProgress({job, onlyLast, clearJob, rerunJob}) {
+function JobProgress({job, onlyLast, clearJob, rerunJob, killJob}) {
   const preRef = useRef(null);
 
   useEffect(() => {
@@ -18,6 +19,8 @@ function JobProgress({job, onlyLast, clearJob, rerunJob}) {
       preRef.current.scrollTop = preRef.current.scrollHeight;
     }
   }, [job]);
+
+  const secondsSinceLastUpdate = Math.round((+new Date() - +new Date(job?.last_update)) / 1000)
 
   return (
     <>
@@ -30,13 +33,18 @@ function JobProgress({job, onlyLast, clearJob, rerunJob}) {
         job.progress.join("\n") 
       } 
       </pre>
-      {job.status == "completed" ? <button onClick={clearJob}>👍</button> : null }
+      {clearJob && job.status == "completed" ? <button onClick={clearJob}>👍 Dismiss</button> : null }
+      {killJob && job.status == "running" ? <button onClick={() => {killJob(job)}}>💀 Kill</button> : null}
       {job.status == "error" ? 
         <div className="error-choices">
-          <button onClick={clearJob}>🤬</button> 
-          {rerunJob ? <button onClick={() => rerunJob(job)}>Rerun</button>  : null }
+          {clearJob ? <button onClick={clearJob}>🤬 Dismiss</button> : null }
+          {rerunJob ? <button onClick={() => rerunJob(job)}>🔁 Rerun</button>  : null }
         </div>
       : null }
+      <span className="timer">
+        {secondsSinceLastUpdate} seconds since last update
+
+      </span>
       </div>
       : <></> }
     </>

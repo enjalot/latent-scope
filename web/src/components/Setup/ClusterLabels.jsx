@@ -18,11 +18,12 @@ ClusterLabels.propTypes = {
   onLabels: PropTypes.func,
   onLabelIds: PropTypes.func,
   onHoverLabel: PropTypes.func,
+  onClickLabel: PropTypes.func,
 };
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelIds, onHoverLabel}) {
+function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelIds, onHoverLabel, onClickLabel}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
 
@@ -43,6 +44,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
   // the actual labels for the given cluster
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
+    console.log("in cluster labels", dataset, cluster, selectedLabelId)
     if(dataset && cluster && selectedLabelId) {
       fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${selectedLabelId}`)
         .then(response => response.json())
@@ -62,11 +64,13 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
       fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels_available`)
         .then(response => response.json())
         .then(data => {
-          console.log("cluster changed, set label models fetched", cluster.id, data)
-          if(clusterLabelsJob && clusterLabelsJob.status == "completed") {
+          console.log("cluster changed, set label models fetched", cluster.id, data, clusterLabelsJob)
+          if(clusterLabelsJob) {
             let lbl;
-            if(clusterLabelsJob?.job_name == "cluster_label"){
-              lbl = data.find(d => d.id == clusterLabelsJob.run_id)
+            if(clusterLabelsJob?.job_name == "label"){
+              let label_id = clusterLabelsJob.run_id.split("-")[3]
+              lbl = data.find(d => d == label_id)
+              console.log("label_id", label_id, lbl)
             } else if(clusterLabelsJob.job_name == "rm") {
               lbl = data[0]
             }
@@ -123,13 +127,13 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
           <button type="submit" disabled={!!clusterLabelsJob || !cluster}>Auto Label</button>
         </form>
 
-        <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} />
+        <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} killJob={setClusterLabelsJob} />
 
       </div>
       {cluster ? <div className="dataset--setup-cluster-labels-list">
         <label>
-          View Labels:
-          <select 
+          Use Labels: &nbsp;
+          {clusterLabelModels.length > 1 ? <select 
             name="model" 
             value={selectedLabelId}
             onChange={(e) => onChange(e.target.value)}
@@ -137,10 +141,14 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
             {clusterLabelModels.map((model, index) => (
               <option key={index} value={model}>{model}</option>
             ))}
-          </select>
+          </select> : <span>{clusterLabelModels[0]}</span> }
         </label>
         <div className="dataset--setup-labels-list">
-          <DataTable data={clusterLabels.map((d,i) => ({index: i, label: d.label, items: d.indices.length}))} onHover={(index) => onHoverLabel(clusterLabels[index])}/>
+          <DataTable 
+            data={clusterLabels.map((d,i) => ({index: i, label: d.label, items: d.indices.length}))} 
+            onHover={(index) => onHoverLabel(clusterLabels[index])}
+            onClick={(index) => onClickLabel(clusterLabels[index])}
+          />
         </div>
       </div> : null}
     </div>

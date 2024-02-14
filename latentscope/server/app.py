@@ -26,7 +26,7 @@ def check_read_only(s):
     return s.lower() in ['true', '1', 't', 'y', 'yes']
 # export LATENT_SCOPE_READ_ONLY=1  
 READ_ONLY = check_read_only(os.getenv("LATENT_SCOPE_READ_ONLY"))
-print("READ ONLY?", READ_ONLY, not READ_ONLY)
+print("READ ONLY?", READ_ONLY)
 
 # in memory cache of dataframes loaded for each dataset
 # used in returning rows for a given index (indexed, get_tags)

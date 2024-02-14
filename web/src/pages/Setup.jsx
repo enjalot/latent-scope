@@ -111,21 +111,25 @@ function Setup() {
 
   // the currently chosen model used to label the active cluster
   const [clusterLabelId, setClusterLabelId] = useState("default"); 
+  const [selectedClusterLabelId, setSelectedClusterLabelId] = useState("default");
   const [clusterLabelIds, setClusterLabelIds] = useState([]); 
-  const [selectedClusterLabelId, setSelectedClusterLabelId] = useState(null);
 
   useEffect(() => {
     if(clusterLabelIds && cluster) {
       const found = clusterLabelIds.filter(d => d.cluster_id == cluster.id)
       if(selectedClusterLabelId && found) {
-        setClusterLabelId(found.id)
+        if(found.find(d => d.id == selectedClusterLabelId)) {
+          setClusterLabelId(selectedClusterLabelId)
+        } else {
+          setClusterLabelId(found[0]?.id)
+        }
       } else {
         setClusterLabelId(clusterLabelIds[0]?.id)
       }
     } else {
       setClusterLabelId(null)
     }
-  }, [selectedClusterLabelId, clusterLabelIds, setClusterLabelId])
+  }, [cluster, selectedClusterLabelId, clusterLabelIds, setClusterLabelId])
 
   // ====================================================================================================
   // scopes
@@ -143,7 +147,6 @@ function Setup() {
         setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
         setSelectedUmap(scope.umap_id)
         setSelectedCluster(scope.cluster_id)
-        // setClusterLabelId(scope.cluster_labels_id)
         setSelectedClusterLabelId(scope.cluster_labels_id)
       }
     } else {
@@ -222,8 +225,10 @@ function Setup() {
   }, [clusterIndices])
 
 
+  const [selectedClusterLabel, setSelectedClusterLabel] = useState(null);
 
   const [hoveredCluster, setHoveredCluster] = useState(null);
+  const [hoveredClusterHull, setHoveredClusterHull] = useState(null);
   useEffect(() => {
     if(hovered && clusterIndices.length && clusterLabels.length){
       const index = hovered.index
@@ -296,22 +301,19 @@ function Setup() {
     if(cls) setCluster(cls)
     // if no clusters for the current umap, unset the cluster
     if(!clusters.filter(d => d.umap_id == umap?.id).length) {
-      console.log("unset cluster")
       setCluster(null)
     }
   }, [setClusters, setCluster, umap])
  
   const handleNewClusterLabelIds = useCallback((labels, lbl) => {
     setClusterLabelIds(labels)
-    if(lbl) setClusterLabelId(lbl)
-    console.log("LABEL IDS", labels)
+    if(lbl) setSelectedClusterLabelId(lbl)
     // if no labels for the current cluster, unset the labels
     if(!labels.filter(d => d.cluster_id == cluster?.id).length) {
-      console.log("unset labels")
-      setClusterLabelId(null)
+      setSelectedClusterLabelId("default")
       setClusterLabels([])
     }
-  }, [setClusterLabelIds, setClusterLabelId, cluster])
+  }, [setClusterLabelIds, setSelectedClusterLabelId, cluster])
 
 
   if (!dataset) return <div>Loading...</div>;
@@ -319,11 +321,10 @@ function Setup() {
   return (
     <div className="dataset--setup">
       <div className="dataset--setup-summary">
+        <h3>{datasetId}</h3>
         <div className="dataset--setup-info">
-          <h3>{datasetId}</h3>
           <div className="dataset--setup-info-content">
-            { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id})</Link> : null }
-            <br/>
+            { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link> : null }
             {dataset.length} rows <br/>
             Columns: {dataset.columns.join(", ")}
             <div className="dataset--details-text-column">
@@ -334,32 +335,28 @@ function Setup() {
                 ))}
               </select>
             </div>
+            
+          </div>
+
+          <div className="dataset--setup-meta">
+            <div className="dataset--setup-scopes-list">
+                {scopes ? 
+                  <select className="scope-selector" onChange={(e) => navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)}>
+                    <option value="">New scope</option>
+                    {scopes.map((scopeOption, index) => (
+                      <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
+                        {scopeOption.label || scopeOption.id}
+                      </option>
+                    ))}
+                  </select> 
+                : null}
+            </div>
             <div className="job-history">
               <Link to={`/datasets/${dataset?.id}/jobs`}> Job history</Link><br/>
             </div>
-          </div>
+          </div> 
         </div>
-        
-
-        {/* <div className="dataset--setup-scopes-list">
-            {scopes && scopes.map((s, index) => {
-              const cl = clusters.find(c => c.cluster_id== s.cluster_id) || {}
-              return (
-              <div 
-                key={index} 
-                className={ "dataset--setup-scopes-item" + (s.id == scope?.id ? " active" : "") }
-                onClick={() => navigate(`/datasets/${datasetId}/setup/${s.id}`)}
-                >
-                <span>{s.id}</span>
-                <span>{s.label} </span>
-                <span>{s.description}</span>
-                <img src={cl.url} alt={cl.id} /> 
-                <span>{s.embedding_id}</span> 
-              </div>
-            )})}
-            
-        </div>*/}
-      </div> 
+      </div>
 
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">
@@ -373,7 +370,16 @@ function Setup() {
             <Cluster dataset={dataset} cluster={cluster} umap={umap} onNew={handleNewClusters} onChange={setCluster} />
           </Stage>
           <Stage active={stage == 4} complete={stage > 4} title="4. Auto-Label Clusters">
-            <ClusterLabels dataset={dataset} cluster={cluster} selectedLabelId={clusterLabelId} onChange={setClusterLabelId} onLabelIds={handleNewClusterLabelIds} onLabels={setClusterLabels} onHoverLabel={setHoveredCluster} />
+            <ClusterLabels 
+              dataset={dataset} 
+              cluster={cluster} 
+              selectedLabelId={clusterLabelId} 
+              onChange={setSelectedClusterLabelId} 
+              onLabelIds={handleNewClusterLabelIds} 
+              onLabels={setClusterLabels} 
+              onHoverLabel={setHoveredClusterHull} 
+              onClickLabel={(c) => { console.log("CLUSTER", c); setSelectedClusterLabel(c)}} 
+            />
           </Stage>
           <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope">
             <Scope dataset={dataset} scope={scope} embedding={embedding} umap={umap} cluster={cluster} clusterLabelId={clusterLabelId} onNew={setScopes} onChange={setScope} />
@@ -383,12 +389,22 @@ function Setup() {
         {/* RIGHT COLUMN */}
         <div className="dataset--setup-right-column">
           <div className="dataset--setup-preview">
+            {selectedClusterLabel ? <div>
+              <b>Cluster {selectedClusterLabel.index}: {selectedClusterLabel.label}</b>
+                <IndexDataTable 
+                dataset={dataset}
+                indices={selectedClusterLabel.indices} 
+                datasetId={datasetId} 
+                maxRows={100} 
+                />
+              </div> : <div><b>Dataset Preview</b>
               <IndexDataTable 
                 dataset={dataset}
                 indices={range(0, 100)} 
                 datasetId={datasetId} 
                 maxRows={100} 
                 />
+              </div> }
           </div>
           <div className="dataset--setup-umap">
 
@@ -404,8 +420,27 @@ function Setup() {
               /> : null }
             { hoveredCluster && hoveredCluster.hull ? <HullPlot
               points={points}
-              hulls={[hoveredCluster?.hull]}
+              hulls={[hoveredCluster.hull]}
               fill="lightgray"
+              xDomain={xDomain} 
+              yDomain={yDomain} 
+              width={scopeWidth} 
+              height={scopeHeight} /> : null }
+            { selectedClusterLabel && selectedClusterLabel.hull ? <HullPlot
+              points={points}
+              hulls={[selectedClusterLabel.hull]}
+              fill="red"
+              stroke="black"
+              xDomain={xDomain} 
+              yDomain={yDomain} 
+              width={scopeWidth} 
+              height={scopeHeight} /> : null }
+
+            { hoveredClusterHull && hoveredClusterHull.hull ? <HullPlot
+              points={points}
+              hulls={[hoveredClusterHull.hull]}
+              fill="orange"
+              stroke="black"
               xDomain={xDomain} 
               yDomain={yDomain} 
               width={scopeWidth} 

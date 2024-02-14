@@ -14,22 +14,13 @@
 /* Top row */
 .dataset--setup-summary {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   max-width: calc(100% - 24px);
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   margin: 12px;
   width: 100%;
 }
-.dataset--setup-info {
-  display: flex;
-  flex-direction: column;
-  flex-wrap: wrap;
-  gap: 10px;
-  width: 100%;
-  /* width: var(--umap-width); */
-  /* max-width: var(--umap-width); */
-}
-.dataset--setup-info h3 {
+.dataset--setup-summary h3 {
   background-color: #efefef;
   font-size: 1.2em;
   font-weight: bold;
@@ -37,6 +28,25 @@
   padding: 6px 12px;
   width: calc(100% - 24px);
 }
+.dataset--setup-info {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  /* width: var(--umap-width); */
+  /* max-width: var(--umap-width); */
+}
+.dataset--setup-meta{
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  /* width: var(--umap-width); */
+  /* max-width: var(--umap-width); */
+}
+
 
 @media (prefers-color-scheme: dark) {
   .dataset--setup-info h3 {

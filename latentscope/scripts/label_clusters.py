@@ -64,7 +64,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     if rerun is not None:
         label_id = rerun
         clusters = pd.read_parquet(os.path.join(cluster_dir, f"{label_id}.parquet"))
-        print(clusters.columns)
+        # print(clusters.columns)
         # find the first row where labeled isnt True
         unlabeled_row = clusters[~clusters['labeled']].first_valid_index()
         print(f"First unlabeled row: {unlabeled_row}")
@@ -124,7 +124,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
         # print(batch[0])
         if(unlabeled_row > 0):
             if clusters.loc[i, 'labeled']:
-                print("skipping", i, "already labeled", clusters.loc[i, 'label'])
+                print("skipping", i, "already labeled", clusters.loc[i, 'label'], flush=True)
                 time.sleep(0.01)
                 continue
 
@@ -135,7 +135,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
             ]
             label = model.chat(messages)
             labels.append(label)
-            print("label:\n", label)
+            # print("label:\n", label)
             # do some cleanup of the labels when the model doesn't follow instructions
             clean_label = label.replace("\n", " ")
             clean_label = clean_label.replace('"', '')
@@ -145,7 +145,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
             clean_label = " ".join(clean_label.split(" ")[0:5])
             clean_labels.append(clean_label)
             
-            print("clean_label:\n", clean_label)
+            # print("clean_label:\n", clean_label)
             clusters.loc[i, 'label'] = clean_label
             clusters.loc[i, 'label_raw'] = label
             clusters.loc[i, 'labeled'] = True

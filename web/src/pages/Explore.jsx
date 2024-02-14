@@ -88,11 +88,12 @@ function Explore() {
           console.log("umap", data)
           setUmap(data)
         });
-      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id || 'default'}`)
+      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}`)
         .then(response => response.json())
         .then(data => {
           console.log("labels", data)
           setClusterLabels(data)
+          // setClusterLabels(data.map((d,i) => ({...d, index: i})))
         });
       fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`)
         .then(response => response.json())
@@ -287,6 +288,12 @@ function Explore() {
     }
   }, [slide, points, scatter, setSlideAnnotations])
 
+  const [clusterLabel, setClusterLabel] = useState(slide?.label || '');
+
+  useEffect(() => {
+    setClusterLabel(slide?.label || '');
+  }, [slide]);
+
   // Handlers for responding to individual data points
   const handleClicked = useCallback((index) => {
     scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 })
@@ -295,6 +302,28 @@ function Explore() {
     setHoveredIndex(index);
   }, [setHoveredIndex])
 
+  const handleLabelUpdate = useCallback((index, label) => {
+    console.log("update label", index, label)
+    fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}/label/${index}?label=${label}`)
+      .then(response => response.json())
+      .then(_ => {
+        fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}`)
+          .then(response => response.json())
+          .then(data => {
+            console.log("got new labels", data)
+            setClusterLabels(data);
+          })
+          .catch(console.error);
+      })
+      .catch(console.error);
+  }, [datasetId, scope])
+
+  const clearScope = useCallback(() => {
+    setSlide(null)
+    setClusterLabels([])
+    setPoints([])
+  }, [])
+
   if (!dataset) return <div>Loading...</div>;
 
   return (
@@ -302,29 +331,33 @@ function Explore() {
       <div className="column">
         <div className="first-row summary">
           <div className="scope-card">
-            <h3> {scope?.label || scope?.id}
-                {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> }
+            <h3> 
+              {/* {scope?.label || scope?.id} */}
 
-              <select className="scope-selector" onChange={(e) => navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)}>
+              {datasetId}: <select className="scope-selector" onChange={(e) => {
+                  clearScope()
+                  navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)
+                }}>
                 {scopes.map((scopeOption, index) => (
                   <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
                     {scopeOption.label || scopeOption.id}
                   </option>
                 ))}
               </select>
+              {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link> }
             </h3>
+            <span>{scope?.description}</span>
             <span>Embeddings: {embedding?.model_id}</span>
-            <span>Clusters: {clusterLabels?.length}</span>
+            <span>{clusterLabels?.length} clusters</span>
           </div>
           <div className="dataset-card">
-            <b>{datasetId}</b>
             <span>{dataset?.length} rows</span>
           </div>
         </div>
         <div className="second-row">
           <div className="umap-container">
             <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
-              <Scatter 
+            { points.length ? <><Scatter 
                 points={points} 
                 colors={memoClusterIndices}
                 loading={loadingPoints} 
@@ -334,8 +367,8 @@ function Explore() {
                 onView={handleView} 
                 onSelect={handleSelected}
                 onHover={handleHover}
-                />
-              { hoveredCluster && hoveredCluster.hull ? <HullPlot
+                /> 
+              { hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls ? <HullPlot
                 points={points}
                 hulls={[hoveredCluster?.hull]}
                 fill="lightgray"
@@ -344,7 +377,7 @@ function Explore() {
                 width={scopeWidth} 
                 height={scopeHeight} /> : null }
 
-              { slide && slide.hull ? <HullPlot
+              { slide && slide.hull && !scope.ignore_hulls ? <HullPlot
                 points={points}
                 hulls={[slide?.hull]}
                 fill="darkgray"
@@ -352,14 +385,14 @@ function Explore() {
                 yDomain={yDomain} 
                 width={scopeWidth} 
                 height={scopeHeight} /> : null }
-              <HullPlot
+              { clusterLabels.length && !scope.ignore_hulls ? <HullPlot
                 points={points}
                 hulls={clusterLabels.map(d => d.hull)}
                 stroke="lightgray"
                 xDomain={xDomain} 
                 yDomain={yDomain} 
                 width={scopeWidth} 
-                height={scopeHeight} />
+                height={scopeHeight} /> : null }
               <AnnotationPlot 
                 points={searchAnnotations} 
                 fill="black"
@@ -399,7 +432,7 @@ function Explore() {
                 height={scopeHeight} 
                 />
               
-              
+              </> : null }
               
             </div>
           </div>
@@ -411,7 +444,7 @@ function Explore() {
                 <span className="value">{hovered[key]}</span>
               </span>
             ))}
-            {hoveredCluster ? <span><span className="key">Cluster:</span><span className="value">{hoveredCluster.label}</span></span> : null }
+            {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.index}:</span><span className="value">{hoveredCluster.label}</span></span> : null }
             {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
           </div>
         </div>
@@ -511,17 +544,30 @@ function Explore() {
              <div className="tab-content tab-cluster">
               <div className="clusters-select">
                 <select onChange={(e) => {
-                    const cl = clusterLabels.find(cluster=> cluster.label === e.target.value)
+                    const cl = clusterLabels.find(cluster => cluster.index === +e.target.value)
                     if(cl)
                       setSlide(cl)
-                  }} value={slide?.label}>
+                  }} value={slide?.index}>
                     <option value="">Select a cluster</option>
                   {clusterLabels.map((cluster, index) => (
-                    <option key={index} value={cluster.label}>{cluster.label}</option>
+                    <option key={index} value={cluster.index}>{cluster.index}: {cluster.label}</option>
                   ))}
                 </select>
               </div>
               <div className="cluster-selected">
+                { slide ? 
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    handleLabelUpdate(slide.index, clusterLabel);
+                  }}>
+                    <input 
+                      type="text" 
+                      id="new-label" 
+                      value={clusterLabel} 
+                      onChange={(e) => setClusterLabel(e.target.value)}  />
+                    <button type="submit">Update Label</button>
+                  </form> 
+                : null }
                 <span>{slide?.indices.length} {slide?.indices.length ? "Rows" :""}
                 { slide ? <button className="deselect" onClick={() => {
                     setSlide(null)

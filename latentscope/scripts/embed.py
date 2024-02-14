@@ -112,7 +112,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
 
     for i, batch in enumerate(tqdm(chunked_iterable(sentences, batch_size), total=total_batches)):
         if i < starting_batch:
-            print(f"skipping batch {i}/{total_batches}")
+            print(f"skipping batch {i}/{total_batches}", flush=True)
             continue
         try:
             embeddings = np.array(model.embed(batch))

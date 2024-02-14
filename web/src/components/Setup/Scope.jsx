@@ -83,7 +83,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
         Embedding: {embedding?.id} - {embedding?.model_id}<br/>
         Umap: {umap?.id}<br/>
         Cluster: {cluster?.id}<br/>
-        Labels: {clusterLabelId || "Default"}
+        Labels: {clusterLabelId }
       </div>
       <div className="dataset--setup-save-box-boxes">
         { cluster ? <div className="box-item">
@@ -112,7 +112,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
           Embedding: {scope.embedding_id}<br/>
           Umap: { scope.umap_id }<br/>
           Cluster: { scope.cluster_id }<br/>
-          Labels: { scope.cluster_labels_id || "Default" }<br/>
+          Labels: { scope.cluster_labels_id }<br/>
 
         </div> : null }
           {scope ? 
