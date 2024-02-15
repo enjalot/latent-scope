@@ -2,6 +2,9 @@
 
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
+
+<img src="https://github.com/username/repository/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Example exploration">
+
 ### Demo
 This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in [live demos](https://enjalot.github.io/latent-scope):
 * [datavis survey responses](https://enjalot.github.io/latent-scope/#/datasets/datavis-misunderstood/explore/scopes-001) - 700 survey responses
@@ -10,6 +13,9 @@ This tool is meant to be run locally or on a trusted server to process data for 
 * [emotion](https://enjalot.github.io/latent-scope/#/datasets/emotion/explore/scopes-001) - 400k emotion statements from Twitter
 
 The source of each demo dataset is documented in the notebooks linked below. Each demo was chosen to represent different scales of data as well as some common usecases.
+
+<img src="https://github.com/username/repository/blob/main/documentation/dadabase-scopes.png?raw=true" width="100%"  alt="Dadabase demo scopes">
+
 
 ### Quick Start
 To get started, install the [latent-scope module](https://pypi.org/project/latentscope/) and run the server via the Command Line:
@@ -23,6 +29,13 @@ ls-serve ~/local-scope-data
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!
 
+<img src="https://github.com/username/repository/blob/main/documentation/0-ingest.png?raw=true" width="320px"  alt="Ingest">
+<img src="https://github.com/username/repository/blob/main/documentation/1-embed.png?raw=true" width="320px"  alt="Embed">
+<img src="https://github.com/username/repository/blob/main/documentation/2-umap.png?raw=true" width="320px"  alt="UMAP">
+<img src="https://github.com/username/repository/blob/main/documentation/3-cluster.png?raw=true" width="320px"  alt="Cluster">
+<img src="https://github.com/username/repository/blob/main/documentation/4-label.png?raw=true" width="320px"  alt="Label">
+<img src="https://github.com/username/repository/blob/main/documentation/5-scope.png?raw=true" width="320px"  alt="Scope">
+
 ### Python interface
 You can also ingest data from a Pandas dataframe using the Python interface:
 ```python
@@ -32,6 +45,8 @@ ls.init("~/latent-scope-data")
 ls.ingest("dadabase", df, text_column="joke")
 ls.serve()
 ```
+
+
 
 See these notebooks for detailed examples of using the Python interface to prepare and load data.  
 * [dvs-survey](notebooks/dvs-survey.ipynb) - A small test dataset of 700 rows to quickly illustrate the process. This notebook shows how you can do every step of the process with the Python interface.
@@ -73,7 +88,7 @@ ls-serve
 ### Repository overview
 This repository is currently meant to run locally, with a React frontend that communicates with a python server backend. We support several popular open source embedding models that can run locally as well as proprietary API embedding services. Adding new models and services should be quick and easy.
 
-To learn more about customizing, extending and contributing see [DEVELOPMENT.md](DEVELOPMENT.md)
+To learn more about customizing, extending and contributing see [DEVELOPMENT.md](documentation/DEVELOPMENT.md)
 
 
 ### Design principles
