@@ -24,7 +24,8 @@ To get started, install the [latent-scope module](https://pypi.org/project/laten
 python -m venv venv
 source venv/bin/activate
 pip install latentscope
-ls-serve ~/local-scope-data
+ls-init ~/local-scope-data --openai_key=XXX --mistral_key=YYY # optional api keys to enable API models 
+ls-serve 
 ```
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!  
@@ -40,7 +41,7 @@ You can also ingest data from a Pandas dataframe using the Python interface:
 ```python
 from latentscope import ls
 df = pd.read_parquet("...")
-ls.init("~/latent-scope-data")
+ls.init("~/latent-scope-data") # you can also pass in openai_key="XXX", mistral_key="XXX" etc.)
 ls.ingest("dadabase", df, text_column="joke")
 ls.serve()
 ```
