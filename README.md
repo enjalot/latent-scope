@@ -3,16 +3,16 @@
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 ### Demo
-This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in live demos:
-* TODO: datavis survey responses
-* TODO: Dolly 15k
-* TODO: r/DadJokes
-* TODO: emotion
+This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in [live demos](https://enjalot.github.io/latent-scope):
+* [datavis survey responses](https://enjalot.github.io/latent-scope/#/datasets/datavis-misunderstood/explore/scopes-001) - 700 survey responses
+* [Dolly 15k](https://enjalot.github.io/latent-scope/#/datasets/dolly15k/explore/scopes-001) - 15k instructions
+* [r/DadJokes](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-004) - 50k dad jokes
+* [emotion](https://enjalot.github.io/latent-scope/#/datasets/emotion/explore/scopes-001) - 400k emotion statements from Twitter
 
-TODO: YouTube getting started video
+The source of each demo dataset is documented in the notebooks linked below. Each demo was chosen to represent different scales of data as well as some common usecases.
 
 ### Quick Start
-To get started, install the [latent-scope module]() and run the server:
+To get started, install the [latent-scope module](https://pypi.org/project/latentscope/) and run the server via the Command Line:
 
 ```bash
 python -m venv venv
@@ -21,24 +21,26 @@ pip install latent-scope
 ls-serve ~/local-scope-data
 ```
 
-Then open your browser to http://localhost:5001 and upload your first dataset!
+Then open your browser to http://localhost:5001 and start processing your first dataset!
 
-You can also ingest data from a Pandas dataframe:
+### Python interface
+You can also ingest data from a Pandas dataframe using the Python interface:
 ```python
 from latentscope import ls
+df = pd.read_parquet("...")
 ls.init("~/latent-scope-data")
 ls.ingest("dadabase", df, text_column="joke")
 ls.serve()
 ```
-See the notebooks linked below for detailed examples of using the Python interface.
 
-### Notebooks
-You can also configure and run the server from inside python, see these notebooks for examples of preparing and loading data:
-* [dvs-survey](notebooks/dvs-survey.ipynb) - a small test dataset of 700 rows to quickly illustrate the process
-* [dadabase](notebooks/dadabase.ipynb) - a more interesting (and funny) dataset of 50k rows
+See these notebooks for detailed examples of using the Python interface to prepare and load data.  
+* [dvs-survey](notebooks/dvs-survey.ipynb) - A small test dataset of 700 rows to quickly illustrate the process. This notebook shows how you can do every step of the process with the Python interface.
+* [dadabase](notebooks/dadabase.ipynb) - A more interesting (and funny) dataset of 50k rows. This notebook shows how you can preprocess a dataset, ingest it into latentscope and then use the web interface to complete the process.
+* [dolly15k](notebooks/dolly15k.ipynb) - Grab data from HuggingFace datasets and ingest into the process.
+* [emotion](notebooks/emotion.ipynb) - 400k rows of emotional tweets.
 
-### Command line scripts
-When latent-scope is installed, it creates a suite of command line scripts that can be used to setup scopes for exploring and running the web application.
+### Command line quick start
+When latent-scope is installed, it creates a suite of command line scripts that can be used to setup the scopes for exploring in the web application. The output of each step in the process is flat files stored in the data directory specified at init. These files are in standard formats that were designed to be ported into other pipelines or interfaces.
 
 ```bash
 # like above, we make sure to install latent-scope
@@ -61,7 +63,7 @@ ls-umap datavis-misunderstood embedding-001 25 .1
 # ls-cluster dataset_id umap_id samples min_samples
 ls-cluster datavis-misunderstood umap-001 5 5
 # ls-label dataset_id text_column cluster_id model_id context
-ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta
+ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta ""
 # ls-scope  dataset_id embedding_id umap_id cluster_id cluster_labels_id label description
 ls-scope datavis-misunderstood cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by Zephyr 7B"
 # start the server to explore your scope
@@ -85,7 +87,7 @@ This tool is meant to be a part of a larger process. Something that hopefully he
   - We consider an input dataset the source of truth, a list of rows that can be indexed into. So all downstream operations, whether its embeddings, pointing to nearest neighbors or assigning data points to clusters, all use indices into the input dataset.
 
 
-## Scripts
+## Command Line Scripts: Detailed description
 If you want to use the CLI instead of the web UI you can use the following scripts.
 
 The scripts should be run in order once you have an `input.csv` file in your folder. Alternatively the Setup page in the web UI will run these scripts via API calls to the server for you.  
@@ -104,32 +106,50 @@ ls-ingest database-curated
 Take the text from the input and embed it. Default is to use `BAAI/bge-small-en-v1.5` locally via HuggingFace transformers. API services are supported as well, see [latentscope/models/embedding_models.json](latentscope/models/embedding_models.json) for model ids. 
 
 ```bash
+# you can get a list of models available with:
+ls-list-models
 # ls-embed <dataset_name> <text_column> <model_id>
-ls-embed dadabase-curated joke transformers-intfloat___e5-small-v2
+ls-embed dadabase joke transformers-intfloat___e5-small-v2
 ```
 
 ### 2. umap
 Map the embeddings from high-dimensional space to 2D with UMAP. Will generate a thumbnail of the scatterplot.
 ```bash
-# ls-umap <dataset_name> <model_id> <neighbors> <min_dist>
-ls-umap dadabase-curated transformers-intfloat___e5-small-v2 50 0.1
+# ls-umap <dataset_name> <embedding_id> <neighbors> <min_dist>
+ls-umap dadabase embedding-001 50 0.1
 ```
 
 
 ### 3. cluster
 Cluster the UMAP points using HDBSCAN. This will label each point with a cluster label
 ```bash
-# ls-cluster <dataset_name> <umap_name> <samples> <min-samples>
-ls-cluster dadabase-curated umap-005 5 3
+# ls-cluster <dataset_name> <umap_id> <samples> <min-samples>
+ls-cluster dadabase umap-001 5 3
 ```
 
 ### 4. label
 We support auto-labeling clusters by summarizing them with an LLM. Supported models and APIs are listed in [latentscope/models/chat_models.json](latentscope/models/chat_models.json). 
 You can pass context that will be injected into the system prompt for your dataset.
 ```bash
-# ls-label <dataset_name> <cluster_name> <model_id> <context>
-ls-label dadabase-curated cluster-005 openai-gpt-3.5-turbo ""
+# ls-label <dataset_id> <cluster_id> <chat_model_id> <context>
+ls-label dadabase "joke" cluster-001 openai-gpt-3.5-turbo ""
 ```
+
+### 5. scope
+The scope command ties together each step of the process to create an explorable configuration. You can have several scopes to view different choices, for example using different embeddings or even different parameters for UMAP and clustering. Switching between scopes in the UI is instant.
+
+```bash
+# ls-scope  <dataset_id> <embedding_id> <umap_id> <cluster_id> <cluster_labels_id> <label> <description>
+ls-scope datavis-misunderstood cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by GPT3.5-Turbo"
+```
+
+### 6. serve
+To start the web UI we run a small server. This also enables nearest neighbor similarity search and interactively querying subsets of the input data while exploring the scopes.
+
+```bash
+ls-serve ~/latent-scope-data
+```
+
 
 ## Dataset directory structure
 Each dataset will have its own directory in data/ created when you ingest your CSV. All subsequent steps of setting up a dataset write their data and metadata to this directory.
@@ -137,27 +157,30 @@ There are no databases in this tool, just flat files that are easy to copy and e
 <pre>
 ├── data/
 |   ├── dataset1/
-|   |   ├── input.parquet                       # you provide this file
+|   |   ├── input.parquet                           # from ingest.py, the dataset
+|   |   ├── meta.json                               # from ingest.py, metadata for dataset, #rows, columns, text_column
 |   |   ├── embeddings/
-|   |   |   ├── e5-small-v2.npy                 # from embed-*.py, embedding vectors
-|   |   |   ├── UAE-Large-V1.npy                # files are named after the model
+|   |   |   ├── embedding-001.h5                    # from embed.py, embedding vectors
+|   |   |   ├── embedding-001.json                  # from embed.py, parameters used to embed
+|   |   |   ├── embedding-002...                   
 |   |   ├── umaps/
-|   |   |   ├── umap-001.parquet                # from umap.py, x,y coordinates
-|   |   |   ├── umap-001.json                   # from umap.py, params used
-|   |   |   ├── umap-001.png                    # from umap.py, thumbnail of plot
-|   |   |   ├── umap-002....                    # subsequent runs increment
+|   |   |   ├── umap-001.parquet                    # from umap.py, x,y coordinates
+|   |   |   ├── umap-001.json                       # from umap.py, params used
+|   |   |   ├── umap-001.png                        # from umap.py, thumbnail of plot
+|   |   |   ├── umap-002....                        
 |   |   ├── clusters/
-|   |   |   ├── clusters-001.parquet            # from clusters.py, cluster labels
-|   |   |   ├── clusters-001.json               # from clusters.py, params used
-|   |   |   ├── clusters-001.png                # from clusters.py, thumbnail of plot
-|   |   |   ├── clusters-...                    # from clusters.py, thumbnail of plot
-|   |   ├── slides/
-|   |   |   ├── slides-001.parquet              # from slides.py, cluster labels
-|   |   |   ├── slides-001.json                 # from slides.py, cluster labels
-|   |   |   ├── slides-...                      # from slides.py, thumbnail of plot
+|   |   |   ├── clusters-001.parquet                # from cluster.py, cluster indices
+|   |   |   ├── clusters-001-labels-default.parquet # from cluster.py, default labels
+|   |   |   ├── clusters-001-labels-001.parquet     # from label_clusters.py, LLM generated labels
+|   |   |   ├── clusters-001.json                   # from cluster.py, params used
+|   |   |   ├── clusters-001.png                    # from cluster.py, thumbnail of plot
+|   |   |   ├── clusters-002...                     
+|   |   ├── scopes/
+|   |   |   ├── scopes-001.json                     # from scope.py, combination of embed, umap, clusters and label choice
+|   |   |   ├── scopes-...                      
 |   |   ├── tags/
-|   |   |   ├── ❤️.indices                       # tagged by UI, powered by server.py
-|   |   |   ├── ...                             # can have arbitrary named tags
+|   |   |   ├── ❤️.indices                           # tagged by UI, powered by tags.py
+|   |   |   ├── ...                                 # can have arbitrary named tags
 |   |   ├── jobs/
-|   |   |   ├──  8980️-12345...json              # created when job is run via web UI
+|   |   |   ├──  8980️-12345...json                  # created when job is run via web UI
 </pre>
