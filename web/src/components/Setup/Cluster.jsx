@@ -79,7 +79,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
       <form onSubmit={(e) => handleNewCluster(e, umap)}>
         <label>
           Samples:
-          <input type="number" name="samples" defaultValue="5" disabled={!!clusterJob || !umap}/>
+          <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 5 : 25} disabled={!!clusterJob || !umap}/>
         </label>
         <label>
           Min Samples:

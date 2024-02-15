@@ -126,7 +126,9 @@ function Home() {
               {scopes[dataset.id] && scopes[dataset.id].map && scopes[dataset.id]?.map((scope,i) => (
                 <div className="scope-link" key={i} >
                   <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>{scope.label || scope.id}<br/>
-                  <img src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} />
+                  { scope.ignore_hulls ? 
+                    <img src={`${apiUrl}/files/${dataset.id}/umaps/${scope.umap_id}.png`} />
+                  : <img src={`${apiUrl}/files/${dataset.id}/clusters/${scope.cluster_id}.png`} /> }
                   </Link>
                   <br/>
                   <span className="scope-description">{scope.description}</span>

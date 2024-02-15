@@ -21,26 +21,32 @@ function IndexDataTable({dataset, indices, distances = [], clusterIndices = [], 
   const [rows, setRows] = useState([]);
   const hydrateIndices = useCallback((indices) => {
     if(dataset)
-      fetch(`${apiUrl}/indexed?dataset=${dataset.id}&indices=${JSON.stringify(indices)}`)
-        .then(response => response.json())
-        .then(data => {
-          let rows = data.map((row, index) => {
-            let idx = indices[index]
-            let ret = {
-              index: idx,
-              ...row
-            }
-            if(distances && distances.length)
-              ret['distance'] = distances[index]
-            if(clusterIndices && clusterIndices.length && clusterLabels && clusterLabels.length)
-              ret['cluster'] = clusterLabels[clusterIndices[idx].cluster].label // note the idx is the data points index into the original data
-            return ret
-          })
-          // TODO dataset.sort_column
-          // rows.sort((a, b) => b.score - a.score)
-          setRows(rows)
-          // console.log("rows", rows)
+      fetch(`${apiUrl}/indexed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dataset: dataset.id, indices: indices }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        let rows = data.map((row, index) => {
+          let idx = indices[index]
+          let ret = {
+            index: idx,
+            ...row
+          }
+          if(distances && distances.length)
+            ret['distance'] = distances[index]
+          if(clusterIndices && clusterIndices.length && clusterLabels && clusterLabels.length)
+            ret['cluster'] = clusterLabels[clusterIndices[idx].cluster].label // note the idx is the data points index into the original data
+          return ret
         })
+        // TODO dataset.sort_column
+        // rows.sort((a, b) => b.score - a.score)
+        setRows(rows)
+        // console.log("rows", rows)
+      })
   }, [dataset, distances, clusterIndices, clusterLabels])
 
   useEffect(() => {

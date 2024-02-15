@@ -140,18 +140,24 @@ function Explore() {
    
 
   const hydrateIndices = useCallback((indices, setter, distances = []) => {
-    fetch(`${apiUrl}/indexed?dataset=${datasetId}&indices=${JSON.stringify(indices)}`)
-      .then(response => response.json())
-      .then(data => {
-        if(!dataset) return;
-        let rows = data.map((row, index) => {
-          return {
-            index: indices[index],
-            ...row
-          }
-        })
-        setter(rows)
+    fetch(`${apiUrl}/indexed`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ dataset: datasetId, indices: indices }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      if(!dataset) return;
+      let rows = data.map((row, index) => {
+        return {
+          index: indices[index],
+          ...row
+        }
       })
+      setter(rows)
+    })
   }, [dataset, datasetId])
 
 

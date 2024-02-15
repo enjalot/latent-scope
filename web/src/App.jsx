@@ -22,7 +22,8 @@ function App() {
       <Nav />
       <div className="page">
       <Routes>
-        <Route path="/" element={isMobileDevice() ? <Mobile/> : <Home />} />
+        {/* <Route path="/" element={isMobileDevice() ? <Mobile/> : <Home />} /> */}
+        <Route path="/" element={ <Home />} />
         <Route path="/datasets/:dataset/explore/:scope" element={isMobileDevice() ? <Mobile/> : <Explore />} />
         {readonly ? null : <Route path="/datasets/:dataset/setup" element={<Setup/>} />}
         {readonly ? null : <Route path="/datasets/:dataset/setup/:scope" element={<Setup/>} />}

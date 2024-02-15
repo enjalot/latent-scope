@@ -54,13 +54,6 @@ function Job() {
   }
 
   function handleRerun(job) {
-    // fetch(`${apiUrl}/jobs/rerun?dataset=${datasetId}&job_id=${job.id}`)
-    //   .then(response => response.json())
-    //   .then(data => {
-    //     console.log("rerun job", data);
-    //     setJob(data)
-    //   })
-    //   .catch(console.error);
     rerunJob({job_id: job?.id});
   }
 
@@ -70,7 +63,7 @@ function Job() {
       <h3>{dataset?.id} job {job?.id}</h3>
       {job ? <div>
           <span className="job-status" style={{fontWeight:"bold", padding: "5px"}}>{job.status}</span>
-          { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀 Kill</button> : null}
+          {/* { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀 Kill</button> : null} */}
           {/* { job.status == "error" || job.status == "dead" ? <button onClick={() => {handleRerun(job)}}>🔁 Rerun</button> : null} */}
           <JobProgress job={job} rerunJob={handleRerun} killJob={handleKill} />
       </div> : null }

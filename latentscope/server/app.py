@@ -1,6 +1,8 @@
 import re
 import os
+import sys
 import json
+import logging
 import argparse
 import pandas as pd
 import pkg_resources
@@ -11,6 +13,9 @@ from flask_cors import CORS
 from latentscope.util import get_data_dir 
 
 app = Flask(__name__)
+
+app.logger.addHandler(logging.StreamHandler(sys.stderr))
+app.logger.setLevel(logging.INFO)
 
 CORS(app)
 
@@ -81,10 +86,11 @@ def send_file(datasetPath):
 """
 Given a list of indices (passed as a json array), return the rows from the dataset
 """
-@app.route('/api/indexed', methods=['GET'])
+@app.route('/api/indexed', methods=['POST'])
 def indexed():
-    dataset = request.args.get('dataset')
-    indices = json.loads(request.args.get('indices'))
+    data = request.get_json()
+    dataset = data['dataset']
+    indices = data['indices']
     if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
         DATAFRAMES[dataset] = df
@@ -95,8 +101,6 @@ def indexed():
     rows = df.iloc[indices]
     # send back the rows as json
     return rows.to_json(orient="records")
-
-
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):

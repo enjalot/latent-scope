@@ -26,6 +26,7 @@ ClusterLabels.propTypes = {
 function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelIds, onHoverLabel, onClickLabel}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
+  const { startJob: rerunClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/rerun`);
 
   const [chatModels, setChatModels] = useState([]);
   useEffect(() => {
@@ -109,6 +110,10 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
     startClusterLabelsJob({chat_id: model, cluster_id: cluster_id, text_column, context})
   }, [dataset, cluster, startClusterLabelsJob])
 
+  function handleRerun(job) {
+    rerunJob({job_id: job?.id});
+  }
+
   return (
     <div className="dataset--setup-cluster-labels-content">
       <div className="dataset--slides-new">
@@ -127,7 +132,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
           <button type="submit" disabled={!!clusterLabelsJob || !cluster}>Auto Label</button>
         </form>
 
-        <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} killJob={setClusterLabelsJob} />
+        <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} killJob={setClusterLabelsJob} rerunJob={handleRerun} />
 
       </div>
       {cluster ? <div className="dataset--setup-cluster-labels-list">
