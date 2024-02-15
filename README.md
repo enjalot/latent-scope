@@ -23,7 +23,7 @@ To get started, install the [latent-scope module](https://pypi.org/project/laten
 ```bash
 python -m venv venv
 source venv/bin/activate
-pip install latent-scope
+pip install latentscope
 ls-serve ~/local-scope-data
 ```
 
