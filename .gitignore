@@ -3,6 +3,7 @@ node_modules
 __pycache__
 venv
 testenv
+testenv-whl
 .env
 dist
 build

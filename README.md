@@ -1,9 +1,9 @@
 # Latent Scope
 
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
-
-
 [<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Example exploration">](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-007)
+
+The power of machine learning models to encode unstructured data into high-dimensional embeddings is relatively under-explored. Retrieval Augmented Generation has taken off as a popular usecase for embeddings, but do you feel confident in your understanding of why certain data is being retrieved? Do you have a clear picture of what all is in your dataset? Latentscope is like a microscope that allows you to get a new perspective on what's happening to your data when it's embedded. You can try similarity search with different embeddings, peruse automatically labeled clusters and zoom in on individual data points all while keeping the context of your entire dataset. 
 
 ### Demo
 This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in a read-only [live demo](https://enjalot.github.io/latent-scope):
@@ -28,12 +28,12 @@ ls-serve ~/local-scope-data
 ```
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!  
-<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/home.png?raw=true" width="320px"  alt="Ingest">  
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/home.png?raw=true" width="320px"  alt="Ingest">  <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/0-ingest.png?raw=true" width="320px"  alt="Ingest">
 
-Once ingested, you will go through the following 6 steps:  
-<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/0-ingest.png?raw=true" width="320px"  alt="Ingest"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/1-embed.png?raw=true" width="320px"  alt="Embed"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/2-umap.png?raw=true" width="320px"  alt="UMAP"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/3-cluster.png?raw=true" width="320px"  alt="Cluster"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/4-label.png?raw=true" width="320px"  alt="Label"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/5-scope.png?raw=true" width="320px"  alt="Scope">  
-And now you can explore your data:  
-<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/6-explore.png?raw=true" width="320px"  alt="Scope">
+Once ingested, you will go through the following 6 steps: Embed, UMAP, Cluster, Label, Scope and Explore 
+ <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/1-embed.png?raw=true" width="320px"  alt="Embed"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/2-umap.png?raw=true" width="320px"  alt="UMAP"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/3-cluster.png?raw=true" width="320px"  alt="Cluster"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/4-label.png?raw=true" width="320px"  alt="Label"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/5-scope.png?raw=true" width="320px"  alt="Scope"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/6-explore.png?raw=true" width="320px"  alt="Scope">
+
+Each step focuses on the relevant choices to move you to the next step. For example choosing which embedding model you want to use to embed with, or the parameters for UMAP. It's very likely you may want to try several choices at each step, which is why the final step before "Explore" is to make a "scope". You can make multiple scopes, as seen in the [dadabase example](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-004) to explore your data through different lenses (i.e. OpenAI embeddings vs. Jina v2).
 
 ### Python interface
 You can also ingest data from a Pandas dataframe using the Python interface:
