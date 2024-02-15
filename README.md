@@ -3,10 +3,10 @@
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 
-<img src="https://github.com/username/repository/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Example exploration">
+[<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Example exploration">](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-007)
 
 ### Demo
-This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in [live demos](https://enjalot.github.io/latent-scope):
+This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in a read-only [live demo](https://enjalot.github.io/latent-scope):
 * [datavis survey responses](https://enjalot.github.io/latent-scope/#/datasets/datavis-misunderstood/explore/scopes-001) - 700 survey responses
 * [Dolly 15k](https://enjalot.github.io/latent-scope/#/datasets/dolly15k/explore/scopes-001) - 15k instructions
 * [r/DadJokes](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-004) - 50k dad jokes
@@ -14,7 +14,7 @@ This tool is meant to be run locally or on a trusted server to process data for 
 
 The source of each demo dataset is documented in the notebooks linked below. Each demo was chosen to represent different scales of data as well as some common usecases.
 
-<img src="https://github.com/username/repository/blob/main/documentation/dadabase-scopes.png?raw=true" width="100%"  alt="Dadabase demo scopes">
+[<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-scopes.png?raw=true" width="100%"  alt="Dadabase demo scopes">](https://enjalot.github.io/latent-scope)
 
 
 ### Quick Start
@@ -27,14 +27,13 @@ pip install latent-scope
 ls-serve ~/local-scope-data
 ```
 
-Then open your browser to http://localhost:5001 and start processing your first dataset!
+Then open your browser to http://localhost:5001 and start processing your first dataset!  
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/home.png?raw=true" width="320px"  alt="Ingest">  
 
-<img src="https://github.com/username/repository/blob/main/documentation/0-ingest.png?raw=true" width="320px"  alt="Ingest">
-<img src="https://github.com/username/repository/blob/main/documentation/1-embed.png?raw=true" width="320px"  alt="Embed">
-<img src="https://github.com/username/repository/blob/main/documentation/2-umap.png?raw=true" width="320px"  alt="UMAP">
-<img src="https://github.com/username/repository/blob/main/documentation/3-cluster.png?raw=true" width="320px"  alt="Cluster">
-<img src="https://github.com/username/repository/blob/main/documentation/4-label.png?raw=true" width="320px"  alt="Label">
-<img src="https://github.com/username/repository/blob/main/documentation/5-scope.png?raw=true" width="320px"  alt="Scope">
+Once ingested, you will go through the following 6 steps:  
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/0-ingest.png?raw=true" width="320px"  alt="Ingest"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/1-embed.png?raw=true" width="320px"  alt="Embed"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/2-umap.png?raw=true" width="320px"  alt="UMAP"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/3-cluster.png?raw=true" width="320px"  alt="Cluster"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/4-label.png?raw=true" width="320px"  alt="Label"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/5-scope.png?raw=true" width="320px"  alt="Scope">  
+And now you can explore your data:  
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/6-explore.png?raw=true" width="320px"  alt="Scope">
 
 ### Python interface
 You can also ingest data from a Pandas dataframe using the Python interface:
@@ -45,7 +44,6 @@ ls.init("~/latent-scope-data")
 ls.ingest("dadabase", df, text_column="joke")
 ls.serve()
 ```
-
 
 
 See these notebooks for detailed examples of using the Python interface to prepare and load data.  
