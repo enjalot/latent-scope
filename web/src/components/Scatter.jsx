@@ -7,6 +7,7 @@ import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-
 
 import styles from  "./Scatter.module.css"
 
+
 import PropTypes from 'prop-types';
 ScatterPlot.propTypes = {
   points: PropTypes.array.isRequired,
@@ -128,7 +129,7 @@ function ScatterPlot ({
         scatterplot.destroy();
       };
     }
-  }, [points, colors]);
+  }, [points, colors, width, height]);
 
   return <canvas className={styles.scatter} ref={container} />;
 }

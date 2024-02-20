@@ -263,7 +263,7 @@
   /* height: 100%; */
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 1024px) {
   .container {
     display: flex;
     flex-direction: column;
@@ -280,6 +280,10 @@
   .cluster {
     height: auto;
     overflow-y: visible;
+  }
+  .hovered-point {
+    height: 150px;
+    max-width: 500px;
   }
 }
 

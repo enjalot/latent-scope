@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 
 import './Explore.css';
@@ -9,11 +9,17 @@ import AnnotationPlot from '../components/AnnotationPlot';
 import HullPlot from '../components/HullPlot';
 
 
-// TODO: decide how to deal with sizing
-const scopeWidth = 500
-const scopeHeight = 500
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
+
+// unfortunately regl-scatter doesn't even render in iOS
+const isIOS = () => {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+// let's warn mobile users (on demo in read-only) that desktop is better experience
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 
 
@@ -22,6 +28,28 @@ function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
 
   const navigate = useNavigate();
+
+  const containerRef = useRef(null);
+
+  // let's fill the container and update the width and height if window resizes
+  const [scopeWidth, scopeHeight] = useWindowSize();
+  function useWindowSize() {
+    const [size, setSize] = useState([500,500]);
+    useEffect(() => {
+      function updateSize() {
+        if(!containerRef.current) return
+        const { height, width } = containerRef.current.getBoundingClientRect()
+        // console.log("width x height", width, height)
+        let swidth = width > 500 ? 500 : width - 50
+        setSize([swidth, swidth]);
+      }
+      window.addEventListener('resize', updateSize);
+      updateSize();
+      setTimeout(updateSize, 100)
+      return () => window.removeEventListener('resize', updateSize);
+    }, []);
+    return size;
+  }
 
   // Tabs
   const tabs = [
@@ -335,13 +363,15 @@ function Explore() {
   if (!dataset) return <div>Loading...</div>;
 
   return (
-    <div className="container">
+    <div ref={containerRef} className="container">
       <div className="cluster">
         <div className="summary">
           <div className="scope-card">
             {/* <h3> */}
+            { isMobileDevice() ? <i>Use a desktop browser for full interactivity!</i> : null}
             <div className='heading'>
               {/* {scope?.label || scope?.id} */}
+
 
               {datasetId}: <select className="scope-selector" onChange={(e) => {
                 clearScope()
@@ -368,17 +398,26 @@ function Explore() {
         <div className="umap-container">
           {/* <div className="umap-container"> */}
           <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
-            {points.length ? <><Scatter
+            {points.length ? <>
+              { !isIOS() ? <Scatter
+                points={points}
+                colors={memoClusterIndices}
+                loading={loadingPoints}
+                width={scopeWidth}
+                height={scopeHeight}
+                onScatter={setScatter}
+                onView={handleView}
+                onSelect={handleSelected}
+                onHover={handleHover}
+              /> : <AnnotationPlot
               points={points}
-              colors={memoClusterIndices}
-              loading={loadingPoints}
+              fill="gray"
+              size="8"
+              xDomain={xDomain}
+              yDomain={yDomain}
               width={scopeWidth}
               height={scopeHeight}
-              onScatter={setScatter}
-              onView={handleView}
-              onSelect={handleSelected}
-              onHover={handleHover}
-            />
+            /> }
               {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls ? <HullPlot
                 points={points}
                 hulls={[hoveredCluster?.hull]}
@@ -406,7 +445,8 @@ function Explore() {
                 height={scopeHeight} /> : null}
               <AnnotationPlot
                 points={searchAnnotations}
-                fill="black"
+                stroke="black"
+                fill="steelblue"
                 size="8"
                 xDomain={xDomain}
                 yDomain={yDomain}
@@ -447,8 +487,7 @@ function Explore() {
 
             {/* </div> */}
           </div>
-          <div className="hovered-point">
-            {/* Hovered: &nbsp; */}
+          {!isMobileDevice() ? <div className="hovered-point">
             {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span>
@@ -456,9 +495,8 @@ function Explore() {
               </span>
             ))}
             {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.index}:</span><span className="value">{hoveredCluster.label}</span></span> : null}
-            {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
-          </div>
-        </div>
+          </div> : null }
+        </div> 
       </div>
 
       <div className="data">
