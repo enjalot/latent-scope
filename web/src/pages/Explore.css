@@ -1,67 +1,93 @@
-.dataset--explore {
+.container {
   display: grid;
-  grid-template-columns: 548px 1fr; /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
-  gap: 6px; /* This adds space between your columns */
-  height: 100%; 
+  grid-template-columns: 548px 1fr;
+  /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
+  gap: 6px;
+  /* This adds space between your columns */
+  height: 100%;
   overflow: hidden;
 }
 
-.dataset--explore .column {
+.cluster {
   display: flex;
   flex-direction: column;
   overflow-y: hidden;
   height: 100%;
 }
 
-.dataset--explore .first-row {
-  margin: 6px 12px;
-  padding: 6px;
-  height: 148px; /* Fixed height for the first row */
-  border: 1px solid lightgray;
-  border-radius: 5px;
+.data {
+  display: flex;
+  flex-direction: column;
+  overflow-y: hidden;
+  height: 100%;
 }
 
-.dataset--explore .second-row {
+.umap-container {
   margin: 6px 12px;
-  /* flex-grow: 1; */
   height: 100%;
   overflow-y: hidden;
   min-height: 0;
 }
 
+.tab-tables {
+  margin: 6px 12px;
+  height: 100%;
+  overflow-y: hidden;
+  min-height: 0;
+}
 
 /* LEFT COLUMN */
 /* FIRST ROW: Dataset summary */
-.dataset--explore .summary {
+
+.summary {
   max-width: 500px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+
+  margin: 6px 12px;
+  padding: 16px;
+  height: 148px;
+  border: 1px solid lightgray;
+  border-radius: 5px;
 }
-.dataset--explore .summary h3 {
+
+.heading {
   margin: 0;
+  font-size: 1.17em;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-.dataset--explore .summary h3 a {
+
+.heading a {
   margin-left: 12px;
 }
-.dataset--explore .scope-card {
+
+.scope-card {
   display: flex;
   flex-direction: column;
 }
-.dataset--explore .scope-card .scope-selector {
+
+.scope-card .scope-selector {
   margin: 0 6px;
 }
-.dataset--explore .dataset-card {
+
+.dataset-card {
   display: flex;
   flex-direction: row;
   gap: 12px;
 }
 
 /* SECOND ROW: UMAP */
-.dataset--explore .umap-container {
-  /* max-height: 500px; */
-}
-.dataset--explore .scatters {
+
+.scatters {
   position: relative;
   border: 1px solid gray;
   border-radius: 5px;
@@ -69,30 +95,34 @@
 }
 
 /* THIRD ROW: hovered data point */
-.dataset--explore .hovered-point {
+.hovered-point {
   display: flex;
   flex-direction: column;
   padding: 6px;
 }
-.dataset--explore .hovered-point .key {
+
+.container .hovered-point .key {
   font-weight: bold;
 }
-.dataset--explore .hovered-point .value {
+
+.container .hovered-point .value {
   margin-left: 10px;
 }
 
 
 /* MIDDLE COLUMN */
-.dataset--explore .tab-tables {
+.container .tab-tables {
   /* padding: 12px 0; */
 
 }
+
 /* SECOND ROW: Tabs */
-.dataset--explore .tab-tables {
+.container .tab-tables {
   display: flex;
   flex-direction: column;
 }
-.dataset--explore .tab-header {
+
+.container .tab-header {
   height: 32px;
   background-color: #f1f1f1;
   border: 1px solid #ccc;
@@ -101,7 +131,8 @@
   cursor: pointer;
   transition: background-color 0.3s;
 }
-.dataset--explore .tab-header button {
+
+.container .tab-header button {
   height: 32px;
   display: inline-block;
   border: none;
@@ -109,15 +140,18 @@
   margin: 0;
   padding: 6px 24px;
 }
-.dataset--explore .tab-header button:hover {
+
+.container .tab-header button:hover {
   background-color: #ddd;
   border-color: none;
 }
-.dataset--explore .tab-header button:focus,
-.dataset--explore .tab-header button:focus-visible {
+
+.container .tab-header button:focus,
+.container .tab-header button:focus-visible {
   outline: none;
 }
-.dataset--explore .tab-header .tab-active {
+
+.container .tab-header .tab-active {
   background-color: white;
   border-top: 2px solid seagreen;
   border-bottom: none;
@@ -125,18 +159,20 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .dataset--explore .tab-header {
+  .container .tab-header {
     background-color: #333;
   }
-  .dataset--explore .tab-header button:hover {
+
+  .container .tab-header button:hover {
     background-color: #333;
   }
-  .dataset--explore .tab-header .tab-active {
+
+  .container .tab-header .tab-active {
     background-color: #444;
   }
 }
 
-.dataset--explore .tab-content {
+.tab-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -144,60 +180,67 @@
   /* width: 650px; */
   /* flex-grow: 1; */
   height: calc(100% - 32px);
+  /* height: 100%; */
   overflow-y: auto;
   border: 1px solid lightgray;
   padding: 12px;
 }
 
 /* 
-.dataset--explore .tab-content table {
+.container .tab-content table {
   height: 100%;
 }
-.dataset--explore .tab-content table thead th {
+.container .tab-content table thead th {
   position: sticky;
   top: 0;
   z-index: 1;
 }
-.dataset--explore .tab-content tbody {
+.container .tab-content tbody {
   display: block;
   max-height: 100%;
   overflow-y: scroll;
 } */
-/* .dataset--explore .tab-content tbody tr {
+/* .container .tab-content tbody tr {
 } */
 
 
-/* .dataset--explore .tab-active {
+/* .container .tab-active {
   color: seagreen;
   font-weight: bold;
   background-color: lightgray; 
 } */
 
 
-.dataset--explore .tags-box {
+.tags-box {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-evenly;
 }
-.dataset--explore .new-tag {
+
+.new-tag {
   margin: 6px 0;
 }
-.dataset--explore .new-tag form {
+
+.new-tag form {
   display: inline;
   width: 160px;
   border: 1px solid lightgray;
   padding: 7px;
 }
-.dataset--explore .new-tag input {
+
+.new-tag input {
   width: 60px;
 }
 
 /* Styling for nearest neighbors section */
-.dataset--explore .search-box input {
+.search-box input {
   /* height: 24px; */
   width: 350px;
 }
-.dataset--explore .search-box select {
+
+.search-box select {
   width: 358px;
 
 }
@@ -215,7 +258,49 @@
 /* SECOND ROW: Clusters */
 
 
-.dataset--explore .slide-bar {
+.slide-bar {
   padding: 6px;
   /* height: 100%; */
+}
+
+@media screen and (max-width: 768px) {
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+    margin-top: 5px;
+  }
+
+  .data {
+    width: 100%
+  }
+
+  .data,
+  .cluster {
+    height: auto;
+    overflow-y: visible;
+  }
+}
+
+@media screen and (max-width: 425px) {
+  .container {
+    width: 100%;
+    padding: 5px;
+  }
+
+  .cluster {
+    width: 100%;
+    padding: 5px;
+  }
+
+  .summary {
+    height: auto;
+  }
+
+  .tab-content {
+    height: auto;
+    margin-top: 40px;
+  }
+
 }
