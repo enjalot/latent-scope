@@ -9,10 +9,18 @@
     },
     {
         "provider": "openai",
-        "name": "gpt-4-preview",
-        "id": "openai-gpt-4-preview",
+        "name": "gpt-4-turbo-preview",
+        "id": "openai-gpt-4-turbo-preview",
         "params": {
-            "max_tokens": 131072
+            "max_tokens": 128000
+        }
+    },
+    {
+        "provider": "openai",
+        "name": "gpt-4",
+        "id": "openai-gpt-4",
+        "params": {
+            "max_tokens": 8192
         }
     },
     {
