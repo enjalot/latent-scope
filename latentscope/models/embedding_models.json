@@ -149,6 +149,14 @@
       }
   },
   {
+      "provider": "openai",
+      "name": "text-embedding-ada-002",
+      "id": "openai-text-embedding-ada-002",
+      "params": {
+          "max_tokens": 8192
+      }
+  },
+  {
       "provider": "mistralai",
       "name": "mistral-embed",
       "id": "mistralai-mistral-embed",
