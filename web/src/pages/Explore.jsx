@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useReducer, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 
 import './Explore.css';
@@ -22,6 +22,20 @@ const isMobileDevice = () => {
 };
 
 
+const initialState = {
+  dataset: null,
+
+}
+
+function reducer(state, action) {
+}
+
+
+function processHulls(labels, points) {
+  return labels.map(d => {
+    return d.hull.map(i => points[i])
+  })
+}
 
 function Explore() {
   const [dataset, setDataset] = useState(null);
@@ -109,28 +123,42 @@ function Explore() {
   }, [datasetId, setEmbeddings]);
 
 
+  const [points, setPoints] = useState([]);
+  const [drawPoints, setDrawPoints] = useState([]); // this is the points with the cluster number
+  const [hulls, setHulls] = useState([]); 
   useEffect(() => {
     if (scope) {
       setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
-      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("umap", data)
-          setUmap(data)
-        });
-      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("labels", data)
-          setClusterLabels(data)
-          // setClusterLabels(data.map((d,i) => ({...d, index: i})))
-        });
-      fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("cluster indices", data)
-          setClusterIndices(data)
-        });
+
+      Promise.all([
+        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`).then(response => response.json()),
+        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}/points`).then(response => response.json()),
+        fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id.split("-")[3] || scope.cluster_labels_id}`).then(response => response.json()),
+        fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`).then(response => response.json())
+      ]).then(([umapData, pointsData, labelsData, clusterIndicesData]) => {
+        // console.log("umap", umapData);
+        setUmap(umapData);
+
+        // console.log("set points")
+        const pts = pointsData.map(d => [d.x, d.y])
+        setPoints(pts)
+
+        const dpts = pointsData.map((d, i) => [d.x, d.y, clusterIndicesData[i].cluster])
+        setDrawPoints(dpts)
+        setHulls([])
+
+        // console.log("labels", labelsData);
+        setClusterLabels(labelsData);
+
+        // console.log("cluster indices", clusterIndicesData);
+        setClusterIndices(clusterIndicesData);
+
+        setTimeout(() => {
+          setHulls(processHulls(labelsData, pts))
+        }, 100)
+
+      }).catch(error => console.error("Fetching data failed", error));
+
     }
   }, [datasetId, scope, embeddings, setUmap, setClusterLabels, setEmbedding, setSearchModel]);
 
@@ -151,22 +179,6 @@ function Explore() {
     console.log("selected", model)
     setSearchModel(model)
   }
-
-  // ====================================================================================================
-  // Points for rendering the scatterplot
-  // ====================================================================================================
-  const [points, setPoints] = useState([]);
-  const [loadingPoints, setLoadingPoints] = useState(false);
-  useEffect(() => {
-    if (umap) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/umaps/${umap.id}/points`)
-        .then(response => response.json())
-        .then(data => {
-          console.log("umap points", data)
-          setPoints(data.map(d => [d.x, d.y]))
-        })
-    }
-  }, [dataset, umap])
 
 
   const hydrateIndices = useCallback((indices, setter, distances = []) => {
@@ -348,6 +360,7 @@ function Explore() {
           .then(data => {
             console.log("got new labels", data)
             setClusterLabels(data);
+            setHulls(processHulls(data, points))
           })
           .catch(console.error);
       })
@@ -356,8 +369,8 @@ function Explore() {
 
   const clearScope = useCallback(() => {
     setSlide(null)
-    setClusterLabels([])
-    setPoints([])
+    // setClusterLabels([])
+    // setPoints([])
   }, [])
 
   if (!dataset) return <div>Loading...</div>;
@@ -400,9 +413,8 @@ function Explore() {
           <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
             {points.length ? <>
               { !isIOS() ? <Scatter
-                points={points}
-                colors={memoClusterIndices}
-                loading={loadingPoints}
+                points={drawPoints}
+                duration={2000}
                 width={scopeWidth}
                 height={scopeHeight}
                 onScatter={setScatter}
@@ -419,26 +431,30 @@ function Explore() {
               height={scopeHeight}
             /> }
               {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls ? <HullPlot
-                points={points}
-                hulls={[hoveredCluster?.hull]}
+                hulls={processHulls([hoveredCluster], points)}
                 fill="lightgray"
+                duration={0}
                 xDomain={xDomain}
                 yDomain={yDomain}
                 width={scopeWidth}
                 height={scopeHeight} /> : null}
 
               {slide && slide.hull && !scope.ignore_hulls ? <HullPlot
-                points={points}
-                hulls={[slide?.hull]}
+                hulls={processHulls([slide], points)}
                 fill="darkgray"
+                strokeWidth={2}
+                duration={0}
                 xDomain={xDomain}
                 yDomain={yDomain}
                 width={scopeWidth}
                 height={scopeHeight} /> : null}
-              {clusterLabels.length && !scope.ignore_hulls ? <HullPlot
-                points={points}
-                hulls={clusterLabels.map(d => d.hull)}
-                stroke="lightgray"
+              {hulls.length && !scope.ignore_hulls ? <HullPlot
+                hulls={hulls}
+                stroke="black"
+                fill="none"
+                delay={2000}
+                duration={200}
+                strokeWidth={1}
                 xDomain={xDomain}
                 yDomain={yDomain}
                 width={scopeWidth}

@@ -16,14 +16,14 @@ ClusterLabels.propTypes = {
   selectedLabelId: PropTypes.string,
   onChange: PropTypes.func.isRequired,
   onLabels: PropTypes.func,
-  onLabelIds: PropTypes.func,
+  onLabelSets: PropTypes.func,
   onHoverLabel: PropTypes.func,
   onClickLabel: PropTypes.func,
 };
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelIds, onHoverLabel, onClickLabel}) {
+function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelSets, onHoverLabel, onClickLabel}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
   const { startJob: rerunClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/rerun`);
@@ -41,15 +41,16 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
   }, []);
 
   // the models used to label a particular cluster (the ones the user has run)
-  const [clusterLabelModels, setClusterLabelModels] = useState([]);
+  const [clusterLabelSets, setClusterLabelSets] = useState([]);
   // the actual labels for the given cluster
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
-    console.log("in cluster labels", dataset, cluster, selectedLabelId)
     if(dataset && cluster && selectedLabelId) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${selectedLabelId}`)
+      const id = selectedLabelId.split("-")[3] || selectedLabelId
+      fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${id}`)
         .then(response => response.json())
         .then(data => {
+          data.cluster_id = cluster.id
           setClusterLabels(data)
         }).catch(err => {
           console.log(err)
@@ -58,39 +59,50 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
       } else {
         setClusterLabels([])
       }
-  }, [selectedLabelId, setClusterLabels, dataset, cluster, clusterLabelModels])
+  }, [selectedLabelId, setClusterLabels, dataset, cluster, clusterLabelSets])
 
   useEffect(() => {
     if(cluster) {
       fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels_available`)
         .then(response => response.json())
         .then(data => {
-          console.log("cluster changed, set label models fetched", cluster.id, data, clusterLabelsJob)
+          // console.log("cluster changed, labels available", cluster.id, data)
+          const labelsAvailable = data.filter(d => d.cluster_id == cluster.id)
+          let lbl;
           if(clusterLabelsJob) {
-            let lbl;
             if(clusterLabelsJob?.job_name == "label"){
-              let label_id = clusterLabelsJob.run_id.split("-")[3]
-              lbl = data.find(d => d == label_id)
-              console.log("label_id", label_id, lbl)
+              let label_id = clusterLabelsJob.run_id//.split("-")[3]
+              let found = labelsAvailable.find(d => d.id == label_id)
+              if(found) lbl = found
             } else if(clusterLabelsJob.job_name == "rm") {
               lbl = data[0]
             }
-            onLabelIds(data.map(id => ({cluster_id: cluster.id, id: id})), lbl)
             // onChange(lbl)
-          }  else {
-            onLabelIds(data.map(id => ({cluster_id: cluster.id, id: id})))
+          }  else if(selectedLabelId){
+            if(selectedLabelId  == "default" && labelsAvailable[0]) {
+              lbl = labelsAvailable[0]
+            } else if(selectedLabelId.indexOf(cluster.id) < 0 && labelsAvailable[0]) {
+              lbl = labelsAvailable[0]
+            } else {
+              lbl = labelsAvailable.find(d => d.id == selectedLabelId) || { id: "default" }
+            }
+          } else if(labelsAvailable[0]) {
+            lbl = labelsAvailable[0]
+          } else {
+            lbl = { id: "default" }
           }
-          setClusterLabelModels(data)
+          onLabelSets(labelsAvailable, lbl)
+          setClusterLabelSets(labelsAvailable)
         }).catch(err => {
           console.log(err)
-          setClusterLabelModels([])
-          onLabelIds([])
+          setClusterLabelSets([])
+          onLabelSets([])
         })
     } else {
-      setClusterLabelModels([])
-      onLabelIds([])
+      setClusterLabelSets([])
+      onLabelSets([])
     }
-  }, [dataset, cluster, clusterLabelsJob, setClusterLabelModels, onLabelIds])
+  }, [dataset, cluster, clusterLabelsJob, setClusterLabelSets, onLabelSets])
   
   useEffect(() => {
     if(clusterLabels?.length) {
@@ -123,7 +135,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
           <label>
             Chat Model:
             <select id="chatModel" name="chatModel" disabled={!!clusterLabelsJob}>
-              {chatModels.filter(d => clusterLabelModels?.indexOf(d.id) < 0).map((model, index) => (
+              {chatModels.filter(d => clusterLabelSets?.indexOf(d.id) < 0).map((model, index) => (
                 <option key={index} value={model.id}>{model.provider} - {model.name}</option>
               ))}
             </select>
@@ -138,15 +150,16 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
       {cluster ? <div className="dataset--setup-cluster-labels-list">
         <label>
           Use Labels: &nbsp;
-          {clusterLabelModels.length > 1 ? <select 
+          {clusterLabelSets.length >= 1 ? <select 
             name="model" 
             value={selectedLabelId}
             onChange={(e) => onChange(e.target.value)}
           >
-            {clusterLabelModels.map((model, index) => (
-              <option key={index} value={model}>{model}</option>
+            <option value="default">Defualt</option>
+            {clusterLabelSets.map((model, index) => (
+              <option key={index} value={model.id}>{model.id} - { model.model_id} </option>
             ))}
-          </select> : <span>{clusterLabelModels[0]}</span> }
+          </select> : <span>{clusterLabelSets[0]?.id}</span> }
         </label>
         <div className="dataset--setup-labels-list">
           <DataTable 

@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import fnmatch
 import pandas as pd
 from flask import Blueprint, jsonify, request
 
@@ -31,14 +32,14 @@ def get_datasets():
 """
 Get all metadata files from the given a directory.
 """
-def scan_for_json_files(directory_path):
+def scan_for_json_files(directory_path, match_pattern=r".*\.json$"):
     try:
         files = os.listdir(directory_path)
     except OSError as err:
         print('Unable to scan directory:', err)
         return jsonify({"error": "Unable to scan directory"}), 500
 
-    json_files = [file for file in files if file.endswith('.json')]
+    json_files = [file for file in files if re.match(match_pattern, file)]
     json_files.sort()
     print("files", files)
     print("json", json_files)
@@ -72,28 +73,15 @@ def update_dataset_meta(dataset):
         json.dump(json_contents, json_file)
     return jsonify(json_contents)
 
-
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "embeddings")
     # directory_path = os.path.join(DATA_DIR, dataset, "umaps")
-    print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
-    # print("dataset", dataset, directory_path)
-    # try:
-    #     files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
-    # except OSError as err:
-    #     print('Unable to scan directory:', err)
-    #     return jsonify({"error": "Unable to scan directory"}), 500
-
-    # npy_files = [file.replace(".npy", "") for file in files if file.endswith('.npy')]
-    # return jsonify(npy_files)
-
 
 @datasets_bp.route('/<dataset>/umaps', methods=['GET'])
 def get_dataset_umaps(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "umaps")
-    print("dataset", dataset, directory_path)
     return scan_for_json_files(directory_path)
 
 @datasets_bp.route('/<dataset>/umaps/<umap>', methods=['GET'])
@@ -112,8 +100,7 @@ def get_dataset_umap_points(dataset, umap):
 @datasets_bp.route('/<dataset>/clusters', methods=['GET'])
 def get_dataset_clusters(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "clusters")
-    print("dataset", dataset, directory_path)
-    return scan_for_json_files(directory_path)
+    return scan_for_json_files(directory_path, match_pattern=r"cluster-\d+\.json")
 
 @datasets_bp.route('/<dataset>/clusters/<cluster>', methods=['GET'])
 def get_dataset_cluster(dataset, cluster):
@@ -136,25 +123,25 @@ def get_dataset_cluster_indices(dataset, cluster):
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
 
-@datasets_bp.route('/<dataset>/clusters/<cluster>/labels/<model>', methods=['GET'])
-def get_dataset_cluster_labels(dataset, cluster, model):
+@datasets_bp.route('/<dataset>/clusters/<cluster>/labels/<id>', methods=['GET'])
+def get_dataset_cluster_labels(dataset, cluster, id):
     # if model == "default":
     #     return get_dataset_cluster_labels_default(dataset, cluster)
-    file_name = cluster + "-labels-" + model + ".parquet"
+    file_name = cluster + "-labels-" + id + ".parquet"
     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
     df = pd.read_parquet(file_path)
     df.reset_index(inplace=True)
     return df.to_json(orient="records")
 
-@datasets_write_bp.route('/<dataset>/clusters/<cluster>/labels/<model>/label/<index>', methods=['GET'])
-def overwrite_dataset_cluster_label(dataset, cluster, model, index):
+@datasets_write_bp.route('/<dataset>/clusters/<cluster>/labels/<id>/label/<index>', methods=['GET'])
+def overwrite_dataset_cluster_label(dataset, cluster, id, index):
     index = int(index)
     new_label = request.args.get('label')
     print("write label", index, new_label)
     if new_label is None:
         return jsonify({"error": "Missing 'label' in request data"}), 400
 
-    file_name = cluster + "-labels-" + model + ".parquet"
+    file_name = cluster + "-labels-" + id + ".parquet"
     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
     try:
         df = pd.read_parquet(file_path)
@@ -173,15 +160,16 @@ def overwrite_dataset_cluster_label(dataset, cluster, model, index):
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
 def get_dataset_cluster_labels_available(dataset, cluster):
     directory_path = os.path.join(DATA_DIR, dataset, "clusters")
-    try:
-        files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
-    except OSError as err:
-        print('Unable to scan directory:', err)
-        return jsonify({"error": "Unable to scan directory"}), 500
+    return scan_for_json_files(directory_path, match_pattern=rf"{cluster}-labels-.*\.json")
+    # try:
+    #     files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
+    # except OSError as err:
+    #     print('Unable to scan directory:', err)
+    #     return jsonify({"error": "Unable to scan directory"}), 500
 
-    pattern = re.compile(r'^' + cluster + '-labels-(.*).parquet$')
-    model_names = [pattern.match(file).group(1) for file in files if pattern.match(file)]
-    return jsonify(model_names)
+    # pattern = re.compile(r'^' + cluster + '-labels-(.*).parquet$')
+    # model_names = [pattern.match(file).group(1) for file in files if pattern.match(file)]
+    # return jsonify(model_names)
 
 
 def get_next_scopes_number(dataset):

@@ -51,7 +51,7 @@ function IndexDataTable({dataset, indices, distances = [], clusterIndices = [], 
 
   useEffect(() => {
     if(indices && indices.length) {
-      console.log("refetching hydrate")
+      // console.log("refetching hydrate")
       hydrateIndices(indices)
     }
   }, [indices])

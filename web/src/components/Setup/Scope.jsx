@@ -23,7 +23,8 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
   const navigate = useNavigate();
 
   useEffect(() => {
-    if(dataset)
+    if(dataset) {
+      console.log("fetching scopes")
     fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
       .then(response => response.json())
       .then(data => {
@@ -31,7 +32,8 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
         // setScopes(sorted)
         onNew(sorted)
       });
-  }, [dataset, onNew]);
+    }
+  }, [dataset]);
 
   const handleSaveScope = useCallback((event) => {
     event.preventDefault();
@@ -75,7 +77,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
     .catch(error => {
       console.error('Error saving scope:', error);
     });
-  }, [dataset, scope, cluster, clusterLabelId, umap, embedding , navigate, onNew, onChange]);
+  }, [dataset, scope, cluster, clusterLabelId, umap, embedding , navigate, onChange]);
 
   return (
     <div className="setup-scope">
