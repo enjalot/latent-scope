@@ -47,6 +47,11 @@ setup(
     description='Quickly embed, project, cluster and explore a dataset.',
     long_description=long_description,
     long_description_content_type='text/markdown',
+    url='https://github.com/enjalot/latent-scope',
+    project_urls={
+        'Source': 'https://github.com/enjalot/latent-scope',
+        'Tracker': 'https://github.com/enjalot/latent-scope/issues',
+    },
     packages=find_packages(),
     install_requires=required,
     cmdclass={
