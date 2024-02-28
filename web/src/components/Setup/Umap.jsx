@@ -13,6 +13,7 @@ Umap.propTypes = {
   }).isRequired,
   umap: PropTypes.object,
   embedding: PropTypes.object,
+  embeddings: PropTypes.array.isRequired,
   clusters: PropTypes.array.isRequired,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
@@ -20,10 +21,12 @@ Umap.propTypes = {
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
+function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}) {
   const [umapJob, setUmapJob] = useState(null);
   const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/umap`);
   const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/delete/umap`);
+
+  const [init, setInit] = useState("")
 
   const [umaps, setUmaps] = useState([]);
   function fetchUmaps(datasetId, callback) {
@@ -36,7 +39,7 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
             url: `${apiUrl}/files/${datasetId}/umaps/${d.id}.png`,
           }
         })
-        callback(array.reverse())
+        callback(array)
       });
   }
   useEffect(() => {
@@ -61,14 +64,19 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
     }
   }, [umapJob, dataset, setUmaps, onNew]);
 
+
+  const handleChangeInit = useCallback((e) => {
+    setInit(e.target.value)
+  }, [setInit])
+
   const handleNewUmap = useCallback((e) => {
     e.preventDefault()
     const form = e.target
     const data = new FormData(form)
     const neighbors = data.get('neighbors')
     const min_dist = data.get('min_dist')
-    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist})
-  }, [startUmapJob, embedding])
+    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist, init})
+  }, [startUmapJob, embedding, init])
 
   return (
       <div className="dataset--umaps-new">
@@ -80,6 +88,19 @@ function Umap({ dataset, umap, embedding, clusters, onNew, onChange}) {
           <label>
             Min Dist:
             <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
+          </label>
+          <label>
+            Initialize from UMAP:
+            <select name="init" disabled={!!umapJob} onChange={handleChangeInit}>
+              <option value="">None</option>
+              {umaps.map((um, index) => {
+                let emb = embeddings.find(d => um.embedding_id == d.id)
+                return (
+                <option key={index} value={um.id}>
+                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}]
+                  </option>
+              )})}
+            </select>
           </label>
           <button type="submit" disabled={!!umapJob}>New UMAP</button>
         </form>

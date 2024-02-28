@@ -207,10 +207,11 @@ def run_umap():
     embedding_id = request.args.get('embedding_id')
     neighbors = request.args.get('neighbors')
     min_dist = request.args.get('min_dist')
-    print("run umap", dataset, embedding_id, neighbors, min_dist)
+    init = request.args.get('init')
+    print("run umap", dataset, embedding_id, neighbors, min_dist, init)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-umap {dataset} {embedding_id} {neighbors} {min_dist}'
+    command = f'ls-umap {dataset} {embedding_id} {neighbors} {min_dist} --init={init}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

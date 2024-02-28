@@ -373,16 +373,33 @@ function Setup() {
   const prevPointConfig = useRef()
   const [drawPoints, setDrawPoints] = useState([]);
   useEffect(() => {
+    // if cluster and umap are ready and haven't been drawn we update the draw points
+    // we also set hulls to empty so they can animate in
     if(clusterIndices.length && umap && cluster && cluster.umap_id == umap.id && clusterIndices.cluster_id == cluster.id) {
       const config = umap.id + cluster.id + clusterIndices.cluster_id
       if(prevPointConfig.current !== config) {
         fetch(`${apiUrl}/datasets/${datasetId}/umaps/${umap.id}/points`).then(response => response.json()).then(data => {
           let pts = data.map((d,i) => [d.x, d.y, clusterIndices[i].cluster])
           setDrawPoints(pts)
+          // TODO: this doesn't always work out in the right timing
+          // the other useEffect above should be tied to this one somehow
           setHulls([])
         })
         prevPointConfig.current = config
       }
+    } else if(umap && !cluster) {
+      const config = umap.id
+      if(prevPointConfig.current !== config) {
+        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${umap.id}/points`).then(response => response.json()).then(data => {
+          let pts = data.map((d) => [d.x, d.y, -1])
+          setDrawPoints(pts)
+          setHulls([])
+        })
+        prevPointConfig.current = config
+      }
+    } else if(!umap && !cluster) {
+      setHulls([])
+      setDrawPoints([])
     }
   }, [clusterIndices, cluster, umap])
 
@@ -502,6 +519,7 @@ function Setup() {
               dataset={dataset} 
               umap={umap} 
               embedding={embedding} 
+              embeddings={embeddings}
               clusters={clusters} 
               onNew={handleNewUmaps} onChange={(ump) => dispatch({type: "SET_UMAP", payload: ump})} />
           </Stage>
