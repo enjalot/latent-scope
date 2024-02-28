@@ -1,5 +1,5 @@
 // NewEmbedding.jsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 const apiUrl = import.meta.env.VITE_API_URL
@@ -32,9 +32,16 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   useEffect(() => {
     fetch(`${apiUrl}/embedding_models`)
       .then(response => response.json())
-      .then(setModels)
+      .then((data) => {
+        setModels(data) 
+        setModel(data[0])
+      })
       .catch(console.error);
   }, []);
+
+  const [model, setModel] = useState(null);
+  // for the models that support choosing the size of dimensions
+  const [dimensions, setDimensions] = useState(null)
 
   const fetchEmbeddings = (datasetId, callback) => {
     fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
@@ -66,7 +73,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     }
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
 
-  const handleNewEmbedding = (e) => {
+  const handleNewEmbedding = useCallback((e) => {
     e.preventDefault();
     const form = e.target;
     const data = new FormData(form);
@@ -77,11 +84,20 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
       model_id: model.id,
       prefix
     };
+    if(dimensions) job.dimensions = dimensions
     startEmbeddingsJob(job);
-  };
+  }, [startEmbeddingsJob, textColumn, models, dimensions]);
 
   const handleRerunEmbedding = (job) => {
     rerunEmbeddingsJob({job_id: job?.id});
+  }
+
+  const handleModelChange = (e) => {
+    const model = models.find(model => model.id === e.target.value);
+    setModel(model)
+  }
+  const handleDimensionsChange = (e) => {
+    setDimensions(+e.target.value)
   }
 
   return (
@@ -90,12 +106,17 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         Embedding on column: <b>{textColumn}</b>
       <form onSubmit={handleNewEmbedding}>
           <label htmlFor="modelName">Model:
-          <select id="modelName" name="modelName" disabled={!!embeddingsJob}>
+          <select id="modelName" name="modelName" disabled={!!embeddingsJob} onChange={handleModelChange}>
             {models.map((model, index) => (
               <option key={index} value={model.id}>{model.provider}: {model.name}</option>
             ))}
           </select></label>
           <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
+          {model && model.params.dimensions ? <select onChange={handleDimensionsChange}>
+            {model.params.dimensions.map((dim, index) => {
+              return <option key={index} value={dim}>{dim}</option>
+            })}
+          </select> : null}
         <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
       </form>
       </div>

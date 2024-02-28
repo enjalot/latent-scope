@@ -17,14 +17,15 @@ def mean_pooling(model_output, attention_mask):
 
 class TransformersEmbedProvider(EmbedModelProvider):
     def load_model(self):
-        if self.name == "nomic-ai/nomic-embed-text-v1":
-            self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        if self.name == "nomic-ai/nomic-embed-text-v1" or self.name == "nomic-ai/nomic-embed-text-v1.5":
+            self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", model_max_length=self.params["max_tokens"])
+            self.model = AutoModel.from_pretrained("nomic-ai/nomic-embed-text-v1", trust_remote_code=True, rotary_scaling_factor=2 )
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(self.name)
-        self.model = AutoModel.from_pretrained(self.name, trust_remote_code=True)
+            self.model = AutoModel.from_pretrained(self.name, trust_remote_code=True)
         self.model.eval()
 
-    def embed(self, inputs):
+    def embed(self, inputs, dimensions=None):
         encoded_input = self.tokenizer(inputs, padding=self.params["padding"], truncation=self.params["truncation"], return_tensors='pt')
         pool = self.params["pooling"]
         # Compute token embeddings
@@ -37,9 +38,14 @@ class TransformersEmbedProvider(EmbedModelProvider):
             elif pool == "mean":
                 embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
 
+        # Support Matroyshka embeddings
+        if dimensions is not None:
+            embeddings = torch.nn.functional.layer_norm(embeddings, normalized_shape=(embeddings.shape[1],))
+            embeddings = embeddings[:, :dimensions]
+
         # Normalize embeddings
-        normalized_embeedings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-        return normalized_embeedings.tolist()
+        normalized_embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+        return normalized_embeddings.tolist()
 
 
 class TransformersChatProvider(ChatModelProvider):

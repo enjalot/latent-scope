@@ -34,15 +34,15 @@ Get all metadata files from the given a directory.
 """
 def scan_for_json_files(directory_path, match_pattern=r".*\.json$"):
     try:
-        files = os.listdir(directory_path)
+        # files = os.listdir(directory_path)
+        files = sorted(os.listdir(directory_path), key=lambda x: os.path.getmtime(os.path.join(directory_path, x)), reverse=True)
     except OSError as err:
         print('Unable to scan directory:', err)
         return jsonify({"error": "Unable to scan directory"}), 500
 
     json_files = [file for file in files if re.match(match_pattern, file)]
-    json_files.sort()
-    print("files", files)
-    print("json", json_files)
+    # print("files", files)
+    # print("json", json_files)
 
     json_contents = []
     for file in json_files:

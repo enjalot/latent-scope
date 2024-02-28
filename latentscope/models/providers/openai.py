@@ -19,7 +19,7 @@ class OpenAIEmbedProvider(EmbedModelProvider):
         else:
             self.encoder = tiktoken.encoding_for_model(self.name)
 
-    def embed(self, inputs):
+    def embed(self, inputs, dimensions=None):
         time.sleep(0.01) # TODO proper rate limiting
         enc = self.encoder
         max_tokens = self.params["max_tokens"]
@@ -28,6 +28,7 @@ class OpenAIEmbedProvider(EmbedModelProvider):
         response = self.client.embeddings.create(
             input=inputs,
             model=self.name,
+            dimensions=dimensions
         )
         embeddings = [embedding.embedding for embedding in response.data]
         return embeddings

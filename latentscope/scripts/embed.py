@@ -52,14 +52,15 @@ def main():
     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
     parser.add_argument('text_column', type=str, help='Output file', default='text')
     parser.add_argument('model_id', type=str, help='ID of embedding model to use', default="transformers-BAAI___bge-small-en-v1.5")
-    parser.add_argument('prefix', type=str, help='Prefix to prepend to text before embedding', default="")
+    parser.add_argument('--prefix', type=str, help='Prefix to prepend to text before embedding', default="")
+    parser.add_argument('--dimensions', type=int, help='Truncate embeddings to dimensions a la Matroyshka embeddings', default=None)
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
 
     # Parse arguments
     args = parser.parse_args()
-    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun)
+    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions)
 
-def embed(dataset_id, text_column, model_id, prefix, rerun):
+def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions):
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
     
@@ -115,7 +116,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun):
             print(f"skipping batch {i}/{total_batches}", flush=True)
             continue
         try:
-            embeddings = np.array(model.embed(batch))
+            embeddings = np.array(model.embed(batch, dimensions=dimensions))
             append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
         except Exception as e:
             print(batch)

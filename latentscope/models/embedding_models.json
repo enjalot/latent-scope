@@ -54,9 +54,24 @@
       "id": "transformers-nomic-ai___nomic-embed-text-v1",
       "modality": "text",
       "params": {
+          "max_tokens": 8192,
           "truncation": true,
           "padding": true,
           "pooling": "mean"
+      }
+  },
+  {
+      "provider": "transformers",
+      "name": "nomic-ai/nomic-embed-text-v1.5",
+      "sanitized_name": "nomic-ai___nomic-embed-text-v1.5",
+      "id": "transformers-nomic-ai___nomic-embed-text-v1.5",
+      "modality": "text",
+      "params": {
+          "max_tokens": 8192,
+          "truncation": true,
+          "padding": true,
+          "pooling": "mean",
+          "dimensions": [768, 512, 256, 128, 64]
       }
   },
   {
@@ -137,7 +152,8 @@
       "name": "text-embedding-3-small",
       "id": "openai-text-embedding-3-small",
       "params": {
-          "max_tokens": 8192
+          "max_tokens": 8192,
+          "dimensions": [1536, 768, 512, 256, 128, 64]
       }
   },
 {
@@ -145,7 +161,8 @@
       "name": "text-embedding-3-large",
       "id": "openai-text-embedding-3-large",
       "params": {
-          "max_tokens": 8192
+          "max_tokens": 8192,
+          "dimensions": [3072, 1536, 768, 512, 256, 128, 64]
       }
   },
   {
