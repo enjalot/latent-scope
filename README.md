@@ -1,5 +1,6 @@
 # Latent Scope
-_[Discuss in Discord](https://discord.gg/x7NvpnM4pY)_  
+[![](https://dcbadge.vercel.app/api/server/x7NvpnM4pY?style=flat)](https://discord.gg/x7NvpnM4pY)
+[![PyPI version](https://img.shields.io/pypi/v/latentscope.svg)](https://pypi.org/project/latentscope/)
 
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 [<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Example exploration">](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-007)
