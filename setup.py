@@ -65,6 +65,7 @@ setup(
             'ls-list-models=latentscope:list_models',
             'ls-embed=latentscope.scripts.embed:main',
             'ls-embed-debug=latentscope.scripts.embed:debug',
+            'ls-embed-truncate=latentscope.scripts.embed:truncate',
             'ls-umap=latentscope.scripts.umapper:main',
             'ls-cluster=latentscope.scripts.cluster:main',
             'ls-label=latentscope.scripts.label_clusters:main',

@@ -15,13 +15,17 @@ def get_embedding_model_list():
         embed_model_list = json.load(f)
     return embed_model_list
 
-def get_embedding_model(id):
-    """Returns a ModelProvider instance for the given model id."""
+def get_embedding_model_dict(id):
     embed_model_list = get_embedding_model_list()
     embed_model_dict = {model['id']: model for model in embed_model_list}
     model = embed_model_dict[id]
     if not model:
         raise ValueError(f"Model {id} not found")
+    return model
+
+def get_embedding_model(id):
+    """Returns a ModelProvider instance for the given model id."""
+    model = get_embedding_model_dict(id)
       
     if model['provider'] == "transformers":
         return TransformersEmbedProvider(model['name'], model['params'])
@@ -44,11 +48,18 @@ def get_chat_model_list():
         chat_model_list = json.load(f)
     return chat_model_list
 
-def get_chat_model(id):
-    """Returns a ModelProvider instance for the given model id."""
+def get_chat_model_dict(id):
     chat_model_list = get_chat_model_list()
     chat_model_dict = {model['id']: model for model in chat_model_list}
     model = chat_model_dict[id]
+    if not model:
+        raise ValueError(f"Model {id} not found")
+    return model
+
+def get_chat_model(id):
+    """Returns a ModelProvider instance for the given model id."""
+    model = get_chat_model_dict(id)
+    
     if model['provider'] == "transformers":
         return TransformersChatProvider(model['name'], model['params'])
     if model['provider'] == "openai":

@@ -19,7 +19,7 @@ except ImportError as e:
     # Fallback to the standard console version if import fails
     from tqdm import tqdm
 
-from latentscope.models import get_embedding_model
+from latentscope.models import get_embedding_model, get_embedding_model_dict
 from latentscope.util import get_data_dir
 
 def chunked_iterable(iterable, size):
@@ -132,13 +132,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions):
             print("ls-embed-debug", batch_path, model_id)
 
             sys.exit(1)
-        # sentence_embeddings.extend(embeddings)
 
-    # Convert sentence_embeddings to numpy
-    # np_embeds = np.array(sentence_embeddings)
-    # print("sentence embeddings:", np_embeds.shape)
-
-    # Save embeddings as a numpy file
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
         json.dump({
             "id": embedding_id,
@@ -154,6 +148,68 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions):
     # np.save(os.path.join(embedding_dir, f"{embedding_id}.npy"), np_embeds)
     print("done with", embedding_id)
 
+def truncate():
+    parser = argparse.ArgumentParser(description='Make a copy of an existing embedding truncated to a smaller number of dimensions')
+    parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
+    parser.add_argument('embedding_id', type=str, help='ID of embedding to use') 
+    parser.add_argument('dimensions', type=int, help='Number of dimensions to truncate to') 
+    args = parser.parse_args()
+    embed_truncate(args.dataset_id, args.embedding_id, args.dimensions)
+
+def embed_truncate(dataset_id, embedding_id, dimensions):
+    
+    DATA_DIR = get_data_dir()
+    embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
+
+    embedding_meta_path = os.path.join(embedding_dir, f"{embedding_id}.json")
+    with open(embedding_meta_path, 'r') as f:
+        embedding_meta = json.load(f)
+    # Load the embedding model
+    model_id = embedding_meta["model_id"]
+    model = get_embedding_model_dict(model_id)
+    print("model params", model["params"])
+    # Check if the model has the attribute 'dimensions'
+    try:
+        dims = model["params"]['dimensions']
+    except KeyError:
+        raise KeyError(f"The model {model_id} does not have the 'dimensions' parameter meaning it cannot be truncated.")
+
+    # determine the index of the last umap run by looking in the dataset directory
+    # for files named umap-<number>.json
+    embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
+    if len(embedding_files) > 0:
+        last_umap = sorted(embedding_files)[-1]
+        last_embedding_number = int(last_umap.split("-")[1].split(".")[0])
+        next_embedding_number = last_embedding_number + 1
+    else:
+        next_embedding_number = 1
+    # make the umap name from the number, zero padded to 3 digits
+    new_embedding_id = f"embedding-{next_embedding_number:03d}"
+    print("RUNNING:", new_embedding_id)
+
+    # read in the embeddings from embedding_id
+    embedding_path = os.path.join(embedding_dir, f"{embedding_id}.h5")
+    with h5py.File(embedding_path, 'r') as f:
+        dataset = f["embeddings"]
+        embeddings = np.array(dataset)
+   
+
+    print("truncating to", dimensions, "dimensions")
+    matroyshka = embeddings[:, :dimensions]
+    append_to_hdf5(os.path.join(embedding_dir, f"{new_embedding_id}.h5"), matroyshka)
+    
+    with open(os.path.join(embedding_dir, f"{new_embedding_id}.json"), 'w') as f:
+        json.dump({
+            "id": new_embedding_id,
+            "model_id": embedding_meta["model_id"],
+            "dataset_id": dataset_id,
+            "text_column": embedding_meta["text_column"],
+            "dimensions": matroyshka.shape[1],
+            "prefix": embedding_meta["prefix"],
+            }, f, indent=2)
+
+    print("wrote", os.path.join(embedding_dir, f"{new_embedding_id}.h5"))
+    print("done")
 
 def debug():
     parser = argparse.ArgumentParser(description='Debug embedding a batch')

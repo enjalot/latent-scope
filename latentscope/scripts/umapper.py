@@ -68,7 +68,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     umap_id = f"umap-{next_umap_number:03d}"
     print("RUNNING:", umap_id)
 
-    def process_umap_embeddings(umap_id, umap_embeddings, emb_id, align_id):
+    def process_umap_embeddings(umap_id, umap_embeddings, emb_id, align_id=None):
         min_values = np.min(umap_embeddings, axis=0)
         max_values = np.max(umap_embeddings, axis=0)
 
@@ -102,10 +102,10 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
                 "neighbors": neighbors, 
                 "min_dist": min_dist,
             }
-            if init:
+            if init is not None and init != "":
                 meta["init"] = init,
-            if align:
-                meta["align"] = f"{embedding_id},{align}" if align is not None else None,
+            if align is not None and align != "":
+                meta["align"] = f"{embedding_id},{align}"
                 meta["align_id"] = align_id
             json.dump(meta, f, indent=2)
         f.close()
