@@ -39,7 +39,7 @@ class TransformersEmbedProvider(EmbedModelProvider):
                 embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
 
         # Support Matroyshka embeddings
-        if dimensions is not None:
+        if dimensions is not None and dimensions > 0:
             embeddings = torch.nn.functional.layer_norm(embeddings, normalized_shape=(embeddings.shape[1],))
             embeddings = embeddings[:, :dimensions]
 

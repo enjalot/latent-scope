@@ -68,7 +68,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     umap_id = f"umap-{next_umap_number:03d}"
     print("RUNNING:", umap_id)
 
-    def process_umap_embeddings(umap_id, umap_embeddings, emb_id):
+    def process_umap_embeddings(umap_id, umap_embeddings, emb_id, align_id):
         min_values = np.min(umap_embeddings, axis=0)
         max_values = np.max(umap_embeddings, axis=0)
 
@@ -96,14 +96,18 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
 
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
-            json.dump({
+            meta = {
                 "id": umap_id, 
                 "embedding_id": emb_id,
                 "neighbors": neighbors, 
                 "min_dist": min_dist,
-                "init": init,
-                "align": f"{embedding_id},{align}" if align is not None else None,
-            }, f, indent=2)
+            }
+            if init:
+                meta["init"] = init,
+            if align:
+                meta["align"] = f"{embedding_id},{align}" if align is not None else None,
+                meta["align_id"] = align_id
+            json.dump(meta, f, indent=2)
         f.close()
 
 
@@ -139,7 +143,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         print("ALIGNED", aligned)
         for i,emb in enumerate(a_embedding_ids):
             print("processing", emb, "umap", next_umap_number+i)
-            process_umap_embeddings(f"umap-{next_umap_number+i:03d}", aligned[i], emb)
+            process_umap_embeddings(f"umap-{next_umap_number+i:03d}", aligned[i], emb, umap_id)
 
         print("done with aligned umap")
         return 

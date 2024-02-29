@@ -25,11 +25,17 @@ class OpenAIEmbedProvider(EmbedModelProvider):
         max_tokens = self.params["max_tokens"]
         inputs = [b.replace("\n", " ") for b in inputs]
         inputs = [enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b for b in inputs]
-        response = self.client.embeddings.create(
-            input=inputs,
-            model=self.name,
-            dimensions=dimensions
-        )
+        if dimensions is not None and dimensions > 0:
+            response = self.client.embeddings.create(
+                input=inputs,
+                model=self.name,
+                dimensions=dimensions
+            )
+        else:
+            response = self.client.embeddings.create(
+                input=inputs,
+                model=self.name
+            )
         embeddings = [embedding.embedding for embedding in response.data]
         return embeddings
 

@@ -53,7 +53,7 @@ def main():
     parser.add_argument('text_column', type=str, help='Output file', default='text')
     parser.add_argument('model_id', type=str, help='ID of embedding model to use', default="transformers-BAAI___bge-small-en-v1.5")
     parser.add_argument('--prefix', type=str, help='Prefix to prepend to text before embedding', default="")
-    parser.add_argument('--dimensions', type=int, help='Truncate embeddings to dimensions a la Matroyshka embeddings', default=None)
+    parser.add_argument('--dimensions', type=int, help='Truncate embeddings to dimensions a la Matroyshka embeddings')
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
 
     # Parse arguments

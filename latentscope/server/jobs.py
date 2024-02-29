@@ -138,7 +138,9 @@ def run_embed():
     dimensions = request.args.get('dimensions')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed {dataset} {text_column} {model_id} --prefix="{prefix}" --dimensions={dimensions}'
+    command = f'ls-embed {dataset} {text_column} {model_id} --prefix="{prefix}"'
+    if dimensions is not None:
+        command += f" --dimensions={dimensions}"
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
