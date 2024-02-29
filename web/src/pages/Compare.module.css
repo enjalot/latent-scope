@@ -1,6 +1,6 @@
 .container {
   display: grid;
-  grid-template-columns: 548px 1fr;
+  grid-template-rows: 0.25fr 2fr 1fr;
   /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
   gap: 6px;
   /* This adds space between your columns */
@@ -8,12 +8,6 @@
   overflow: hidden;
 }
 
-.left-column {
-  display: flex;
-  flex-direction: column;
-  overflow-y: hidden;
-  height: 100%;
-}
 
 .data {
   display: flex;
@@ -36,18 +30,18 @@
   min-height: 0;
 }
 
-/* LEFT COLUMN */
-/* FIRST ROW: Dataset summary */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
 .summary {
-  max-width: 500px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 
   margin: 6px 12px;
-  padding: 16px;
-  height: 148px;
   border: 1px solid lightgray;
   border-radius: 5px;
 }
@@ -59,11 +53,12 @@
   margin-block-end: 1em;
   margin-inline-start: 0px;
   margin-inline-end: 0px;
-  font-weight: bold;
+  /* font-weight: bold; */
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   justify-content: center;
+  gap: 12px;
 }
 
 .heading a {
@@ -79,9 +74,11 @@
   margin: 0 6px;
 }
 
-.dataset-card {
+.umap-selectors {
   display: flex;
   flex-direction: row;
+  justify-content: center;
+  padding-bottom: 12px;
   gap: 12px;
 }
 

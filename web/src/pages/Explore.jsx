@@ -377,7 +377,7 @@ function Explore() {
 
   return (
     <div ref={containerRef} className="container">
-      <div className="cluster">
+      <div className="left-column">
         <div className="summary">
           <div className="scope-card">
             {/* <h3> */}
@@ -504,13 +504,13 @@ function Explore() {
             {/* </div> */}
           </div>
           {!isMobileDevice() ? <div className="hovered-point">
+            {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.index}:</span><span className="value">{hoveredCluster.label}</span></span> : null}
             {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span>
                 <span className="value">{hovered[key]}</span>
               </span>
             ))}
-            {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.index}:</span><span className="value">{hoveredCluster.label}</span></span> : null}
           </div> : null }
         </div> 
       </div>

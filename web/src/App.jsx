@@ -2,6 +2,7 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import Mobile from './pages/Mobile';
 import Home from './components/Home';
 import Explore from './pages/Explore';
+import Compare from './pages/Compare';
 import Setup from './pages/Setup';
 import Jobs from './pages/Jobs';
 import Job from './pages/Job';
@@ -26,6 +27,7 @@ function App() {
           <Route path="/" element={<Home />} />
           {/* <Route path="/datasets/:dataset/explore/:scope" element={isMobileDevice() ? <Mobile/> : <Explore />} /> */}
           <Route path="/datasets/:dataset/explore/:scope" element={<Explore />} />
+          <Route path="/datasets/:dataset/compare/" element={<Compare/>} />
 
           {readonly ? null : <Route path="/datasets/:dataset/setup" element={<Setup />} />}
           {readonly ? null : <Route path="/datasets/:dataset/setup/:scope" element={<Setup />} />}

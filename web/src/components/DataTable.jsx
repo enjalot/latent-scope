@@ -68,7 +68,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
             onClick={() => onClick && onClick(row.index)}
             >
             {headers.map((header, idx) => 
-              <td key={idx}>{header == "url" ? <a href={row[header]}>url</a> : row[header]}</td>)}
+              <td key={idx}>{header.toLowerCase() == "url" && row[header] ? <a href={row[header]}>url</a> : row[header]}</td>)}
             {tags ? <td>
               {tags.map((tag, idx) => (
                 <button 

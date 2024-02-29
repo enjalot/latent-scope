@@ -14,6 +14,7 @@ ScatterPlot.propTypes = {
   colors: PropTypes.array,              // an array of integer values
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
+  pointScale: PropTypes.number,
   duration: PropTypes.number,
   onScatter: PropTypes.func,
   onView: PropTypes.func,
@@ -51,6 +52,7 @@ function ScatterPlot ({
   width, 
   height, 
   duration = 0,
+  pointScale = 1,
   onScatter,
   onView,
   onSelect,
@@ -115,7 +117,7 @@ function ScatterPlot ({
     const prevPoints = prevPointsRef.current;
     if(scatterplot && points && points.length){
     
-      const pointSize = calculatePointSize(points.length);
+      const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
       // console.log("point size", pointSize, opacity)
       let pointColor = [250/255, 128/255, 114/255, 1] //salmon
