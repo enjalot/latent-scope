@@ -220,7 +220,7 @@
   width: var(--umap-width);
   margin-right: 48px;
   height: 100%;
-  overflow-y: none;
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -230,6 +230,7 @@
   position: relative;
   width: var(--umap-width);
   height: var(--umap-width);
+  min-height: var(--umap-width);
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
   margin: 12px;
@@ -237,10 +238,12 @@
 }
 .dataset--hovered {
   width: var(--umap-width);
+  flex-grow: 1;
   overflow-y: hidden;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
   padding: 12px;
   margin: 12px;
+  position: relative;
 
 }
 .dataset--hovered {
@@ -272,8 +275,8 @@
 .dataset--setup-preview {
   width: var(--umap-width);
   max-height: 340px;
-  flex-grow: 1;
-  height: 100%;
+  min-height: 340px;
+  height: 340px;
   overflow: scroll;
 
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);

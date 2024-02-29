@@ -634,13 +634,13 @@ function Setup() {
 
           <div className="dataset--hovered">
             {/* Hovered: &nbsp; */}
+            {hoveredCluster ? <span><span className="key">Cluster:</span><span className="value">{hoveredCluster.index}: {hoveredCluster.label}</span></span> : null }
             {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span> 
                 <span className="value">{hovered[key]}</span>
               </span>
             ))}
-            {hoveredCluster ? <span><span className="key">Cluster:</span><span className="value">{hoveredCluster.index}: {hoveredCluster.label}</span></span> : null }
             {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
           </div>
 
