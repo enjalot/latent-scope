@@ -97,6 +97,13 @@ function Compare() {
         console.log("embeddings", embeddingsData)
         console.log("umaps", umapsData)
         setEmbeddings(embeddingsData)
+        umapsData.sort((a, b) => {
+          if (b.align_id < a.align_id) return -1;
+          if (b.align_id > a.align_id) return 1;
+          if (a.id < b.id) return -1;
+          if (a.id > b.id) return 1;
+          return 0;
+        });
         setUmaps(umapsData)
       });
   }, [datasetId, setEmbeddings, setUmaps]);
@@ -330,7 +337,7 @@ function Compare() {
                 let emb = embeddings.find(d => um.embedding_id == d.id)
                 return (
                 <option key={index} value={um.id}>
-                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}]
+                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}] {um.align_id}
                   </option>
               )})}
             </select>
@@ -363,7 +370,7 @@ function Compare() {
                 let emb = embeddings.find(d => um.embedding_id == d.id)
                 return (
                 <option key={index} value={um.id}>
-                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}]
+                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}] {um.align_id}
                   </option>
               )})}
             </select>
