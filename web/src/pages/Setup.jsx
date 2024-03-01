@@ -470,6 +470,7 @@ function Setup() {
         <div className="dataset--setup-info">
           <div className="dataset--setup-info-content">
             { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link> : null }
+            { umaps && umaps.length > 1 ? <Link to={`/datasets/${dataset?.id}/compare`}> Compare UMAPs <br/></Link> : null }
             {dataset.length} rows <br/>
             Columns: {dataset.columns.join(", ")}
             <div className="dataset--details-text-column">
