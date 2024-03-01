@@ -582,6 +582,7 @@ function Setup() {
               points={drawPoints} 
               width={scopeWidth} 
               height={scopeHeight}
+              colorScaleType="categorical"
               duration={1000}
               onScatter={setScatter}
               onView={handleView} 

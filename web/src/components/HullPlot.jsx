@@ -53,7 +53,7 @@ const HullPlot = ({
     const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0]) / 2);
 
     // Calculate a scaled stroke width
-    const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
+    const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor) / 2;
 
     const g = svg.select("g.hull-container");
     g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);

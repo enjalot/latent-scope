@@ -417,6 +417,7 @@ function Explore() {
                 duration={2000}
                 width={scopeWidth}
                 height={scopeHeight}
+                colorScaleType="categorical"
                 onScatter={setScatter}
                 onView={handleView}
                 onSelect={handleSelected}
@@ -573,7 +574,7 @@ function Explore() {
                   onChange={(e) => handleModelSelect(e.target.value)}
                   value={searchModel}>
                   {embeddings.map((emb, index) => (
-                    <option key={index} value={emb.id}>{emb.id} - {emb.model_id}</option>
+                    <option key={index} value={emb.id}>{emb.id} - {emb.model_id} - {emb.dimensions}</option>
                   ))}
                 </select>
 

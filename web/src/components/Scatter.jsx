@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import createScatterplot from 'regl-scatterplot';
 import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
-import { groups, extent } from 'd3-array';
+import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
 import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
 
@@ -15,6 +15,9 @@ ScatterPlot.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
+  colorScaleType: PropTypes.oneOf(["categorical", "continuous"]),
+  colorInterpolator: PropTypes.func,
+  opacityBy: PropTypes.string,
   duration: PropTypes.number,
   onScatter: PropTypes.func,
   onView: PropTypes.func,
@@ -48,11 +51,13 @@ const calculatePointOpacity = (numPoints) => {
 
 function ScatterPlot ({ 
   points, 
-  categories,
   width, 
   height, 
   duration = 0,
   pointScale = 1,
+  colorScaleType = null,
+  colorInterpolator = interpolateCool,
+  opacityBy,
   onScatter,
   onView,
   onSelect,
@@ -123,29 +128,39 @@ function ScatterPlot ({
       let pointColor = [250/255, 128/255, 114/255, 1] //salmon
 
       // let drawPoints = points
-      let categories = points[0].length === 3 ? true : false
-      if(categories) {
-        // drawPoints = points.map((p, i) => {
-        //   return [p[0], p[1], categories[i]]
-        // })
+      // let categories = points[0].length === 3 ? true : false
+      if(colorScaleType === "categorical") {
         const uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
-        // TODO: colors should already be chosen before passing in here
-        // const colorScale = scaleSequential(interpolateViridis)
-        // const colorScale = scaleSequential(interpolateTurbo)
-        const colorScale = scaleSequential(interpolateCool)
+        const colorScale = scaleSequential(colorInterpolator)
           .domain(extent(uniques).reverse());
         pointColor = uniques.map(u => rgb(colorScale(u)).hex())
+      } else if(colorScaleType === "continuous") {
+        let r = range(0, 100)
+        const colorScale = scaleSequential(colorInterpolator)
+          .domain([0, 100]);
+        pointColor = r.map(i => rgb(colorScale(i)).hex())
       }
 
-      scatterplot.set({
-        opacity: opacity,
-        pointSize: pointSize,
-      })
-      if(categories){
+
+      
+      if(colorScaleType){
         scatterplot.set({colorBy: 'valueA'});
       }
+      if(opacityBy) {
+        scatterplot.set({
+          opacityBy,
+          sizeBy: opacityBy,
+          opacity: [0.1, .2, .3, .4, .5,  1],
+          pointSize: [2, 4, 5, 6,  pointSize]
+        })
+      } else {
+        scatterplot.set({
+          opacity: opacity,
+          pointSize: pointSize,
+        })
+      }
       if(prevPoints && prevPoints.length === points.length) {
-        // console.log("transitioning scatterplot")
+        console.log("transitioning scatterplot" )
         scatterplot.draw(points, { transition: true, transitionDuration: duration}).then(() => {
           // don't color till after
           scatterplot.set({
@@ -154,7 +169,7 @@ function ScatterPlot ({
           scatterplot.draw(points, { transition: false });
         })
       } else {
-        // console.log("fresh draw scatterplot")
+        console.log("fresh draw scatterplot")
         scatterplot.set({
           pointColor: pointColor,
         })
@@ -162,7 +177,7 @@ function ScatterPlot ({
       }
       prevPointsRef.current = points;
     }
-  }, [points, categories, width, height]);
+  }, [points, width, height, colorScaleType, colorInterpolator, duration, pointScale]);
 
   return <canvas className={styles.scatter} ref={container} />;
 }

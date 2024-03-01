@@ -1,6 +1,10 @@
 import { useReducer, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 
+import { extent } from 'd3-array';
+import { scaleSymlog } from 'd3-scale';
+import { interpolateMagma, interpolateReds, interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
+
 // import DataTable from '../components/DataTable';
 import IndexDataTable from '../components/IndexDataTable';
 import Scatter from '../components/Scatter';
@@ -8,6 +12,7 @@ import AnnotationPlot from '../components/AnnotationPlot';
 // import HullPlot from '../components/HullPlot';
 
 import styles from  "./Compare.module.css"
+console.log("styles", styles)
 
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
@@ -59,7 +64,7 @@ function Compare() {
       }
       window.addEventListener('resize', updateSize);
       updateSize();
-      setTimeout(updateSize, 100)
+      setTimeout(updateSize, 200)
       return () => window.removeEventListener('resize', updateSize);
     }, []);
     return size;
@@ -109,6 +114,8 @@ function Compare() {
   const [umap, setUmap] = useState(null)
   const [points, setPoints] = useState([]);
   const [drawPoints, setDrawPoints] = useState([]); // this is the points with the cluster number
+  const drawPointsRef = useRef([])
+  const pointsRef = useRef([])
   useEffect(() => {
     if(umaps && left && right && direction) {
 
@@ -124,9 +131,15 @@ function Compare() {
         // console.log("set points")
         const pts = pointsData.map(d => [d.x, d.y])
         setPoints(pts)
+        pointsRef.current = pts
 
-        const dpts = pointsData.map((d, i) => [d.x, d.y, i/pts.length])
+        // const dpts = pointsData.map((d, i) => [d.x, d.y, i/pts.length])
+        const dpts = pointsData.map((d,i) => {
+          let c = drawPointsRef.current[i]
+          return [d.x, d.y, c ? c[2] : 0]
+        })
         setDrawPoints(dpts)
+        drawPointsRef.current = dpts
 
       }).catch(error => console.error("Fetching data failed", error));
 
@@ -134,22 +147,52 @@ function Compare() {
   }, [datasetId, direction, left, right, umaps, setUmap, setPoints, setDrawPoints]);
 
 
+  let firstPoints = useRef(false)
+  let dispChange = useRef("")
+  const [displacementLoading, setDisplacementLoading] = useState(false)
+  useEffect(() => {
+    let change = left?.id + right?.id + firstPoints.current
+    if(left && right && points.length) {
+      if(dispChange.current !== change){
+        setDisplacementLoading(true)
+        fetch(`${apiUrl}/search/compare?dataset=${datasetId}&umap_left=${left.id}&umap_right=${right.id}&k=10`)
+          .then(response => response.json())
+          .then((displacementData) => {
+            // console.log("displacement data", displacementData)
+            const log = scaleSymlog(extent(displacementData), [0, 1])
+            const dpts = pointsRef.current.map((d, i) => [d[0], d[1], log(displacementData[i])])
+            setDrawPoints(dpts)
+            drawPointsRef.current = dpts
+            setDisplacementLoading(false)
+            firstPoints.current = true
+            dispChange.current = left?.id + right?.id + firstPoints.current
+          })
+      } else {
+        // // the left, right or points changed so we do draw points
+        // console.log("update draw points")
+        // const dpts = points.map((d, i) => [d[0], d[1], drawPointsRef.current[i] || 0])
+        // setDrawPoints(dpts)
+        // drawPointsRef.current = dpts
+      }
+    }
+  }, [datasetId, left, right, points])
+
   // The search model is the embeddings model that we pass to the nearest neighbor query
   // we want to enable searching with any embedding set
   const [searchModel, setSearchModel] = useState(null)
 
   useEffect(() => {
     if (embeddings) {
-      setSearchModel(embeddings[0]?.id)
+      setSearchModel(embeddings[0])
     }
   }, [embeddings, setSearchModel])
 
 
   // const [activeUmap, setActiveUmap] = useState(null)
-  const handleModelSelect = (model) => {
+  const handleModelSelect = useCallback((model) => {
     console.log("selected", model)
-    setSearchModel(model)
-  }
+    setSearchModel(embeddings.find(e => e.id == model))
+  }, [embeddings])
 
 
   const hydrateIndices = useCallback((indices, setter, distances = []) => {
@@ -203,15 +246,15 @@ function Compare() {
   // index of item being hovered over
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [hovered, setHovered] = useState(null);
-  useEffect(() => {
-    if (hoveredIndex !== null && hoveredIndex !== undefined) {
-      hydrateIndices([hoveredIndex], (results) => {
-        setHovered(results[0])
-      })
-    } else {
-      setHovered(null)
-    }
-  }, [hoveredIndex, setHovered, hydrateIndices])
+  // useEffect(() => {
+  //   if (hoveredIndex !== null && hoveredIndex !== undefined) {
+  //     hydrateIndices([hoveredIndex], (results) => {
+  //       setHovered(results[0])
+  //     })
+  //   } else {
+  //     setHovered(null)
+  //   }
+  // }, [hoveredIndex, setHovered, hydrateIndices])
 
 
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
@@ -228,7 +271,7 @@ function Compare() {
   const [distances, setDistances] = useState([]);
 
   const searchQuery = useCallback((query) => {
-    fetch(`${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&embedding_id=${searchModel}`)
+    fetch(`${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&embedding_id=${searchModel.id}&dimensions=${searchModel.dimensions}`)
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
@@ -279,11 +322,14 @@ function Compare() {
             {/* </h3> */}
           </div>
           <div className={styles["umap-selectors"]}>
-            <select name="left" onChange={handleSetLeft}>
+            <select 
+              name="left" 
+              value={left?.id}
+              onChange={handleSetLeft}>
               {umaps.map((um, index) => {
                 let emb = embeddings.find(d => um.embedding_id == d.id)
                 return (
-                <option key={index} value={um.id} selected={um.id == left?.id}>
+                <option key={index} value={um.id}>
                   {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}]
                   </option>
               )})}
@@ -309,40 +355,53 @@ function Compare() {
                 /> 👉
               </label>
             </div>
-            <select name="right" onChange={handleSetRight}>
+            <select 
+              name="right" 
+              onChange={handleSetRight}
+              value={right?.id}>
               {umaps.map((um, index) => {
                 let emb = embeddings.find(d => um.embedding_id == d.id)
                 return (
-                <option key={index} value={um.id} selected={um.id == right?.id}>
+                <option key={index} value={um.id}>
                   {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}]
                   </option>
               )})}
             </select>
+            {/* <br></br>
+            <span>
+                  Displacement loading {displacementLoading ? "⏰" : "✅"}
+            </span> */}
           </div>
         </div>
       </div>
       <div ref={containerRef} className={styles["umap-container"]}>
         <div className={styles["scatters"]} style={{ width: scopeWidth, height: scopeHeight }}>
           {points.length ? <>
-            { !isIOS() ? <Scatter
-              points={drawPoints}
-              duration={2000}
-              pointScale={1.5}
+            <div className={styles["scatter"]}>
+              { !isIOS() ? <Scatter
+                points={drawPoints}
+                duration={2000}
+                pointScale={1.5}
+                width={scopeWidth}
+                height={scopeHeight}
+                colorScaleType="continuous"
+                colorInterpolator={interpolateMagma}
+                opacityBy="valueA"
+                // colorInterpolator={interpolateReds}
+                onScatter={setScatter}
+                onView={handleView}
+                onSelect={handleSelected}
+                onHover={handleHover}
+              /> : <AnnotationPlot
+              points={points}
+              fill="gray"
+              size="8"
+              xDomain={xDomain}
+              yDomain={yDomain}
               width={scopeWidth}
               height={scopeHeight}
-              onScatter={setScatter}
-              onView={handleView}
-              onSelect={handleSelected}
-              onHover={handleHover}
-            /> : <AnnotationPlot
-            points={points}
-            fill="gray"
-            size="8"
-            xDomain={xDomain}
-            yDomain={yDomain}
-            width={scopeWidth}
-            height={scopeHeight}
-          /> }
+            /> }
+            </div>
             <AnnotationPlot
               points={searchAnnotations}
               stroke="black"
@@ -433,7 +492,7 @@ function Compare() {
                 <label htmlFor="embeddingModel"></label>
                 <select id="embeddingModel"
                   onChange={(e) => handleModelSelect(e.target.value)}
-                  value={searchModel}>
+                  defaultValue={searchModel?.id}>
                   {embeddings.map((emb, index) => (
                     <option key={index} value={emb.id}>{emb.id} - {emb.model_id} - {emb.dimensions}</option>
                   ))}
