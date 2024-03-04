@@ -235,6 +235,41 @@ def embed_debug(parquet_file, model_id, text_column):
         embedding = model.embed([text])
         print("embedding", embedding)
         
+# def importer():
+#     parser = argparse.ArgumentParser(description='Import embeddings from a numpy file to an HDF5 file')
+#     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
+#     parser.add_argument('model_id', type=str, help='ID of embedding to use')
+#     parser.add_argument('npy_file', type=str, help='Path to the numpy file')
+#     args = parser.parse_args()
+#     embed_importer(args.dataset_id, args.model_id, args.npy_file)
+
+def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefix=""):
+    DATA_DIR = get_data_dir()
+    embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
+    # determine the index of the last umap run by looking in the dataset directory
+    # for files named umap-<number>.json
+    embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
+    if len(embedding_files) > 0:
+        last_umap = sorted(embedding_files)[-1]
+        last_embedding_number = int(last_umap.split("-")[1].split(".")[0])
+        next_embedding_number = last_embedding_number + 1
+    else:
+        next_embedding_number = 1
+    # make the umap name from the number, zero padded to 3 digits
+    embedding_id = f"embedding-{next_embedding_number:03d}"
+
+    print("importing embeddings with shape", embeddings.shape, "to", os.path.join(embedding_dir, f"{embedding_id}.h5"))
+    append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
+    with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
+        json.dump({
+            "id": embedding_id,
+            "model_id": model_id,
+            "dataset_id": dataset_id,
+            "dimensions": embeddings.shape[1],
+            "text_column": text_column,
+            "prefix": prefix
+        }, f, indent=2)
+    print("done with", embedding_id)
 
 if __name__ == "__main__":
    main() 

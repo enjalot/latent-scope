@@ -2,6 +2,7 @@
 from . import models
 from .scripts.ingest import ingest
 from .scripts.embed import embed
+from .scripts.embed import import_embeddings
 from .scripts.umapper import umapper as umap
 from .scripts.cluster import clusterer as cluster
 from .scripts.label_clusters import labeler as label
