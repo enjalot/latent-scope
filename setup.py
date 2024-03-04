@@ -43,7 +43,7 @@ class CustomBuild(build_py):
 
 setup(
     name='latentscope',
-    version='0.1.1',
+    version='0.1.2',
     description='Quickly embed, project, cluster and explore a dataset.',
     long_description=long_description,
     long_description_content_type='text/markdown',
