@@ -31,12 +31,13 @@ def main():
     parser.add_argument('umap_id', type=str, help='ID of the UMAP file')
     parser.add_argument('samples', type=int, help='Minimum cluster size')
     parser.add_argument('min_samples', type=int, help='Minimum samples for HDBSCAN')
+    parser.add_argument('cluster_selection_epsilon', type=float, help='Cluster selection Epsilon', default=0)
     
     args = parser.parse_args()
-    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples)
+    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples, args.cluster_selection_epsilon)
 
 
-def clusterer(dataset_id, umap_id, samples, min_samples):
+def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon):
     DATA_DIR = get_data_dir()
     cluster_dir = os.path.join(DATA_DIR, dataset_id, "clusters")
     # Check if clusters directory exists, if not, create it
@@ -59,7 +60,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
     umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
     umap_embeddings = umap_embeddings_df.to_numpy()
 
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean')
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean', cluster_selection_epsilon=cluster_selection_epsilon)
     clusterer.fit(umap_embeddings)
 
     # Get the cluster labels
@@ -72,6 +73,8 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
     non_noise_labels = unique_labels[unique_labels != -1]
     centroids = [umap_embeddings[cluster_labels == label].mean(axis=0) for label in non_noise_labels]
 
+    # TODO: look into soft clustering
+    # https://hdbscan.readthedocs.io/en/latest/soft_clustering.html
     # Assign noise points to the closest cluster centroid
     noise_points = umap_embeddings[cluster_labels == -1]
     if(non_noise_labels.shape[0] > 0):
@@ -120,6 +123,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples):
             "umap_id": umap_id, 
             "samples": samples, 
             "min_samples": min_samples,
+            "cluster_selection_epsilon": cluster_selection_epsilon,
             "n_clusters": len(non_noise_labels),
             "n_noise": len(noise_points)
         }, f, indent=2)

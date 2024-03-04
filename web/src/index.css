@@ -64,6 +64,38 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.button {
+  display: inline-block;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  /* padding: 0.6em 1.2em; */
+  padding: 0.3em 0.6em;
+  font-size: 1em;
+  font-weight: 500;
+  /* font-family: inherit; */
+  font-family: 'Orbitron', sans-serif;
+  /* background-color: #1a1a1a; */
+  cursor: pointer;
+  transition: border-color 0.25s;
+  width: fit-content;
+}
+.button:hover {
+  border-color: #646cff;
+}
+.button:focus,
+.button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.tooltip {
+  filter: grayscale(100%);
+  padding: 0.5em 0.5em;
+}
+.tooltip:hover {
+  filter: grayscale(0%)
+
+}
+
 select {
   font-weight: 500;
 }

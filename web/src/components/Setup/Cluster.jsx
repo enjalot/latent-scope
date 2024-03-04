@@ -1,5 +1,6 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
+import { Tooltip } from 'react-tooltip';
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 const apiUrl = import.meta.env.VITE_API_URL
@@ -38,7 +39,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
           }
         })
         // console.log("clusters", clusters)
-        callback(array.reverse())
+        callback(array)
       });
   }
   
@@ -70,20 +71,38 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
     const data = new FormData(form)
     const samples = data.get('samples')
     const min_samples = data.get('min_samples')
-    startClusterJob({umap_id: umap.id, samples, min_samples})
+    const cluster_selection_epsilon = data.get('cluster_selection_epsilon')
+    startClusterJob({umap_id: umap.id, samples, min_samples, cluster_selection_epsilon})
   }, [startClusterJob, umap])
 
 
   return (
     <div className="dataset--clusters-new">
+      <div>Cluster using <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a></div>
       <form onSubmit={(e) => handleNewCluster(e, umap)}>
         <label>
-          Samples:
-          <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 5 : 25} disabled={!!clusterJob || !umap}/>
+          Min Cluster Size:
+          <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : 25} disabled={!!clusterJob || !umap}/>
+          <span className="tooltip" data-tooltip-id="samples">🤔</span>
+          <Tooltip id="samples" place="top" effect="solid">
+            This parameter determines the minimum number of data points you need to make a cluster. lower values mean more clusters.
+          </Tooltip>
         </label>
         <label>
           Min Samples:
-          <input type="number" name="min_samples" defaultValue="5" disabled={!!clusterJob || !umap} />
+          <input type="number" name="min_samples" defaultValue={dataset.length < 1000 ? 2 : 5} disabled={!!clusterJob || !umap} />
+          <span className="tooltip" data-tooltip-id="min_samples">🤔</span>
+          <Tooltip id="min_samples" place="top" effect="solid">
+            The number of samples in a neighbourhoodfor a point to be considered a core point. lower values mean more clusters.
+          </Tooltip>
+        </label>
+        <label>
+          Cluster Selection Epsilon:
+          <input type="number" name="cluster_selection_epsilon" defaultValue={dataset.length < 1000 ? 0.05 : 0.005} step="0.0001" disabled={!!clusterJob || !umap} />
+          <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">🤔</span>
+          <Tooltip id="cluster_selection_epsilon" place="top" effect="solid">
+            This parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
+          </Tooltip>
         </label>
         <button type="submit" disabled={!!clusterJob || !umap}>New Clusters</button>
       </form> 
@@ -105,6 +124,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
               Noise points: {cl.n_noise}<br/>
               Samples: {cl.samples}<br/>
               Min Samples: {cl.min_samples}<br/>
+              { cl.cluster_selection_epsilon ? <>Cluster Selection Epsilon: {cl.cluster_selection_epsilon} <br/></>: null }
             <img src={cl.url} alt={cl.id} /><br/>
             <button onClick={() => deleteClusterJob({cluster_id: cl.id}) }>🗑️</button>
             </label>

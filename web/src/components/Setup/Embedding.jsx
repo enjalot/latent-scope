@@ -1,5 +1,6 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback } from 'react';
+import { Tooltip } from 'react-tooltip'
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 const apiUrl = import.meta.env.VITE_API_URL
@@ -27,6 +28,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed`);
   const { startJob: deleteEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/delete/embedding`);
   const { startJob: rerunEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/rerun`);
+  const { startJob: startEmbeddingsTruncateJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed_truncate`);
 
   const [models, setModels] = useState([]);
   useEffect(() => {
@@ -100,6 +102,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     setDimensions(+e.target.value)
   }
 
+  const handleTruncate = useCallback((embeddingId) => {
+    const selectedDimension = document.getElementById(`truncate-${embeddingId}`).value;
+    console.log("truncating", embeddingId, selectedDimension)
+    startEmbeddingsTruncateJob({embedding_id: embeddingId, dimensions: selectedDimension })
+  }, [startEmbeddingsTruncateJob])
+
   return (
     <div>
       <div className={styles["embeddings-form"]}>
@@ -124,7 +132,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         setEmbeddingsJob(null)
       }} rerunJob={handleRerunEmbedding} />
       <div className={styles["embeddings-list"]}>
-      {embeddings.map((emb, index) => (
+      {embeddings.map((emb, index) => {
+        let umps = umaps.filter(d => d.embedding_id == emb.id)
+        let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0)
+        let m = models.find(d => d.id == emb.model_id)
+        let dims = m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : []
+        return (
         <div className="item" key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
           <label htmlFor={`embedding${index}`}>
@@ -133,14 +146,27 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
               <span>Dimensions: {emb.dimensions}</span><br/>
               { emb.prefix ? <span>Prefix: {emb.prefix}<br/></span> : null }
               <span>[
-                {umaps.filter(d => d.embedding_id == emb.id).length} umaps,&nbsp;
-                {clusters.filter(d => umaps.filter(d => d.embedding_id == emb.id).map(d => d.id).indexOf(d.umap_id) >= 0).length} clusters 
+                {umps.length} umaps,&nbsp;
+                {cls.length} clusters 
               ]</span>
+                {dims.length && <div className={styles["truncate"]}>
+                  <select id={"truncate-"+emb.id}>
+                    {dims.map((d,i) => {
+                      return (<option key={"dimension-"+i} value={d}>{d}</option>)
+                    })}
+                  </select>
+                  <span className="button" onClick={() => handleTruncate(emb.id)}>Truncate copy</span>
+                  <span className="tooltip" data-tooltip-id="truncate">🤔</span>
+                  <Tooltip id="truncate" place="top" effect="solid">
+                    This model supports Matroyshka embeddings. You can make a truncated copy of this embedding with fewer dimensions.
+                  </Tooltip>
+              </div>}
               <button onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
             </span>
           </label>
         </div>
-      ))}
+      )}
+    )}
     </div>
     </div>
   );

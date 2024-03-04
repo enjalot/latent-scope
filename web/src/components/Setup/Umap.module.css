@@ -23,3 +23,21 @@
   height: 120px;
   user-select: none;
 }
+
+.umaps-align {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.umaps-align-info {
+  font-style: italic;
+  margin: 6px;
+}
+.umaps-align label {
+  cursor: pointer;
+  padding: 4px;
+  border: 1px solid #f1f1f1;
+  background-color: #f1f1f1;
+  border-radius: 5px;
+}
+

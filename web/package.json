@@ -20,6 +20,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
+    "react-tooltip": "^5.26.3",
     "regl-scatterplot": "^1.8.5",
     "request": "^2.88.2"
   },

@@ -75,8 +75,18 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
     const data = new FormData(form)
     const neighbors = data.get('neighbors')
     const min_dist = data.get('min_dist')
-    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist, init})
+    const align = Array.from(document.querySelectorAll('input[name="umapAlign"]:checked'))
+      .map(input => input.value)
+      .sort((a,b) => a.localeCompare(b))
+      .join(",")
+    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist, init, align})
   }, [startUmapJob, embedding, init])
+
+  const [showAlign, setShowAlign] = useState(false);
+
+  const toggleShowAlign = useCallback(() => {
+    setShowAlign(!showAlign);
+  }, [showAlign, setShowAlign]);
 
   return (
       <div className="dataset--umaps-new">
@@ -102,6 +112,21 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
               )})}
             </select>
           </label>
+          <span className="button" onClick={toggleShowAlign}>{showAlign ? 'x Align UMAPs' : '+ Align UMAPs'}</span>
+          {showAlign && <div className={styles["umaps-align"]}>
+            <span className={styles["umaps-align-info"]}>
+              Choose 1 or more embeddings to align alongside {embedding?.id}. 
+              An <a href="https://umap-learn.readthedocs.io/en/latest/aligned_umap_basic_usage.html">Aligned UMAP</a> will be generated for each embedding selected.
+            </span>
+            {embeddings.map((emb, index) => {
+              if(emb.id == embedding?.id) return null
+              return (<label key={index}>
+                <input type="checkbox" id={`umap-align-${emb.id}`} name="umapAlign" value={emb.id} />
+                {emb.id} - {emb.model_id} [{emb.dimensions}]
+              </label>
+            )}
+            )} 
+          </div>}
           <button type="submit" disabled={!!umapJob}>New UMAP</button>
         </form>
         <JobProgress job={umapJob} clearJob={()=> setUmapJob(null)}/>

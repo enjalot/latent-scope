@@ -144,6 +144,17 @@ def run_embed():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
+@jobs_write_bp.route('/embed_truncate')
+def run_embed_truncate():
+    dataset = request.args.get('dataset')
+    embedding_id = request.args.get('embedding_id') # model id
+    dimensions = request.args.get('dimensions')
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-embed-truncate {dataset} {embedding_id} {dimensions}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
 @jobs_write_bp.route('/rerun')
 def rerun_job():
     dataset = request.args.get('dataset')
@@ -210,10 +221,16 @@ def run_umap():
     neighbors = request.args.get('neighbors')
     min_dist = request.args.get('min_dist')
     init = request.args.get('init')
-    print("run umap", dataset, embedding_id, neighbors, min_dist, init)
+    align = request.args.get('align')
+    print("run umap", dataset, embedding_id, neighbors, min_dist, init, align)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-umap {dataset} {embedding_id} {neighbors} {min_dist} --init={init}'
+    command = f'ls-umap {dataset} {embedding_id} {neighbors} {min_dist}'
+    if init:
+        command += f' --init={init}'
+    if align:
+        command += f' --align={align}'
+
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -249,10 +266,11 @@ def run_cluster():
     umap_id = request.args.get('umap_id')
     samples = request.args.get('samples')
     min_samples = request.args.get('min_samples')
-    print("run cluster", dataset, umap_id, samples, min_samples)
+    cluster_selection_epsilon = request.args.get('cluster_selection_epsilon')
+    print("run cluster", dataset, umap_id, samples, min_samples, cluster_selection_epsilon)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-cluster {dataset} {umap_id} {samples} {min_samples}'
+    command = f'ls-cluster {dataset} {umap_id} {samples} {min_samples} {cluster_selection_epsilon}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

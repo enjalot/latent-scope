@@ -13,3 +13,10 @@
 .embeddings-list input, .embeddings-list label {
   cursor: pointer;
 }
+
+.truncate {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin: 6px 0;
+}
