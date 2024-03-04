@@ -209,7 +209,8 @@ function Setup() {
         if(found) {
           return found
         } else {
-          return filtered[0]
+          // return filtered[0]
+          return { id: "default" }
         }
       } else {
         return clusterLabelSets[0]
