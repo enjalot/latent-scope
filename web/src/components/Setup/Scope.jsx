@@ -1,6 +1,6 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 const apiUrl = import.meta.env.VITE_API_URL
 
 
@@ -34,6 +34,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
       });
     }
   }, [dataset]);
+
 
   const handleSaveScope = useCallback((event) => {
     event.preventDefault();
@@ -77,7 +78,23 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
     .catch(error => {
       console.error('Error saving scope:', error);
     });
-  }, [dataset, scope, cluster, clusterLabelId, umap, embedding , navigate, onChange]);
+  }, [dataset, scope, cluster, clusterLabelId, umap, embedding , navigate, onChange, onNew]);
+
+  const [isDifferent, setIsDifferent] = useState(false);
+  useEffect(() => {
+    if(!scope) {
+      setIsDifferent(true);
+    } else {
+      if(scope.embedding_id != embedding?.id
+        || scope.umap_id != umap?.id
+        || scope.cluster_id != cluster?.id
+        || scope.cluster_labels_id != clusterLabelId) {
+        setIsDifferent(true);
+      } else {
+        setIsDifferent(false)
+      }
+    }
+  }, [scope, cluster, umap, embedding, clusterLabelId]);
 
   return (
     <div className="setup-scope">
@@ -109,7 +126,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
             <input type="text" name="description" defaultValue={scope ? scope.description: ""}/>
           </label>
           <input type="hidden" name="action" value="" />
-        {scope ? <div className="previous-scope">
+        {scope && isDifferent ? <div className="previous-scope">
           <h4>Previous Scope Settings</h4>
           Embedding: {scope.embedding_id}<br/>
           Umap: { scope.umap_id }<br/>
@@ -117,14 +134,15 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
           Labels: { scope.cluster_labels_id }<br/>
 
         </div> : null }
-          {scope ? 
+          {scope && isDifferent ? 
             <button type="submit" disabled={cluster ? false : true } onClick={() => { 
               document.querySelector('input[name="action"]').value = 'save'; 
             }}>Overwrite {scope.name}</button> : null }
-            <button type="submit" disabled={cluster ? false : true } onClick={() => { 
+            { isDifferent ? <button type="submit" disabled={cluster ? false : true } onClick={() => { 
               document.querySelector('input[name="action"]').value = 'new'; 
-            }}>New scope</button>
+            }}>New scope</button> : null }
         </form>
+        { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link> : null }
         
       </div>
     </div>
