@@ -573,7 +573,7 @@ function Explore() {
                 <select id="embeddingModel"
                   onChange={(e) => handleModelSelect(e.target.value)}
                   value={searchModel}>
-                  {embeddings.map((emb, index) => (
+                  {embeddings.filter(d => d.model_id).map((emb, index) => (
                     <option key={index} value={emb.id}>{emb.id} - {emb.model_id} - {emb.dimensions}</option>
                   ))}
                 </select>

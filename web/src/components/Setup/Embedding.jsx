@@ -136,7 +136,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         let umps = umaps.filter(d => d.embedding_id == emb.id)
         let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0)
         let m = models.find(d => d.id == emb.model_id)
-        let dims = m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : []
+        let dims = m ? m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : [] : []
         return (
         <div className="item" key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />

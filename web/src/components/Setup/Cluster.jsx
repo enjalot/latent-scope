@@ -82,7 +82,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
       <form onSubmit={(e) => handleNewCluster(e, umap)}>
         <label>
           Min Cluster Size:
-          <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : 25} disabled={!!clusterJob || !umap}/>
+          <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : dataset.length < 10000 ? 15 : 25} disabled={!!clusterJob || !umap}/>
           <span className="tooltip" data-tooltip-id="samples">🤔</span>
           <Tooltip id="samples" place="top" effect="solid">
             This parameter determines the minimum number of data points you need to make a cluster. lower values mean more clusters.
