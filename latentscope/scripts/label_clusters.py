@@ -27,9 +27,9 @@ def chunked_iterable(iterable, size):
 
 def too_many_duplicates(line, threshold=10):
     word_count = {}
-    if line is None:
+    if not line:
         return False
-    words = line.split()
+    words = str(line).split()
     for word in words:
         word_count[word] = word_count.get(word, 0) + 1
     return any(count > threshold for count in word_count.values())
