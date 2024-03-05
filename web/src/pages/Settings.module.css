@@ -1,0 +1,47 @@
+
+.settings {
+
+}
+.header {
+  padding: 12px 12px;
+  margin: 0;
+}
+
+.settings code {
+  font-size: 1.2em;
+  padding: 4px;
+}
+.dot-env {
+  padding: 12px;
+}
+.data-dir {
+  padding: 12px;
+}
+
+.api-keys {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.api-key {
+
+}
+.api-key form {
+  display: inline-block;
+}
+
+.key-text {
+  display: inline-block;
+  width: 170px;
+  font-family: 'Courier', sans-serif;
+}
+.api-key-input {
+  width: 300px;
+  padding: 2px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
