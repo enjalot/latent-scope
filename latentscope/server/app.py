@@ -6,11 +6,12 @@ import logging
 import argparse
 import pandas as pd
 import pkg_resources
+from dotenv import dotenv_values, set_key
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 # from latentscope.util import update_data_dir
-from latentscope.util import get_data_dir 
+from latentscope.util import get_data_dir, get_supported_api_keys
 
 app = Flask(__name__)
 
@@ -101,6 +102,27 @@ def indexed():
     rows = df.iloc[indices]
     # send back the rows as json
     return rows.to_json(orient="records")
+
+if not READ_ONLY:
+    @app.route('/api/settings', methods=['POST'])
+    def update_settings():
+        data = request.get_json()
+        print("update settings", data)
+        for key in data:
+            set_key(".env", key, data[key])
+        return jsonify({})
+
+    @app.route('/api/settings', methods=['GET'])
+    def get_settings():
+        config = dotenv_values(".env")  # Assuming the .env file is in the root directory
+        settings = {
+            "data_dir": config["LATENT_SCOPE_DATA"],
+            "api_keys": [key for key in config if "_API_KEY" in key ],
+            "supported_api_keys": get_supported_api_keys(),
+            "env_file": os.path.abspath(".env")
+        }
+        return jsonify(settings)
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):

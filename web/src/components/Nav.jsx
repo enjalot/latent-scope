@@ -8,6 +8,7 @@ const Nav = () => {
     <nav>
       <ul>
         <li><Link to="/">Latent Scope</Link></li>
+        <li className="settings"><Link to="/settings">⚙ settings</Link></li>
       </ul>
     </nav>
   );

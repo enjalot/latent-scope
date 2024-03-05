@@ -37,6 +37,15 @@ def get_key(key, env_file=".env"):
     load_dotenv(env_file)
     return os.getenv(key)
 
+def get_supported_api_keys():
+    return [
+        "OPENAI_API_KEY",
+        "VOYAGE_API_KEY",
+        "TOGETHER_API_KEY",
+        "COHERE_API_KEY",
+        "MISTRAL_API_KEY"
+    ]
+
 def set_openai_key(openai_key, env_file=".env"):
     # Load existing .env file, or create one if it doesn't exist
     load_dotenv(env_file)

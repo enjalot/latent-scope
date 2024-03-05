@@ -28,3 +28,9 @@ nav li a {
 nav li a:hover {
   color: slateblue;
 }
+
+nav .settings {
+  position:absolute;
+  right: 10px;
+
+}
