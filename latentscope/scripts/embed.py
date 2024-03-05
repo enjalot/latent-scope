@@ -55,21 +55,19 @@ def main():
     parser.add_argument('--prefix', type=str, help='Prefix to prepend to text before embedding', default="")
     parser.add_argument('--dimensions', type=int, help='Truncate embeddings to dimensions a la Matroyshka embeddings')
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
+    parser.add_argument('--batch_size', type=int, help='Set the batch size (number of sentences to embed in one call)', default=100)
 
     # Parse arguments
     args = parser.parse_args()
-    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions)
+    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size)
 
-def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions):
+def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100):
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
     
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
     if not os.path.exists(embedding_dir):
         os.makedirs(embedding_dir)
-
-    batch_size = 100
-
     # determine the embedding id
     if rerun is not None:
         embedding_id = rerun

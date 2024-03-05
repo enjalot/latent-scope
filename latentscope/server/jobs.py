@@ -136,9 +136,10 @@ def run_embed():
     model_id = request.args.get('model_id') # model id
     prefix = request.args.get('prefix')
     dimensions = request.args.get('dimensions')
+    batch_size = request.args.get('batch_size')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed {dataset} {text_column} {model_id} --prefix="{prefix}"'
+    command = f'ls-embed {dataset} "{text_column}" {model_id} --prefix="{prefix}" --batch_size={batch_size}'
     if dimensions is not None:
         command += f" --dimensions={dimensions}"
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
@@ -294,6 +295,6 @@ def run_cluster_label():
     print("context", context)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-label {dataset} {text_column} {cluster_id} {chat_id} "{context}"'
+    command = f'ls-label {dataset} "{text_column}" {cluster_id} {chat_id} "{context}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})

@@ -75,6 +75,8 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     }
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
 
+  const [batchSize, setBatchSize] = useState(100)
+
   const handleNewEmbedding = useCallback((e) => {
     e.preventDefault();
     const form = e.target;
@@ -84,11 +86,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     let job = { 
       text_column: textColumn,
       model_id: model.id,
-      prefix
+      prefix,
+      batch_size: batchSize
     };
     if(dimensions) job.dimensions = dimensions
     startEmbeddingsJob(job);
-  }, [startEmbeddingsJob, textColumn, models, dimensions]);
+  }, [startEmbeddingsJob, textColumn, models, dimensions, batchSize]);
 
   const handleRerunEmbedding = (job) => {
     rerunEmbeddingsJob({job_id: job?.id});
@@ -119,12 +122,25 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
               <option key={index} value={model.id}>{model.provider}: {model.name}</option>
             ))}
           </select></label>
+
           <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
-          {model && model.params.dimensions ? <select onChange={handleDimensionsChange}>
-            {model.params.dimensions.map((dim, index) => {
-              return <option key={index} value={dim}>{dim}</option>
-            })}
-          </select> : null}
+
+          <label> Batch Size:
+          <input className={styles["batch-size"]} type="number" min="1" max="100" name="batch_size" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} disabled={!!embeddingsJob} />
+          <span className="tooltip" data-tooltip-id="batchsize">🤔</span>
+          <Tooltip id="batchsize" place="top" effect="solid">
+            Reduce this number if you run out of memory. It determines how many items are processed at once. Max 100.
+          </Tooltip>
+          </label>
+
+          {model && model.params.dimensions ? 
+            <select onChange={handleDimensionsChange}>
+              {model.params.dimensions.map((dim, index) => {
+                return <option key={index} value={dim}>{dim}</option>
+              })}
+            </select> 
+          : null}
+
         <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
       </form>
       </div>
@@ -149,7 +165,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
                 {umps.length} umaps,&nbsp;
                 {cls.length} clusters 
               ]</span>
-                {dims.length && <div className={styles["truncate"]}>
+                {dims.length ? <div className={styles["truncate"]}>
                   <select id={"truncate-"+emb.id}>
                     {dims.map((d,i) => {
                       return (<option key={"dimension-"+i} value={d}>{d}</option>)
@@ -160,7 +176,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
                   <Tooltip id="truncate" place="top" effect="solid">
                     This model supports Matroyshka embeddings. You can make a truncated copy of this embedding with fewer dimensions.
                   </Tooltip>
-              </div>}
+              </div> : <br/> }
               <button onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
             </span>
           </label>
