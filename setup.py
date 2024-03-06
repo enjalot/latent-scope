@@ -22,14 +22,17 @@ class CustomBuild(build_py):
         npm_build_process = subprocess.Popen(npm_build_command, cwd=web_dir_path, shell=True)
         # Ensure the npm build subprocess has finished before continuing
         npm_build_process.wait()
+        print("done with npm run production")
 
         # Directory containing the web assets
         web_assets_src = os.path.join(os.getcwd(), 'web/dist/production')
         # Target directory for the web assets
-        web_assets_dest = os.path.join(os.getcwd(), 'latentscope/web/dist')
+        web_assets_dest = os.path.join(os.getcwd(), 'build/lib/latentscope/web/dist')
 
         # Create target directory if it doesn't exist
         os.makedirs(web_assets_dest, exist_ok=True)
+
+        print("copying files", web_assets_src, web_assets_dest)
 
         # Copy the files
         if os.path.exists(web_assets_src):
@@ -37,8 +40,10 @@ class CustomBuild(build_py):
                 s = os.path.join(web_assets_src, item)
                 d = os.path.join(web_assets_dest, item)
                 if os.path.isdir(s):
+                    print("copytree", s, d)
                     shutil.copytree(s, d, dirs_exist_ok=True)
                 else:
+                    print("copy", s, d)
                     shutil.copy2(s, d)
 
 setup(
