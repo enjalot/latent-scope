@@ -194,6 +194,8 @@ def embed_truncate(dataset_id, embedding_id, dimensions):
 
     print("truncating to", dimensions, "dimensions")
     matroyshka = embeddings[:, :dimensions]
+    # Normalize the truncated embeddings
+    matroyshka = matroyshka / np.linalg.norm(matroyshka, axis=0, keepdims=True)
     append_to_hdf5(os.path.join(embedding_dir, f"{new_embedding_id}.h5"), matroyshka)
     
     with open(os.path.join(embedding_dir, f"{new_embedding_id}.json"), 'w') as f:
