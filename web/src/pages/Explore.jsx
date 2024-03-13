@@ -398,6 +398,7 @@ function Explore() {
                 ))}
               </select>
               {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>}
+              {readonly ? null : <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>}
             </div>
             {/* </h3> */}
             <span>{scope?.description}</span>
