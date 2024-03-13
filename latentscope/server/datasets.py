@@ -197,31 +197,25 @@ def get_dataset_scope(dataset, scope):
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
-@datasets_write_bp.route('/<dataset>/scopes/save', methods=['POST'])
-def save_dataset_scope(dataset):
-    if not request.json:
-        return jsonify({"error": "Invalid data format, JSON expected"}), 400
-    id = request.json.get('id')
-    embedding_id = request.json.get('embedding_id')
-    umap_id = request.json.get('umap_id')
-    cluster_id = request.json.get('cluster_id')
-    cluster_labels_id = request.json.get('cluster_labels_id')
-    label = request.json.get('label')
-    description = request.json.get('description')
-    scope = {
-        "embedding_id": embedding_id,
-        "umap_id": umap_id,
-        "cluster_id": cluster_id,
-        "cluster_labels_id": cluster_labels_id,
-        "label": label,
-        "description": description
-    }
-    if not id:
-        next_scopes_number = get_next_scopes_number(dataset)
-        # make the umap name from the number, zero padded to 3 digits
-        id = f"scopes-{next_scopes_number:03d}"
-    scope["id"] = id
-    file_path = os.path.join(DATA_DIR, dataset, "scopes", id + ".json")
-    with open(file_path, 'w') as f:
-        json.dump(scope, f, indent=2)
-    return jsonify(scope)
+@datasets_bp.route('/<dataset>/export/list', methods=['GET'])
+def get_dataset_export_list(dataset):
+    directory_path = os.path.join(DATA_DIR, dataset)
+    print("dataset", dataset, directory_path)
+    # scan the directory for files and directories
+    # then walk the directories to find all the files
+    # then return the list of files
+    file_list = []
+    for root, dirs, files in os.walk(directory_path):
+        if "jobs" in root:
+            continue
+        for file in files:
+            if file == ".DS_Store":
+                continue
+            full_path = os.path.join(root, file)
+            file_name = os.path.basename(full_path)
+            relative_path = os.path.relpath(full_path, directory_path)
+            directory = os.path.relpath(root, directory_path)
+            size = os.path.getsize(full_path)
+            file_list.append((file_name, directory, relative_path, full_path, size))
+
+    return jsonify(file_list)

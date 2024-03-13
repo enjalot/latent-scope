@@ -471,6 +471,8 @@ function Setup() {
         <div className="dataset--setup-info">
           <div className="dataset--setup-info-content">
             { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link> : null }
+            { scope ? <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> Export data ({scope.id}) <br/></Link> 
+            : <Link to={`/datasets/${dataset?.id}/export`}> Export data <br/></Link> }
             { umaps && umaps.length > 1 ? <Link to={`/datasets/${dataset?.id}/compare`}> Compare UMAPs <br/></Link> : null }
             {dataset.length} rows <br/>
             Columns: {dataset.columns.join(", ")}

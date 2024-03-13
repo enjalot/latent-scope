@@ -298,3 +298,23 @@ def run_cluster_label():
     command = f'ls-label {dataset} "{text_column}" {cluster_id} {chat_id} "{context}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
+
+@jobs_write_bp.route('/scope')
+def run_scope():
+    dataset = request.args.get('dataset')
+    embedding_id = request.args.get('embedding_id')
+    umap_id = request.args.get('umap_id')
+    cluster_id = request.args.get('cluster_id')
+    cluster_labels_id = request.args.get('cluster_labels_id')
+    label = request.args.get('label')
+    description = request.args.get('description')
+    scope_id = request.args.get('scope_id')
+    print("run scope", dataset, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id)
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-scope {dataset} {embedding_id} {umap_id} {cluster_id} {cluster_labels_id} "{label}" "{description}"'
+    if scope_id:
+        command += f' --scope_id={scope_id}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+

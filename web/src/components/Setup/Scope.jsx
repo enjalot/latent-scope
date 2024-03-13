@@ -1,6 +1,9 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useStartJobPolling } from '../Job/Run';
+import JobProgress from '../Job/Progress';
+
 const apiUrl = import.meta.env.VITE_API_URL
 
 
@@ -19,21 +22,37 @@ Scope.propTypes = {
 };
 
 function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew, onChange}) {
-  // const[scopes, setScopes] = useState([]);
   const navigate = useNavigate();
+
+  const [scopeJob, setScopeJob] = useState(null);
+  const { startJob: startScopeJob} = useStartJobPolling(dataset, setScopeJob, `${apiUrl}/jobs/scope`);
 
   useEffect(() => {
     if(dataset) {
       console.log("fetching scopes")
-    fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
+      fetchScopes(dataset.id, onNew)
+    }
+  }, [dataset]);
+
+  function fetchScopes(datasetId, onNew) {
+    fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
       .then(response => response.json())
       .then(data => {
         const sorted = data.sort((a,b) => a.id.localeCompare(b.id))
-        // setScopes(sorted)
         onNew(sorted)
       });
+  }
+
+  useEffect(() => {
+    if(scopeJob?.status == "completed") {
+      fetchScopes(dataset.id, (scopes) => {
+        setScopeJob(null)
+        onNew(scopes)
+        // onChange(scopes.find(d => d.id == scopeJob.run_id))
+        navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
+      })
     }
-  }, [dataset]);
+  }, [scopeJob, dataset, navigate, onNew, onChange]);
 
 
   const handleSaveScope = useCallback((event) => {
@@ -53,32 +72,33 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
     const action = data.get('action')
     console.log("action", action)
     if(action == "save") {
-      payload.id = scope.id
+      payload.scope_id = scope.id
     }
+    startScopeJob(payload)
 
-    fetch(`${apiUrl}/datasets/${dataset.id}/scopes/save`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-    .then(response => response.json())
-    .then(data => {
-      const tscope = data
-      fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
-        .then(response => response.json())
-        .then(data => {
-          // setScopes(data)
-          onNew(data)
-          onChange(data.find(s => s.id == tscope.id))
-        });
-      navigate(`/datasets/${dataset.id}/setup/${data.id}`);
-    })
-    .catch(error => {
-      console.error('Error saving scope:', error);
-    });
-  }, [dataset, scope, cluster, clusterLabelId, umap, embedding , navigate, onChange, onNew]);
+    // fetch(`${apiUrl}/datasets/${dataset.id}/scopes/save`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json'
+    //   },
+    //   body: JSON.stringify(payload)
+    // })
+    // .then(response => response.json())
+    // .then(data => {
+    //   const tscope = data
+    //   fetch(`${apiUrl}/datasets/${dataset.id}/scopes`)
+    //     .then(response => response.json())
+    //     .then(data => {
+    //       // setScopes(data)
+    //       onNew(data)
+    //       onChange(data.find(s => s.id == tscope.id))
+    //     });
+    //   navigate(`/datasets/${dataset.id}/setup/${data.id}`);
+    // })
+    // .catch(error => {
+    //   console.error('Error saving scope:', error);
+    // });
+  }, [dataset, scope, cluster, clusterLabelId, umap, embedding]);
 
   const [isDifferent, setIsDifferent] = useState(false);
   useEffect(() => {
@@ -134,15 +154,21 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
           Labels: { scope.cluster_labels_id }<br/>
 
         </div> : null }
-          {scope && isDifferent ? 
+
+        <JobProgress job={scopeJob} clearJob={()=>setScopeJob(null)} />
+
+          {scope && !scopeJob ? 
             <button type="submit" disabled={cluster ? false : true } onClick={() => { 
               document.querySelector('input[name="action"]').value = 'save'; 
             }}>Overwrite {scope.name}</button> : null }
-            { isDifferent ? <button type="submit" disabled={cluster ? false : true } onClick={() => { 
+            { isDifferent && !scopeJob ? <button type="submit" disabled={cluster  ? false : true } onClick={() => { 
               document.querySelector('input[name="action"]').value = 'new'; 
             }}>New scope</button> : null }
         </form>
+
+
         { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link> : null }
+        { scope ? <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> Export data ({scope.id}) <br/></Link> : null }
         
       </div>
     </div>

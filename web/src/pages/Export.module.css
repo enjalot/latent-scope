@@ -1,0 +1,57 @@
+.page {
+
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  margin: 12px;
+  padding: 6px;
+}
+.header a {
+  padding: 6px;
+  display: inline-block;
+  width: fit-content
+
+}
+
+.scope-files {
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  margin: 12px;
+  padding: 6px;
+}
+
+.dataset-files {
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  margin: 12px;
+  padding: 6px;
+
+}
+
+.page h3 {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+  padding: 6px 12px;
+}
+.page ul {
+  list-style: none;
+  margin: 0;
+  padding: 0px 24px;
+  padding-bottom: 12px;
+}
+
+.description {
+  padding: 0 12px;
+}
+
+.path {
+  font-family: 'Courier New', monospace;
+  margin-left: 6px;
+  font-size: 0.7em;
+}
+.size {
+  font-family: 'Courier New', monospace;
+  margin-left: 6px;
+  font-size: 0.7em;
+}
