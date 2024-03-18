@@ -18,11 +18,12 @@ EmbeddingNew.propTypes = {
   clusters: PropTypes.array,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
+  onTextColumn: PropTypes.func.isRequired
 };
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, onChange}) {
+function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, onChange, onTextColumn}) {
   const [embeddings, setEmbeddings] = useState([]);
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed`);
@@ -114,7 +115,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   return (
     <div>
       <div className={styles["embeddings-form"]}>
-        Embedding on column: <b>{textColumn}</b>
+        Embedding on column:  
+        <select value={textColumn} onChange={onTextColumn}>
+          {dataset.columns.map((column, index) => (
+            <option key={index} value={column}>{column}</option>
+          ))}
+        </select>
       <form onSubmit={handleNewEmbedding}>
           <label htmlFor="modelName">Model:
           <select id="modelName" name="modelName" disabled={!!embeddingsJob} onChange={handleModelChange}>
@@ -154,32 +160,32 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         let m = models.find(d => d.id == emb.model_id)
         let dims = m ? m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : [] : []
         return (
-        <div className="item" key={index}>
+        <div className={styles["item"]} key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
           <label htmlFor={`embedding${index}`}>
             <span>
-              <span>{emb.id} - {emb.model_id} </span><br></br>
-              <span>Dimensions: {emb.dimensions}</span><br/>
-              { emb.prefix ? <span>Prefix: {emb.prefix}<br/></span> : null }
+              <span>{emb.id} - {emb.model_id} </span>
+              <span>[ {emb.dimensions} dimensions ]</span>
               <span>[
                 {umps.length} umaps,&nbsp;
                 {cls.length} clusters 
               ]</span>
+              { emb.prefix ? <span>Prefix: {emb.prefix}<br/></span> : null }
                 {dims.length ? <div className={styles["truncate"]}>
                   <select id={"truncate-"+emb.id}>
                     {dims.map((d,i) => {
                       return (<option key={"dimension-"+i} value={d}>{d}</option>)
                     })}
                   </select>
-                  <span className="button" onClick={() => handleTruncate(emb.id)}>Truncate copy</span>
+                  <span className={`button ${styles["button"]}`} onClick={() => handleTruncate(emb.id)}>Truncate</span>
                   <span className="tooltip" data-tooltip-id="truncate">🤔</span>
                   <Tooltip id="truncate" place="top" effect="solid">
                     This model supports Matroyshka embeddings. You can make a truncated copy of this embedding with fewer dimensions.
                   </Tooltip>
               </div> : <br/> }
-              <button onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
             </span>
           </label>
+          <button className={styles["delete"]} onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
         </div>
       )}
     )}

@@ -24,3 +24,36 @@
 .batch-size {
   width: 45px;
 }
+
+.delete {
+  max-height: 33px;
+  margin-left: auto;
+  
+}
+
+.item {
+  background-color: #f1f1f1;
+  border-radius: 5px;
+  margin: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  .item {
+    background-color: #333;
+  }
+}
+
+.button {
+  font-size: 0.85em !important;
+  height: 1.25em !important;
+  line-height: 1em;
+}
+.item span {
+  line-height: 1em;
+}
+.item select {
+  height: 2em;
+}

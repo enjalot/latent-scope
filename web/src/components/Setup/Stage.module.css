@@ -12,6 +12,11 @@
 }
 .stage .content {
   padding: 12px;
+  display: none;
+}
+
+.active .content, .complete .content {
+  display: block
 }
 
 .complete {

@@ -32,11 +32,19 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 10px;
   width: 100%;
+  justify-content: space-between;
+  gap: 6px;
   /* width: var(--umap-width); */
   /* max-width: var(--umap-width); */
 }
+.dataset--setup-scope-info {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  padding: 6px 6px;
+}
+
 .dataset--setup-meta{
   padding: 12px;
   display: flex;
@@ -57,28 +65,11 @@
   padding: 12px 12px;
 }
 .dataset--setup-scopes-list {
-  max-width: calc(100% - var(--umap-width));
-  display: flex;
-  flex-direction: rows;
+  /* max-width: calc(100% - var(--umap-width)); */
+  /* display: flex;
+  flex-direction: rows; */
 }
-.dataset--setup-scopes-item {
-  max-width: 120px;
-  cursor: pointer;
-  border: 1px solid gray;
-  margin: 6px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  user-select: none;
-}
-.dataset--setup-scopes-item img {
-  width: 120px;
-  height: 120px;
-  pointer-events: none;
-}
-.dataset--setup-scopes-item.active {
-  border: 3px solid orange;
-}
+
 
 
 /* Bottom row */
@@ -93,9 +84,10 @@
 .dataset--setup-left-column {
   /* width: 640px; */
   /* max-width: 640px; */
+  max-width: 50%;
   flex-grow: 1;
   height: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 
@@ -217,8 +209,9 @@
 
 /* RIGHT COLUMN  */
 .dataset--setup-right-column {
-  width: var(--umap-width);
-  margin-right: 48px;
+  /* width: var(--umap-width); */
+  width: 50%;
+  /* margin-right: 48px; */
   height: 100%;
   overflow-y: hidden;
   display: flex;
@@ -237,7 +230,7 @@
   user-select: none;
 }
 .dataset--hovered {
-  width: var(--umap-width);
+  /* width: var(--umap-width); */
   flex-grow: 1;
   overflow-y: hidden;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
@@ -273,9 +266,10 @@
 }
 
 .dataset--setup-preview {
-  width: var(--umap-width);
-  max-height: 340px;
-  min-height: 340px;
+  /* width: var(--umap-width); */
+  width: 93%;
+  /* max-height: 340px;
+  min-height: 340px; */
   height: 340px;
   overflow: scroll;
 
@@ -286,6 +280,6 @@
 }
 
 .dataset--setup .job-history {
-  padding: 6px 0;
+  padding: 6px 12px;
 }
 

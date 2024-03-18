@@ -469,56 +469,54 @@ function Setup() {
       <div className="dataset--setup-summary">
         <h3>{datasetId}</h3>
         <div className="dataset--setup-info">
-          <div className="dataset--setup-info-content">
-            { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link> : null }
-            { scope ? <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> Export data ({scope.id}) <br/></Link> 
-            : <Link to={`/datasets/${dataset?.id}/export`}> Export data <br/></Link> }
-            { umaps && umaps.length > 1 ? <Link to={`/datasets/${dataset?.id}/compare`}> Compare UMAPs <br/></Link> : null }
-            {dataset.length} rows <br/>
-            Columns: {dataset.columns.join(", ")}
-            <div className="dataset--details-text-column">
-              Set Text Column: 
-              <select value={textColumn} onChange={handleChangeTextColumn}>
-                {dataset.columns.map((column, index) => (
-                  <option key={index} value={column}>{column}</option>
-                ))}
-              </select>
-            </div>
-            
-          </div>
-
-          <div className="dataset--setup-meta">
+          <div className="dataset--setup-scope-info">
             <div className="dataset--setup-scopes-list">
                 {scopes ? 
                   <select className="scope-selector" onChange={(e) => navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)}>
                     <option value="">New scope</option>
                     {scopes.map((scopeOption, index) => (
                       <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
-                        {scopeOption.label || scopeOption.id}
+                        {scopeOption.label} ({scopeOption.id})
                       </option>
                     ))}
                   </select> 
                 : null}
             </div>
-            <div className="job-history">
-              <Link to={`/datasets/${dataset?.id}/jobs`}> Job history</Link><br/>
-            </div>
-          </div> 
+            { scope ? <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> ↗ Export data <br/></Link> 
+            : <Link to={`/datasets/${dataset?.id}/export`}> ↗ Export data <br/></Link> }
+            { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> ↗ Explore <br/></Link> : null } 
+            
+          </div>
+          <div className="job-history">
+            <Link to={`/datasets/${dataset?.id}/jobs`}> Job history</Link><br/>
+          </div>
         </div>
+        <div className="dataset--setup-meta">
+          {scope && <div>
+            <span>{scope?.label}<br/></span>
+            <span>{scope?.description}</span>
+          </div>}
+          <div>
+            {dataset.length} rows. Columns: {dataset.columns.join(", ")}
+          </div>
+        </div> 
+        
       </div>
 
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">
-          <Stage active={stage == 1} complete={stage > 1} title="1. Embeddings">
+          <Stage active={stage == 1} complete={stage > 1} title="1. Embed">
             <Embedding 
               dataset={dataset} 
               textColumn={textColumn} 
               embedding={embedding} 
               umaps={umaps} 
               clusters={clusters} 
-              onNew={handleNewEmbeddings} onChange={(emb) => dispatch({type:"SET_EMBEDDING", payload: emb})} />
+              onNew={handleNewEmbeddings} onChange={(emb) => dispatch({type:"SET_EMBEDDING", payload: emb})} 
+              onTextColumn={handleChangeTextColumn}
+              />
           </Stage>
-          <Stage active={stage == 2} complete={stage > 2} title="2. UMAP">
+          <Stage active={stage == 2} complete={stage > 2} title="2. Project">
             <Umap 
               dataset={dataset} 
               umap={umap} 
@@ -527,7 +525,7 @@ function Setup() {
               clusters={clusters} 
               onNew={handleNewUmaps} onChange={(ump) => dispatch({type: "SET_UMAP", payload: ump})} />
           </Stage>
-          <Stage active={stage == 3} complete={stage > 3} title="3. Clusters">
+          <Stage active={stage == 3} complete={stage > 3} title="3. Cluster">
             <Cluster 
               dataset={dataset} 
               cluster={cluster} 
@@ -562,7 +560,10 @@ function Setup() {
 
         {/* RIGHT COLUMN */}
         <div className="dataset--setup-right-column">
-          <div className="dataset--setup-preview">
+          <div className="dataset--setup-preview" style={{
+            "maxHeight": drawPoints.length ? "340px" : "95%",
+            "minHeight": drawPoints.length ? "340px" : "95%"
+            }}>
             {selectedClusterLabel ? <div>
               <b>Cluster {selectedClusterLabel.index}: {selectedClusterLabel.label}</b>
                 <IndexDataTable 
@@ -571,7 +572,8 @@ function Setup() {
                 datasetId={datasetId} 
                 maxRows={100} 
                 />
-              </div> : <div><b>Dataset Preview</b>
+              </div> : <div>
+                {/* <b>Dataset Preview</b> */}
               <IndexDataTable 
                 dataset={dataset}
                 indices={range(0, 100)} 
@@ -580,6 +582,7 @@ function Setup() {
                 />
               </div> }
           </div>
+          {drawPoints.length ? <div>
           <div className="dataset--setup-umap">
 
             { drawPoints.length ? <Scatter 
@@ -648,6 +651,8 @@ function Setup() {
             ))}
             {/* <DataTable  data={hovered} tagset={tagset} datasetId={datasetId} onTagset={(data) => setTagset(data)} /> */}
           </div>
+
+          </div> : null }
 
           {/* <div className="dataset--selected">
             <span>Points Selected: {selectedIndices.length} {!selectedIndices.length ? "(Hold shift and drag an area of the map to select)" : null}
