@@ -155,7 +155,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
             value={selectedLabelId}
             onChange={(e) => onChange(e.target.value)}
           >
-            <option value="default">Defualt</option>
+            <option value="default">Default</option>
             {clusterLabelSets.map((model, index) => (
               <option key={index} value={model.id}>{model.id} - { model.model_id} </option>
             ))}

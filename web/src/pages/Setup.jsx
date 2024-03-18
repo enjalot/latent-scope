@@ -533,7 +533,6 @@ function Setup() {
               onNew={handleNewClusters} onChange={(cls) => dispatch({type: "SET_CLUSTER", payload: cls })} />
           </Stage>
           <Stage active={stage == 4} complete={stage > 4} title="4. Auto-Label Clusters">
-            <>ID {clusterLabelSet?.id}</>
             <ClusterLabels 
               dataset={dataset} 
               cluster={cluster} 

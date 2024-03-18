@@ -164,8 +164,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
     for cluster, indices in tqdm(cluster_indices.items()):
         # Use basic NLP technique to grab the top 3 words (excluding common stopwords) from the text
-        text_data = " ".join(df.loc[indices, text_column].values)
-
+        text_data = " ".join([str(text) for text in df.loc[indices, text_column].values if text])
         tokens = word_tokenize(text_data)
         # Remove stopwords
         tokens = [word for word in tokens if word.isalpha() and word.lower() not in stopwords.words('english')]

@@ -55,7 +55,7 @@
 .heading {
   margin: 0;
   font-size: 1.17em;
-  margin-block-start: 1em;
+  /* margin-block-start: 1em; */
   margin-block-end: 1em;
   margin-inline-start: 0px;
   margin-inline-end: 0px;
@@ -63,7 +63,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  justify-content: center;
+  /* justify-content: center; */
 }
 
 .heading a {
