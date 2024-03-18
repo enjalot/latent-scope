@@ -130,7 +130,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
     <div className="dataset--setup-cluster-labels-content">
       <div className="dataset--slides-new">
         <p>Automatically create labels for each cluster
-          {cluster ? ` in ${cluster.cluster_id}` : ''} using a chat model. </p>
+          {cluster ? ` in ${cluster.id}` : ''} using a chat model. Default labels are created from the top 3 words in each cluster using nltk.</p>
         <form onSubmit={handleNewLabels}>
           <label>
             Chat Model:
