@@ -2,6 +2,7 @@
 # Example: python cluster.py dadabase-curated umap-001 50 5
 import os
 import re
+import sys
 import json
 import hdbscan
 import argparse
@@ -11,7 +12,22 @@ import matplotlib.pyplot as plt
 from scipy.spatial import ConvexHull
 from scipy.spatial.distance import cdist
 
+try:
+    # Check if the runtime environment is a Jupyter notebook
+    if 'ipykernel' in sys.modules and 'IPython' in sys.modules:
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
+except ImportError as e:
+    # Fallback to the standard console version if import fails
+    from tqdm import tqdm
+
 from latentscope.util import get_data_dir
+
+from collections import Counter
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import nltk
 
 # TODO move this into shared space
 def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=100):
@@ -133,10 +149,31 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     # get the indices of each item in a cluster
     cluster_indices = df.groupby('cluster').groups
 
+
+
+    df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
+    metadata_file = os.path.join(DATA_DIR, dataset_id, "meta.json")
+    with open(metadata_file, 'r') as f:
+        metadata = json.load(f)
+    text_column = metadata['text_column']
+
+    nltk.download('punkt')
+    nltk.download('stopwords')
+
     # iterate over the clusters and create a row for each in a new dataframe with a label, description and array of indicies
     slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
-    for cluster, indices in cluster_indices.items():
-        label = f"Cluster {cluster}"
+    for cluster, indices in tqdm(cluster_indices.items()):
+        # Use basic NLP technique to grab the top 3 words (excluding common stopwords) from the text
+        text_data = " ".join(df.loc[indices, text_column].values)
+
+        tokens = word_tokenize(text_data)
+        # Remove stopwords
+        tokens = [word for word in tokens if word.isalpha() and word.lower() not in stopwords.words('english')]
+        # Get the top 3 words
+        top_words = [word for word, count in Counter(tokens).most_common(3)]
+
+        label = " ".join(top_words)
+        # label = f"Cluster {cluster}"
         description = f"This is cluster {cluster} with {len(indices)} items."
         new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hull': [hulls[cluster]]})
         slides_df = pd.concat([slides_df, new_row], ignore_index=True)
