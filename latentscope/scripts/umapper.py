@@ -4,13 +4,7 @@ import os
 import re
 import sys
 import json
-import umap
-import h5py
-import pickle
 import argparse
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 
 from latentscope.util import get_data_dir
 
@@ -31,6 +25,7 @@ def main():
 
 # TODO move this into shared space
 def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=100):
+    import numpy as np
     """
     Calculate the size of points for a scatter plot based on the number of points.
     """
@@ -43,12 +38,7 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
 
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None):
     DATA_DIR = get_data_dir()
-    # read in the embeddings
-    print("loading embeddings")
-    embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
-    with h5py.File(embedding_path, 'r') as f:
-        dataset = f["embeddings"]
-        embeddings = np.array(dataset)
+    # read in the embeddings 
 
     umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
     if not os.path.exists(umap_dir):
@@ -67,6 +57,19 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     # make the umap name from the number, zero padded to 3 digits
     umap_id = f"umap-{next_umap_number:03d}"
     print("RUNNING:", umap_id)
+
+    import umap
+    import h5py
+    import pickle
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    print("loading embeddings")
+    embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
+    with h5py.File(embedding_path, 'r') as f:
+        dataset = f["embeddings"]
+        embeddings = np.array(dataset)
 
     def process_umap_embeddings(umap_id, umap_embeddings, emb_id, align_id=None):
         min_values = np.min(umap_embeddings, axis=0)

@@ -5,8 +5,7 @@ import sys
 import json
 import time
 import argparse
-import numpy as np
-import pandas as pd
+
 try:
     # Check if the runtime environment is a Jupyter notebook
     if 'ipykernel' in sys.modules and 'IPython' in sys.modules:
@@ -50,6 +49,8 @@ def main():
 
 
 def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", context="", rerun=""):
+    import numpy as np
+    import pandas as pd
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
 
@@ -142,7 +143,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
             clean_label = " ".join(clean_label.split(" ")[0:5])
             clean_labels.append(clean_label)
             
-            # tqdm.write("clean_label:\n", clean_label)
+            tqdm.write(f"cluster {i} label: {clean_label}")
             clusters.loc[i, 'label'] = clean_label
             clusters.loc[i, 'label_raw'] = label
             clusters.loc[i, 'labeled'] = True

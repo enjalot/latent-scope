@@ -453,13 +453,16 @@ function Setup() {
  
   const handleNewClusterLabelSets = useCallback((labels, lbl) => {
     dispatch({ type: "SET_CLUSTER_LABEL_SETS", payload: labels })
-    if(lbl) dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: lbl })
+    if(lbl) {
+       dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: lbl })
+       setSelectedClusterLabelSetId(lbl.id)
+    }
     // if no labels for the current cluster, unset the labels
     if(!labels.filter(d => d.cluster_id == cluster?.id).length) {
       // dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: null })
       setClusterLabels([])
     }
-  }, [setClusterLabels, cluster])
+  }, [setClusterLabels, setSelectedClusterLabelSetId, cluster])
 
 
   if (!dataset) return <div>Loading...</div>;

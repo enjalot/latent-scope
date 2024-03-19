@@ -1,13 +1,13 @@
 import os
 import time
-import tiktoken
-from openai import OpenAI
 from .base import EmbedModelProvider, ChatModelProvider
 
 from latentscope.util import get_key
 
 class OpenAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
+        from openai import OpenAI
+        import tiktoken
         api_key = get_key("OPENAI_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for OpenAI")
@@ -41,6 +41,8 @@ class OpenAIEmbedProvider(EmbedModelProvider):
 
 class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
+        from openai import OpenAI
+        import tiktoken
         self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
         self.encoder = tiktoken.encoding_for_model(self.name)
 

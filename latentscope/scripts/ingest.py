@@ -2,7 +2,6 @@
 import os
 import json
 import argparse
-import pandas as pd
 
 from latentscope.util import get_data_dir
 
@@ -15,6 +14,7 @@ def main():
     ingest_file(args.id, args.path)
 
 def ingest_file(dataset_id, file_path):
+    import pandas as pd
     DATA_DIR = get_data_dir()
     directory = os.path.join(DATA_DIR, dataset_id)
     if not file_path:

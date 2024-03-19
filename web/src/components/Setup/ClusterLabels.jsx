@@ -123,7 +123,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
   }, [dataset, cluster, startClusterLabelsJob])
 
   function handleRerun(job) {
-    rerunJob({job_id: job?.id});
+    rerunClusterLabelsJob({job_id: job?.id});
   }
 
   return (

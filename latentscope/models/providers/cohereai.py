@@ -1,12 +1,12 @@
 import os
 import time
-import cohere
 from .base import EmbedModelProvider
 
 from latentscope.util import get_key
 
 class CohereAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
+        import cohere
         api_key = get_key("COHERE_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Cohere")

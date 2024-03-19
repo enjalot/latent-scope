@@ -1,13 +1,12 @@
 import os
 import time
-import tiktoken
-import together
 from .base import EmbedModelProvider
-
-from latentscope.util import get_key
 
 class TogetherAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
+        import tiktoken
+        import together
+        from latentscope.util import get_key
         api_key = get_key("TOGETHER_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Together")
