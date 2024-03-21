@@ -518,7 +518,7 @@ function Explore() {
             {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span>
-                <span className="value">{dataset?.column_metadata[key]?.type == "array" ? `[array(${hovered[key].length})]` : hovered[key]}</span>
+                <span className="value">{dataset?.column_metadata && dataset?.column_metadata[key]?.type == "array" ? `[array(${hovered[key].length})]` : hovered[key]}</span>
               </span>
             ))}
           </div> : null }
