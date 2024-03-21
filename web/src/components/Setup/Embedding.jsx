@@ -164,9 +164,10 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
           {potentialEmbeddings.map(pe => {
             return <form key={pe} className={styles["potential-embedding"]}>
               <span>Create embedding from column <b>{pe}</b>?</span>
-              <label htmlFor="column">Column embedded:
+              <label htmlFor="column">Embedded text column:
               <select id="column" name="column">
-                {dataset?.columns.map((column, index) => {
+                {dataset?.columns.filter(c => dataset?.column_metadata[c].type == "string")
+                  .map((column, index) => {
                   return <option key={index} value={column}>{column}</option>
                 })}
               </select>
