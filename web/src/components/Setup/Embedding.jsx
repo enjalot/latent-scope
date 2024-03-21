@@ -160,11 +160,10 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     <div>
       <div className={styles["embeddings-form"]}>
 
-        {potentialEmbeddings.length ? <div className="potential-embeddings">
+        {potentialEmbeddings.length ? <div className={styles["potential-embeddings"]}>
           {potentialEmbeddings.map(pe => {
-            return <form key={pe}>
+            return <form key={pe} className={styles["potential-embedding"]}>
               <span>Create embedding from column <b>{pe}</b>?</span>
-              <br></br>
               <label htmlFor="column">Column embedded:
               <select id="column" name="column">
                 {dataset?.columns.map((column, index) => {
@@ -180,9 +179,14 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
                 })}
               </select>
               </label>
-              <br></br>
-              <span className="button" onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}>Yes</span>
-              <span className="button" onClick={(e) => handleDenyPotentialEmbedding(e, pe)}>No thanks</span>
+              <div className={styles["pe-buttons"]}>
+                <span className={`${styles["button"]} button`} style={{borderColor: "green"}} onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}>
+                  ✅ Yes
+                </span>
+                <span className={`${styles["button"]} button`} style={{borderColor: "red"}} onClick={(e) => handleDenyPotentialEmbedding(e, pe)}>
+                  ❌ No thanks
+                </span>
+              </div>
             </form>
           })}
 

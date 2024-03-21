@@ -49,7 +49,8 @@
 .button {
   font-size: 0.85em !important;
   height: 1.25em !important;
-  line-height: 1em;
+  line-height: 1.25em !important;
+  background-color: #fefefe;
 }
 .item span {
   line-height: 1em;
@@ -57,3 +58,23 @@
 .item select {
   height: 2em;
 }
+
+.potential-embeddings {
+
+}
+.potential-embedding {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #efefef;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 6px;
+}
+
+.pe-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
