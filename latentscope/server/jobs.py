@@ -156,6 +156,18 @@ def run_embed_truncate():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
+@jobs_write_bp.route('/embed_importer')
+def run_embed_importer():
+    dataset = request.args.get('dataset')
+    model_id = request.args.get('model_id')
+    embedding_column = request.args.get('embedding_column')
+    text_column = request.args.get('text_column')
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-embed-importer {dataset} {embedding_column} "{model_id}" {text_column}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
 @jobs_write_bp.route('/rerun')
 def rerun_job():
     dataset = request.args.get('dataset')

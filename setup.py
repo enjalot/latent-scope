@@ -71,6 +71,7 @@ setup(
             'ls-embed=latentscope.scripts.embed:main',
             'ls-embed-debug=latentscope.scripts.embed:debug',
             'ls-embed-truncate=latentscope.scripts.embed:truncate',
+            'ls-embed-importer=latentscope.scripts.embed:importer',
             'ls-umap=latentscope.scripts.umapper:main',
             'ls-cluster=latentscope.scripts.cluster:main',
             'ls-label=latentscope.scripts.label_clusters:main',

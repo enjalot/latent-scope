@@ -124,6 +124,15 @@ function Setup() {
         dispatch({ type: "SET_DATASET", payload: data})
       });
   }, [datasetId])
+  
+  const handleRemovePotentialEmbedding = useCallback((pe) => {
+    const newPe = dataset.potential_embeddings.filter(d => d !== pe)
+    fetch(`${apiUrl}/datasets/${datasetId}/meta/update?key=potential_embeddings&value=${JSON.stringify(newPe)}`)
+      .then(response => response.json())
+      .then(data => {
+        dispatch({ type: "SET_DATASET", payload: data})
+      })
+  }, [dataset])
  
   // ====================================================================================================
   // embeddings 
@@ -517,6 +526,7 @@ function Setup() {
               clusters={clusters} 
               onNew={handleNewEmbeddings} onChange={(emb) => dispatch({type:"SET_EMBEDDING", payload: emb})} 
               onTextColumn={handleChangeTextColumn}
+              onRemovePotentialEmbedding={handleRemovePotentialEmbedding}
               />
           </Stage>
           <Stage active={stage == 2} complete={stage > 2} title="2. Project">
@@ -539,6 +549,7 @@ function Setup() {
             <ClusterLabels 
               dataset={dataset} 
               cluster={cluster} 
+              embedding={embedding}
               selectedLabelId={clusterLabelSet?.id} 
               onChange={setSelectedClusterLabelSetId} 
               onLabelSets={handleNewClusterLabelSets} 

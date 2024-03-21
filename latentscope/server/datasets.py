@@ -64,6 +64,11 @@ def get_dataset_meta(dataset):
 def update_dataset_meta(dataset):
     key = request.args.get('key')
     value = request.args.get('value')
+    try:
+        value = json.loads(value)
+    except json.JSONDecodeError as err:
+        print("Invalid JSON format for value", value, err)
+
     file_path = os.path.join(DATA_DIR, dataset, "meta.json")
     with open(file_path, 'r', encoding='utf-8') as json_file:
         json_contents = json.load(json_file)

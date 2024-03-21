@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobPolling } from './Job/Run';
 import JobProgress from './Job/Progress';
@@ -73,13 +73,30 @@ function Home() {
     document.getElementById('upload-button').files = event.dataTransfer.files;
     const fileName = event.dataTransfer.files[0].name;
     const datasetName = sanitizeName(fileName);
+
+    const isNameTaken = datasets.some(dataset => dataset.id === datasetName);
+    console.log("is name taken?", isNameTaken, datasetName, datasets)
+    if (isNameTaken) {
+      setNameTaken(true)
+    } else {
+      setNameTaken(false)
+    }
+    
     document.getElementById('dataset-name').value = datasetName;
   };
-  const handleFileChange = (event) => {
+  const handleFileChange = useCallback((event) => {
     const fileName = event.target.files[0].name
     const datasetName = sanitizeName(fileName);
+    const isNameTaken = datasets.some(dataset => dataset.id === datasetName);
+    console.log("is name taken?", isNameTaken, datasetName, datasets)
+    if (isNameTaken) {
+      setNameTaken(true)
+    } else {
+      setNameTaken(false)
+    }
+
     document.getElementById('dataset-name').value = datasetName;
-  }
+  }, [datasets])
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -89,6 +106,8 @@ function Home() {
       }, 1000);
     }
   }, [ingestJob, navigate]);
+
+  const [nameTaken, setNameTaken] = useState(false);
 
   return (
     <div className="home">
@@ -108,7 +127,17 @@ function Home() {
             id="dataset-name"
             type="text"
             placeholder="Dataset name"
+          onChange={(e) => {
+            const newName = e.target.value;
+            const isNameTaken = datasets.some(dataset => dataset.id === newName);
+            if (isNameTaken) {
+              setNameTaken(true)
+            } else {
+              setNameTaken(false)
+            }
+          }}
           />
+          {nameTaken ? <div className="name-taken-warning">This dataset name is already taken.</div> : null}
           <button type="submit">Submit</button>
         </form>
         <JobProgress job={ingestJob} clearJob={() => setIngestJob(null)} />

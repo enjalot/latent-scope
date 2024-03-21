@@ -61,3 +61,12 @@
     background-color: #444;
   }
 }
+
+.home .name-taken-warning {
+  color: black;
+  background-color: lightpink;
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid coral;
+}
+
