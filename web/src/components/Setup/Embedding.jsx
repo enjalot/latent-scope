@@ -104,10 +104,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
       model_id: model,
     };
     startEmbeddingsImporterJob(job);
-
-    // remove the potential embedding from the list
-    // onRemovePotentialEmbedding(pe)
-  }, [startEmbeddingsImporterJob, onRemovePotentialEmbedding])
+  }, [startEmbeddingsImporterJob])
 
   useEffect(() => {
     // check that the job is for the importer and if its complete remove the potential embedding

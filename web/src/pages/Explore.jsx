@@ -168,10 +168,18 @@ function Explore() {
 
 
   useEffect(() => {
-    if (embedding) {
+    if (embedding && embedding.model_id) {
       setSearchModel(embedding.id)
+    } else if(embeddings.length) {
+      const emb = embeddings.find(d => !!d.model_id)
+      if(emb)
+        setSearchModel(emb.id)
     }
-  }, [embedding, setSearchModel])
+  }, [embedding, embeddings, setSearchModel])
+
+  useEffect(() => {
+    console.log("search model", searchModel)
+  }, [searchModel])
 
 
   // const [activeUmap, setActiveUmap] = useState(null)
@@ -510,7 +518,7 @@ function Explore() {
             {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span>
-                <span className="value">{hovered[key]}</span>
+                <span className="value">{dataset?.column_metadata[key]?.type == "array" ? `[array(${hovered[key].length})]` : hovered[key]}</span>
               </span>
             ))}
           </div> : null }
