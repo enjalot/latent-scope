@@ -92,7 +92,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
 
   const handleConfirmPotentialEmbedding = useCallback((e, pe) => {
     e.preventDefault();
-    const form = e.target.parentElement;
+    const form = e.target.parentElement.parentElement;
     const data = new FormData(form);
     const model = data.get('model')
     const column = data.get('column')
