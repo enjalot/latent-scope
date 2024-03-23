@@ -16,7 +16,18 @@ IndexDataTable.propTypes = {
   onTagset: PropTypes.func,
 };
 
-function IndexDataTable({dataset, indices, distances = [], clusterIndices = [], clusterLabels = [], maxRows, tagset, onHover, onClick, onTagset}) {
+function IndexDataTable({
+  dataset, 
+  indices, 
+  distances = [], 
+  clusterIndices = [], 
+  clusterLabels = [], 
+  maxRows, 
+  tagset, 
+  onHover, 
+  onClick, 
+  onTagset
+}) {
 
   const [rows, setRows] = useState([]);
   const hydrateIndices = useCallback((indices) => {

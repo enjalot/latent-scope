@@ -100,8 +100,68 @@ def indexed():
     
     # get the indexed rows
     rows = df.iloc[indices]
+
     # send back the rows as json
     return rows.to_json(orient="records")
+
+@app.route('/api/query', methods=['POST'])
+def query():
+    per_page = 100
+    data = request.get_json()
+    dataset = data['dataset']
+    page = data['page'] if 'page' in data else 0
+    indices = data['indices'] if 'indices' in data else []
+    filters = data['filters'] if 'filters' in data else None
+    sort = data['sort'] if 'sort' in data else None
+    if dataset not in DATAFRAMES:
+        df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
+        DATAFRAMES[dataset] = df
+    else:
+        df = DATAFRAMES[dataset]
+    
+    # apply filters
+    rows = df.copy()
+    rows['ls_index'] = rows.index
+    print("FILTERS", filters)
+    if filters:
+        for f in filters:
+            if f["type"] == "eq":
+                rows = rows[rows[f['column']] == f['value']]
+            elif f["type"] == "gt":
+                rows = rows[rows[f['column']] > f['value']]
+            elif f["type"] == "lt":
+                rows = rows[rows[f['column']] < f['value']]
+            elif f["type"] == "gte":
+                rows = rows[rows[f['column']] >= f['value']]
+            elif f["type"] == "lte":
+                rows = rows[rows[f['column']] <= f['value']]
+            elif f["type"] == "in":
+                rows = rows[rows[f['column']].isin(f['value'])]
+            elif f["type"] == "contains":
+                rows = rows[rows[f['column']].str.contains(f['value'])]
+
+    # get the indexed rows
+    print("INDICES", indices)
+    if len(indices):
+        rows = rows.loc[indices]
+
+    print("ROWS", rows.head())
+    # apply sort
+    if sort:
+        rows = rows.sort_values(by=sort['column'], ascending=sort['ascending'])
+
+    # Convert DataFrame to a list of dictionaries
+    rows_json = json.loads(rows[page*per_page:page*per_page+per_page].to_json(orient="records"))
+    print("ROWS JSON", rows_json)
+
+    # send back the rows as json
+    return jsonify({
+        "rows": rows_json,
+        "page": page,
+        "per_page": per_page,
+        "total": len(rows),
+        "totalPages": len(rows) // per_page
+    })
 
 if not READ_ONLY:
     @app.route('/api/settings', methods=['POST'])

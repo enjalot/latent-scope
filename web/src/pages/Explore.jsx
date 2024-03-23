@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import './Explore.css';
 import DataTable from '../components/DataTable';
 import IndexDataTable from '../components/IndexDataTable';
+import FilterDataTable from '../components/FilterDataTable';
 import Scatter from '../components/Scatter';
 import AnnotationPlot from '../components/AnnotationPlot';
 import HullPlot from '../components/HullPlot';
@@ -72,7 +73,8 @@ function Explore() {
     { id: 2, name: "Clusters" },
     { id: 3, name: "Tags" },
   ]
-  const [activeTab, setActiveTab] = useState(2)
+  const [activeTab, setActiveTab] = useState(0)
+  // const [activeTab, setActiveTab] = useState(2)
 
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -564,6 +566,14 @@ function Explore() {
                 onClick={handleClicked}
               />
               : null}
+            
+            <FilterDataTable
+                dataset={dataset}
+                indices={selectedIndices}
+                clusterIndices={clusterIndices}
+                clusterLabels={clusterLabels}
+            />
+
           </div>
           : null}
 
