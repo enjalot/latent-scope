@@ -40,6 +40,15 @@
       }
     },
     {
+        "provider": "transformers",
+        "name": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "sanitized_name": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "id": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "params": {
+            "max_tokens": 4096 
+        }
+    },
+    {
       "provider": "mistralai",
       "name": "mistral-medium",
       "id": "mistralai-mistral-medium",
