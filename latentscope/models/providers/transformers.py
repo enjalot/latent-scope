@@ -1,4 +1,5 @@
 from .base import EmbedModelProvider, ChatModelProvider
+from transformers import AutoTokenizer, AutoModel, pipeline
 
 class TransformersEmbedProvider(EmbedModelProvider):
     def __init__(self, name, params):
