@@ -48,7 +48,7 @@ class CustomBuild(build_py):
 
 setup(
     name='latentscope',
-    version='0.1.5',
+    version='0.1.8',
     description='Quickly embed, project, cluster and explore a dataset.',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -71,6 +71,7 @@ setup(
             'ls-embed=latentscope.scripts.embed:main',
             'ls-embed-debug=latentscope.scripts.embed:debug',
             'ls-embed-truncate=latentscope.scripts.embed:truncate',
+            'ls-embed-importer=latentscope.scripts.embed:importer',
             'ls-umap=latentscope.scripts.umapper:main',
             'ls-cluster=latentscope.scripts.cluster:main',
             'ls-label=latentscope.scripts.label_clusters:main',

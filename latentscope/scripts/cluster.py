@@ -2,19 +2,25 @@
 # Example: python cluster.py dadabase-curated umap-001 50 5
 import os
 import re
+import sys
 import json
-import hdbscan
 import argparse
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.spatial import ConvexHull
-from scipy.spatial.distance import cdist
+
+try:
+    # Check if the runtime environment is a Jupyter notebook
+    if 'ipykernel' in sys.modules and 'IPython' in sys.modules:
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
+except ImportError as e:
+    # Fallback to the standard console version if import fails
+    from tqdm import tqdm
 
 from latentscope.util import get_data_dir
 
 # TODO move this into shared space
 def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=100):
+    import numpy as np
     """
     Calculate the size of points for a scatter plot based on the number of points.
     """
@@ -56,6 +62,13 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     # make the umap name from the number, zero padded to 3 digits
     cluster_id = f"cluster-{next_cluster_number:03d}"
     print("RUNNING:", cluster_id)
+
+    import hdbscan
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from scipy.spatial import ConvexHull
+    from scipy.spatial.distance import cdist
 
     umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
     umap_embeddings = umap_embeddings_df.to_numpy()
@@ -135,7 +148,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
 
     # iterate over the clusters and create a row for each in a new dataframe with a label, description and array of indicies
     slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
-    for cluster, indices in cluster_indices.items():
+    for cluster, indices in tqdm(cluster_indices.items()):
         label = f"Cluster {cluster}"
         description = f"This is cluster {cluster} with {len(indices)} items."
         new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hull': [hulls[cluster]]})

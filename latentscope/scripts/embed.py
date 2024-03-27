@@ -4,10 +4,7 @@ import re
 import sys
 import json
 import time
-import h5py
 import argparse
-import numpy as np
-import pandas as pd
 
 try:
     # Check if the runtime environment is a Jupyter notebook
@@ -28,6 +25,7 @@ def chunked_iterable(iterable, size):
         yield iterable[i:i + size]
 
 def append_to_hdf5(file_path, new_data):
+    import h5py
     dataset_name = "embeddings"
     with h5py.File(file_path, 'a') as f:
         if dataset_name in f:
@@ -39,6 +37,7 @@ def append_to_hdf5(file_path, new_data):
             dataset = f.create_dataset(dataset_name, data=new_data, maxshape=maxshape, chunks=True)
 
 def get_last_batch(file_path):
+    import h5py
     try:
         with h5py.File(file_path, 'r') as f:
             dataset = f["embeddings"]
@@ -62,6 +61,8 @@ def main():
     embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size)
 
 def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100):
+    import pandas as pd
+    import numpy as np
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
     
@@ -155,7 +156,9 @@ def truncate():
     embed_truncate(args.dataset_id, args.embedding_id, args.dimensions)
 
 def embed_truncate(dataset_id, embedding_id, dimensions):
-    
+    import numpy as np
+    import h5py
+
     DATA_DIR = get_data_dir()
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
 
@@ -220,6 +223,7 @@ def debug():
     embed_debug(args.parquet_file, args.model_id, args.text_column)
 
 def embed_debug(parquet_file, model_id, text_column):
+    import pandas as pd
     df = pd.read_parquet(parquet_file)
     model = get_embedding_model(model_id)
     print("loading", model.name)
@@ -235,13 +239,30 @@ def embed_debug(parquet_file, model_id, text_column):
         embedding = model.embed([text])
         print("embedding", embedding)
         
-# def importer():
-#     parser = argparse.ArgumentParser(description='Import embeddings from a numpy file to an HDF5 file')
-#     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
-#     parser.add_argument('model_id', type=str, help='ID of embedding to use')
-#     parser.add_argument('npy_file', type=str, help='Path to the numpy file')
-#     args = parser.parse_args()
-#     embed_importer(args.dataset_id, args.model_id, args.npy_file)
+def importer():
+    import pandas as pd
+    import numpy as np
+
+    parser = argparse.ArgumentParser(description='Import embeddings from an input dataset column to a standard HDF5 file')
+    parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
+    parser.add_argument('embedding_column', type=str, help='Column to use as embedding input')
+    parser.add_argument('model_id', type=str, help='ID of embedding to use')
+    parser.add_argument('text_column', type=str, help='Column used to create embeddings')
+    args = parser.parse_args()
+
+    DATA_DIR = get_data_dir()
+    # read the input parquet
+    df = pd.read_parquet(os.path.join(DATA_DIR, args.dataset_id, "input.parquet"))
+    # extract the column 
+    embeddings = df[args.embedding_column].to_numpy()
+    # Ensure embeddings is an ndarray with shape [N, M]
+    if not isinstance(embeddings, np.ndarray):
+        embeddings = np.array(list(embeddings))
+    if embeddings.ndim == 1:
+        embeddings = np.stack(embeddings)
+    
+
+    import_embeddings(args.dataset_id, embeddings, args.model_id, args.text_column)
 
 def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefix=""):
     DATA_DIR = get_data_dir()

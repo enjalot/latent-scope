@@ -21,6 +21,7 @@ function JobProgress({job, onlyLast, clearJob, rerunJob, killJob}) {
   }, [job]);
 
   const secondsSinceLastUpdate = Math.round((+new Date() - +new Date(job?.last_update)) / 1000)
+  const totalTime = Math.round((+new Date(job?.last_update) - +new Date(job?.times[0])) / 1000)
 
   return (
     <>
@@ -42,7 +43,8 @@ function JobProgress({job, onlyLast, clearJob, rerunJob, killJob}) {
         </div>
       : null }
       <span className="timer">
-        {secondsSinceLastUpdate} seconds since last update
+        {job.status == "running" ? `${secondsSinceLastUpdate} seconds since last update`
+          : `Total time: ${totalTime} seconds` }
 
       </span>
       </div>

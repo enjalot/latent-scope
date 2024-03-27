@@ -98,6 +98,8 @@ button:focus-visible {
 
 select {
   font-weight: 500;
+  margin: 0 6px;
+  padding: 3px;
 }
 
 @media (prefers-color-scheme: light) {

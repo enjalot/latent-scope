@@ -10,7 +10,8 @@ import styles from './Embedding.module.css';
 import PropTypes from 'prop-types';
 EmbeddingNew.propTypes = {
   dataset: PropTypes.shape({
-    id: PropTypes.string.isRequired
+    id: PropTypes.string.isRequired,
+    potential_embeddings: PropTypes.array
   }).isRequired,
   textColumn: PropTypes.string.isRequired,
   embedding: PropTypes.object,
@@ -18,17 +19,20 @@ EmbeddingNew.propTypes = {
   clusters: PropTypes.array,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
+  onTextColumn: PropTypes.func.isRequired,
+  onRemovePotentialEmbedding: PropTypes.func.isRequired
 };
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, onChange}) {
+function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, onChange, onTextColumn, onRemovePotentialEmbedding}) {
   const [embeddings, setEmbeddings] = useState([]);
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed`);
   const { startJob: deleteEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/delete/embedding`);
   const { startJob: rerunEmbeddingsJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/rerun`);
   const { startJob: startEmbeddingsTruncateJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed_truncate`);
+  const { startJob: startEmbeddingsImporterJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed_importer`);
 
   const [models, setModels] = useState([]);
   useEffect(() => {
@@ -77,6 +81,47 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
 
   const [batchSize, setBatchSize] = useState(100)
 
+  const [potentialEmbeddings, setPotentialEmbeddings] = useState([])
+  useEffect(() => {
+    console.log("DATASET", dataset)
+    if(dataset?.potential_embeddings) {
+      console.log("POTENTIAL EMBEDDINGS", dataset.potential_embeddings)
+      setPotentialEmbeddings(dataset.potential_embeddings)
+    }
+  }, [dataset])
+
+  const handleConfirmPotentialEmbedding = useCallback((e, pe) => {
+    e.preventDefault();
+    const form = e.target.parentElement.parentElement;
+    const data = new FormData(form);
+    const model = data.get('model')
+    const column = data.get('column')
+
+    // kick off the job to create the embedding
+    let job = { 
+      embedding_column: pe,
+      text_column: column,
+      model_id: model,
+    };
+    startEmbeddingsImporterJob(job);
+  }, [startEmbeddingsImporterJob])
+
+  useEffect(() => {
+    // check that the job is for the importer and if its complete remove the potential embedding
+    if(embeddingsJob && embeddingsJob.status === "completed" && embeddingsJob.job_name === "embed-importer") {
+      let pe = embeddingsJob.command.split(" ")[2]
+      console.log("FINISHED JOB", pe)
+      onRemovePotentialEmbedding(pe)
+    }
+
+  }, [embeddingsJob, onRemovePotentialEmbedding])
+
+  const handleDenyPotentialEmbedding = useCallback((e, pe) => {
+    e.preventDefault();
+    console.log("DENYING", pe)
+    onRemovePotentialEmbedding(pe)
+  }, [onRemovePotentialEmbedding])
+
   const handleNewEmbedding = useCallback((e) => {
     e.preventDefault();
     const form = e.target;
@@ -114,7 +159,46 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   return (
     <div>
       <div className={styles["embeddings-form"]}>
-        Embedding on column: <b>{textColumn}</b>
+
+        {potentialEmbeddings.length ? <div className={styles["potential-embeddings"]}>
+          {potentialEmbeddings.map(pe => {
+            return <form key={pe} className={styles["potential-embedding"]}>
+              <span>Create embedding from column <b>{pe}</b>?</span>
+              <label htmlFor="column">Embedded text column:
+              <select id="column" name="column">
+                {dataset?.columns.filter(c => dataset?.column_metadata[c].type == "string")
+                  .map((column, index) => {
+                  return <option key={index} value={column}>{column}</option>
+                })}
+              </select>
+              </label>
+              <label htmlFor="model">Embedded with model:
+              <select id="model" name="model">
+                <option value="">Not listed</option>
+                {models.map((model, index) => {
+                  return <option key={index} value={model.id}>{model.provider}: {model.name}</option>
+                })}
+              </select>
+              </label>
+              <div className={styles["pe-buttons"]}>
+                <span className={`${styles["button"]} button`} style={{borderColor: "green"}} onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}>
+                  ✅ Yes
+                </span>
+                <span className={`${styles["button"]} button`} style={{borderColor: "red"}} onClick={(e) => handleDenyPotentialEmbedding(e, pe)}>
+                  ❌ No thanks
+                </span>
+              </div>
+            </form>
+          })}
+
+        </div> : null}
+
+        Embedding on column:  
+        <select value={textColumn} onChange={onTextColumn}>
+          {dataset.columns.map((column, index) => (
+            <option key={index} value={column}>{column}</option>
+          ))}
+        </select>
       <form onSubmit={handleNewEmbedding}>
           <label htmlFor="modelName">Model:
           <select id="modelName" name="modelName" disabled={!!embeddingsJob} onChange={handleModelChange}>
@@ -154,32 +238,30 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         let m = models.find(d => d.id == emb.model_id)
         let dims = m ? m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : [] : []
         return (
-        <div className="item" key={index}>
+        <div className={styles["item"]} key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
           <label htmlFor={`embedding${index}`}>
             <span>
-              <span>{emb.id} - {emb.model_id} </span><br></br>
-              <span>Dimensions: {emb.dimensions}</span><br/>
+              <span>{emb.id} - {emb.model_id} </span>
+              <span>[ {emb.dimensions} dimensions ]</span>
+              <span>[ {umps.length} umaps,&nbsp; {cls.length} clusters ]</span>
+              <span>[ text column: {emb.text_column} ]</span>
               { emb.prefix ? <span>Prefix: {emb.prefix}<br/></span> : null }
-              <span>[
-                {umps.length} umaps,&nbsp;
-                {cls.length} clusters 
-              ]</span>
                 {dims.length ? <div className={styles["truncate"]}>
                   <select id={"truncate-"+emb.id}>
                     {dims.map((d,i) => {
                       return (<option key={"dimension-"+i} value={d}>{d}</option>)
                     })}
                   </select>
-                  <span className="button" onClick={() => handleTruncate(emb.id)}>Truncate copy</span>
+                  <span className={`button ${styles["button"]}`} onClick={() => handleTruncate(emb.id)}>Truncate</span>
                   <span className="tooltip" data-tooltip-id="truncate">🤔</span>
                   <Tooltip id="truncate" place="top" effect="solid">
                     This model supports Matroyshka embeddings. You can make a truncated copy of this embedding with fewer dimensions.
                   </Tooltip>
               </div> : <br/> }
-              <button onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
             </span>
           </label>
+          <button className={styles["delete"]} onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
         </div>
       )}
     )}

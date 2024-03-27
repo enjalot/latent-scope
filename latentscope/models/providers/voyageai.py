@@ -1,15 +1,13 @@
 import os
 import time
-import voyageai 
-import tokenizers
-from tokenizers import Tokenizer
 from .base import EmbedModelProvider
 
 
-from latentscope.util import get_key
-
 class VoyageAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
+        import voyageai 
+        from tokenizers import Tokenizer
+        from latentscope.util import get_key
         api_key = get_key("VOYAGE_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Voyage")

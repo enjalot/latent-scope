@@ -168,10 +168,18 @@ function Explore() {
 
 
   useEffect(() => {
-    if (embedding) {
+    if (embedding && embedding.model_id) {
       setSearchModel(embedding.id)
+    } else if(embeddings.length) {
+      const emb = embeddings.find(d => !!d.model_id)
+      if(emb)
+        setSearchModel(emb.id)
     }
-  }, [embedding, setSearchModel])
+  }, [embedding, embeddings, setSearchModel])
+
+  useEffect(() => {
+    console.log("search model", searchModel)
+  }, [searchModel])
 
 
   // const [activeUmap, setActiveUmap] = useState(null)
@@ -386,14 +394,14 @@ function Explore() {
               {/* {scope?.label || scope?.id} */}
 
 
-              {datasetId}: <select className="scope-selector" onChange={(e) => {
+              <select className="scope-selector" onChange={(e) => {
                 clearScope()
                 navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)
               }}>
 
                 {scopes.map((scopeOption, index) => (
                   <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
-                    {scopeOption.label || scopeOption.id}
+                    {scopeOption.label} ({scopeOption.id})
                   </option>
                 ))}
               </select>
@@ -402,11 +410,11 @@ function Explore() {
             </div>
             {/* </h3> */}
             <span>{scope?.description}</span>
-            <span>Embeddings: {embedding?.model_id}</span>
+            <span>{embedding?.model_id}</span>
             <span>{clusterLabels?.length} clusters</span>
           </div>
           <div className="dataset-card">
-            <span>{dataset?.length} rows</span>
+            <span><b>{datasetId}</b>  {dataset?.length} rows</span>
           </div>
         </div>
         <div className="umap-container">
@@ -510,7 +518,7 @@ function Explore() {
             {hovered && Object.keys(hovered).map((key) => (
               <span key={key}>
                 <span className="key">{key}:</span>
-                <span className="value">{hovered[key]}</span>
+                <span className="value">{dataset?.column_metadata && dataset?.column_metadata[key]?.type == "array" ? `[array(${hovered[key].length})]` : hovered[key]}</span>
               </span>
             ))}
           </div> : null }

@@ -1,5 +1,7 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
+import { Link } from 'react-router-dom';
+import { Tooltip } from 'react-tooltip'
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 const apiUrl = import.meta.env.VITE_API_URL
@@ -90,16 +92,29 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
 
   return (
       <div className="dataset--umaps-new">
+        <div>Project high-dimensional embeddings to 2D using <a href="https://umap-learn.readthedocs.io/en/latest/index.html">UMAP</a></div>
         <form onSubmit={handleNewUmap}>
           <label>
             Neighbors:
             <input type="number" name="neighbors" defaultValue="25"disabled={!!umapJob} />
+            <span className="tooltip" data-tooltip-id="neighbors">🤔</span>
+            <Tooltip id="neighbors" place="top" effect="solid">
+              The number of neighbors to use in the UMAP algorithm. 
+              More neighbors will result in a more global view of the data, 
+              while fewer neighbors will result in a more local view of the data. More neighbors is also more computationally expensive.
+            </Tooltip>
           </label>
           <label>
             Min Dist:
             <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
+            <span className="tooltip" data-tooltip-id="min-dist">🤔</span>
+            <Tooltip id="min-dist" place="top" effect="solid">
+              Min dist is a measure of how close points must be in the original space to be considered neighbors in the low-dimensional space. 
+              A smaller value will result in a more clustered UMAP, while a larger value will result in a more spread out UMAP.
+            </Tooltip>
           </label>
-          <label>
+          {/* TODO: hiding initializing UMAP in favor of aligning */}
+          {/* <label>
             Initialize from UMAP:
             <select name="init" disabled={!!umapJob} onChange={handleChangeInit}>
               <option value="">None</option>
@@ -111,7 +126,7 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
                   </option>
               )})}
             </select>
-          </label>
+          </label> */}
           <span className="button" onClick={toggleShowAlign}>{showAlign ? 'x Align UMAPs' : '+ Align UMAPs'}</span>
           {showAlign && <div className={styles["umaps-align"]}>
             <span className={styles["umaps-align-info"]}>
@@ -149,6 +164,15 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
             </div>
           ))}
         </div>
+
+        { umaps && umaps.length > 1 ? <div>
+          <br/>
+          <Link to={`/datasets/${dataset?.id}/compare`}>↗ Compare UMAPs </Link> 
+          <span className="tooltip" data-tooltip-id="compare-umaps">🤔</span>
+          <Tooltip id="compare-umaps" place="top" effect="solid">
+            An interface for comparing any two UMAPS in the same dataset. Direct comparisons are most useful between 2 aligned UMAPS
+          </Tooltip>
+        </div> : null }
     </div>
   );
 }

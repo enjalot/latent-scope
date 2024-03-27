@@ -1,8 +1,5 @@
 import os
 import time
-from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
-from transformers import AutoTokenizer
 from .base import EmbedModelProvider,ChatModelProvider
 
 from latentscope.util import get_key
@@ -19,6 +16,7 @@ encoders = {
 
 class MistralAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
+        from mistralai.client import MistralClient
         api_key = get_key("MISTRAL_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Mistral")
@@ -32,6 +30,10 @@ class MistralAIEmbedProvider(EmbedModelProvider):
 
 class MistralAIChatProvider(ChatModelProvider):
     def load_model(self):
+        from mistralai.client import MistralClient
+        from transformers import AutoTokenizer
+        from mistralai.models.chat_completion import ChatMessage
+        self.ChatMessage = ChatMessage
         api_key = get_key("MISTRAL_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Mistral")
@@ -40,7 +42,7 @@ class MistralAIChatProvider(ChatModelProvider):
         self.encoder = AutoTokenizer.from_pretrained(encoders[self.name])
 
     def chat(self, messages):
-        instances = [ChatMessage(content=message["content"], role=message["role"]) for message in messages]
+        instances = [self.ChatMessage(content=message["content"], role=message["role"]) for message in messages]
         response = self.client.chat(
             model=self.name,
             messages=instances

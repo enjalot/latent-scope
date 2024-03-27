@@ -1,15 +1,15 @@
-import os
 import json
-import pkg_resources
 from .providers.transformers import TransformersEmbedProvider, TransformersChatProvider
 from .providers.openai import OpenAIEmbedProvider, OpenAIChatProvider
 from .providers.mistralai import MistralAIEmbedProvider, MistralAIChatProvider
 from .providers.cohereai import CohereAIEmbedProvider
 from .providers.togetherai import TogetherAIEmbedProvider
 from .providers.voyageai import VoyageAIEmbedProvider
+from .providers.nltk import NLTKChatProvider
 
 def get_embedding_model_list():
     """Returns a list of available embedding models."""
+    import pkg_resources
     embedding_path = pkg_resources.resource_filename('latentscope.models', 'embedding_models.json')
     with open(embedding_path, "r") as f:
         embed_model_list = json.load(f)
@@ -43,6 +43,7 @@ def get_embedding_model(id):
 
 def get_chat_model_list():
     """Returns a list of available chat models."""
+    import pkg_resources
     chat_path = pkg_resources.resource_filename('latentscope.models', 'chat_models.json')
     with open(chat_path, "r") as f:
         chat_model_list = json.load(f)
@@ -66,3 +67,6 @@ def get_chat_model(id):
         return OpenAIChatProvider(model['name'], model['params'])
     if model['provider'] == "mistralai":
         return MistralAIChatProvider(model['name'], model['params'])
+    if model['provider'] == "nltk":
+        return NLTKChatProvider(model['name'], model['params'])
+

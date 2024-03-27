@@ -12,6 +12,7 @@ ClusterLabels.propTypes = {
   dataset: PropTypes.shape({
     id: PropTypes.string.isRequired
   }).isRequired,
+  embedding: PropTypes.object,
   cluster: PropTypes.object,
   selectedLabelId: PropTypes.string,
   onChange: PropTypes.func.isRequired,
@@ -23,7 +24,7 @@ ClusterLabels.propTypes = {
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, onLabelSets, onHoverLabel, onClickLabel}) {
+function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange, onLabels, onLabelSets, onHoverLabel, onClickLabel}) {
   const [clusterLabelsJob, setClusterLabelsJob] = useState(null);
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
   const { startJob: rerunClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/rerun`);
@@ -116,21 +117,21 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
     const form = e.target
     const data = new FormData(form)
     const model = data.get('chatModel')
-    const text_column = dataset.text_column
-    const cluster_id = cluster?.id
+    const text_column = embedding.text_column
+    const cluster_id = cluster.id
     const context = data.get('context')
     startClusterLabelsJob({chat_id: model, cluster_id: cluster_id, text_column, context})
-  }, [dataset, cluster, startClusterLabelsJob])
+  }, [cluster, embedding, startClusterLabelsJob])
 
   function handleRerun(job) {
-    rerunJob({job_id: job?.id});
+    rerunClusterLabelsJob({job_id: job?.id});
   }
 
   return (
     <div className="dataset--setup-cluster-labels-content">
       <div className="dataset--slides-new">
         <p>Automatically create labels for each cluster
-          {cluster ? ` in ${cluster.cluster_id}` : ''} using a chat model. </p>
+          {cluster ? ` in ${cluster.id}` : ''} using a chat model. Default labels are created from the top 3 words in each cluster using nltk.</p>
         <form onSubmit={handleNewLabels}>
           <label>
             Chat Model:
@@ -155,7 +156,7 @@ function ClusterLabels({ dataset, cluster, selectedLabelId, onChange, onLabels, 
             value={selectedLabelId}
             onChange={(e) => onChange(e.target.value)}
           >
-            <option value="default">Defualt</option>
+            <option value="default">Default</option>
             {clusterLabelSets.map((model, index) => (
               <option key={index} value={model.id}>{model.id} - { model.model_id} </option>
             ))}

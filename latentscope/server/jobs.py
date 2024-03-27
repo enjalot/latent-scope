@@ -124,7 +124,7 @@ def run_ingest():
     file.save(file_path)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-ingest {dataset} --path={file_path}'
+    command = f'ls-ingest {dataset} --path="{file_path}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -153,6 +153,18 @@ def run_embed_truncate():
 
     job_id = str(uuid.uuid4())
     command = f'ls-embed-truncate {dataset} {embedding_id} {dimensions}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+@jobs_write_bp.route('/embed_importer')
+def run_embed_importer():
+    dataset = request.args.get('dataset')
+    model_id = request.args.get('model_id')
+    embedding_column = request.args.get('embedding_column')
+    text_column = request.args.get('text_column')
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-embed-importer {dataset} {embedding_column} "{model_id}" {text_column}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

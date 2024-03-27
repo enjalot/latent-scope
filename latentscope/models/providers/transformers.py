@@ -1,22 +1,25 @@
-import torch
 from .base import EmbedModelProvider, ChatModelProvider
-from transformers import AutoTokenizer, AutoModel, pipeline
-
-def cls_pooling(model_output):
-    return model_output[0][:, 0]
-
-def average_pooling(model_output, attention_mask):
-    last_hidden = model_output.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
-    return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-
-def mean_pooling(model_output, attention_mask):
-    token_embeddings = model_output[0]
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
 
 class TransformersEmbedProvider(EmbedModelProvider):
+    def __init__(self, name, params):
+        super().__init__(name, params)
+        import torch
+        self.torch = torch
+
+    def cls_pooling(self, model_output):
+        return model_output[0][:, 0]
+
+    def average_pooling(self, model_output, attention_mask):
+        last_hidden = model_output.last_hidden_state.masked_fill(~attention_mask[..., None].bool(), 0.0)
+        return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+
+    def mean_pooling(self, model_output, attention_mask):
+        token_embeddings = model_output[0]
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        return self.torch.sum(token_embeddings * input_mask_expanded, 1) / self.torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+        
     def load_model(self):
+        from transformers import AutoTokenizer, AutoModel, pipeline
         if self.name == "nomic-ai/nomic-embed-text-v1" or self.name == "nomic-ai/nomic-embed-text-v1.5":
             self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", model_max_length=self.params["max_tokens"])
             self.model = AutoModel.from_pretrained("nomic-ai/nomic-embed-text-v1", trust_remote_code=True, rotary_scaling_factor=2 )
@@ -29,22 +32,22 @@ class TransformersEmbedProvider(EmbedModelProvider):
         encoded_input = self.tokenizer(inputs, padding=self.params["padding"], truncation=self.params["truncation"], return_tensors='pt')
         pool = self.params["pooling"]
         # Compute token embeddings
-        with torch.no_grad():
+        with self.torch.no_grad():
             model_output = self.model(**encoded_input)
             if pool == "cls":
-                embeddings = cls_pooling(model_output)
+                embeddings = self.cls_pooling(model_output)
             elif pool == "average":
-                embeddings = average_pooling(model_output, encoded_input["attention_mask"])
+                embeddings = self.average_pooling(model_output, encoded_input["attention_mask"])
             elif pool == "mean":
-                embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
+                embeddings = self.mean_pooling(model_output, encoded_input["attention_mask"])
 
         # Support Matroyshka embeddings
         if dimensions is not None and dimensions > 0:
-            embeddings = torch.nn.functional.layer_norm(embeddings, normalized_shape=(embeddings.shape[1],))
+            embeddings = self.torch.nn.functional.layer_norm(embeddings, normalized_shape=(embeddings.shape[1],))
             embeddings = embeddings[:, :dimensions]
 
         # Normalize embeddings
-        normalized_embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+        normalized_embeddings = self.torch.nn.functional.normalize(embeddings, p=2, dim=1)
         return normalized_embeddings.tolist()
 
 

@@ -2,7 +2,6 @@ import os
 import re
 import json
 import argparse
-import pandas as pd
 from latentscope.util import get_data_dir
 
 
@@ -44,6 +43,8 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
         id = scope_id
 
     print("RUNNING:", id)
+
+    import pandas as pd
 
     scope = {
         "id": id,
