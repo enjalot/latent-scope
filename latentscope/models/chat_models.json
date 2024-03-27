@@ -75,6 +75,15 @@
         }
     },
     {
+        "provider": "transformers",
+        "name": "mistralai/Mistral-7B-Instruct-v0.1",
+        "sanitized_name": "mistralai/Mistral-7B-Instruct-v0.1",
+        "id": "mistralai/Mistral-7B-Instruct-v0.1",
+        "params": {
+            "max_tokens": 4096 
+        }
+    },
+    {
       "provider": "transformers",
       "name": "HuggingFaceH4/zephyr-7b-beta",
       "sanitized_name": "HuggingFaceH4___zephyr-7b-beta",
