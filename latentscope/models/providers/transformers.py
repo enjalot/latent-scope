@@ -1,3 +1,4 @@
+import torch
 from .base import EmbedModelProvider, ChatModelProvider
 from transformers import AutoTokenizer, AutoModel, pipeline
 
