@@ -91,6 +91,15 @@
       "params": {
         "max_tokens": 4096
       }
-    }
+    },
+    {
+        "provider": "transformers",
+        "name": "jphme/em_german_7b_leo",
+        "sanitized_name": "jphme/em_german_7b_leo",
+        "id": "jphme/em_german_7b_leo",
+        "params": {
+          "max_tokens": 4096
+        }
+      }
 
 ]
