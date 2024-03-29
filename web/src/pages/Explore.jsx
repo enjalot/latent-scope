@@ -95,6 +95,7 @@ function Explore() {
   }, [datasetId, setScopes]);
 
 
+  const [delay, setDelay] = useState(200)
   const [scope, setScope] = useState(null);
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`)
@@ -398,6 +399,7 @@ function Explore() {
 
               <select className="scope-selector" onChange={(e) => {
                 clearScope()
+                setDelay(2000)
                 navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)
               }}>
 
@@ -464,7 +466,7 @@ function Explore() {
                 hulls={hulls}
                 stroke="black"
                 fill="none"
-                delay={2000}
+                delay={delay}
                 duration={200}
                 strokeWidth={1}
                 xDomain={xDomain}
@@ -567,12 +569,12 @@ function Explore() {
               />
               : null}
             
-            <FilterDataTable
+            {/* <FilterDataTable
                 dataset={dataset}
                 indices={selectedIndices}
                 clusterIndices={clusterIndices}
                 clusterLabels={clusterLabels}
-            />
+            /> */}
 
           </div>
           : null}
