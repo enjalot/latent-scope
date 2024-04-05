@@ -37,6 +37,18 @@
   },
   {
     "provider": "transformers",
+    "name": "intfloat/multilingual-e5-large",
+    "sanitized_name": "intfloat___multilingual-e5-large",
+    "id": "transformers-intfloat___multilingual-e5-large",
+    "modality": "text",
+    "params": {
+        "truncation": true,
+        "padding": true,
+        "pooling": "average"
+    }
+},
+  {
+    "provider": "transformers",
     "name": "thenlper/gte-small",
     "sanitized_name": "thenlper___gte-small",
     "id": "transformers-thenlper___gte-small",
