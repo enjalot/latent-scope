@@ -91,10 +91,17 @@ def ingest(dataset_id, df, text_column = None):
             column_type = "unknown"
 
         # Count unique values, excluding NaN
-        if isinstance(df[column].iloc[0], np.ndarray):
-            unique_values_count = len(set([tuple(x) for x in df[column].dropna()]))
-        else:
-            unique_values_count = df[column].nunique(dropna=True)
+        try:
+            if isinstance(df[column].iloc[0], np.ndarray):
+                unique_values_count = len(set([tuple(x) for x in df[column].dropna()]))
+            elif isinstance(df[column].iloc[0], bytes):
+                unique_values_count = len(set(df[column].dropna().apply(lambda x: x.decode('utf-8'))))
+            elif isinstance(df[column].iloc[0], dict):
+                unique_values_count = len(set(df[column].dropna().apply(json.dumps)))
+            else:
+                unique_values_count = df[column].nunique(dropna=True)
+        except:
+            unique_values_count = -1
 
         # Store the metadata
         column_metadata[column] = {
@@ -104,6 +111,12 @@ def ingest(dataset_id, df, text_column = None):
         if column_type == "string" and unique_values_count <= 20:
             categories = df[column].value_counts().index.tolist()
             column_metadata[column]["categories"] = categories
+        if column_type == "string":
+            if df[column].str.startswith("http").all():
+                column_metadata[column]["url"] = True
+                # check if endings of string are common image formats like png, jpg, jpeg, webp
+                if df[column].str.lower().str.endswith(("png", "jpg", "jpeg", "webp", "svg", "gif")).all():
+                    column_metadata[column]["image"] = True
         if column_type == "number":
             extent = df[column].agg(['min', 'max'])
             column_metadata[column]["extent"] = extent.tolist()

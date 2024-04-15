@@ -72,7 +72,7 @@ function IndexDataTable({
       <DataTable 
         data={rows} 
         tagset={tagset} 
-        datasetId={dataset?.id} 
+        dataset={dataset} 
         maxRows={maxRows} 
         onTagset={onTagset} 
         onHover={onHover} 

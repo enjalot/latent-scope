@@ -68,6 +68,7 @@ function Jobs() {
           <span className="job-status" style={{fontWeight:"bold", padding: "5px"}}>
             {job.status == "completed" ? "👍" : ""} 
             {job.status == "error" ? "🤬" : ""} 
+            {job.status == "dead" ? "💀" : ""}
             {job.status == "running" ? "🏃‍♂️" : ""} 
             {/* {job.status} */}
             </span>

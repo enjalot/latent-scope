@@ -7,13 +7,13 @@ const apiUrl = import.meta.env.VITE_API_URL
 DataTable.propTypes = {
   data: PropTypes.array.isRequired,
   tagset: PropTypes.object,
-  datasetId: PropTypes.string,
+  dataset: PropTypes.object,
   maxRows: PropTypes.number,
   onTagset: PropTypes.func,
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
-function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClick }) {
+function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick }) {
   if (!data.length) {
     return <p>No data available.</p>;
   }
@@ -28,7 +28,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
     console.log("tagset[tag]", tagset[tag])
     if(tagset[tag].includes(index)) {
       console.log("removing")
-      fetch(`${apiUrl}/tags/remove?dataset=${datasetId}&tag=${tag}&index=${index}`)
+      fetch(`${apiUrl}/tags/remove?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
         .then(response => response.json())
         .then(data => {
           console.log("removed", data)
@@ -36,7 +36,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
         });
     } else {
       console.log("adding")
-      fetch(`${apiUrl}/tags/add?dataset=${datasetId}&tag=${tag}&index=${index}`)
+      fetch(`${apiUrl}/tags/add?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
         .then(response => response.json())
         .then(data => {
           console.log("added", data)
@@ -49,6 +49,7 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
   }
 
   const rows = maxRows ? data.slice(0, maxRows) : data;
+  // console.log("rows", rows)
 
   return (
     <>
@@ -67,8 +68,22 @@ function DataTable({ data, tagset, datasetId, maxRows, onTagset, onHover, onClic
             onMouseLeave={() => onHover && onHover()}
             onClick={() => onClick && onClick(row.index)}
             >
-            {headers.map((header, idx) => 
-              <td key={idx}>{header.toLowerCase() == "url" && row[header] ? <a href={row[header]}>url</a> : row[header]}</td>)}
+            {headers.map((header, idx) => {
+              let d = row[header]
+              if(typeof d === 'object' && !Array.isArray(d)) {
+                d = JSON.stringify(d)
+              }
+              let meta = dataset?.column_metadata && dataset?.column_metadata[header]
+              if(meta && meta.image) {
+                return <td key={idx}><img src={d} alt={header} height={64} /></td>
+              } else if(meta && meta.url) {
+                return <td key={idx}><a href={d}>url</a></td>
+              } else if(meta && meta.type == "array") {
+                return <td key={idx}>[{d.length}]</td>
+              } else {
+                return <td key={idx}>{d}</td>
+              }
+            })}
             {tags ? <td>
               {tags.map((tag, idx) => (
                 <button 
