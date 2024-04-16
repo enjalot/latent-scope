@@ -93,7 +93,7 @@ function FilterDataTable({
 
   const hydrateIndices = useCallback((indices) => {
     console.log("hydrate!", dataset)
-    if(dataset) {
+    if(dataset && indices.length) {
       console.log("fetching query", dataset)
       fetch(`${apiUrl}/query`, {
         method: 'POST',
@@ -145,6 +145,8 @@ function FilterDataTable({
         // }
         setRows(rows)
       })
+    } else {
+      setRows([])
     }
   }, [dataset, distances, clusterIndices, clusterLabels, currentPage])
 
@@ -302,7 +304,7 @@ function FilterDataTable({
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: height }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
       {/* Fixed Header */}
       <div style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px`}} ref={headerRef}>
         <table>

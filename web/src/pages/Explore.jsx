@@ -302,7 +302,7 @@ function Explore() {
     } else {
       setTagAnnotations([])
       if (scatter && scatter.config) {
-        scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+        // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
       }
     }
   }, [tagset, tag, points, scatter, setTagAnnotations])
@@ -319,7 +319,7 @@ function Explore() {
         // console.log("search", data)
         setDistances(data.distances);
         setSearchIndices(data.indices);
-        scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
+        // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
   }, [searchModel, datasetId, scatter, setDistances, setSearchIndices]);
 
@@ -342,7 +342,7 @@ function Explore() {
     } else {
       setSlideAnnotations([])
       if (scatter && scatter.config) {
-        scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+        // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
       }
     }
   }, [slide, points, scatter, setSlideAnnotations])
@@ -383,6 +383,44 @@ function Explore() {
     // setClusterLabels([])
     // setPoints([])
   }, [])
+
+  function intersectMultipleArrays(...arrays) {
+    console.log("ARRAYS", arrays)
+    arrays = arrays.filter(d => d.length > 0)
+    if (arrays.length === 0) return [];
+    if(arrays.length == 1) return arrays[0]
+    // Use reduce to accumulate intersections
+    return arrays.reduce((acc, curr) => {
+        // Convert current array to a Set for fast lookup
+        const currSet = new Set(curr);
+        // Filter the accumulated results to keep only elements also in the current array
+        return acc.filter(x => currSet.has(x));
+    });
+  }
+
+
+  const [intersectedIndices, setIntersectedIndices] = useState([])
+  // intersect the indices from the various filters
+  useEffect(() => {
+    console.log("selectedIndices", selectedIndices)
+    console.log("searchIndices", searchIndices)
+    console.log("slide", slide?.indices)
+    console.log("tag", tag)
+    console.log("tagset", tagset[tag])
+    const indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], slide?.indices || [], tagset[tag] || [])
+    if(indices.length == 0 && selectedIndices.length > 0) {
+      indices = selectedIndices
+    }
+    console.log("indices!", indices)
+    setIntersectedIndices(indices)
+  }, [selectedIndices, searchIndices, slide, tagset, tag])
+
+  const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
+  useEffect(() => {
+    const annots = intersectedIndices.map(index => points[index])
+    setIntersectedAnnotations(annots)
+  }, [intersectedIndices, points])
+
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -474,6 +512,16 @@ function Explore() {
                 width={scopeWidth}
                 height={scopeHeight} /> : null}
               <AnnotationPlot
+                points={intersectedAnnotations}
+                stroke="black"
+                fill="steelblue"
+                size="8"
+                xDomain={xDomain}
+                yDomain={yDomain}
+                width={scopeWidth}
+                height={scopeHeight}
+              />
+              {/* <AnnotationPlot
                 points={searchAnnotations}
                 stroke="black"
                 fill="steelblue"
@@ -492,7 +540,6 @@ function Explore() {
                 width={scopeWidth}
                 height={scopeHeight}
               />
-
               <AnnotationPlot
                 points={tagAnnotations}
                 symbol={tag}
@@ -501,7 +548,7 @@ function Explore() {
                 yDomain={yDomain}
                 width={scopeWidth}
                 height={scopeHeight}
-              />
+              /> */}
               <AnnotationPlot
                 points={hoverAnnotations}
                 stroke="black"
@@ -546,9 +593,8 @@ function Explore() {
       </div>
 
       <div className="data">
-        {/* <div className="tab-tables"> */}
 
-        <div className="tab-header">
+        {/* <div className="tab-header">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -557,55 +603,36 @@ function Explore() {
               {tab.name}
             </button>
           ))}
-        </div>
-
-        {activeTab === 0 ?
-          <div className="tab-content">
-            <span>Selected: {selectedIndices?.length}
-              {selectedIndices?.length > 0 ?
-                <button className="deselect" onClick={() => {
-                  setSelectedIndices([])
-                  scatter?.select([])
-                  scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                }
-                }>X</button>
-                : null}
-            </span>
-            {selectedIndices?.length > 0 ?
-              <IndexDataTable
-                indices={selectedIndices}
-                clusterIndices={clusterIndices}
-                clusterLabels={clusterLabels}
-                tagset={tagset}
-                dataset={dataset}
-                maxRows={150}
-                onTagset={(data) => setTagset(data)}
-                onHover={handleHover}
-                onClick={handleClicked}
-              />
-              : null}
+        </div> */}
+          <div className="filters-container">
             
-            {/* <FilterDataTable
-                dataset={dataset}
-                indices={selectedIndices}
-                clusterIndices={clusterIndices}
-                clusterLabels={clusterLabels}
-            /> */}
 
-          </div>
-          : null}
+            <div className="filter-row search-box">
+              <div className="filter-cell left">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  searchQuery(e.target.elements.searchBox.value);
+                  setActiveTab(1)
+                }}>
+                  <input type="text" id="searchBox" />
+                  {/* <button type="submit">Similarity Search</button> */}
+                  <button type="submit">🔍</button>
+                </form>
+              </div>
+              <div className="filter-cell middle">
+                <span>
+                  {searchIndices.length ? <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span> : null}
+                  {searchIndices.length > 0 ?
+                    <button className="deselect" onClick={() => {
+                      setSearchIndices([])
+                      document.getElementById("searchBox").value = "";
+                    }
+                    }>X</button>
+                    : null}
+                </span>
+              </div>
 
-        {activeTab === 1 ?
-          <div className="tab-content">
-            <div className="search-box">
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                searchQuery(e.target.elements.searchBox.value);
-                setActiveTab(1)
-              }}>
-                <input type="text" id="searchBox" />
-                <button type="submit">Similarity Search</button>
-                <br />
+              <div className="filter-cell right">
                 <label htmlFor="embeddingModel"></label>
                 <select id="embeddingModel"
                   onChange={(e) => handleModelSelect(e.target.value)}
@@ -614,97 +641,58 @@ function Explore() {
                     <option key={index} value={emb.id}>{emb.id} - {emb.model_id} - {emb.dimensions}</option>
                   ))}
                 </select>
-
-              </form>
+                {/* TODO: tooltip */}
+              </div>
             </div>
-            <span>
-              {searchIndices.length ? <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span> : null}
-              {searchIndices.length > 0 ?
-                <button className="deselect" onClick={() => {
-                  setSearchIndices([])
-                  document.getElementById("searchBox").value = "";
-                }
-                }>X</button>
-                : null}
-            </span>
-            {searchIndices.length > 0 ?
-              <IndexDataTable
-                indices={searchIndices}
-                distances={distances}
-                clusterIndices={clusterIndices}
-                clusterLabels={clusterLabels}
-                tagset={tagset}
-                dataset={dataset}
-                onTagset={(data) => setTagset(data)}
-                onHover={handleHover}
-                onClick={handleClicked}
-              />
-              : null}
-          </div>
-          : null}
 
-        {activeTab === 2 ?
-          <div className="tab-content">
-            <div className="clusters-select">
-              <select onChange={(e) => {
-                const cl = clusterLabels.find(cluster => cluster.index === +e.target.value)
-                if (cl)
-                  setSlide(cl)
-              }} value={slide?.index}>
-                <option value="">Select a cluster</option>
-                {clusterLabels.map((cluster, index) => (
-                  <option key={index} value={cluster.index}>{cluster.index}: {cluster.label}</option>
-                ))}
-              </select>
-            </div>
-            <div className="cluster-selected">
-              {slide ?
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleLabelUpdate(slide.index, clusterLabel);
-                }}>
-                  <input
-                    type="text"
-                    id="new-label"
-                    value={clusterLabel}
-                    onChange={(e) => setClusterLabel(e.target.value)} />
-                  <button type="submit">Update Label</button>
-                </form>
-                : null}
-              <span>{slide?.indices.length} {slide?.indices.length ? "Rows" : ""}
-                {slide ? <button className="deselect" onClick={() => {
-                  setSlide(null)
-                }
-                }>X</button>
+            <div className="clusters-select filter-row">
+              <div className="filter-cell left">
+                <select onChange={(e) => {
+                  const cl = clusterLabels.find(cluster => cluster.index === +e.target.value)
+                  if (cl)
+                    setSlide(cl)
+                }} value={slide?.index}>
+                  <option value="">Select a cluster</option>
+                  {clusterLabels.map((cluster, index) => (
+                    <option key={index} value={cluster.index}>{cluster.index}: {cluster.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-cell middle">
+                
+                <span>{slide?.indices.length} {slide?.indices.length ? "Rows" : ""}
+                  {slide ? <button className="deselect" onClick={() => {
+                    setSlide(null)
+                  }
+                  }>X</button>
+                    : null}
+                </span>
+              </div>
+              <div className="filter-cell right">
+                {slide ?
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    handleLabelUpdate(slide.index, clusterLabel);
+                  }}>
+                    <input
+                      className="update-cluster-label"
+                      type="text"
+                      id="new-label"
+                      value={clusterLabel}
+                      onChange={(e) => setClusterLabel(e.target.value)} />
+                    <button type="submit">Update Label</button>
+                  </form>
                   : null}
-              </span>
+              </div>
             </div>
-            <div className="cluster-table">
-              {slide?.indices ?
-                <IndexDataTable
-                  indices={slide?.indices}
-                  clusterIndices={clusterIndices}
-                  clusterLabels={clusterLabels}
-                  dataset={dataset}
-                  tagset={tagset}
-                  onTagset={(data) => setTagset(data)}
-                  onHover={handleHover}
-                  onClick={handleClicked}
-                />
-                : null}
-            </div>
-          </div>
-          : null}
 
-        {activeTab === 3 ?
-          <div className="tab-content">
             <div className="tags-box">
               <div className="tags-select">
                 Tags: {tags.map(t => {
                   return <button className="dataset--tag-link" key={t} onClick={() => {
                     setTag(t)
                     setActiveTab(3)
-                    scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
+                    // scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
                   }}>{t}({tagset[t].length})</button>
                 })}
               </div>
@@ -731,20 +719,49 @@ function Explore() {
               }>X</button>
                 : null}
             </span>
-            {tagset[tag] ?
+
+            <div className="filter-row">
+              <span>Selected: {selectedIndices?.length}
+                {selectedIndices?.length > 0 ?
+                  <button className="deselect" onClick={() => {
+                    setSelectedIndices([])
+                    scatter?.select([])
+                    // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                  }
+                  }>X</button>
+                  : null}
+              </span>
+            </div>
+
+            <div className="intersected-count">
+              <span>{intersectedIndices.length} rows</span>
+            </div>
+
+            
+            
+            <FilterDataTable
+                dataset={dataset}
+                indices={intersectedIndices}
+                clusterIndices={clusterIndices}
+                clusterLabels={clusterLabels}
+            />
+
+{/* {selectedIndices?.length > 0 ?
               <IndexDataTable
-                indices={tagset[tag]}
+                indices={selectedIndices}
                 clusterIndices={clusterIndices}
                 clusterLabels={clusterLabels}
                 tagset={tagset}
                 dataset={dataset}
+                maxRows={150}
                 onTagset={(data) => setTagset(data)}
                 onHover={handleHover}
                 onClick={handleClicked}
               />
-              : null}
+              : null} */}
+
           </div>
-          : null}
+        
         {/* </div> */}
       </div>
     </div>

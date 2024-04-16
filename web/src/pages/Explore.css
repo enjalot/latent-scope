@@ -111,12 +111,33 @@
 
 
 /* MIDDLE COLUMN */
-.container .tab-tables {
-  /* padding: 12px 0; */
 
+.filters-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.filters-container .filter-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.filters-container .filter-cell {
+  flex-grow: 1;
+  padding: 4px;
+  text-align: left;
+}
+
+.filters-container .filter-cell.left, .filters-container .filter-cell.right {
+  flex: 2; /* Makes left and right cells take twice the space of the middle cell */
+}
+
+.filters-container .filter-cell.middle {
+  flex: 1; /* Middle cell takes the base flex size */
 }
 
 /* SECOND ROW: Tabs */
+/* TODO clean out old css from tab system */
 .container .tab-tables {
   display: flex;
   flex-direction: column;
@@ -186,31 +207,6 @@
   padding: 12px;
 }
 
-/* 
-.container .tab-content table {
-  height: 100%;
-}
-.container .tab-content table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-.container .tab-content tbody {
-  display: block;
-  max-height: 100%;
-  overflow-y: scroll;
-} */
-/* .container .tab-content tbody tr {
-} */
-
-
-/* .container .tab-active {
-  color: seagreen;
-  font-weight: bold;
-  background-color: lightgray; 
-} */
-
-
 .tags-box {
   display: flex;
   flex-direction: row;
@@ -243,6 +239,13 @@
 .search-box select {
   width: 358px;
 
+}
+
+.clusters-select select {
+  width: 350px;
+}
+.update-cluster-label {
+  width: 250px;
 }
 
 .tab-neighbors .deselect {
