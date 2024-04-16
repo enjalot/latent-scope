@@ -614,14 +614,14 @@ function Explore() {
                   searchQuery(e.target.elements.searchBox.value);
                   setActiveTab(1)
                 }}>
-                  <input type="text" id="searchBox" />
+                  <input type="text" id="searchBox" placeholder="Nearest Neighbor Search..." />
                   {/* <button type="submit">Similarity Search</button> */}
                   <button type="submit">🔍</button>
                 </form>
               </div>
               <div className="filter-cell middle">
                 <span>
-                  {searchIndices.length ? <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span> : null}
+                  {searchIndices.length ? <span>{searchIndices.length} {searchIndices.length == 150 ? '(capped at 150)' : ''} </span> : null}
                   {searchIndices.length > 0 ?
                     <button className="deselect" onClick={() => {
                       setSearchIndices([])
