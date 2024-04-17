@@ -110,17 +110,45 @@
 }
 
 
-/* MIDDLE COLUMN */
-
+/* Filters and data table */
 .filters-container {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  /* max-width: 650px; */
+  /* width: 650px; */
+  /* flex-grow: 1; */
+  /* height: calc(100% - 32px); */
+  /* height: 100%; */
+  height: 250px;
+  overflow-y: auto;
+  border: 1px solid lightgray;
+  padding: 12px;
+}
+.filters-container button {
+  margin-left: 0.3em;
 }
 
 .filters-container .filter-row {
   display: flex;
   flex-direction: row;
+  /* border: 1px solid gray; */
+  background-color: #f9f9f9;
+  border-radius: 4px;
 }
+.filters-container .filter-row.active {
+  background-color: #e0e0e0;
+}
+@media (prefers-color-scheme: dark) {
+  .filters-container .filter-row {
+    background-color: #333;
+    color: #fff;
+  }
+  .filters-container .filter-row.active {
+    background-color: #555;
+  }
+}
+
 
 .filters-container .filter-cell {
   flex-grow: 1;
@@ -136,76 +164,9 @@
   flex: 1; /* Middle cell takes the base flex size */
 }
 
-/* SECOND ROW: Tabs */
-/* TODO clean out old css from tab system */
-.container .tab-tables {
-  display: flex;
-  flex-direction: column;
-}
 
-.container .tab-header {
-  height: 32px;
-  background-color: #f1f1f1;
-  border: 1px solid #ccc;
-  border-bottom: none;
-  /* padding: 10px 20px; */
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
 
-.container .tab-header button {
-  height: 32px;
-  display: inline-block;
-  border: none;
-  border-radius: 0;
-  margin: 0;
-  padding: 6px 24px;
-}
 
-.container .tab-header button:hover {
-  background-color: #ddd;
-  border-color: none;
-}
-
-.container .tab-header button:focus,
-.container .tab-header button:focus-visible {
-  outline: none;
-}
-
-.container .tab-header .tab-active {
-  background-color: white;
-  border-top: 2px solid seagreen;
-  border-bottom: none;
-  font-weight: bold;
-}
-
-@media (prefers-color-scheme: dark) {
-  .container .tab-header {
-    background-color: #333;
-  }
-
-  .container .tab-header button:hover {
-    background-color: #333;
-  }
-
-  .container .tab-header .tab-active {
-    background-color: #444;
-  }
-}
-
-.tab-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  /* max-width: 650px; */
-  /* width: 650px; */
-  /* flex-grow: 1; */
-  height: calc(100% - 32px);
-  /* height: 100%; */
-  overflow-y: auto;
-  border: 1px solid lightgray;
-  padding: 12px;
-}
 
 .tags-box {
   display: flex;
@@ -233,7 +194,7 @@
 /* Styling for nearest neighbors section */
 .search-box input {
   /* height: 24px; */
-  width: 350px;
+  width: 300px;
 }
 
 .search-box select {
@@ -242,7 +203,7 @@
 }
 
 .clusters-select select {
-  width: 350px;
+  width: 300px;
 }
 .update-cluster-label {
   width: 250px;
@@ -275,13 +236,13 @@
     margin-top: 5px;
   }
 
-  .data {
-    width: 100%
+  .left-column {
+    flex-grow: 1
   }
-
-  .data,
-  .cluster {
-    height: auto;
+  .data{
+    height: 50%;
+    width: 100%;
+    flex-grow: 1;
     overflow-y: visible;
   }
   .hovered-point {
@@ -305,7 +266,7 @@
     height: auto;
   }
 
-  .tab-content {
+  .filters-container {
     height: auto;
     margin-top: 40px;
   }

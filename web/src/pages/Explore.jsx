@@ -605,14 +605,11 @@ function Explore() {
           ))}
         </div> */}
           <div className="filters-container">
-            
-
-            <div className="filter-row search-box">
+            <div className={`filter-row search-box ${searchIndices.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   searchQuery(e.target.elements.searchBox.value);
-                  setActiveTab(1)
                 }}>
                   <input type="text" id="searchBox" placeholder="Nearest Neighbor Search..." />
                   {/* <button type="submit">Similarity Search</button> */}
@@ -621,7 +618,7 @@ function Explore() {
               </div>
               <div className="filter-cell middle">
                 <span>
-                  {searchIndices.length ? <span>{searchIndices.length} {searchIndices.length == 150 ? '(capped at 150)' : ''} </span> : null}
+                  {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
                   {searchIndices.length > 0 ?
                     <button className="deselect" onClick={() => {
                       setSearchIndices([])
@@ -631,7 +628,6 @@ function Explore() {
                     : null}
                 </span>
               </div>
-
               <div className="filter-cell right">
                 <label htmlFor="embeddingModel"></label>
                 <select id="embeddingModel"
@@ -645,22 +641,24 @@ function Explore() {
               </div>
             </div>
 
-            <div className="clusters-select filter-row">
+            <div className={`clusters-select filter-row  ${slide?.indices.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 <select onChange={(e) => {
+                  if(e.target.value == -1) {
+                    setSlide(null)
+                    return
+                  }
                   const cl = clusterLabels.find(cluster => cluster.index === +e.target.value)
-                  if (cl)
-                    setSlide(cl)
-                }} value={slide?.index}>
-                  <option value="">Select a cluster</option>
+                  if(cl) setSlide(cl)
+                }} value={slide?.index >= 0 ? slide.index : -1}>
+                  <option value="-1">Select a cluster</option>
                   {clusterLabels.map((cluster, index) => (
                     <option key={index} value={cluster.index}>{cluster.index}: {cluster.label}</option>
                   ))}
                 </select>
               </div>
               <div className="filter-cell middle">
-                
-                <span>{slide?.indices.length} {slide?.indices.length ? "Rows" : ""}
+                <span>{slide?.indices.length} {slide?.indices.length ? "rows" : ""}
                   {slide ? <button className="deselect" onClick={() => {
                     setSlide(null)
                   }
@@ -686,18 +684,31 @@ function Explore() {
               </div>
             </div>
 
-            <div className="tags-box">
-              <div className="tags-select">
-                Tags: {tags.map(t => {
-                  return <button className="dataset--tag-link" key={t} onClick={() => {
-                    setTag(t)
-                    setActiveTab(3)
-                    // scatter?.zoomToPoints(tagset[t], { transition: true, padding: 0.2, transitionDuration: 1500 })
-                  }}>{t}({tagset[t].length})</button>
-                })}
+            <div className={`filter-row tags-box ${tagset[tag]?.length ? 'active': ''}`}>
+              <div className="filter-cell left tags-select">
+                <select onChange={(e) => {
+                  if(e.target.value == "-1") {
+                    setTag(null)
+                    return
+                  }
+                  setTag(e.target.value)
+                }} value={tag ? tag : "-1"}>
+                  <option value="-1">Select a tag</option>
+                  {tags.map((t, index) => (
+                    <option key={index} value={t}>{t} ({tagset[t].length})</option>
+                  ))}
+                </select>
               </div>
-              {readonly ? null : <div className="new-tag">
-                <form onSubmit={(e) => {
+              <div className="filter-cell middle">
+                {tag && tagset[tag]?.length ? <span>{tagset[tag].length} rows
+                  <button className="deselect" onClick={() => {
+                    setTag(null)
+                  }
+                  }>X</button>
+                </span> : null}
+              </div>
+              <div className="filter-cell right new-tag">
+                {readonly ? null : <form onSubmit={(e) => {
                   e.preventDefault();
                   const newTag = e.target.elements.newTag.value;
                   fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
@@ -709,33 +720,42 @@ function Explore() {
                 }}>
                   <input type="text" id="newTag" />
                   <button type="submit">New Tag</button>
-                </form>
-              </div>}
+                </form>}
+              </div>
             </div>
-            <span>{tag} {tagset[tag]?.length}
-              {tag ? <button className="deselect" onClick={() => {
-                setTag(null)
-              }
-              }>X</button>
-                : null}
-            </span>
+
+            <div className={`filter-row ${selectedIndices?.length ? 'active': ''}`}>
+              <div className="filter-cell left">
+                Click or Shift+Drag on the map to select points.
+              </div>
+              <div className="filter-cell middle">
+                  {selectedIndices?.length > 0 ?<span>{selectedIndices?.length} rows</span> : null}
+                  {selectedIndices?.length > 0 ?<button className="deselect" onClick={() => {
+                      setSelectedIndices([])
+                      scatter?.select([])
+                      // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                    }
+                    }>X</button>
+                    : null}
+              </div>
+              <div className="filter-cell right"></div>
+            </div>
 
             <div className="filter-row">
-              <span>Selected: {selectedIndices?.length}
-                {selectedIndices?.length > 0 ?
-                  <button className="deselect" onClick={() => {
-                    setSelectedIndices([])
-                    scatter?.select([])
-                    // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                  }
-                  }>X</button>
-                  : null}
-              </span>
+              <div className="filter-cell left">
+                {intersectedIndices.length > 0 ? "Intersection of filtered rows:" : "No rows filtered"}
+              </div>
+              <div className="filter-cell middle intersected-count">
+                <span>{intersectedIndices.length} rows</span>
+              </div>
+              <div className="filter-cell right bulk-actions">
+                <button>🏷️</button>
+                <button>️📍</button>
+                <button>💾</button>
+                <button>🗑️</button>
+              </div>
             </div>
-
-            <div className="intersected-count">
-              <span>{intersectedIndices.length} rows</span>
-            </div>
+          </div>
 
             
             
@@ -744,6 +764,7 @@ function Explore() {
                 indices={intersectedIndices}
                 clusterIndices={clusterIndices}
                 clusterLabels={clusterLabels}
+                height={`calc(100% - 250px)`}
             />
 
 {/* {selectedIndices?.length > 0 ?
@@ -759,8 +780,6 @@ function Explore() {
                 onClick={handleClicked}
               />
               : null} */}
-
-          </div>
         
         {/* </div> */}
       </div>

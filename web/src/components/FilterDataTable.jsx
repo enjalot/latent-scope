@@ -408,7 +408,13 @@ function FilterDataTable({
         </tbody>
       </table>
       </div>
-      <div style={{ flexShrink: 0, marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ 
+        flexShrink: 0, 
+        marginTop: '0px', 
+        padding: '6px',
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center' }}>
         <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
           First
         </button>
