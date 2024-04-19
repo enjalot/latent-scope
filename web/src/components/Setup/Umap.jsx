@@ -30,6 +30,11 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
 
   const [init, setInit] = useState("")
 
+  const [localUmap, setLocalUmap] = useState(umap)
+  useEffect(() => {
+    setLocalUmap(umap)
+  }, [umap])
+
   const [umaps, setUmaps] = useState([]);
   function fetchUmaps(datasetId, callback) {
     fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
@@ -48,8 +53,9 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
     fetchUmaps(dataset.id, (umps) => {
       setUmaps(umps)
       onNew(umps)
+      if(!umap) setLocalUmap(umps[0])
     })
-  }, [dataset, onNew]);
+  }, [dataset, onNew, setLocalUmap, umap]);
 
   useEffect(() => {
     if(umapJob?.status == "completed") {
@@ -61,10 +67,13 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
         } else if(umapJob.job_name == "rm") {
           ump = umps[0]
         }
-        onNew(umps, ump)
+        // onNew(umps, ump)
+        onNew(umps)
+        console.log("umap??", ump, umap)
+        if(!umap) setLocalUmap(ump)
       })
     }
-  }, [umapJob, dataset, setUmaps, onNew]);
+  }, [umapJob, dataset, setUmaps, onNew, setLocalUmap, umap]);
 
 
   const handleChangeInit = useCallback((e) => {
@@ -152,7 +161,8 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
               <input type="radio" 
                 id={`umap${index}`} 
                 name="umap" 
-                value={um} checked={um.id === umap?.id} onChange={() => onChange(um)} />
+                value={um} checked={um.id === localUmap?.id} 
+                onChange={() => setLocalUmap(um)} />
               <label htmlFor={`umap${index}`}>{um.id}
               <br></br>
                 Neighbors: {um.neighbors}<br/>
@@ -173,6 +183,8 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
             An interface for comparing any two UMAPS in the same dataset. Direct comparisons are most useful between 2 aligned UMAPS
           </Tooltip>
         </div> : null }
+        <br></br>
+        {localUmap && <button type="submit" onClick={() => onChange(localUmap)}>Use UMAP</button>} {localUmap?.id}
     </div>
   );
 }

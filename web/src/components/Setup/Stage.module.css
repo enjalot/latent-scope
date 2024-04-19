@@ -10,13 +10,25 @@
   margin: 0;
   padding: 4px 12px;
 }
+
 .stage .content {
   padding: 12px;
   display: none;
 }
 
+.subtitle {
+  /* font-family: monospace; */
+  font-weight: 300;
+  font-size: 0.8em;
+  line-height: 1.2em;
+}
+
 .active .content, .complete .content {
   display: block
+}
+
+.stage.complete h3 {
+  cursor: pointer;
 }
 
 .complete {

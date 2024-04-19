@@ -26,6 +26,11 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/cluster`);
   const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/delete/cluster`);
 
+  const [localCluster, setLocalCluster] = useState(cluster)
+  useEffect(() => {
+    setLocalCluster(cluster)
+  }, [cluster])
+
   const [clusters, setClusters] = useState([]);
 
   function fetchClusters(datasetId, callback) {
@@ -47,8 +52,9 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
     fetchClusters(dataset.id, (clstrs) => {
       setClusters(clstrs)
       onNew(clstrs)
+      if(!cluster) setLocalCluster(clstrs[0])
     })
-  }, [dataset, onNew]);
+  }, [dataset, onNew, cluster]);
 
   useEffect(() => {
     if(clusterJob?.status == "completed") {
@@ -60,10 +66,11 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
         } else if(clusterJob.job_name == "rm") {
           cls = clstrs[0]
         }
-        onNew(clstrs, cls)
+        onNew(clstrs)
+        if(!cluster) setLocalCluster(cls)
       })
     }
-  }, [clusterJob, dataset, setClusters, onNew]);
+  }, [clusterJob, dataset, setClusters, onNew, cluster, setLocalCluster]);
 
   const handleNewCluster = useCallback((e) => {
     e.preventDefault()
@@ -115,9 +122,9 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
             <input type="radio" 
               id={`cluster${index}`} 
               name="cluster" 
-              value={cluster} 
-              checked={cl.id === cluster?.id} 
-              onChange={() => onChange(cl)} />
+              value={cluster || ""} 
+              checked={cl.id === localCluster?.id} 
+              onChange={() => setLocalCluster(cl)} />
             <label htmlFor={`cluster${index}`}>{cl.id}
             <br></br>
               Clusters: {cl.n_clusters}<br/>
@@ -131,6 +138,8 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
           </div>
         ))}
       </div>
+      <br></br>
+        {localCluster && <button type="submit" onClick={() => onChange(localCluster)}>Use Cluster</button>} {localCluster?.id}
     </div>
   );
 }

@@ -45,12 +45,13 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
 
   useEffect(() => {
     if(scopeJob?.status == "completed") {
-      fetchScopes(dataset.id, (scopes) => {
-        setScopeJob(null)
-        onNew(scopes)
-        // onChange(scopes.find(d => d.id == scopeJob.run_id))
-        navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
-      })
+      console.log("completed")
+      // fetchScopes(dataset.id, (scopes) => {
+      //   setScopeJob(null)
+      //   onNew(scopes)
+      //   onChange(scopes.find(d => d.id == scopeJob.run_id))
+      //   navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
+      // })
     }
   }, [scopeJob, dataset, navigate, onNew, onChange]);
 
@@ -155,9 +156,19 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
 
         </div> : null }
 
-        <JobProgress job={scopeJob} clearJob={()=>setScopeJob(null)} />
+        <JobProgress job={scopeJob} clearJob={()=> {
+            setScopeJob(null)
+            if(scopeJob?.status == "completed") {
+              fetchScopes(dataset.id, (scopes) => {
+                console.log("fetched and setting")
+                onNew(scopes)
+                onChange(scopes.find(d => d.id == scopeJob.run_id))
+                navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
+              })
+            }
+        }} />
 
-          {scope && !scopeJob ? 
+          {scope && !scopeJob && !scope.ls_version ? 
             <button type="submit" disabled={cluster ? false : true } onClick={() => { 
               document.querySelector('input[name="action"]').value = 'save'; 
             }}>Overwrite {scope.name}</button> : null }

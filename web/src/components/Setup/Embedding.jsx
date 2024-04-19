@@ -34,6 +34,11 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   const { startJob: startEmbeddingsTruncateJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed_truncate`);
   const { startJob: startEmbeddingsImporterJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed_importer`);
 
+  const [localEmbedding, setLocalEmbedding] = useState(embedding)
+  useEffect(() => {
+    setLocalEmbedding(embedding)
+  }, [embedding])
+
   const [models, setModels] = useState([]);
   useEffect(() => {
     fetch(`${apiUrl}/embedding_models`)
@@ -61,8 +66,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     fetchEmbeddings(dataset?.id, (embs) => {
       setEmbeddings(embs)
       onNew(embs)
+      console.log("embs!", embs)
+      if(!embedding) {
+        setLocalEmbedding(embs[0])
+      }
     });
-  }, [dataset, setEmbeddings, onNew])
+  }, [dataset, setEmbeddings, onNew, setLocalEmbedding, embedding])
   
   useEffect(() => {
     if(embeddingsJob?.status === "completed") {
@@ -74,7 +83,9 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         } else if(embeddingsJob.job_name == "rm") {
           emb = embs[embs.length - 1]
         }
-        onNew(embs, emb)
+        // onNew(embs, emb)
+        onNew(embs)
+        setLocalEmbedding(emb.id)
       })
     }
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
@@ -83,9 +94,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
 
   const [potentialEmbeddings, setPotentialEmbeddings] = useState([])
   useEffect(() => {
-    console.log("DATASET", dataset)
     if(dataset?.potential_embeddings) {
-      console.log("POTENTIAL EMBEDDINGS", dataset.potential_embeddings)
       setPotentialEmbeddings(dataset.potential_embeddings)
     }
   }, [dataset])
@@ -239,7 +248,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         let dims = m ? m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : [] : []
         return (
         <div className={styles["item"]} key={index}>
-          <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => onChange(emb)} />
+          <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === localEmbedding?.id} onChange={() => setLocalEmbedding(emb)} />
           <label htmlFor={`embedding${index}`}>
             <span>
               <span>{emb.id} - {emb.model_id} </span>
@@ -265,6 +274,8 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         </div>
       )}
     )}
+    <br></br>
+    {localEmbedding && <button type="submit" onClick={() => onChange(localEmbedding)}>Use embedding</button>} {localEmbedding?.id}
     </div>
     </div>
   );

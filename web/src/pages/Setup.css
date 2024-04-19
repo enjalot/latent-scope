@@ -113,6 +113,16 @@
   background-color: steelblue;
   color: white;
 }
+.dataset--setup button[type="submit"] {
+  max-width: 220px;
+  background-color: lightcyan;
+  border: 1px solid darkcyan;
+}
+.dataset--setup button[type="submit"]:hover {
+  background-color: steelblue;
+  color: white;
+} 
+ 
 .dataset--setup .item {
   background-color: #f1f1f1;
   border-radius: 5px;

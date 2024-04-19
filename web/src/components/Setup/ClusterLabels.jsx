@@ -29,6 +29,11 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
   const { startJob: startClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/cluster_label`);
   const { startJob: rerunClusterLabelsJob } = useStartJobPolling(dataset, setClusterLabelsJob, `${apiUrl}/jobs/rerun`);
 
+  const [localSelected, setLocalSelected] = useState(selectedLabelId || "default")
+  useEffect(() => {
+    setLocalSelected(selectedLabelId || "default")
+  }, [selectedLabelId])
+
   const [chatModels, setChatModels] = useState([]);
   useEffect(() => {
     fetch(`${apiUrl}/chat_models`)
@@ -46,8 +51,8 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
   // the actual labels for the given cluster
   const [clusterLabels, setClusterLabels] = useState([]);
   useEffect(() => {
-    if(dataset && cluster && selectedLabelId) {
-      const id = selectedLabelId.split("-")[3] || selectedLabelId
+    if(dataset && cluster && localSelected) {
+      const id = localSelected.split("-")[3] || localSelected
       fetch(`${apiUrl}/datasets/${dataset.id}/clusters/${cluster.id}/labels/${id}`)
         .then(response => response.json())
         .then(data => {
@@ -60,7 +65,7 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
       } else {
         setClusterLabels([])
       }
-  }, [selectedLabelId, setClusterLabels, dataset, cluster, clusterLabelSets])
+  }, [localSelected, setClusterLabels, dataset, cluster, clusterLabelSets])
 
   useEffect(() => {
     if(cluster) {
@@ -79,20 +84,21 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
               lbl = data[0]
             }
             // onChange(lbl)
-          }  else if(selectedLabelId){
-            if(selectedLabelId  == "default" && labelsAvailable[0]) {
+          }  else if(localSelected){
+            if(localSelected  == "default" && labelsAvailable[0]) {
               lbl = labelsAvailable[0]
-            } else if(selectedLabelId.indexOf(cluster.id) < 0 && labelsAvailable[0]) {
+            } else if(localSelected.indexOf(cluster.id) < 0 && labelsAvailable[0]) {
               lbl = labelsAvailable[0]
             } else {
-              lbl = labelsAvailable.find(d => d.id == selectedLabelId) || { id: "default" }
+              lbl = labelsAvailable.find(d => d.id == localSelected) || { id: "default" }
             }
           } else if(labelsAvailable[0]) {
             lbl = labelsAvailable[0]
           } else {
             lbl = { id: "default" }
           }
-          onLabelSets(labelsAvailable, lbl)
+          // onLabelSets(labelsAvailable, lbl)
+          onLabelSets(labelsAvailable)
           setClusterLabelSets(labelsAvailable)
         }).catch(err => {
           console.log(err)
@@ -149,19 +155,7 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
 
       </div>
       {cluster ? <div className="dataset--setup-cluster-labels-list">
-        <label>
-          Use Labels: &nbsp;
-          {clusterLabelSets.length >= 1 ? <select 
-            name="model" 
-            value={selectedLabelId}
-            onChange={(e) => onChange(e.target.value)}
-          >
-            <option value="default">Default</option>
-            {clusterLabelSets.map((model, index) => (
-              <option key={index} value={model.id}>{model.id} - { model.model_id} </option>
-            ))}
-          </select> : <span>{clusterLabelSets[0]?.id}</span> }
-        </label>
+        
         <div className="dataset--setup-labels-list">
           <DataTable 
             data={clusterLabels.map((d,i) => ({index: i, label: d.label, items: d.indices.length}))} 
@@ -169,6 +163,24 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
             onClick={(index) => onClickLabel(clusterLabels[index])}
           />
         </div>
+        <br></br>
+          <button type="submit" onClick={() => onChange(localSelected)}>
+          {clusterLabelSets.length >= 1 ? 
+            "Use Labels" : 
+            "Use Default Labels"
+          }
+          </button>
+          {clusterLabelSets.length >= 1 ? <select 
+            name="model" 
+            value={localSelected}
+            // onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => setLocalSelected(e.target.value)}
+          >
+            <option value="default">Default</option>
+            {clusterLabelSets.map((model, index) => (
+              <option key={index} value={model.id}>{model.id} - { model.model_id} </option>
+            ))}
+          </select> : <span>{clusterLabelSets[0]?.id}</span> }
       </div> : null}
     </div>
   );

@@ -145,7 +145,7 @@ function Setup() {
         const found = embeddings.find(d => d.id == selectedEmbeddingId)
         return found
       } else {
-        return embeddings[0]
+        // return embeddings[0]
       } 
     } else {
       return null
@@ -170,7 +170,7 @@ function Setup() {
       if(selectedUmapId && found) {
         return found
       } else {
-        return embeddingUmaps[0] 
+        // return embeddingUmaps[0] 
       }
     } else {
       return null
@@ -197,7 +197,7 @@ function Setup() {
         return found;
       } else {
         // otherwise set the first cluster in the umap's list
-        return umapClusters[0]
+        // return umapClusters[0]
       }
     } else {
       return null;
@@ -208,13 +208,14 @@ function Setup() {
     dispatch({ type: "SET_CLUSTER", payload: cluster })
   }, [selectedClusterId, clusters, umap]) 
 
-  const [selectedClusterLabelSetId, setSelectedClusterLabelSetId] = useState("default");
+  const [selectedClusterLabelSetId, setSelectedClusterLabelSetId] = useState(null);
 
   function deriveClusterLabelSet(clusterLabelSets, cluster, selectedClusterLabelSetId) {
     if(clusterLabelSets && clusterLabelSets.length && cluster) {
       const filtered = clusterLabelSets.filter(d => d.cluster_id == cluster.id)
       if(selectedClusterLabelSetId && filtered) {
         const found = filtered.find(d => d.id == selectedClusterLabelSetId)
+        console.log("DERIVING", found, filtered, selectedClusterLabelSetId)
         if(found) {
           return found
         } else {
@@ -222,14 +223,16 @@ function Setup() {
           return { id: "default" }
         }
       } else {
-        return clusterLabelSets[0]
+        // return clusterLabelSets[0]
       }
     } else {
-      return { id: "default" }
+      if(selectedClusterLabelSetId == "default")
+        return { id: "default" }
     }
   }
   useEffect(() => {
     const labelSet = deriveClusterLabelSet(clusterLabelSets, cluster, selectedClusterLabelSetId)
+    console.log("deriving now", cluster, selectedClusterLabelSetId, labelSet)
     dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: labelSet })
   }, [cluster, selectedClusterLabelSetId, clusterLabelSets])
 
@@ -242,6 +245,7 @@ function Setup() {
     if(scopeId && scopes?.length) {
       const scope = scopes.find(d => d.id == scopeId)
       if(scope) {
+        console.log("have scope", scope)
         dispatch({ type: "SET_SCOPE", payload: scope })
         setSelectedEmbeddingId(scope.embedding_id)
         setSelectedUmapId(scope.umap_id)
@@ -249,7 +253,12 @@ function Setup() {
         setSelectedClusterLabelSetId(scope.cluster_labels_id)
       }
     } else {
+      console.log("setting everything to null")
       dispatch({ type: "SET_SCOPE", payload: null })
+      setSelectedEmbeddingId(null)
+      setSelectedUmapId(null)
+      setSelectedClusterId(null)
+      setSelectedClusterLabelSetId(null)
     } 
   }, [scopeId, scopes])
 
@@ -326,11 +335,6 @@ function Setup() {
     }
   }, [cluster, setClusterIndices, datasetId])
 
-  const memoClusterIndices = useMemo(() => {
-    return clusterIndices.map(d => d.cluster)
-  }, [clusterIndices])
-
-
   const [selectedClusterLabel, setSelectedClusterLabel] = useState(null);
 
   const [hoveredCluster, setHoveredCluster] = useState(null);
@@ -377,7 +381,7 @@ function Setup() {
     } else {
       // setHulls([])
     }
-  }, [clusterLabels, cluster, umap])
+  }, [datasetId, clusterLabels, cluster, umap])
 
 
   const prevPointConfig = useRef()
@@ -411,7 +415,7 @@ function Setup() {
       setHulls([])
       setDrawPoints([])
     }
-  }, [clusterIndices, cluster, umap])
+  }, [datasetId, clusterIndices, cluster, umap])
 
 
 
@@ -421,6 +425,7 @@ function Setup() {
   // ====================================================================================================
   const [stage, setStage] = useState(1);
   useEffect(() => {
+    console.log("update stage?", "embedding", embedding, "umap", umap, "cluster", cluster, "clusterLabelSet", clusterLabelSet)
     if(!embedding) {
       setStage(1)
     } else if(!umap) {
@@ -484,10 +489,13 @@ function Setup() {
           <div className="dataset--setup-scope-info">
             <div className="dataset--setup-scopes-list">
                 {scopes ? 
-                  <select className="scope-selector" onChange={(e) => navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)}>
+                  <select className="scope-selector" 
+                    onChange={(e) => navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)}
+                    value={scope?.id}
+                  >
                     <option value="">New scope</option>
                     {scopes.map((scopeOption, index) => (
-                      <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
+                      <option key={index} value={scopeOption.id} >
                         {scopeOption.label} ({scopeOption.id})
                       </option>
                     ))}
@@ -517,48 +525,63 @@ function Setup() {
 
       <div className="dataset--setup-layout">
         <div className="dataset--setup-left-column">
-          <Stage active={stage == 1} complete={stage > 1} title="1. Embed">
+          <Stage active={stage == 1} complete={stage > 1} title={`1. Embed`} subtitle={embedding?.id}>
             <Embedding 
               dataset={dataset} 
               textColumn={textColumn} 
               embedding={embedding} 
               umaps={umaps} 
               clusters={clusters} 
-              onNew={handleNewEmbeddings} onChange={(emb) => dispatch({type:"SET_EMBEDDING", payload: emb})} 
+              onNew={handleNewEmbeddings} 
+              onChange={(emb) => {
+                setSelectedEmbeddingId(emb.id)
+                dispatch({type:"SET_EMBEDDING", payload: emb})
+              }} 
               onTextColumn={handleChangeTextColumn}
               onRemovePotentialEmbedding={handleRemovePotentialEmbedding}
               />
           </Stage>
-          <Stage active={stage == 2} complete={stage > 2} title="2. Project">
+          <Stage active={stage == 2} complete={stage > 2} title={`2. Project`} subtitle={umap?.id}>
             <Umap 
               dataset={dataset} 
               umap={umap} 
               embedding={embedding} 
               embeddings={embeddings}
               clusters={clusters} 
-              onNew={handleNewUmaps} onChange={(ump) => dispatch({type: "SET_UMAP", payload: ump})} />
+              onNew={handleNewUmaps} 
+              onChange={(ump) => {
+                setSelectedUmapId(ump.id)
+                dispatch({type: "SET_UMAP", payload: ump})
+              }} />
           </Stage>
-          <Stage active={stage == 3} complete={stage > 3} title="3. Cluster">
+          <Stage active={stage == 3} complete={stage > 3} title={`3. Cluster`} subtitle={cluster?.id}>
             <Cluster 
               dataset={dataset} 
               cluster={cluster} 
               umap={umap} 
-              onNew={handleNewClusters} onChange={(cls) => dispatch({type: "SET_CLUSTER", payload: cls })} />
+              onNew={handleNewClusters} 
+              onChange={(cls) => {
+                setSelectedClusterId(cls.id)
+                dispatch({type: "SET_CLUSTER", payload: cls })
+              }} />
           </Stage>
-          <Stage active={stage == 4} complete={stage > 4} title="4. Auto-Label Clusters">
+          <Stage active={stage == 4} complete={stage > 4} title={`4. Auto-Label Clusters`} subtitle={clusterLabelSet?.id}>
             <ClusterLabels 
               dataset={dataset} 
               cluster={cluster} 
               embedding={embedding}
               selectedLabelId={clusterLabelSet?.id} 
-              onChange={setSelectedClusterLabelSetId} 
+              onChange={(lblId) => {
+                setSelectedClusterLabelSetId(lblId)
+                // dispatch({type: "SET_CLUSTER_LABEL_SET", payload: lbl })
+              }} 
               onLabelSets={handleNewClusterLabelSets} 
               onLabels={setClusterLabels} 
               onHoverLabel={setHoveredClusterHull} 
               onClickLabel={(c) => { console.log("CLUSTER", c); setSelectedClusterLabel(c)}} 
             />
           </Stage>
-          <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope">
+          <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope" allowToggle={false}>
             <Scope 
               dataset={dataset} 
               scope={scope} 
