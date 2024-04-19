@@ -84,6 +84,14 @@
   flex-direction: row;
   gap: 12px;
 }
+.scope-version-warning {
+  margin: 6px 0;
+
+}
+.scope-version-warning .warning-header {
+  color: red;
+  font-weight: bold;
+}
 
 /* SECOND ROW: UMAP */
 

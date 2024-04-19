@@ -32,9 +32,10 @@ function reducer(state, action) {
 }
 
 
-function processHulls(labels, points) {
+function processHulls(labels, points, indexMap) {
+  if(!labels) return []
   return labels.map(d => {
-    return d.hull.map(i => points[i])
+    return d.hull.map(i => points[indexMap[i]])
   })
 }
 
@@ -65,16 +66,6 @@ function Explore() {
     }, []);
     return size;
   }
-
-  // Tabs
-  const tabs = [
-    { id: 0, name: "Selected" },
-    { id: 1, name: "Search" },
-    { id: 2, name: "Clusters" },
-    { id: 3, name: "Tags" },
-  ]
-  const [activeTab, setActiveTab] = useState(0)
-  // const [activeTab, setActiveTab] = useState(2)
 
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -107,7 +98,6 @@ function Explore() {
   }, [datasetId, scopeId, setScope]);
 
   const [embedding, setEmbedding] = useState(null);
-  const [umap, setUmap] = useState(null);
   const [clusterIndices, setClusterIndices] = useState([]); // the cluster number for each point
   const [clusterLabels, setClusterLabels] = useState([]);
   // The search model is the embeddings model that we pass to the nearest neighbor query
@@ -126,44 +116,66 @@ function Explore() {
   }, [datasetId, setEmbeddings]);
 
 
+  const [scopeRows, setScopeRows] = useState([])
   const [points, setPoints] = useState([]);
   const [drawPoints, setDrawPoints] = useState([]); // this is the points with the cluster number
   const [hulls, setHulls] = useState([]); 
+  const [scopeToInputIndexMap, setScopeToInputIndexMap] = useState({})
+  const [inputToScopeIndexMap, setInputToScopeIndexMap] = useState({})
   useEffect(() => {
     if (scope) {
       setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
 
-      Promise.all([
-        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`).then(response => response.json()),
-        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}/points`).then(response => response.json()),
-        fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id.split("-")[3] || scope.cluster_labels_id}`).then(response => response.json()),
-        fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`).then(response => response.json())
-      ]).then(([umapData, pointsData, labelsData, clusterIndicesData]) => {
-        // console.log("umap", umapData);
-        setUmap(umapData);
+      // Promise.all([
+      //   fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`).then(response => response.json()),
+      //   fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}/points`).then(response => response.json()),
+      //   fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id.split("-")[3] || scope.cluster_labels_id}`).then(response => response.json()),
+      //   fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`).then(response => response.json())
+      // ]).then(([umapData, pointsData, labelsData, clusterIndicesData]) => {
+      fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
+      .then(response => response.json())
+      .then(scopeRows => {
+        console.log("scope rows", scopeRows)
+        setScopeRows(scopeRows)
+
+        // calculate scopeIndexMap
+        let sim = {}
+        let ism = {}
+        scopeRows.forEach((d,i) => {
+          sim[d.ls_index] = i
+          ism[i] = d.ls_index
+        })
+        setScopeToInputIndexMap(sim)
+        setInputToScopeIndexMap(ism)
 
         // console.log("set points")
-        const pts = pointsData.map(d => [d.x, d.y])
+        // const pts = pointsData.map(d => [d.x, d.y])
+        const pts = scopeRows.map(d => [d.x, d.y])
         setPoints(pts)
 
-        const dpts = pointsData.map((d, i) => [d.x, d.y, clusterIndicesData[i].cluster])
+        // const dpts = pointsData.map((d, i) => [d.x, d.y, clusterIndicesData[i].cluster])
+        const dpts = scopeRows.map((d, i) => [d.x, d.y, d.cluster])
         setDrawPoints(dpts)
         setHulls([])
 
-        // console.log("labels", labelsData);
+        console.log("SCOPE", scope)
+        const labelsData = scope.cluster_labels_lookup || []
+        console.log("labels", labelsData);
         setClusterLabels(labelsData);
 
         // console.log("cluster indices", clusterIndicesData);
-        setClusterIndices(clusterIndicesData);
+        // setClusterIndices(clusterIndicesData);
+        setClusterIndices(scopeRows.map(d => d.cluster));
 
         setTimeout(() => {
-          setHulls(processHulls(labelsData, pts))
+          if(labelsData)
+            setHulls(processHulls(labelsData, pts, sim))
         }, 100)
 
       }).catch(error => console.error("Fetching data failed", error));
 
     }
-  }, [datasetId, scope, embeddings, setUmap, setClusterLabels, setEmbedding, setSearchModel]);
+  }, [datasetId, scope, embeddings, setClusterLabels, setEmbedding, setSearchModel]);
 
   const memoClusterIndices = useMemo(() => {
     return clusterIndices.map(d => d.cluster)
@@ -232,12 +244,13 @@ function Explore() {
   const [selectedIndices, setSelectedIndices] = useState([]);
 
   const handleSelected = useCallback((indices) => {
-    console.log("handle selected", indices)
-    setSelectedIndices(indices);
-    setActiveTab(0)
+    // console.log("handle selected", indices)
+    // we have to map from the scatterplot indices to the ls_index of the original input data (in case any has been deleted)
+    let idxs = indices.map(i => inputToScopeIndexMap[i])
+    setSelectedIndices(idxs);
     // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
     // scatter?.zoomToPoints(indices, { transition: true })
-  }, [setSelectedIndices, setActiveTab])
+  }, [setSelectedIndices, inputToScopeIndexMap])
 
   // Hover via scatterplot or tables
   // index of item being hovered over
@@ -245,20 +258,20 @@ function Explore() {
   const [hovered, setHovered] = useState(null);
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined) {
-      hydrateIndices([hoveredIndex], (results) => {
+      hydrateIndices([scopeToInputIndexMap[hoveredIndex]], (results) => {
         setHovered(results[0])
       })
     } else {
       setHovered(null)
     }
-  }, [hoveredIndex, setHovered, hydrateIndices])
+  }, [hoveredIndex, setHovered, hydrateIndices, scopeToInputIndexMap])
 
   const [hoveredCluster, setHoveredCluster] = useState(null);
   useEffect(() => {
     if (hovered && clusterIndices.length && clusterLabels.length) {
       const index = hovered.index
       const cluster = clusterIndices[index]
-      const label = clusterLabels[cluster?.cluster]
+      const label = clusterLabels[cluster]
       setHoveredCluster({ cluster: cluster.cluster, ...label })
     } else {
       setHoveredCluster(null)
@@ -337,7 +350,8 @@ function Explore() {
   const [slideAnnotations, setSlideAnnotations] = useState([]);
   useEffect(() => {
     if (slide) {
-      const annots = slide.indices.map(index => points[index])
+      // const annots = slide.indices.map(index => points[index])
+      const annots = drawPoints.filter(p => p[2] == slide.cluster)
       setSlideAnnotations(annots)
     } else {
       setSlideAnnotations([])
@@ -363,19 +377,20 @@ function Explore() {
 
   const handleLabelUpdate = useCallback((index, label) => {
     console.log("update label", index, label)
-    fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}/label/${index}?label=${label}`)
-      .then(response => response.json())
-      .then(_ => {
-        fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}`)
-          .then(response => response.json())
-          .then(data => {
-            console.log("got new labels", data)
-            setClusterLabels(data);
-            setHulls(processHulls(data, points))
-          })
-          .catch(console.error);
-      })
-      .catch(console.error);
+    // TODO: updating the label will overwrite the scope, but this shouldn't update the hulls
+    // fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}/label/${index}?label=${label}`)
+    //   .then(response => response.json())
+    //   .then(_ => {
+    //     fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}`)
+    //       .then(response => response.json())
+    //       .then(data => {
+    //         console.log("got new labels", data)
+    //         setClusterLabels(data);
+    //         setHulls(processHulls(data, points))
+    //       })
+    //       .catch(console.error);
+    //   })
+    //   .catch(console.error);
   }, [datasetId, scope])
 
   const clearScope = useCallback(() => {
@@ -404,10 +419,11 @@ function Explore() {
   useEffect(() => {
     console.log("selectedIndices", selectedIndices)
     console.log("searchIndices", searchIndices)
-    console.log("slide", slide?.indices)
     console.log("tag", tag)
     console.log("tagset", tagset[tag])
-    const indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], slide?.indices || [], tagset[tag] || [])
+    const filteredClusterIndices = scopeRows.filter(d => d.cluster == slide.cluster).map(d => d.ls_index)
+    console.log("slide", slide, filteredClusterIndices)
+    let indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], filteredClusterIndices || [], tagset[tag] || [])
     if(indices.length == 0 && selectedIndices.length > 0) {
       indices = selectedIndices
     }
@@ -439,10 +455,11 @@ function Explore() {
                 clearScope()
                 setDelay(2000)
                 navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)
-              }}>
-
+              }}
+                value={scope?.id}
+              >
                 {scopes.map((scopeOption, index) => (
-                  <option key={index} value={scopeOption.id} selected={scopeOption.id === scope?.id}>
+                  <option key={index} value={scopeOption.id}>
                     {scopeOption.label} ({scopeOption.id})
                   </option>
                 ))}
@@ -451,13 +468,20 @@ function Explore() {
               {readonly ? null : <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>}
             </div>
             {/* </h3> */}
-            <span>{scope?.description}</span>
-            <span>{embedding?.model_id}</span>
-            <span>{clusterLabels?.length} clusters</span>
+            {scope?.ls_version && <span>
+              <span>{scope?.description}</span>
+              <span>{embedding?.model_id}</span>
+              <span>{clusterLabels?.length} clusters</span>
+            </span>}
+            {!scope?.ls_version && <div className="scope-version-warning">
+            <span className="warning-header">Outdated Scope!</span>
+            <span> please "Overwrite" the scope in the last step on the <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to update.</span>
+          </div>}
           </div>
           <div className="dataset-card">
             <span><b>{datasetId}</b>  {dataset?.length} rows</span>
           </div>
+          
         </div>
         <div className="umap-container">
           {/* <div className="umap-container"> */}
@@ -482,8 +506,8 @@ function Explore() {
               width={scopeWidth}
               height={scopeHeight}
             /> }
-              {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls ? <HullPlot
-                hulls={processHulls([hoveredCluster], points)}
+              {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls && scope.cluster_labels_lookup ? <HullPlot
+                hulls={processHulls([hoveredCluster], points, scopeToInputIndexMap)}
                 fill="lightgray"
                 duration={0}
                 xDomain={xDomain}
@@ -491,8 +515,8 @@ function Explore() {
                 width={scopeWidth}
                 height={scopeHeight} /> : null}
 
-              {slide && slide.hull && !scope.ignore_hulls ? <HullPlot
-                hulls={processHulls([slide], points)}
+              {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup ? <HullPlot
+                hulls={processHulls([slide], points, scopeToInputIndexMap)}
                 fill="darkgray"
                 strokeWidth={2}
                 duration={0}
@@ -641,36 +665,35 @@ function Explore() {
               </div>
             </div>
 
-            <div className={`clusters-select filter-row  ${slide?.indices.length ? 'active': ''}`}>
+            <div className={`clusters-select filter-row  ${slideAnnotations.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 <select onChange={(e) => {
                   if(e.target.value == -1) {
                     setSlide(null)
                     return
                   }
-                  const cl = clusterLabels.find(cluster => cluster.index === +e.target.value)
+                  const cl = clusterLabels.find(cluster => cluster.cluster === +e.target.value)
                   if(cl) setSlide(cl)
-                }} value={slide?.index >= 0 ? slide.index : -1}>
+                }} value={slide?.cluster >= 0 ? slide.cluster : -1}>
                   <option value="-1">Select a cluster</option>
-                  {clusterLabels.map((cluster, index) => (
-                    <option key={index} value={cluster.index}>{cluster.index}: {cluster.label}</option>
+                  {clusterLabels?.map((cluster, index) => (
+                    <option key={index} value={cluster.cluster}>{cluster.cluster}: {cluster.label}</option>
                   ))}
                 </select>
               </div>
               <div className="filter-cell middle">
-                <span>{slide?.indices.length} {slide?.indices.length ? "rows" : ""}
-                  {slide ? <button className="deselect" onClick={() => {
+                {slideAnnotations.length && <span> {slideAnnotations.length} rows
+                  <button className="deselect" onClick={() => {
                     setSlide(null)
                   }
                   }>X</button>
-                    : null}
-                </span>
+                </span>}
               </div>
               <div className="filter-cell right">
                 {slide ?
                   <form onSubmit={(e) => {
                     e.preventDefault();
-                    handleLabelUpdate(slide.index, clusterLabel);
+                    handleLabelUpdate(slide.cluster, clusterLabel);
                   }}>
                     <input
                       className="update-cluster-label"
@@ -678,7 +701,8 @@ function Explore() {
                       id="new-label"
                       value={clusterLabel}
                       onChange={(e) => setClusterLabel(e.target.value)} />
-                    <button type="submit">Update Label</button>
+                    <button type="submit">✍️</button>
+                    {/* TODO: tooltip */}
                   </form>
                   : null}
               </div>
