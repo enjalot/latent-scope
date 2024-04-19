@@ -3,6 +3,7 @@ import re
 import json
 import argparse
 from latentscope.util import get_data_dir
+from latentscope import __version__
 
 
 def main():
@@ -47,6 +48,7 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     import pandas as pd
 
     scope = {
+        "ls_version": __version__,
         "id": id,
         "embedding_id": embedding_id,
         "umap_id": umap_id,
@@ -80,15 +82,31 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
         with open(cluster_labels_file) as f:
             cluster_labels = json.load(f)
             scope["cluster_labels"] = cluster_labels
+
+    # load the actual labels and save everything but the indices in a dict
+    cluster_labels_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_labels_id + ".parquet"))
+    # remove the indices column
+
+    cluster_labels_df = cluster_labels_df.drop(columns=[col for col in ["indices", "labeled", "label_raw"] if col in cluster_labels_df.columns])
+    # cluster_labels_df = cluster_labels_df.drop(columns=["indices", "labeled", "label_raw"])
+    # change hulls to a list of lists
+    cluster_labels_df["hull"] = cluster_labels_df["hull"].apply(lambda x: x.tolist())
+    cluster_labels_df["cluster"] = cluster_labels_df.index
+    scope["cluster_labels_lookup"] = cluster_labels_df.to_dict(orient="records")
     
     # create a scope parquet by combining the parquets from umap and cluster, as well as getting the labels from cluster_labels
     # then write the parquet to the scopes directory
     umap_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", umap_id + ".parquet"))
+    print("umap columns", umap_df.columns)
     cluster_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_id + ".parquet"))
     cluster_labels_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_labels_id + ".parquet"))
     # create a column where we lookup the label from cluster_labels_df for the index found in the cluster_df
     cluster_df["label"] = cluster_df["cluster"].apply(lambda x: cluster_labels_df.loc[x]["label"])
+    print("cluster columns", cluster_df.columns)
     scope_parquet = pd.concat([umap_df, cluster_df], axis=1)
+    # Add an ls_index column that is the index of each row in the dataframe
+    scope_parquet['ls_index'] = scope_parquet.index
+    print("scope columns", scope_parquet.columns)
     scope_parquet.to_parquet(os.path.join(directory, id + ".parquet"))
 
     scope["rows"] = len(scope_parquet)

@@ -202,6 +202,13 @@ def get_dataset_scope(dataset, scope):
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
+@datasets_bp.route('/<dataset>/scopes/<scope>/parquet', methods=['GET'])
+def get_dataset_scope_parquet(dataset, scope):
+    directory_path = os.path.join(DATA_DIR, dataset, "scopes")
+    file_path = os.path.join(directory_path, scope + ".parquet")
+    df = pd.read_parquet(file_path)
+    return df.to_json(orient="records")
+
 @datasets_bp.route('/<dataset>/export/list', methods=['GET'])
 def get_dataset_export_list(dataset):
     directory_path = os.path.join(DATA_DIR, dataset)
