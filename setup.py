@@ -10,6 +10,18 @@ with open('requirements.txt') as f:
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
+# Function to read the version from __version__.py
+def get_version(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(here, rel_path), 'r') as fp:
+        for line in fp:
+            if line.startswith('__version__'):
+                # Executes the line of code and retrieves the __version__ variable
+                ns = {}
+                exec(line, ns)
+                return ns['__version__']
+    raise RuntimeError('Unable to find version string.')
+
 # Build and copy the web assets
 class CustomBuild(build_py):
     def run(self):
@@ -46,9 +58,11 @@ class CustomBuild(build_py):
                     print("copy", s, d)
                     shutil.copy2(s, d)
 
+version = get_version('latentscope/__version__.py')
+print("building version", version)
 setup(
     name='latentscope',
-    version='0.1.9',
+    version=version,
     description='Quickly embed, project, cluster and explore a dataset.',
     long_description=long_description,
     long_description_content_type='text/markdown',
