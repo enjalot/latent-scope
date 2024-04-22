@@ -12,6 +12,9 @@ import Scope from '../components/Setup/Scope';
 import Stage from '../components/Setup/Stage';
 import HullPlot from '../components/HullPlot';
 
+import JobProgress from '../components/Job/Progress';
+import { useStartJobPolling } from '../components/Job/Run';
+
 import IndexDataTable from '../components/IndexDataTable';
 import Scatter from '../components/Scatter';
   
@@ -114,6 +117,15 @@ function Setup() {
       .then(data => dispatch({ type: "SET_DATASET", payload: data}));
   }, [datasetId]);
 
+  useEffect(() => {
+    if(dataset) {
+      console.log("dataset", dataset)
+    }
+  }, [dataset])
+
+  // have job for re-ingesting dataset
+  const [reingestJob, setReingestJob] = useState(null);
+  const { startJob: startReingestJob } = useStartJobPolling(dataset, setReingestJob, `${apiUrl}/jobs/reingest`);
 
   // set the text column on our dataset
   const handleChangeTextColumn = useCallback((event) => {
@@ -242,19 +254,20 @@ function Setup() {
   // ====================================================================================================
   // When the scopeId changes, update the scope and set all the default selections
   useEffect(() => {
+    let scope;
     if(scopeId && scopes?.length) {
-      const scope = scopes.find(d => d.id == scopeId)
-      if(scope) {
-        console.log("have scope", scope)
-        dispatch({ type: "SET_SCOPE", payload: scope })
-        setSelectedEmbeddingId(scope.embedding_id)
-        setSelectedUmapId(scope.umap_id)
-        setSelectedClusterId(scope.cluster_id)
-        setSelectedClusterLabelSetId(scope.cluster_labels_id)
-      }
+      scope = scopes.find(d => d.id == scopeId)
+    }
+    if(scope) {
+      console.log("have scope", scope)
+      dispatch({ type: "SET_SCOPE", payload: scope })
+      setSelectedEmbeddingId(scope.embedding_id)
+      setSelectedUmapId(scope.umap_id)
+      setSelectedClusterId(scope.cluster_id)
+      setSelectedClusterLabelSetId(scope.cluster_labels_id)
     } else {
       console.log("setting everything to null")
-      dispatch({ type: "SET_SCOPE", payload: null })
+      if(scopeId)dispatch({ type: "SET_SCOPE", payload: null })
       setSelectedEmbeddingId(null)
       setSelectedUmapId(null)
       setSelectedClusterId(null)
@@ -512,12 +525,30 @@ function Setup() {
           </div>
         </div>
         <div className="dataset--setup-meta">
-          {scope && <div>
+          {/* {scope && <div>
             <span>{scope?.label}<br/></span>
             <span>{scope?.description}</span>
-          </div>}
+          </div>} */}
+          {!dataset.column_metadata ? <div className="reimport">
+            <span className="warning-header">WARNING: outdated dataset!</span>
+            <button onClick={() => {
+              startReingestJob({ text_column: dataset.text_column })
+            }}>Reimport</button>
+            </div> : null}
+          
+            <JobProgress job={reingestJob} clearJob={()=> {
+              setReingestJob(null)
+              fetch(`${apiUrl}/datasets/${datasetId}/meta`)
+                .then(response => response.json())
+                .then(data => dispatch({ type: "SET_DATASET", payload: data}));
+            }}/>
           <div>
-            {dataset.length} rows. Columns: {dataset.columns.join(", ")}
+            {dataset.length} rows. Columns: {dataset.columns.map(c => {
+              let meta = dataset.column_metadata?.[c]
+              return (<span key={c} style={{fontWeight: dataset.text_column == c ? "bold" : "normal", margin: "0 4px"}}>
+                {c} ({meta?.type})
+              </span>)
+            })}
           </div>
         </div> 
         

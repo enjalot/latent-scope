@@ -209,6 +209,24 @@ def get_dataset_scope_parquet(dataset, scope):
     df = pd.read_parquet(file_path)
     return df.to_json(orient="records")
 
+@datasets_write_bp.route('/<dataset>/scopes/<scope>/description', methods=['GET'])
+def overwrite_scope_description(dataset, scope):
+    new_label = request.args.get('label')
+    new_description = request.args.get('description')
+
+    file_name = scope + ".json"
+    file_path = os.path.join(DATA_DIR, dataset, "scopes", file_name)
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+
+    json_contents['label'] = new_label
+    json_contents['description'] = new_description
+
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(json_contents, json_file)
+    
+    return jsonify({"success": True, "message": "Description updated successfully"})
+
 @datasets_bp.route('/<dataset>/export/list', methods=['GET'])
 def get_dataset_export_list(dataset):
     directory_path = os.path.join(DATA_DIR, dataset)

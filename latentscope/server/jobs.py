@@ -117,6 +117,7 @@ def get_jobs():
 def run_ingest():
     dataset = request.form.get('dataset')
     file = request.files.get('file')
+    text_column = request.form.get('text_column')
     dataset_dir = os.path.join(DATA_DIR, dataset)
     if not os.path.exists(dataset_dir):
         os.makedirs(dataset_dir)
@@ -124,9 +125,26 @@ def run_ingest():
     file.save(file_path)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-ingest {dataset} --path="{file_path}"'
+    command = f'ls-ingest "{dataset}" --path="{file_path}"'
+    if text_column:
+        command += f' --text_column="{text_column}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
+
+@jobs_write_bp.route('/reingest', methods=['GET'])
+def run_reingest():
+    dataset = request.args.get('dataset')
+    text_column = request.args.get('text_column')
+    dataset_dir = os.path.join(DATA_DIR, dataset)
+    file_path = os.path.join(dataset_dir, "input.parquet")
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-ingest "{dataset}" --path="{file_path}"'
+    if text_column:
+        command += f' --text_column="{text_column}"'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
 
 
 @jobs_write_bp.route('/embed')
@@ -139,7 +157,7 @@ def run_embed():
     batch_size = request.args.get('batch_size')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed {dataset} "{text_column}" {model_id} --prefix="{prefix}" --batch_size={batch_size}'
+    command = f'ls-embed "{dataset}" "{text_column}" "{model_id}" --prefix="{prefix}" --batch_size={batch_size}'
     if dimensions is not None:
         command += f" --dimensions={dimensions}"
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
@@ -152,7 +170,7 @@ def run_embed_truncate():
     dimensions = request.args.get('dimensions')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed-truncate {dataset} {embedding_id} {dimensions}'
+    command = f'ls-embed-truncate "{dataset}" "{embedding_id}" {dimensions}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -164,7 +182,7 @@ def run_embed_importer():
     text_column = request.args.get('text_column')
 
     job_id = str(uuid.uuid4())
-    command = f'ls-embed-importer {dataset} {embedding_column} "{model_id}" {text_column}'
+    command = f'ls-embed-importer "{dataset}" "{embedding_column}" "{model_id}" "{text_column}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -221,7 +239,7 @@ def delete_embedding():
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}*")}'
+    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}*")}"'
     for umap in umaps_to_delete:
         delete_umap(dataset, umap)
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
@@ -238,7 +256,7 @@ def run_umap():
     print("run umap", dataset, embedding_id, neighbors, min_dist, init, align)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-umap {dataset} {embedding_id} {neighbors} {min_dist}'
+    command = f'ls-umap "{dataset}" "{embedding_id}" {neighbors} {min_dist}'
     if init:
         command += f' --init={init}'
     if align:
@@ -266,10 +284,10 @@ def delete_umap(dataset, umap_id):
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}*")}'
+    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}*")}"'
     # Create the rm -rf commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
-        command += f'; rm {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*")}'
+        command += f'; rm "{os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*")}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -283,7 +301,7 @@ def run_cluster():
     print("run cluster", dataset, umap_id, samples, min_samples, cluster_selection_epsilon)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-cluster {dataset} {umap_id} {samples} {min_samples} {cluster_selection_epsilon}'
+    command = f'ls-cluster "{dataset}" "{umap_id}" {samples} {min_samples} {cluster_selection_epsilon}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -292,7 +310,7 @@ def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_id = request.args.get('cluster_id')
     job_id = str(uuid.uuid4())
-    command = f'rm -rf {os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_id}*")}'
+    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_id}*")}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -307,7 +325,7 @@ def run_cluster_label():
     print("context", context)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-label {dataset} "{text_column}" {cluster_id} {chat_id} "{context}"'
+    command = f'ls-label "{dataset}" "{text_column}" "{cluster_id}" "{chat_id}" "{context}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -324,9 +342,19 @@ def run_scope():
     print("run scope", dataset, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-scope {dataset} {embedding_id} {umap_id} {cluster_id} {cluster_labels_id} "{label}" "{description}"'
+    command = f'ls-scope "{dataset}" "{embedding_id}" "{umap_id}" "{cluster_id}" "{cluster_labels_id}" "{label}" "{description}"'
     if scope_id:
         command += f' --scope_id={scope_id}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+@jobs_write_bp.route('/delete/scope')
+def delete_scope():
+    dataset = request.args.get('dataset')
+    scope_id = request.args.get('scope_id')
+
+    job_id = str(uuid.uuid4())
+    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "scopes", f"{scope_id}*")}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

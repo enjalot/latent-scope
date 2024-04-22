@@ -10,10 +10,11 @@ def main():
     parser = argparse.ArgumentParser(description='Ingest a dataset')
     parser.add_argument('id', type=str, help='Dataset id (directory name in data folder)')
     parser.add_argument('--path', type=str, help='Path to csv or parquet file, otherwise assumes input.csv in dataset directory')
+    parser.add_argument('--text_column', type=str, help='Column to use as text for the scope')
     args = parser.parse_args()
-    ingest_file(args.id, args.path)
+    ingest_file(args.id, args.path, args.text_column)
 
-def ingest_file(dataset_id, file_path):
+def ingest_file(dataset_id, file_path, text_column = None):
     import pandas as pd
     DATA_DIR = get_data_dir()
     directory = os.path.join(DATA_DIR, dataset_id)
@@ -44,7 +45,7 @@ def ingest_file(dataset_id, file_path):
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
 
-    ingest(dataset_id, df)
+    ingest(dataset_id, df, text_column)
 
 
 def ingest(dataset_id, df, text_column = None):

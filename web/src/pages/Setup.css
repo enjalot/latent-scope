@@ -129,6 +129,7 @@
   margin: 6px;
   padding: 6px;
 }
+
 @media (prefers-color-scheme: dark) {
   .dataset--setup form button {
     color: #111;
@@ -138,7 +139,14 @@
   }
 }
 
-
+.dataset--setup .warning-header {
+  color: red;
+  font-weight: bold;
+}
+.dataset--setup .reimport button {
+  border: 1px solid red;
+  margin: 0 6px;
+}
 
 /* .active-stage {
   border: 1px solid orange;

@@ -32,7 +32,7 @@ function jobPolling(dataset, setJob, jobId, intervalms = 500) {
         // TODO: have some kind of error state persist
       });
   }, intervalms);
-  console.log("returning jobPolling cleanup")
+  // console.log("returning jobPolling cleanup")
   return () => {
     console.log("inside cleanup", intervalId)
     if (intervalId) {
