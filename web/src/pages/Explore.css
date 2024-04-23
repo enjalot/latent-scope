@@ -172,6 +172,14 @@
   flex: 1; /* Middle cell takes the base flex size */
 }
 
+.filters-container .bulk {
+  cursor: pointer;
+}
+.filters-container .bulk.active {
+  border: 1px solid black;
+}
+
+
 
 
 
@@ -198,6 +206,7 @@
 .new-tag input {
   width: 60px;
 }
+
 
 /* Styling for nearest neighbors section */
 .search-box input {

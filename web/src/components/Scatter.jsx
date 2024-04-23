@@ -67,14 +67,16 @@ function ScatterPlot ({
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
-  const xScale = scaleLinear()
-    .domain(xDomain.current)
-  const yScale = scaleLinear()
-    .domain(yDomain.current)
-
   const scatterplotRef = useRef(null);
+
   // setup the scatterplot on first render
   useEffect(() => {
+    const xScale = scaleLinear()
+      // .domain(xDomain.current)
+      .domain([-1, 1])
+    const yScale = scaleLinear()
+      // .domain(yDomain.current)
+      .domain([-1, 1])
     const scatterSettings = { 
       canvas: container.current,
       width,
@@ -83,8 +85,16 @@ function ScatterPlot ({
       xScale,
       yScale,
     }
+    console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
+
+    scatterplot.zoomToArea({
+      x: xDomain.current[0],
+      y: yDomain.current[0],
+      width: xDomain.current[1] - xDomain.current[0],
+      height: yDomain.current[1] - yDomain.current[0],
+    })
 
     onView && onView(xScale, yScale)
     scatterplot.subscribe(
@@ -141,8 +151,6 @@ function ScatterPlot ({
         pointColor = r.map(i => rgb(colorScale(i)).hex())
       }
 
-
-      
       if(colorScaleType){
         scatterplot.set({colorBy: 'valueA'});
       }

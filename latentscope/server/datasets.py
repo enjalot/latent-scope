@@ -138,6 +138,7 @@ def get_dataset_cluster_labels(dataset, cluster, id):
     df.reset_index(inplace=True)
     return df.to_json(orient="records")
 
+# TODO: change this to be tied to scope and updates the scope meta
 @datasets_write_bp.route('/<dataset>/clusters/<cluster>/labels/<id>/label/<index>', methods=['GET'])
 def overwrite_dataset_cluster_label(dataset, cluster, id, index):
     index = int(index)

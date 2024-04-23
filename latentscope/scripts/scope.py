@@ -59,6 +59,11 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     }
 
     # read each json file and add its contents to the scope file
+    dataset_file = os.path.join(DATA_DIR, dataset_id, "meta.json")
+    with open(dataset_file) as f:
+        dataset = json.load(f)
+        scope["dataset"] = dataset
+
     embedding_file = os.path.join(DATA_DIR, dataset_id, "embeddings", embedding_id + ".json")
     with open(embedding_file) as f:
         embedding = json.load(f)

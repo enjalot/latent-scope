@@ -9,6 +9,11 @@ import Scatter from '../components/Scatter';
 import AnnotationPlot from '../components/AnnotationPlot';
 import HullPlot from '../components/HullPlot';
 
+import Tagging from '../components/Bulk/Tagging';
+import Clustering from '../components/Bulk/Clustering';
+import Saving from '../components/Bulk/Saving';
+import Deleting from '../components/Bulk/Deleting';
+
 
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
@@ -88,7 +93,7 @@ function Explore() {
 
   const [delay, setDelay] = useState(200)
   const [scope, setScope] = useState(null);
-  useEffect(() => {
+  const fetchScopeMeta = useCallback(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`)
       .then(response => response.json())
       .then(data => {
@@ -97,7 +102,12 @@ function Explore() {
       });
   }, [datasetId, scopeId, setScope]);
 
+  useEffect(() => {
+   fetchScopeMeta() 
+  }, [datasetId, scopeId, fetchScopeMeta]);
+
   const [embedding, setEmbedding] = useState(null);
+  const [clusterMap, setClusterMap] = useState({})
   const [clusterIndices, setClusterIndices] = useState([]); // the cluster number for each point
   const [clusterLabels, setClusterLabels] = useState([]);
   // The search model is the embeddings model that we pass to the nearest neighbor query
@@ -122,17 +132,9 @@ function Explore() {
   const [hulls, setHulls] = useState([]); 
   const [scopeToInputIndexMap, setScopeToInputIndexMap] = useState({})
   const [inputToScopeIndexMap, setInputToScopeIndexMap] = useState({})
-  useEffect(() => {
-    if (scope) {
-      setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
 
-      // Promise.all([
-      //   fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}`).then(response => response.json()),
-      //   fetch(`${apiUrl}/datasets/${datasetId}/umaps/${scope.umap_id}/points`).then(response => response.json()),
-      //   fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id.split("-")[3] || scope.cluster_labels_id}`).then(response => response.json()),
-      //   fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/indices`).then(response => response.json())
-      // ]).then(([umapData, pointsData, labelsData, clusterIndicesData]) => {
-      fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
+  const fetchScopeRows = useCallback(() => {
+    fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
       .then(response => response.json())
       .then(scopeRows => {
         console.log("scope rows", scopeRows)
@@ -167,19 +169,26 @@ function Explore() {
         // setClusterIndices(clusterIndicesData);
         setClusterIndices(scopeRows.map(d => d.cluster));
 
+        let clusterMap = {}
+        scopeRows.forEach(d => {
+          clusterMap[d.ls_index] = scope.cluster_labels_lookup?.[d.cluster]
+        })
+        setClusterMap(clusterMap)
+
         setTimeout(() => {
           if(labelsData)
             setHulls(processHulls(labelsData, pts, sim))
         }, 100)
 
       }).catch(error => console.error("Fetching data failed", error));
+  }, [datasetId, scope, setHulls, setClusterMap, setClusterLabels, setClusterIndices, setPoints]);
 
+  useEffect(() => {
+    if (scope) {
+      setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
+      fetchScopeRows()
     }
-  }, [datasetId, scope, embeddings, setClusterLabels, setEmbedding, setSearchModel]);
-
-  const memoClusterIndices = useMemo(() => {
-    return clusterIndices.map(d => d.cluster)
-  }, [clusterIndices])
+  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding, setSearchModel]);
 
 
   useEffect(() => {
@@ -291,11 +300,17 @@ function Explore() {
   // Tags
   // ====================================================================================================
   const [tagset, setTagset] = useState({});
-  useEffect(() => {
+
+  const fetchTagSet = useCallback(() => {
     fetch(`${apiUrl}/tags?dataset=${datasetId}`)
       .then(response => response.json())
       .then(data => setTagset(data));
-  }, [datasetId])
+  }, [datasetId, setTagset])
+
+  useEffect(() => {
+    fetchTagSet()
+  }, [fetchTagSet])
+
   const tags = useMemo(() => {
     const tags = []
     for (const tag in tagset) {
@@ -375,22 +390,14 @@ function Explore() {
     setHoveredIndex(index);
   }, [setHoveredIndex])
 
-  const handleLabelUpdate = useCallback((index, label) => {
-    console.log("update label", index, label)
-    // TODO: updating the label will overwrite the scope, but this shouldn't update the hulls
-    // fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}/label/${index}?label=${label}`)
-    //   .then(response => response.json())
-    //   .then(_ => {
-    //     fetch(`${apiUrl}/datasets/${datasetId}/clusters/${scope.cluster_id}/labels/${scope.cluster_labels_id}`)
-    //       .then(response => response.json())
-    //       .then(data => {
-    //         console.log("got new labels", data)
-    //         setClusterLabels(data);
-    //         setHulls(processHulls(data, points))
-    //       })
-    //       .catch(console.error);
-    //   })
-    //   .catch(console.error);
+  const handleLabelUpdate = useCallback((cluster, label) => {
+    console.log("update label", cluster, label)
+    fetch(`${apiUrl}/bulk/change-cluster-name?dataset_id=${datasetId}&scope_id=${scope.id}&cluster=${cluster}&new_label=${label}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("got new labels", data)
+        fetchScopeMeta()
+      })
   }, [datasetId, scope])
 
   const clearScope = useCallback(() => {
@@ -421,7 +428,7 @@ function Explore() {
     console.log("searchIndices", searchIndices)
     console.log("tag", tag)
     console.log("tagset", tagset[tag])
-    const filteredClusterIndices = scopeRows.filter(d => d.cluster == slide.cluster).map(d => d.ls_index)
+    const filteredClusterIndices = scopeRows.filter(d => d.cluster == slide?.cluster).map(d => d.ls_index)
     console.log("slide", slide, filteredClusterIndices)
     let indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], filteredClusterIndices || [], tagset[tag] || [])
     if(indices.length == 0 && selectedIndices.length > 0) {
@@ -429,13 +436,16 @@ function Explore() {
     }
     console.log("indices!", indices)
     setIntersectedIndices(indices)
-  }, [selectedIndices, searchIndices, slide, tagset, tag])
+  }, [scopeRows, selectedIndices, searchIndices, slide, tagset, tag])
 
   const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
   useEffect(() => {
     const annots = intersectedIndices.map(index => points[index])
     setIntersectedAnnotations(annots)
   }, [intersectedIndices, points])
+
+
+  const [bulkAction, setBulkAction] = useState(null)
 
 
   if (!dataset) return <div>Loading...</div>;
@@ -487,7 +497,7 @@ function Explore() {
           {/* <div className="umap-container"> */}
           <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
             {points.length ? <>
-              { !isIOS() ? <Scatter
+              { !isIOS() && scope ? <Scatter
                 points={drawPoints}
                 duration={2000}
                 width={scopeWidth}
@@ -589,7 +599,7 @@ function Explore() {
             {/* </div> */}
           </div>
           {!isMobileDevice() ? <div className="hovered-point">
-            {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.index}:</span><span className="value">{hoveredCluster.label}</span></span> : null}
+            {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.cluster}:</span><span className="value">{hoveredCluster.label}</span></span> : null}
             {hovered && Object.keys(hovered).map((key,idx) => {
               let d = hovered[key]
               if(typeof d === 'object' && !Array.isArray(d)) {
@@ -773,10 +783,29 @@ function Explore() {
                 <span>{intersectedIndices.length} rows</span>
               </div>
               <div className="filter-cell right bulk-actions">
-                <button>🏷️</button>
-                <button>️📍</button>
-                <button>💾</button>
-                <button>🗑️</button>
+                <div className="bulk-actions-buttons">
+                  <button className={`bulk ${bulkAction == "tag" ? 'active' : ''}`} onClick={() => bulkAction == "tag" ? setBulkAction(null) : setBulkAction("tag")}>🏷️</button>
+                  <button className={`bulk ${bulkAction == "cluster" ? 'active' : ''}`} onClick={() => bulkAction == "cluster" ? setBulkAction(null) : setBulkAction("cluster")}>️📍</button>
+                  <button className={`bulk ${bulkAction == "save" ? 'active' : ''}`} onClick={() => bulkAction == "save" ? setBulkAction(null) : setBulkAction("save")}>💾</button>
+                  <button className={`bulk ${bulkAction == "delete" ? 'active' : ''}`} onClick={() => bulkAction == "delete" ? setBulkAction(null) : setBulkAction("delete")}>🗑️</button>
+                </div>
+                <div className="bulk-actions-action">
+                  {bulkAction == "tag" ? <Tagging dataset={dataset} indices={intersectedIndices} 
+                    onSuccess={() => {
+                      setBulkAction(null)
+                      fetchTagSet()
+                    }} /> : null}
+                  {bulkAction == "cluster" ? <Clustering dataset={dataset} scope={scope} indices={intersectedIndices} 
+                    onSuccess={() => {
+                      setBulkAction(null)
+                      fetchScopeMeta()
+                      fetchScopeRows()
+                    }} /> : null}
+                  {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices} 
+                    onSuccess={() => setBulkAction(null)} /> : null}
+                  {bulkAction == "delete" ? <Deleting dataset={dataset} scope={scope} indices={intersectedIndices} 
+                    onSuccess={() => setBulkAction(null)} /> : null}
+                </div>
               </div>
             </div>
           </div>
@@ -785,9 +814,18 @@ function Explore() {
             
             <FilterDataTable
                 dataset={dataset}
+                scope={scope}
                 indices={intersectedIndices}
-                clusterIndices={clusterIndices}
+                clusterMap={clusterMap}
                 clusterLabels={clusterLabels}
+                tagset={tagset}
+                onTagset={fetchTagSet}
+                onScope={() => { 
+                  fetchScopeMeta() 
+                  fetchScopeRows()
+                }}
+                onHover={handleHover}
+                onClick={handleClicked}
                 height={`calc(100% - 250px)`}
             />
 

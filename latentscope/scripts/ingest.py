@@ -144,11 +144,19 @@ def ingest(dataset_id, df, text_column = None):
             }, f, indent=2)
 
     # create all the directories we will use
-    os.makedirs(os.path.join(DATA_DIR, dataset_id, "tags"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "embeddings"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "umaps"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "clusters"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "scopes"), exist_ok=True)
+    tags_dir = os.path.join(DATA_DIR, dataset_id, "tags")
+    os.makedirs(tags_dir, exist_ok=True)
+    # Create default tags if they don't exist
+    new_files = ['👍.indices', '👎.indices']
+    for file_name in new_files:
+        file_path = os.path.join(tags_dir, file_name)
+        if not os.path.exists(file_path):
+            with open(file_path, 'w') as file:
+                file.write('')  # Initialize with an empty JSON object
 
 
 if __name__ == "__main__":

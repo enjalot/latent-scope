@@ -102,15 +102,20 @@ def add_tag():
     return jsonify(tagsets[dataset])
 
 """
-Remove a data index from a tag
+Add data indices to a tag
 """
-@tags_write_bp.route("/remove", methods=['GET'])
-def remove_tag():
-    dataset = request.args.get('dataset')
-    tag = request.args.get('tag')
-    index = request.args.get('index')
+@tags_write_bp.route("/add", methods=['POST'])
+def add_tags():
+    data = request.get_json()
+    dataset = data.get('dataset')
+    tag = data.get('tag')
+    new_indices = data.get('indices')
+    # print("DATASET", dataset)
+    # print("tag", tag)
+    # print("indices", new_indices)
+
     if dataset not in tagsets:
-        tagsets[dataset] = {}
+        ts = tagsets[dataset] = {}
     else:
         ts = tagsets[dataset]
     if tag not in ts:
@@ -121,10 +126,94 @@ def remove_tag():
         ts[tag] = indices
     else:
         indices = ts[tag]
+
+    if not indices:
+        indices = []
+
+    # new_indices_list = [int(idx) for idx in new_indices.split(',')]
+    new_indices_list = [int(idx) for idx in new_indices]
+    for idx in new_indices_list:
+        if idx not in indices:
+            indices.append(idx)
+    ts[tag] = indices
+    # save the indices to a file
+    np.savetxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), indices, fmt='%d')
+    # return an object with the tags for a given dataset
+    return jsonify(tagsets[dataset])
+
+
+"""
+Remove a data index from a tag
+"""
+@tags_write_bp.route("/remove", methods=['GET'])
+def remove_tag():
+    dataset = request.args.get('dataset')
+    tag = request.args.get('tag')
+    index = int(request.args.get('index'))
+    # print("dataset", dataset)
+    # print("tag", tag)
+    # print("index", index)
+    if dataset not in tagsets:
+        ts = tagsets[dataset] = {}
+    else:
+        ts = tagsets[dataset]
+    if tag not in ts:
+        # read a tag file, which is just a csv with a single column into an array of integers
+        indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
+        if type(indices) == int:
+            indices = [indices]
+        ts[tag] = indices
+    else:
+        indices = ts[tag]
+    print("indices", indices)
     if index in indices:
-        indices = indices.remove(int(index))
+        print("Removing", index)
+        indices.remove(index)
+        print("removed", indices)
         ts[tag] = indices
         # save the indices to a file
         np.savetxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), indices, fmt='%d')
+    print("returning", tagsets[dataset])
+    # return an object with the tags for a given dataset
+    return jsonify(tagsets[dataset])
+
+
+"""
+Add data indices to a tag
+"""
+@tags_write_bp.route("/remove", methods=['POST'])
+def remove_tags():
+    data = request.get_json()
+    dataset = data.get('dataset')
+    tag = data.get('tag')
+    remove_indices = data.get('indices')
+    print("dataset", dataset)
+    print("tag", tag)
+    print("indices", remove_indices)
+
+    if dataset not in tagsets:
+        ts = tagsets[dataset] = {}
+    else:
+        ts = tagsets[dataset]
+    if tag not in ts:
+        # read a tag file, which is just a csv with a single column into an array of integers
+        indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
+        if type(indices) == int:
+            indices = [indices]
+        ts[tag] = indices
+    else:
+        indices = ts[tag]
+
+    if not indices:
+        indices = []
+
+    # new_indices_list = [int(idx) for idx in new_indices.split(',')]
+    new_indices_list = [int(idx) for idx in remove_indices]
+    for idx in new_indices_list:
+        if idx in indices:
+            indices.remove(idx)
+    ts[tag] = indices
+    # save the indices to a file
+    np.savetxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), indices, fmt='%d')
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])

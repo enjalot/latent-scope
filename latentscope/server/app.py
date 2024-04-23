@@ -2,6 +2,7 @@ import re
 import os
 import sys
 import json
+import math
 import logging
 import argparse
 import pandas as pd
@@ -56,6 +57,10 @@ app.register_blueprint(datasets_bp, url_prefix='/api/datasets')
 if(not READ_ONLY):
     app.register_blueprint(datasets_write_bp, url_prefix='/api/datasets')
 
+from .bulk import bulk_bp, bulk_write_bp
+app.register_blueprint(bulk_bp, url_prefix='/api/bulk') 
+if(not READ_ONLY):
+    app.register_blueprint(bulk_write_bp, url_prefix='/api/bulk') 
 
 
 # ===========================================================
@@ -160,7 +165,7 @@ def query():
         "page": page,
         "per_page": per_page,
         "total": len(rows),
-        "totalPages": len(rows) // per_page
+        "totalPages": math.ceil(len(rows) / per_page)
     })
 
 if not READ_ONLY:
