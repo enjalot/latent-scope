@@ -59,8 +59,8 @@ const HullPlot = ({
     g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
 
     const draw = line()
-      .x(d => d[0])
-      .y(d => -d[1])
+      .x(d => d?.[0])
+      .y(d => -d?.[1])
       // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
@@ -142,8 +142,8 @@ const HullPlot = ({
     g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
 
     const draw = line()
-      .x(d => d[0])
-      .y(d => -d[1])
+      .x(d => d?.[0])
+      .y(d => -d?.[1])
       // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 

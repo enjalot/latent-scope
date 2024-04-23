@@ -194,11 +194,11 @@ function FilterDataTable({
   useEffect(() => {
     console.log("refetching hydrate", indices, dataset)
     if(dataset && scope) {
-      console.log("Tagset", tagset)
+      // console.log("Tagset", tagset)
       let columns = ["ls_index", "ls_cluster", "tags", dataset.text_column].concat(dataset.columns.filter(d => d !== dataset.text_column)).map((c, i) => {
       // let columns = dataset.columns.map((c, i) => {
         const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
-        console.log("COLUMN", c, metadata)
+        // console.log("COLUMN", c, metadata)
         return {
           id: ""+i,
           cell: info => {
@@ -240,7 +240,7 @@ function FilterDataTable({
                 e.preventDefault()
                 
               }}>
-                <select value={value.cluster} onChange={(e) => {
+                <select value={value?.cluster} onChange={(e) => {
                   e.stopPropagation()
                   e.preventDefault()
                   console.log("was cluster", value)

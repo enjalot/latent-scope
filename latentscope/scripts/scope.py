@@ -2,6 +2,7 @@ import os
 import re
 import json
 import argparse
+from datetime import datetime
 from latentscope.util import get_data_dir
 from latentscope import __version__
 
@@ -117,8 +118,15 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     scope["rows"] = len(scope_parquet)
     scope["columns"] = scope_parquet.columns.tolist()
     scope["size"] = os.path.getsize(os.path.join(directory, id + ".parquet"))
+    scope["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     file_path = os.path.join(directory, id + ".json")
     with open(file_path, 'w') as f:
         json.dump(scope, f, indent=2)
+    
+    transactions_file_path = os.path.join(directory, id + "-transactions.json")
+    if not os.path.exists(transactions_file_path):
+        with open(transactions_file_path, 'w') as f:
+            json.dump([], f)
+
     print("wrote scope", id)

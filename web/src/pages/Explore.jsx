@@ -144,8 +144,8 @@ function Explore() {
         let sim = {}
         let ism = {}
         scopeRows.forEach((d,i) => {
-          sim[d.ls_index] = i
-          ism[i] = d.ls_index
+          ism[d.ls_index] = i
+          sim[i] = d.ls_index
         })
         setScopeToInputIndexMap(sim)
         setInputToScopeIndexMap(ism)
@@ -177,7 +177,7 @@ function Explore() {
 
         setTimeout(() => {
           if(labelsData)
-            setHulls(processHulls(labelsData, pts, sim))
+            setHulls(processHulls(labelsData, pts, ism))
         }, 100)
 
       }).catch(error => console.error("Fetching data failed", error));
@@ -255,11 +255,11 @@ function Explore() {
   const handleSelected = useCallback((indices) => {
     // console.log("handle selected", indices)
     // we have to map from the scatterplot indices to the ls_index of the original input data (in case any has been deleted)
-    let idxs = indices.map(i => inputToScopeIndexMap[i])
+    let idxs = indices.map(i => scopeToInputIndexMap[i])
     setSelectedIndices(idxs);
     // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
     // scatter?.zoomToPoints(indices, { transition: true })
-  }, [setSelectedIndices, inputToScopeIndexMap])
+  }, [setSelectedIndices, scopeToInputIndexMap])
 
   // Hover via scatterplot or tables
   // index of item being hovered over
@@ -277,15 +277,12 @@ function Explore() {
 
   const [hoveredCluster, setHoveredCluster] = useState(null);
   useEffect(() => {
-    if (hovered && clusterIndices.length && clusterLabels.length) {
-      const index = hovered.index
-      const cluster = clusterIndices[index]
-      const label = clusterLabels[cluster]
-      setHoveredCluster({ cluster: cluster.cluster, ...label })
+    if (hoveredIndex) {
+      setHoveredCluster(clusterMap[scopeToInputIndexMap[hoveredIndex]])
     } else {
       setHoveredCluster(null)
     }
-  }, [hovered, clusterIndices, clusterLabels, setHoveredCluster])
+  }, [hoveredIndex, clusterMap, scopeToInputIndexMap, setHoveredCluster])
 
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
@@ -407,7 +404,6 @@ function Explore() {
   }, [])
 
   function intersectMultipleArrays(...arrays) {
-    console.log("ARRAYS", arrays)
     arrays = arrays.filter(d => d.length > 0)
     if (arrays.length === 0) return [];
     if(arrays.length == 1) return arrays[0]
@@ -420,16 +416,21 @@ function Explore() {
     });
   }
 
+  const clearFilters = useCallback(() => {
+    setSelectedIndices([])
+    setSearchIndices([])
+    setTag(null)
+  }, [setSelectedIndices, setSearchIndices, setTag])
 
   const [intersectedIndices, setIntersectedIndices] = useState([])
   // intersect the indices from the various filters
   useEffect(() => {
-    console.log("selectedIndices", selectedIndices)
-    console.log("searchIndices", searchIndices)
-    console.log("tag", tag)
-    console.log("tagset", tagset[tag])
+    // console.log("selectedIndices", selectedIndices)
+    // console.log("searchIndices", searchIndices)
+    // console.log("tag", tag)
+    // console.log("tagset", tagset[tag])
     const filteredClusterIndices = scopeRows.filter(d => d.cluster == slide?.cluster).map(d => d.ls_index)
-    console.log("slide", slide, filteredClusterIndices)
+    // console.log("slide", slide, filteredClusterIndices)
     let indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], filteredClusterIndices || [], tagset[tag] || [])
     if(indices.length == 0 && selectedIndices.length > 0) {
       indices = selectedIndices
@@ -440,9 +441,9 @@ function Explore() {
 
   const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
   useEffect(() => {
-    const annots = intersectedIndices.map(index => points[index])
+    const annots = intersectedIndices.map(index => points[inputToScopeIndexMap[index]])
     setIntersectedAnnotations(annots)
-  }, [intersectedIndices, points])
+  }, [intersectedIndices, points, inputToScopeIndexMap])
 
 
   const [bulkAction, setBulkAction] = useState(null)
@@ -480,6 +481,7 @@ function Explore() {
             {/* </h3> */}
             {scope?.ls_version && <span>
               <span>{scope?.description}</span>
+              <br />
               <span>{embedding?.model_id}</span>
               <span>{clusterLabels?.length} clusters</span>
             </span>}
@@ -489,7 +491,7 @@ function Explore() {
           </div>}
           </div>
           <div className="dataset-card">
-            <span><b>{datasetId}</b>  {dataset?.length} rows</span>
+            <span><b>{datasetId}</b>  {scope?.rows}/{dataset?.length} rows</span>
           </div>
           
         </div>
@@ -517,7 +519,7 @@ function Explore() {
               height={scopeHeight}
             /> }
               {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls && scope.cluster_labels_lookup ? <HullPlot
-                hulls={processHulls([hoveredCluster], points, scopeToInputIndexMap)}
+                hulls={processHulls([hoveredCluster], points, inputToScopeIndexMap)}
                 fill="lightgray"
                 duration={0}
                 xDomain={xDomain}
@@ -526,7 +528,7 @@ function Explore() {
                 height={scopeHeight} /> : null}
 
               {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup ? <HullPlot
-                hulls={processHulls([slide], points, scopeToInputIndexMap)}
+                hulls={processHulls([slide], points, inputToScopeIndexMap)}
                 fill="darkgray"
                 strokeWidth={2}
                 duration={0}
@@ -692,12 +694,12 @@ function Explore() {
                 </select>
               </div>
               <div className="filter-cell middle">
-                {slideAnnotations.length && <span> {slideAnnotations.length} rows
+                {slideAnnotations.length ? <span> {slideAnnotations.length} rows
                   <button className="deselect" onClick={() => {
                     setSlide(null)
                   }
                   }>X</button>
-                </span>}
+                </span> : null}
               </div>
               <div className="filter-cell right">
                 {slide ?
@@ -801,10 +803,15 @@ function Explore() {
                       fetchScopeMeta()
                       fetchScopeRows()
                     }} /> : null}
-                  {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices} 
-                    onSuccess={() => setBulkAction(null)} /> : null}
+                  {/* {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices} 
+                    onSuccess={() => setBulkAction(null)} /> : null} */}
                   {bulkAction == "delete" ? <Deleting dataset={dataset} scope={scope} indices={intersectedIndices} 
-                    onSuccess={() => setBulkAction(null)} /> : null}
+                    onSuccess={() => {
+                      setBulkAction(null)
+                      clearFilters()
+                      fetchScopeMeta()
+                      fetchScopeRows()
+                    }} /> : null}
                 </div>
               </div>
             </div>
@@ -824,7 +831,7 @@ function Explore() {
                   fetchScopeMeta() 
                   fetchScopeRows()
                 }}
-                onHover={handleHover}
+                onHover={(index) => handleHover(inputToScopeIndexMap[index])}
                 onClick={handleClicked}
                 height={`calc(100% - 250px)`}
             />
