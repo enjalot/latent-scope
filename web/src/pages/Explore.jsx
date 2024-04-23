@@ -342,8 +342,9 @@ function Explore() {
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
-        setDistances(data.distances);
-        setSearchIndices(data.indices);
+        let indices = data.indices.filter(d => inputToScopeIndexMap[d] >= 0)
+        // setDistances(data.distances); // TODO: if we want distances we'd need to filter them at the same time
+        setSearchIndices(indices);
         // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
   }, [searchModel, datasetId, scatter, setDistances, setSearchIndices]);
@@ -422,6 +423,10 @@ function Explore() {
     setTag(null)
   }, [setSelectedIndices, setSearchIndices, setTag])
 
+  const filterInputIndices = useCallback((indices) => {
+    return indices.filter(d => inputToScopeIndexMap[d] >= 0)
+  }, [inputToScopeIndexMap])
+
   const [intersectedIndices, setIntersectedIndices] = useState([])
   // intersect the indices from the various filters
   useEffect(() => {
@@ -431,13 +436,14 @@ function Explore() {
     // console.log("tagset", tagset[tag])
     const filteredClusterIndices = scopeRows.filter(d => d.cluster == slide?.cluster).map(d => d.ls_index)
     // console.log("slide", slide, filteredClusterIndices)
-    let indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], filteredClusterIndices || [], tagset[tag] || [])
+    const filteredTagset = filterInputIndices(tagset[tag] || [])
+    let indices = intersectMultipleArrays(selectedIndices || [], searchIndices || [], filteredClusterIndices || [], filteredTagset || [])
     if(indices.length == 0 && selectedIndices.length > 0) {
       indices = selectedIndices
     }
     console.log("indices!", indices)
     setIntersectedIndices(indices)
-  }, [scopeRows, selectedIndices, searchIndices, slide, tagset, tag])
+  }, [scopeRows, selectedIndices, searchIndices, slide, tagset, tag, inputToScopeIndexMap])
 
   const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
   useEffect(() => {
@@ -720,7 +726,7 @@ function Explore() {
               </div>
             </div>
 
-            <div className={`filter-row tags-box ${tagset[tag]?.length ? 'active': ''}`}>
+            <div className={`filter-row tags-box ${filterInputIndices(tagset[tag] || [])?.length ? 'active': ''}`}>
               <div className="filter-cell left tags-select">
                 <select onChange={(e) => {
                   if(e.target.value == "-1") {
@@ -731,12 +737,12 @@ function Explore() {
                 }} value={tag ? tag : "-1"}>
                   <option value="-1">Select a tag</option>
                   {tags.map((t, index) => (
-                    <option key={index} value={t}>{t} ({tagset[t].length})</option>
+                    <option key={index} value={t}>{t} ({filterInputIndices(tagset[t] || []).length})</option>
                   ))}
                 </select>
               </div>
               <div className="filter-cell middle">
-                {tag && tagset[tag]?.length ? <span>{tagset[tag].length} rows
+                {tag && filterInputIndices(tagset[tag] || []).length ? <span>{filterInputIndices(tagset[tag] || []).length} rows
                   <button className="deselect" onClick={() => {
                     setTag(null)
                   }
