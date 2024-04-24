@@ -46,7 +46,7 @@
   justify-content: center;
 
   margin: 6px 12px;
-  padding: 16px;
+  padding: 6px;
   height: 148px;
   border: 1px solid lightgray;
   border-radius: 5px;
@@ -128,10 +128,13 @@
   /* flex-grow: 1; */
   /* height: calc(100% - 32px); */
   /* height: 100%; */
-  height: 250px;
-  overflow-y: auto;
+  /* height: 250px; */
+  /* overflow-y: auto; */
   border: 1px solid lightgray;
   padding: 12px;
+  margin-top: 6px;
+  margin-right: 12px;
+  border-radius: 5px;
 }
 .filters-container button {
   margin-left: 0.3em;

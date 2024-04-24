@@ -85,7 +85,7 @@ function ScatterPlot ({
       xScale,
       yScale,
     }
-    console.log("creating scatterplot", xDomain.current)
+    // console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
@@ -168,7 +168,7 @@ function ScatterPlot ({
         })
       }
       if(prevPoints && prevPoints.length === points.length) {
-        console.log("transitioning scatterplot" )
+        // console.log("transitioning scatterplot" )
         scatterplot.draw(points, { transition: true, transitionDuration: duration}).then(() => {
           // don't color till after
           scatterplot.set({
@@ -177,7 +177,7 @@ function ScatterPlot ({
           scatterplot.draw(points, { transition: false });
         })
       } else {
-        console.log("fresh draw scatterplot")
+        // console.log("fresh draw scatterplot")
         scatterplot.set({
           pointColor: pointColor,
         })

@@ -51,6 +51,7 @@ function Explore() {
   const navigate = useNavigate();
 
   const containerRef = useRef(null);
+  const filtersContainerRef = useRef(null);
 
   // let's fill the container and update the width and height if window resizes
   const [scopeWidth, scopeHeight] = useWindowSize();
@@ -71,6 +72,50 @@ function Explore() {
     }, []);
     return size;
   }
+
+  const [filtersHeight, setFiltersHeight] = useState(250);
+
+  useEffect(() => {
+    // const updateFiltersHeight = () => {
+    //   if (filtersContainerRef.current) {
+    //     let height = filtersContainerRef.current.getBoundingClientRect().height;
+    //     console.log("filters height", height)
+    //     setFiltersHeight(height);
+    //   }
+    // };
+
+    // updateFiltersHeight(); // Initial check
+    // window.addEventListener('resize', updateFiltersHeight);
+    const resizeObserver = new ResizeObserver(entries => {
+      console.log("ENTRIES", entries)
+      for (let entry of entries) {
+        const {width, height} = entry.contentRect;
+        console.log(`Size changed. New size: ${width}x${height}`);
+        setFiltersHeight(height);
+        // Perform any action based on the new size here
+      }
+    });
+
+    let node = filtersContainerRef.current
+    console.log("NODE", node)
+    if (node) {
+      console.log("observe", node)
+      resizeObserver.observe(node);
+    } else {
+      setTimeout(() => {
+        node = filtersContainerRef.current
+        console.log("NODE delay", node)
+        resizeObserver.observe(node)
+      }, 100)
+    }
+
+    return () => {
+      if (node) {
+        resizeObserver.unobserve(node);
+      }
+      // window.removeEventListener('resize', updateFiltersHeight);
+    };
+  }, []);
 
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -137,7 +182,7 @@ function Explore() {
     fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
       .then(response => response.json())
       .then(scopeRows => {
-        console.log("scope rows", scopeRows)
+        // console.log("scope rows", scopeRows)
         setScopeRows(scopeRows)
 
         // calculate scopeIndexMap
@@ -160,9 +205,9 @@ function Explore() {
         setDrawPoints(dpts)
         setHulls([])
 
-        console.log("SCOPE", scope)
+        // console.log("SCOPE", scope)
         const labelsData = scope.cluster_labels_lookup || []
-        console.log("labels", labelsData);
+        // console.log("labels", labelsData);
         setClusterLabels(labelsData);
 
         // console.log("cluster indices", clusterIndicesData);
@@ -202,7 +247,7 @@ function Explore() {
   }, [embedding, embeddings, setSearchModel])
 
   useEffect(() => {
-    console.log("search model", searchModel)
+    // console.log("search model", searchModel)
   }, [searchModel])
 
 
@@ -441,7 +486,7 @@ function Explore() {
     if(indices.length == 0 && selectedIndices.length > 0) {
       indices = selectedIndices
     }
-    console.log("indices!", indices)
+    // console.log("indices!", indices)
     setIntersectedIndices(indices)
   }, [scopeRows, selectedIndices, searchIndices, slide, tagset, tag, inputToScopeIndexMap])
 
@@ -646,7 +691,7 @@ function Explore() {
             </button>
           ))}
         </div> */}
-          <div className="filters-container">
+          <div className="filters-container" ref={filtersContainerRef}>
             <div className={`filter-row search-box ${searchIndices.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 <form onSubmit={(e) => {
@@ -823,8 +868,6 @@ function Explore() {
             </div>
           </div>
 
-            
-            
             <FilterDataTable
                 dataset={dataset}
                 scope={scope}
@@ -839,7 +882,7 @@ function Explore() {
                 }}
                 onHover={(index) => handleHover(inputToScopeIndexMap[index])}
                 onClick={handleClicked}
-                height={`calc(100% - 250px)`}
+                height={`calc(100% - ${filtersHeight + 30}px)`}
             />
 
 {/* {selectedIndices?.length > 0 ?

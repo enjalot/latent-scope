@@ -126,7 +126,7 @@ function FilterDataTable({
   }
 
   const hydrateIndices = useCallback((indices) => {
-    console.log("hydrate!", dataset)
+    // console.log("hydrate!", dataset)
     if(dataset && indices.length) {
       console.log("fetching query", dataset)
       fetch(`${apiUrl}/query`, {
@@ -192,7 +192,7 @@ function FilterDataTable({
   }, [dataset, distances, clusterMap, currentPage])
 
   useEffect(() => {
-    console.log("refetching hydrate", indices, dataset)
+    // console.log("refetching hydrate", indices, dataset)
     if(dataset && scope) {
       // console.log("Tagset", tagset)
       let columns = ["ls_index", "ls_cluster", "tags", dataset.text_column].concat(dataset.columns.filter(d => d !== dataset.text_column)).map((c, i) => {
