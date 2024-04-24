@@ -112,6 +112,7 @@ def ingest(dataset_id, df, text_column = None):
         if column_type == "string" and unique_values_count <= 20:
             categories = df[column].value_counts().index.tolist()
             column_metadata[column]["categories"] = categories
+            column_metadata[column]["counts"] = df[column].value_counts().to_dict()
         if column_type == "string":
             if df[column].str.startswith("http").all():
                 column_metadata[column]["url"] = True

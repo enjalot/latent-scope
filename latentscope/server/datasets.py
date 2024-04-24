@@ -138,29 +138,29 @@ def get_dataset_cluster_labels(dataset, cluster, id):
     df.reset_index(inplace=True)
     return df.to_json(orient="records")
 
-# TODO: change this to be tied to scope and updates the scope meta
-@datasets_write_bp.route('/<dataset>/clusters/<cluster>/labels/<id>/label/<index>', methods=['GET'])
-def overwrite_dataset_cluster_label(dataset, cluster, id, index):
-    index = int(index)
-    new_label = request.args.get('label')
-    print("write label", index, new_label)
-    if new_label is None:
-        return jsonify({"error": "Missing 'label' in request data"}), 400
+# This was rewritten in bulk.py to only affect a scope
+# @datasets_write_bp.route('/<dataset>/clusters/<cluster>/labels/<id>/label/<index>', methods=['GET'])
+# def overwrite_dataset_cluster_label(dataset, cluster, id, index):
+#     index = int(index)
+#     new_label = request.args.get('label')
+#     print("write label", index, new_label)
+#     if new_label is None:
+#         return jsonify({"error": "Missing 'label' in request data"}), 400
 
-    file_name = cluster + "-labels-" + id + ".parquet"
-    file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
-    try:
-        df = pd.read_parquet(file_path)
-    except FileNotFoundError:
-        return jsonify({"error": "File not found"}), 404
+#     file_name = cluster + "-labels-" + id + ".parquet"
+#     file_path = os.path.join(DATA_DIR, dataset, "clusters", file_name)
+#     try:
+#         df = pd.read_parquet(file_path)
+#     except FileNotFoundError:
+#         return jsonify({"error": "File not found"}), 404
 
-    if index >= len(df):
-        return jsonify({"error": "Index out of range"}), 400
+#     if index >= len(df):
+#         return jsonify({"error": "Index out of range"}), 400
 
-    df.at[index, 'label'] = new_label
-    df.to_parquet(file_path)
+#     df.at[index, 'label'] = new_label
+#     df.to_parquet(file_path)
 
-    return jsonify({"success": True, "message": "Label updated successfully"})
+#     return jsonify({"success": True, "message": "Label updated successfully"})
 
 
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
@@ -227,6 +227,31 @@ def overwrite_scope_description(dataset, scope):
         json.dump(json_contents, json_file)
     
     return jsonify({"success": True, "message": "Description updated successfully"})
+
+@datasets_write_bp.route('/<dataset>/scopes/<scope>/new-cluster', methods=['GET'])
+def new_scope_cluster(dataset, scope):
+    new_label = request.args.get('label')
+
+    file_name = scope + ".json"
+    file_path = os.path.join(DATA_DIR, dataset, "scopes", file_name)
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+
+    clusters = json_contents.get('cluster_labels_lookup', [])
+    clusterIndex = len(clusters)
+    clusters.append({
+        "cluster": clusterIndex, 
+        "label": new_label,
+        "hull": [],
+        "description": ""
+    })
+    json_contents['cluster_labels_lookup'] = clusters
+
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(json_contents, json_file)
+    
+    return jsonify({"success": True, "message": "Description updated successfully"})
+
 
 @datasets_bp.route('/<dataset>/export/list', methods=['GET'])
 def get_dataset_export_list(dataset):

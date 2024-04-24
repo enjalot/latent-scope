@@ -109,15 +109,12 @@ def indexed():
     # send back the rows as json
     return rows.to_json(orient="records")
 
-@app.route('/api/query', methods=['POST'])
-def query():
-    per_page = 100
+@app.route('/api/column-filter', methods=['POST'])
+def column_filter():
     data = request.get_json()
     dataset = data['dataset']
-    page = data['page'] if 'page' in data else 0
-    indices = data['indices'] if 'indices' in data else []
-    filters = data['filters'] if 'filters' in data else None
-    sort = data['sort'] if 'sort' in data else None
+    filters = data['filters']
+
     if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
         DATAFRAMES[dataset] = df
@@ -126,7 +123,7 @@ def query():
     
     # apply filters
     rows = df.copy()
-    rows['ls_index'] = rows.index
+
     print("FILTERS", filters)
     if filters:
         for f in filters:
@@ -144,6 +141,28 @@ def query():
                 rows = rows[rows[f['column']].isin(f['value'])]
             elif f["type"] == "contains":
                 rows = rows[rows[f['column']].str.contains(f['value'])]
+
+    return jsonify(indices=rows.index.to_list())
+
+@app.route('/api/query', methods=['POST'])
+def query():
+    per_page = 100
+    data = request.get_json()
+    dataset = data['dataset']
+    page = data['page'] if 'page' in data else 0
+    indices = data['indices'] if 'indices' in data else []
+    # filters = data['filters'] if 'filters' in data else None
+    sort = data['sort'] if 'sort' in data else None
+    if dataset not in DATAFRAMES:
+        df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
+        DATAFRAMES[dataset] = df
+    else:
+        df = DATAFRAMES[dataset]
+    
+    # apply filters
+    rows = df.copy()
+    rows['ls_index'] = rows.index
+    
 
     # get the indexed rows
     print("INDICES", indices)

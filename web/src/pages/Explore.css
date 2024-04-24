@@ -1,6 +1,6 @@
 .container {
   display: grid;
-  grid-template-columns: 548px 1fr;
+  grid-template-columns: 528px 1fr;
   /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
   gap: 6px;
   /* This adds space between your columns */
@@ -13,6 +13,7 @@
   flex-direction: column;
   overflow-y: hidden;
   height: 100%;
+  /* max-width: 535px; */
 }
 
 .data {
@@ -23,7 +24,10 @@
 }
 
 .umap-container {
-  margin: 6px 12px;
+  /* margin: 6px 12px; */
+  /* max-width: 515px; */
+  margin-top: 6px;
+  margin-left: 12px;
   height: 100%;
   overflow-y: hidden;
   min-height: 0;
@@ -45,7 +49,9 @@
   flex-direction: column;
   justify-content: center;
 
-  margin: 6px 12px;
+  /* margin: 6px 12px; */
+  margin-top: 6px;
+  margin-left: 12px;
   padding: 6px;
   height: 148px;
   border: 1px solid lightgray;
@@ -107,6 +113,7 @@
   display: flex;
   flex-direction: column;
   padding: 6px;
+  max-width: 500px;
 }
 
 .container .hovered-point .key {
@@ -195,7 +202,7 @@
   justify-content: space-evenly;
 }
 
-.new-tag {
+/* .new-tag {
   margin: 6px 0;
 }
 
@@ -204,7 +211,7 @@
   width: 160px;
   border: 1px solid lightgray;
   padding: 7px;
-}
+} */
 
 .new-tag input {
   width: 60px;
