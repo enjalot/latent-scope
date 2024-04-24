@@ -794,7 +794,7 @@ const handleNewCluster = useCallback((label) => {
 
             <div className={`filter-row tags-box ${filterInputIndices(tagset[tag] || [])?.length ? 'active': ''}`}>
               <div className="filter-cell left tags-select">
-                <select onChange={(e) => {
+                {/* <select onChange={(e) => {
                   if(e.target.value == "-1") {
                     setTag(null)
                     return
@@ -805,7 +805,16 @@ const handleNewCluster = useCallback((label) => {
                   {tags.map((t, index) => (
                     <option key={index} value={t}>{t} ({filterInputIndices(tagset[t] || []).length})</option>
                   ))}
-                </select>
+                </select> */}
+              {tags.map((t, index) => (
+                <button
+                  key={index}
+                  className={`tag-button ${tag === t ? 'selected' : ''}`}
+                  onClick={() => setTag(tag === t ? null : t)}
+                >
+                  {t} ({filterInputIndices(tagset[t] || []).length})
+                </button>
+              ))}
               </div>
               <div className="filter-cell middle">
                 {tag && filterInputIndices(tagset[tag] || []).length ? <span>{filterInputIndices(tagset[tag] || []).length} rows
@@ -823,12 +832,22 @@ const handleNewCluster = useCallback((label) => {
                     .then(response => response.json())
                     .then(data => {
                       console.log("new tag", data)
-                      setTagset(data);
+                      e.target.elements.newTag.value = ""
+                      fetchTagSet()
                     });
                 }}>
                   <input type="text" id="newTag" />
                   <button type="submit">➕ Tag</button>
-                </form> : <form>
+                </form> : <form onSubmit={(e) => {
+                  e.preventDefault();
+                  fetch(`${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`)
+                    .then(response => response.json())
+                    .then(data => {
+                      console.log("deleted tag", data)
+                      setTag(null)
+                      fetchTagSet()
+                    })
+                  }}>
                   <button type="submit">➖ {tag}</button>
                 </form>}
               </div>

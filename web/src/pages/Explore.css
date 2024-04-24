@@ -202,6 +202,10 @@
   justify-content: space-evenly;
 }
 
+.tag-button.selected {
+  border: 2px solid black;
+}
+
 /* .new-tag {
   margin: 6px 0;
 }

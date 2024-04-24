@@ -217,3 +217,21 @@ def remove_tags():
     np.savetxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), indices, fmt='%d')
     # return an object with the tags for a given dataset
     return jsonify(tagsets[dataset])
+
+
+@tags_write_bp.route("/delete", methods=['GET'])
+def delete_tag():
+    dataset = request.args.get('dataset')
+    tag = request.args.get('tag')
+    if dataset not in tagsets:
+        ts = tagsets[dataset] = {}
+    else:
+        ts = tagsets[dataset]
+    if tag in ts:
+        del ts[tag]
+    try:
+        os.remove(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"))
+    except FileNotFoundError:
+        pass
+    return jsonify(tagsets[dataset])
+
