@@ -373,11 +373,23 @@ function FilterDataTable({
     // Call it initially and whenever the window resizes
     adjustHeaderWidth();
     window.addEventListener('resize', adjustHeaderWidth);
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.target === bodyRef.current) {
+          adjustHeaderWidth();
+        }
+      }
+    });
+
+    if (bodyRef.current) {
+      resizeObserver.observe(bodyRef.current);
+    }
 
   
     // Start: Code to synchronize horizontal scroll
     const syncHorizontalScroll = () => {
       if (headerRef.current && bodyRef.current) {
+        console.log("body", bodyRef.current.scrollLeft, "header", headerRef.current.scrollLeft)
         headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
       }
     };
@@ -392,6 +404,7 @@ function FilterDataTable({
     window.removeEventListener('resize', adjustHeaderWidth);
     // Clean up the scroll listener
     bodyEl.removeEventListener('scroll', syncHorizontalScroll);
+    resizeObserver.disconnect();
   };
   }, []);
 
@@ -407,7 +420,7 @@ function FilterDataTable({
               }}>
               {headerGroup.headers.map(header => {
                 return (
-                  <th key={header.id} colSpan={header.colSpan} style={{ textAlign: 'left', paddingLeft: '6px' }}>
+                  <th key={header.id} colSpan={header.colSpan}>
                     {header.isPlaceholder ? null : (
                       <>
                         <div
@@ -447,10 +460,7 @@ function FilterDataTable({
               <tr key={row.id} style={{  visibility: 'collapse' }}>
                 {row.getVisibleCells().map(cell => {
                   return (
-                    <td key={cell.id} style={{
-                      padding: '6px',
-                      borderBottom: '1px solid #eee'
-                    }}>
+                    <td key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -478,9 +488,7 @@ function FilterDataTable({
         <tbody>
           {table.getRowModel().rows.map(row => {
             return (
-              <tr key={row.id} style={{ 
-                // backgroundColor: '#f9f9f9', 
-                }}
+              <tr key={row.id}
                 onMouseEnter={() => {
                   onHover(row.getValue("0")) 
                 }}
@@ -488,12 +496,7 @@ function FilterDataTable({
                 >
                 {row.getVisibleCells().map(cell => {
                   return (
-                    <td key={cell.id} 
-                        style={{
-                          padding: '6px',
-                          borderBottom: '1px solid #eee'
-                        }}
-                    >
+                    <td key={cell.id}>
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

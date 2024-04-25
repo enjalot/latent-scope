@@ -953,7 +953,7 @@ const handleNewCluster = useCallback((label) => {
                 }}
                 onHover={(index) => handleHover(inputToScopeIndexMap[index])}
                 onClick={handleClicked}
-                height={`calc(100% - ${filtersHeight + 30}px)`}
+                height={`calc(100% - ${filtersHeight + 50}px)`}
             />
 
 {/* {selectedIndices?.length > 0 ?
