@@ -193,7 +193,7 @@ def get_next_scopes_number(dataset):
 def get_dataset_scopes(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "scopes")
     print("dataset", dataset, directory_path)
-    return scan_for_json_files(directory_path)
+    return scan_for_json_files(directory_path, match_pattern=r".*[0-9]+\.json$")
 
 @datasets_bp.route('/<dataset>/scopes/<scope>', methods=['GET'])
 def get_dataset_scope(dataset, scope):

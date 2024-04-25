@@ -157,6 +157,10 @@
 .filters-container .filter-row.active {
   background-color: #e0e0e0;
 }
+.filters-container .column-filter select {
+  max-width: 120px;
+}
+
 @media (prefers-color-scheme: dark) {
   .filters-container .filter-row {
     background-color: #333;

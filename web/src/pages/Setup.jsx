@@ -530,7 +530,7 @@ function Setup() {
             <span>{scope?.description}</span>
           </div>} */}
           {/* {!dataset.column_metadata ? <div className="reimport"> */}
-          {dataset ? <div className="reimport">
+          {!dataset.ls_version ? <div className="reimport">
             <span className="warning-header">WARNING: outdated dataset!</span>
             <button onClick={() => {
               startReingestJob({ text_column: dataset.text_column })

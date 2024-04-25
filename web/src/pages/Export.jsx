@@ -69,9 +69,9 @@ function Export() {
       </div>
       <div className={styles["scope-files"]}>
         <h3>Scope {scopeId}</h3>
-        <p className={styles["description"]}>These two files combine the data from each step into a single parquet (x,y from UMAP, cluster and label from clustering and labeling).</p>
+        <p className={styles["description"]}>These files combine the data from each step into a single parquet (x,y from UMAP, cluster and label from clustering and labeling) and the metadata into a single JSON.</p>
         <ul>
-          {datasetFiles.filter(d => d[0].indexOf(scopeId) == 0).map(fileLink)}
+          {datasetFiles.filter(d => d[0].indexOf(scopeId) == 0 && d[0].indexOf("transactions") < 0).map(fileLink)}
         </ul>
       </div>
       <div className={styles["dataset-files"]}>

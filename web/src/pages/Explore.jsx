@@ -853,7 +853,7 @@ const handleNewCluster = useCallback((label) => {
               </div>
             </div>
 
-            {columnFilters && <div className={`filter-row ${columnIndices?.length ? 'active': ''}`}>
+            {columnFilters && <div className={`filter-row column-filter ${columnIndices?.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 {columnFilters.map(column => (
                   <span key={column.column}>{column.column}: 

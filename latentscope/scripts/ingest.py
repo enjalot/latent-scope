@@ -4,6 +4,7 @@ import json
 import argparse
 
 from latentscope.util import get_data_dir
+from latentscope import __version__
 
 # TODO make a parquet version of these
 def main():
@@ -141,7 +142,8 @@ def ingest(dataset_id, df, text_column = None):
             "columns": df.columns.tolist(),
             "text_column": text_column,
             "column_metadata": column_metadata,
-            "potential_embeddings": potential_embeddings
+            "potential_embeddings": potential_embeddings,
+            "ls_version": __version__
             }, f, indent=2)
 
     # create all the directories we will use
