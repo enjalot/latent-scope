@@ -36,8 +36,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
 
   const [localEmbedding, setLocalEmbedding] = useState(embedding)
   useEffect(() => {
-    setLocalEmbedding(embedding)
-  }, [embedding])
+    if(embedding) {
+      setLocalEmbedding(embedding)
+    } else {
+      setLocalEmbedding(embeddings[0])
+    }
+  }, [embedding, embeddings])
 
   const [models, setModels] = useState([]);
   useEffect(() => {
@@ -66,12 +70,8 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     fetchEmbeddings(dataset?.id, (embs) => {
       setEmbeddings(embs)
       onNew(embs)
-      console.log("embs!", embs)
-      if(!embedding) {
-        setLocalEmbedding(embs[0])
-      }
     });
-  }, [dataset, setEmbeddings, onNew, setLocalEmbedding, embedding])
+  }, [dataset, setEmbeddings, onNew])
   
   useEffect(() => {
     if(embeddingsJob?.status === "completed") {

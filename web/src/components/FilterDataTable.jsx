@@ -63,7 +63,7 @@ FilterDataTable.propTypes = {
   indices: PropTypes.array.isRequired,
   distances: PropTypes.array,
   clusterMap: PropTypes.object,
-  tagset: PropTypes.object,
+  clusterLabels: PropTypes.array,
   tagset: PropTypes.object,
   onTagset: PropTypes.func,
   onScope: PropTypes.func,
@@ -79,8 +79,8 @@ function FilterDataTable({
   distances = [], 
   clusterMap = {},
   // clusterIndices = [], 
-  clusterLabels = [], 
-  tagset = {},
+  clusterLabels, 
+  tagset,
   onTagset,
   onScope,
   onHover, 
@@ -98,7 +98,9 @@ function FilterDataTable({
 
   const [tags, setTags] = useState([])
   useEffect(() => {
-    setTags(Object.keys(tagset))
+    if(tagset){
+      setTags(Object.keys(tagset))
+    }
   }, [tagset])
 
   function handleTagClick(tag, index) {
@@ -128,7 +130,7 @@ function FilterDataTable({
   const hydrateIndices = useCallback((indices) => {
     // console.log("hydrate!", dataset)
     if(dataset && indices.length) {
-      console.log("fetching query", dataset)
+      // console.log("fetching query", dataset)
       fetch(`${apiUrl}/query`, {
         method: 'POST',
         headers: {
@@ -143,25 +145,20 @@ function FilterDataTable({
       .then(response => response.json())
       .then(data => {
         let { rows, totalPages, total } = data;
-        console.log("rows", rows)
-        console.log("pages", totalPages, total)
+        // console.log("rows", rows)
+        // console.log("pages", totalPages, total)
         setPageCount(totalPages)
 
-        rows.forEach(r => {
-          let ri = r["ls_index"]
-          let cluster = clusterMap[ri]
-          if(cluster) {
-            r["ls_cluster"] = cluster
-          }
-        })
-        // if(clusterIndices.length && clusterLabels.length) {
-        //   rows.forEach(r => {
-        //     let ri = r["ls_index"]
-        //     let cli = clusterIndices[ri]
-        //     let cluster = clusterLabels[cli]?.cluster
-        //     r["ls_cluster"] = cluster?.label
-        //   })
-        // }
+        if(Object.keys(clusterMap).length){
+          rows.forEach(r => {
+            let ri = r["ls_index"]
+            let cluster = clusterMap[ri]
+            if(cluster) {
+              r["ls_cluster"] = cluster
+            }
+          })
+        }
+
         if(distances && distances.length) {
           rows.forEach(r => {
             let ri = r["ls_index"]
@@ -169,21 +166,6 @@ function FilterDataTable({
           })
         }
 
-        // if(rows.length) {
-        //   let columns = Object.keys(rows[0]).map((c, i) => {
-        //     // console.log("COLUMN", c, i)
-        //     return {
-        //       id: ""+i,
-        //       cell: info => info.getValue(),
-        //       // header: () => "" + c,
-        //       header: c,
-        //       accessorKey: c,
-        //       footer: props => props.column.id,
-        //     }
-        //   })
-        //   console.log("COLUMNS", columns)
-        //   setColumns(columns)
-        // }
         setRows(rows)
       })
     } else {
@@ -192,10 +174,15 @@ function FilterDataTable({
   }, [dataset, distances, clusterMap, currentPage])
 
   useEffect(() => {
-    // console.log("refetching hydrate", indices, dataset)
-    if(dataset && scope) {
+    if(dataset) {
+      // console.log("refetching hydrate", indices, dataset)
       // console.log("Tagset", tagset)
-      let columns = ["ls_index", "ls_cluster", "tags", dataset.text_column].concat(dataset.columns.filter(d => d !== dataset.text_column)).map((c, i) => {
+      let columns = ["ls_index"]
+      if(scope) columns.push("ls_cluster")
+      if(tagset && Object.keys(tagset).length) columns.push("tags")
+      columns.push(dataset.text_column)
+      columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
+      let columnDefs = columns.map((c, i) => {
       // let columns = dataset.columns.map((c, i) => {
         const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
         // console.log("COLUMN", c, metadata)
@@ -297,10 +284,12 @@ function FilterDataTable({
           footer: props => props.column.id,
         }
       })
-      setColumns(columns)
+      // console.log("COLUMNS", columns, columnDefs)
+      setColumns(columnDefs)
     }
     hydrateIndices(indices)
-  }, [indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
+  // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
+  }, [dataset, indices, tags, scope, tagset, currentPage, clusterLabels])
 
 
   const [columnFilters, setColumnFilters] = useState([])
@@ -389,7 +378,6 @@ function FilterDataTable({
     // Start: Code to synchronize horizontal scroll
     const syncHorizontalScroll = () => {
       if (headerRef.current && bodyRef.current) {
-        console.log("body", bodyRef.current.scrollLeft, "header", headerRef.current.scrollLeft)
         headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
       }
     };
@@ -490,9 +478,9 @@ function FilterDataTable({
             return (
               <tr key={row.id}
                 onMouseEnter={() => {
-                  onHover(row.getValue("0")) 
+                  onHover && onHover(row.getValue("0")) 
                 }}
-                onClick={() => onClick(row.getValue("0"))}
+                onClick={() => onClick && onClick(row.getValue("0"))}
                 >
                 {row.getVisibleCells().map(cell => {
                   return (
@@ -531,113 +519,3 @@ function FilterDataTable({
   )
 }
 export default FilterDataTable;
-
-Filter.propTypes = {
-  column: PropTypes.object.isRequired,
-  table: PropTypes.object.isRequired,
-};
-
-function Filter({ column, table }) {
-  const firstValue = table
-    .getPreFilteredRowModel()
-    .flatRows[0]?.getValue(column.id);
-  const columnFilterValue = column.getFilterValue();
-  const sortedUniqueValues = useMemo(
-    () =>
-      typeof firstValue === 'number'
-        ? []
-        : Array.from(column.getFacetedUniqueValues().keys()).sort(),
-    [column.getFacetedUniqueValues()]
-  );
-
-  return typeof firstValue === 'number' ? (
-    <div>
-      <div className="flex space-x-2">
-        <DebouncedInput
-          type="number"
-          min={Number(column.getFacetedMinMaxValues()?.[0] ?? '')}
-          max={Number(column.getFacetedMinMaxValues()?.[1] ?? '')}
-          value={(columnFilterValue || [])[0] ?? ''}
-          onChange={(value) =>
-            column.setFilterValue((old = []) => [value, old[1]])
-          }
-          placeholder={`Min ${
-            column.getFacetedMinMaxValues()?.[0]
-              ? `(${column.getFacetedMinMaxValues()?.[0]})`
-              : ''
-          }`}
-          className="w-24 border shadow rounded"
-        />
-        <DebouncedInput
-          type="number"
-          min={Number(column.getFacetedMinMaxValues()?.[0] ?? '')}
-          max={Number(column.getFacetedMinMaxValues()?.[1] ?? '')}
-          value={(columnFilterValue || [])[1] ?? ''}
-          onChange={(value) =>
-            column.setFilterValue((old = []) => [old[0], value])
-          }
-          placeholder={`Max ${
-            column.getFacetedMinMaxValues()?.[1]
-              ? `(${column.getFacetedMinMaxValues()?.[1]})`
-              : ''
-          }`}
-          className="w-24 border shadow rounded"
-        />
-      </div>
-      <div className="h-1" />
-    </div>
-  ) : (
-    <>
-      <datalist id={column.id + 'list'}>
-        {sortedUniqueValues.slice(0, 5000).map((value) => (
-          <option value={value} key={value} />
-        ))}
-      </datalist>
-      <DebouncedInput
-        type="text"
-        value={(columnFilterValue ?? '') + ''}
-        onChange={(value) => column.setFilterValue(value)}
-        placeholder={`Search... (${column.getFacetedUniqueValues().size})`}
-        className="w-36 border shadow rounded"
-        list={column.id + 'list'}
-      />
-      <div className="h-1" />
-    </>
-  );
-}
-
-
-// A debounced input react component
-DebouncedInput.propTypes = {
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  onChange: PropTypes.func.isRequired,
-  debounce: PropTypes.number,
-  // This is a catch-all for any other props not explicitly defined above but passed to <input />
-  // It's important for flexibility and usability of the DebouncedInput component in various contexts.
-  props: PropTypes.object
-};
-
-function DebouncedInput({
-  value: initialValue,
-  onChange,
-  debounce = 500,
-  ...props
-}) {
-  const [value, setValue] = useState(initialValue)
-
-  useEffect(() => {
-    setValue(initialValue)
-  }, [initialValue])
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onChange(value)
-    }, debounce)
-
-    return () => clearTimeout(timeout)
-  }, [value])
-
-  return (
-    <input {...props} value={value} onChange={e => setValue(e.target.value)} />
-  )
-}

@@ -186,7 +186,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
         }} />
 
           {scope && !scopeJob 
-          // && !scope.ls_version 
+          && !scope.ls_version 
           ? 
             <button type="submit" disabled={cluster ? false : true } onClick={() => { 
               document.querySelector('input[name="action"]').value = 'save'; 

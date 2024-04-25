@@ -26,12 +26,16 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/cluster`);
   const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/delete/cluster`);
 
+  const [clusters, setClusters] = useState([]);
   const [localCluster, setLocalCluster] = useState(cluster)
   useEffect(() => {
-    setLocalCluster(cluster)
-  }, [cluster])
+    if(cluster) {
+      setLocalCluster(cluster)
+    } else {
+      setLocalCluster(clusters[0])
+    }
+  }, [cluster, clusters])
 
-  const [clusters, setClusters] = useState([]);
 
   function fetchClusters(datasetId, callback) {
     fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
@@ -52,25 +56,24 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
     fetchClusters(dataset.id, (clstrs) => {
       setClusters(clstrs)
       onNew(clstrs)
-      if(!cluster) setLocalCluster(clstrs[0])
     })
-  }, [dataset, onNew, cluster]);
+  }, [dataset, onNew]);
 
   useEffect(() => {
     if(clusterJob?.status == "completed") {
       fetchClusters(dataset.id, (clstrs) => {
-        setClusters(clstrs)
         let cls;
         if(clusterJob.job_name == "cluster"){
           cls = clstrs.find(d => d.id == clusterJob.run_id)
         } else if(clusterJob.job_name == "rm") {
           cls = clstrs[0]
         }
+        setLocalCluster(cls)
+        setClusters(clstrs)
         onNew(clstrs)
-        if(!cluster) setLocalCluster(cls)
       })
     }
-  }, [clusterJob, dataset, setClusters, onNew, cluster, setLocalCluster]);
+  }, [clusterJob, dataset, setClusters, onNew]);
 
   const handleNewCluster = useCallback((e) => {
     e.preventDefault()

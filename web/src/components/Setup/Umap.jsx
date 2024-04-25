@@ -30,12 +30,17 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
 
   const [init, setInit] = useState("")
 
+  const [umaps, setUmaps] = useState([]);
+  
   const [localUmap, setLocalUmap] = useState(umap)
   useEffect(() => {
-    setLocalUmap(umap)
-  }, [umap])
+    if(umap) {
+      setLocalUmap(umap)
+    } else {
+      setLocalUmap(umaps[0])
+    }
+  }, [umap, umaps])
 
-  const [umaps, setUmaps] = useState([]);
   function fetchUmaps(datasetId, callback) {
     fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
       .then(response => response.json())
@@ -53,14 +58,12 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
     fetchUmaps(dataset.id, (umps) => {
       setUmaps(umps)
       onNew(umps)
-      if(!umap) setLocalUmap(umps[0])
     })
-  }, [dataset, onNew, setLocalUmap, umap]);
+  }, [dataset, onNew]);
 
   useEffect(() => {
     if(umapJob?.status == "completed") {
       fetchUmaps(dataset.id, (umps) => {
-        setUmaps(umps)
         let ump;
         if(umapJob.job_name == "umap"){
           ump = umps.find(d => d.id == umapJob.run_id)
@@ -68,12 +71,12 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
           ump = umps[0]
         }
         // onNew(umps, ump)
+        setLocalUmap(ump)
+        setUmaps(umps)
         onNew(umps)
-        console.log("umap??", ump, umap)
-        if(!umap) setLocalUmap(ump)
       })
     }
-  }, [umapJob, dataset, setUmaps, onNew, setLocalUmap, umap]);
+  }, [umapJob, dataset, setUmaps, onNew]);
 
 
   const handleChangeInit = useCallback((e) => {

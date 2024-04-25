@@ -114,6 +114,9 @@
   flex-direction: column;
   padding: 6px;
   max-width: 500px;
+  margin-top: 6px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 .container .hovered-point .key {
@@ -130,21 +133,51 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* max-width: 650px; */
-  /* width: 650px; */
-  /* flex-grow: 1; */
-  /* height: calc(100% - 32px); */
-  /* height: 100%; */
-  /* height: 250px; */
-  /* overflow-y: auto; */
   border: 1px solid lightgray;
   padding: 12px;
   margin-top: 6px;
   margin-right: 12px;
   border-radius: 5px;
 }
+
+/* lets make consistent input styling */
+.filters-container input[type="text"] {
+  padding: 3px;
+  margin: 0 6px;
+  border-radius: 3px;
+  border-width: 1px;
+}
+.filters-container select {
+  border-radius: 3px;
+}
+
 .filters-container button {
   margin-left: 0.3em;
+  margin-top: 1px;
+  border: 1px solid gray;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+.filters-container .new-tag input {
+  width: 60px;
+}
+.filters-container .search-box input {
+  /* height: 24px; */
+  width: 300px;
+}
+.filters-container .search-box select {
+  width: 358px;
+}
+
+.filters-container .clusters-select select {
+  width: 310px;
+}
+.filters-container .new-cluster-label {
+  width: 200px;
+}
+.filters-container .update-cluster-label {
+  width: 250px;
 }
 
 .filters-container .filter-row {
@@ -155,11 +188,32 @@
   border-radius: 4px;
 }
 .filters-container .filter-row.active {
-  background-color: #e0e0e0;
+  background-color: #e6e6e6;
 }
 .filters-container .column-filter select {
   max-width: 120px;
 }
+
+@media screen and (max-width: 1515px) {
+  .filters-container .search-box input {
+    /* height: 24px; */
+    width: 150px;
+  }
+  .filters-container .search-box select {
+    width: 158px;
+  }
+
+  .filters-container .clusters-select select {
+    width: 160px;
+  }
+  .filters-container .update-cluster-label {
+    width: 150px;
+  }
+  .filters-container .new-cluster-label {
+    width: 100px;
+  }
+}
+
 
 @media (prefers-color-scheme: dark) {
   .filters-container .filter-row {
@@ -221,34 +275,13 @@
   padding: 7px;
 } */
 
-.new-tag input {
-  width: 60px;
-}
 
 
-/* Styling for nearest neighbors section */
-.search-box input {
-  /* height: 24px; */
-  width: 300px;
-}
-
-.search-box select {
-  width: 358px;
-
-}
-
-.clusters-select select {
-  width: 300px;
-}
-.update-cluster-label {
-  width: 250px;
-}
-
-.tab-neighbors .deselect {
+/* .tab-neighbors .deselect {
   display: inline-block;
   margin: 5px;
   width: 32px;
-}
+} */
 
 
 /* RIGHT COLUMN */

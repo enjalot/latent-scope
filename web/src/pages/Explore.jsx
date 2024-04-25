@@ -750,7 +750,7 @@ const handleNewCluster = useCallback((label) => {
                   const cl = clusterLabels.find(cluster => cluster.cluster === +e.target.value)
                   if(cl) setSlide(cl)
                 }} value={slide?.cluster >= 0 ? slide.cluster : -1}>
-                  <option value="-1">Select a cluster</option>
+                  <option value="-1">Filter by cluster</option>
                   {clusterLabels?.map((cluster, index) => (
                     <option key={index} value={cluster.cluster}>{cluster.cluster}: {cluster.label}</option>
                   ))}
@@ -786,7 +786,11 @@ const handleNewCluster = useCallback((label) => {
                     console.log("new label", newLabel)
                     handleNewCluster(newLabel)
                   }}>
-                    <input type="text" id="new-label" name="new-label" value={newClusterLabel} onChange={(e) => setNewClusterLabel(e.target.value)} />
+                    <input type="text" 
+                        id="new-label" name="new-label" className="new-cluster-label" 
+                        value={newClusterLabel} onChange={(e) => setNewClusterLabel(e.target.value)} 
+                        placeholder="New Cluster"
+                        />
                     <button type="submit">➕️ Cluster</button>
                   </form>}
               </div>
@@ -836,7 +840,7 @@ const handleNewCluster = useCallback((label) => {
                       fetchTagSet()
                     });
                 }}>
-                  <input type="text" id="newTag" />
+                  <input type="text" id="newTag" placeholder="New Tag" />
                   <button type="submit">➕ Tag</button>
                 </form> : <form onSubmit={(e) => {
                   e.preventDefault();
@@ -853,7 +857,7 @@ const handleNewCluster = useCallback((label) => {
               </div>
             </div>
 
-            {columnFilters && <div className={`filter-row column-filter ${columnIndices?.length ? 'active': ''}`}>
+            {columnFilters?.length ? <div className={`filter-row column-filter ${columnIndices?.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 {columnFilters.map(column => (
                   <span key={column.column}>{column.column}: 
@@ -879,11 +883,11 @@ const handleNewCluster = useCallback((label) => {
               </div>
               <div className="filter-cell right">
               </div>
-            </div>}
+            </div> : null}
 
             <div className={`filter-row ${selectedIndices?.length ? 'active': ''}`}>
               <div className="filter-cell left">
-                Click or Shift+Drag on the map to select points.
+                Shift+Drag on the map to filter by points.
               </div>
               <div className="filter-cell middle">
                   {selectedIndices?.length > 0 ?<span>{selectedIndices?.length} rows</span> : null}
@@ -953,7 +957,7 @@ const handleNewCluster = useCallback((label) => {
                 }}
                 onHover={(index) => handleHover(inputToScopeIndexMap[index])}
                 onClick={handleClicked}
-                height={`calc(100% - ${filtersHeight + 50}px)`}
+                height={`calc(100% - ${filtersHeight + 62}px)`}
             />
 
 {/* {selectedIndices?.length > 0 ?

@@ -59,13 +59,19 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
           data.cluster_id = cluster.id
           setClusterLabels(data)
         }).catch(err => {
-          console.log(err)
+          console.log("ERROR", err)
           setClusterLabels([])
         })
-      } else {
-        setClusterLabels([])
-      }
-  }, [localSelected, setClusterLabels, dataset, cluster, clusterLabelSets])
+    } else {
+      setClusterLabels([])
+    }
+  }, [localSelected, dataset, cluster, clusterLabelSets])
+
+  useEffect(() => {
+    if(clusterLabels?.length) {
+      onLabels(clusterLabels)
+    }
+  }, [clusterLabels, onLabels])
 
   useEffect(() => {
     if(cluster) {
@@ -98,8 +104,8 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
             lbl = { id: "default" }
           }
           // onLabelSets(labelsAvailable, lbl)
-          onLabelSets(labelsAvailable)
           setClusterLabelSets(labelsAvailable)
+          onLabelSets(labelsAvailable)
         }).catch(err => {
           console.log(err)
           setClusterLabelSets([])
@@ -111,11 +117,7 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
     }
   }, [dataset, cluster, clusterLabelsJob, setClusterLabelSets, onLabelSets])
   
-  useEffect(() => {
-    if(clusterLabels?.length) {
-      onLabels(clusterLabels)
-    }
-  }, [clusterLabels, onLabels])
+  
 
 
   const handleNewLabels= useCallback((e) => {

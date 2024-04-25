@@ -1,7 +1,8 @@
 .filter-data-table {
+  width: calc(100% - 14px);
   display: flex;
   flex-direction: column;
-  padding: 12px 0;
+  padding-top: 12px;
   margin-top: 8px;
   border: 1px solid #ccc;
   border-radius: 5px;

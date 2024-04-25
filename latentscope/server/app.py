@@ -176,7 +176,7 @@ def query():
 
     # Convert DataFrame to a list of dictionaries
     rows_json = json.loads(rows[page*per_page:page*per_page+per_page].to_json(orient="records"))
-    print("ROWS JSON", rows_json)
+    # print("ROWS JSON", rows_json)
 
     # send back the rows as json
     return jsonify({

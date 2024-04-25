@@ -16,6 +16,7 @@ import JobProgress from '../components/Job/Progress';
 import { useStartJobPolling } from '../components/Job/Run';
 
 import IndexDataTable from '../components/IndexDataTable';
+import FilterDataTable from '../components/FilterDataTable';
 import Scatter from '../components/Scatter';
   
 const apiUrl = import.meta.env.VITE_API_URL
@@ -227,7 +228,6 @@ function Setup() {
       const filtered = clusterLabelSets.filter(d => d.cluster_id == cluster.id)
       if(selectedClusterLabelSetId && filtered) {
         const found = filtered.find(d => d.id == selectedClusterLabelSetId)
-        console.log("DERIVING", found, filtered, selectedClusterLabelSetId)
         if(found) {
           return found
         } else {
@@ -244,7 +244,6 @@ function Setup() {
   }
   useEffect(() => {
     const labelSet = deriveClusterLabelSet(clusterLabelSets, cluster, selectedClusterLabelSetId)
-    console.log("deriving now", cluster, selectedClusterLabelSetId, labelSet)
     dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: labelSet })
   }, [cluster, selectedClusterLabelSetId, clusterLabelSets])
 
@@ -255,8 +254,12 @@ function Setup() {
   // When the scopeId changes, update the scope and set all the default selections
   useEffect(() => {
     let scope;
+    // console.log("SCOPEID", scopeId)
     if(scopeId && scopes?.length) {
       scope = scopes.find(d => d.id == scopeId)
+    } 
+    if(!scopeId) {
+      dispatch({ type: "SET_SCOPE", payload: null })
     }
     if(scope) {
       console.log("have scope", scope)
@@ -267,7 +270,7 @@ function Setup() {
       setSelectedClusterLabelSetId(scope.cluster_labels_id)
     } else {
       console.log("setting everything to null")
-      if(scopeId)dispatch({ type: "SET_SCOPE", payload: null })
+      if(scopeId) dispatch({ type: "SET_SCOPE", payload: null })
       setSelectedEmbeddingId(null)
       setSelectedUmapId(null)
       setSelectedClusterId(null)
@@ -396,7 +399,6 @@ function Setup() {
     }
   }, [datasetId, clusterLabels, cluster, umap])
 
-
   const prevPointConfig = useRef()
   const [drawPoints, setDrawPoints] = useState([]);
   useEffect(() => {
@@ -438,7 +440,7 @@ function Setup() {
   // ====================================================================================================
   const [stage, setStage] = useState(1);
   useEffect(() => {
-    console.log("update stage?", "embedding", embedding, "umap", umap, "cluster", cluster, "clusterLabelSet", clusterLabelSet)
+    // console.log("update stage?", "embedding", embedding, "umap", umap, "cluster", cluster, "clusterLabelSet", clusterLabelSet)
     if(!embedding) {
       setStage(1)
     } else if(!umap) {
@@ -465,6 +467,7 @@ function Setup() {
     if(ump) dispatch({type: "SET_UMAP", payload: ump })
     // if no umaps for the current embedding, unset the umap
     if(!umaps.filter(d => d.embedding_id == embedding?.id).length) {
+      console.log("handling new umap setting null")
       dispatch({type: "SET_UMAP", payload: null })
     }
   }, [embedding])
@@ -480,6 +483,7 @@ function Setup() {
  
   const handleNewClusterLabelSets = useCallback((labels, lbl) => {
     dispatch({ type: "SET_CLUSTER_LABEL_SETS", payload: labels })
+    console.log("new cluster label sets", labels, lbl)
     if(lbl) {
        dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: lbl })
        setSelectedClusterLabelSetId(lbl.id)
@@ -487,9 +491,14 @@ function Setup() {
     // if no labels for the current cluster, unset the labels
     if(!labels.filter(d => d.cluster_id == cluster?.id).length) {
       // dispatch({ type: "SET_CLUSTER_LABEL_SET", payload: null })
+      console.log("clearing cluster labels?")
       setClusterLabels([])
     }
   }, [setClusterLabels, setSelectedClusterLabelSetId, cluster])
+
+
+  const [defaultIndices, setDefaultIndices] = useState(range(0, 100));
+
 
 
   if (!dataset) return <div>Loading...</div>;
@@ -504,7 +513,7 @@ function Setup() {
                 {scopes ? 
                   <select className="scope-selector" 
                     onChange={(e) => navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)}
-                    value={scope?.id}
+                    value={scope?.id || ""}
                   >
                     <option value="">New scope</option>
                     {scopes.map((scopeOption, index) => (
@@ -634,20 +643,30 @@ function Setup() {
             }}>
             {selectedClusterLabel ? <div>
               <b>Cluster {selectedClusterLabel.index}: {selectedClusterLabel.label}</b>
-                <IndexDataTable 
+                {/* <IndexDataTable 
                 dataset={dataset}
                 indices={selectedClusterLabel.indices} 
                 datasetId={datasetId} 
-                maxRows={100} 
-                />
+                maxRows={100}  
+                /> */}
+                <FilterDataTable
+                dataset={dataset}
+                indices={selectedClusterLabel.indices} 
+                height={drawPoints.length ? "280px" : "95%"} 
+              />
               </div> : <div>
                 {/* <b>Dataset Preview</b> */}
-              <IndexDataTable 
+              {/* <IndexDataTable 
                 dataset={dataset}
                 indices={range(0, 100)} 
                 datasetId={datasetId} 
                 maxRows={100} 
-                />
+                /> */}
+              <FilterDataTable
+                dataset={dataset}
+                indices={defaultIndices} 
+                height={drawPoints.length ? "340px" : "95%"}
+              />
               </div> }
           </div>
           {drawPoints.length ? <div>

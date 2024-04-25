@@ -21,11 +21,9 @@ function Stage({ active, complete, title, subtitle, children, allowToggle = true
   return (
     <div className={`${styles.stage} ${active ? styles.active : ''} ${complete ? styles.complete : ''}`}>
       <h3 onClick={toggleCollapse}>{title} {subtitle && <span className={styles.subtitle}>({subtitle})</span>}</h3>
-      {!isCollapsed && (
-        <div className={styles.content}>
+        <div className={styles.content} style={{display: isCollapsed ? 'none' : 'block'}}>
           {children}
         </div>
-      )}
     </div>
   );
 }
