@@ -12,3 +12,12 @@
   height: calc(100vh - 40px);
 }
 
+.docs-banner {
+  display: block;
+  padding: 10px;
+  width: 100%;
+  background-color: salmon;
+  color: black;
+  text-decoration: underline;
+}
+
