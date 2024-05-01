@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>GitHub Issues &amp; PRs | Latent Scope</title>
+<title>Datavis Survey Analysis | Latent Scope</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.css">
@@ -39,8 +39,8 @@
 import {define} from "./_observablehq/client.js";
 import {registerFile} from "./_observablehq/stdlib.js";
 
-registerFile("./data/plot-issues/input.parquet", {"name":"./data/plot-issues/input.parquet","path":"./_file/data/plot-issues/input.e0f83d2a.parquet","lastModified":1709668909612});
-registerFile("./data/plot-issues/scopes-001.parquet", {"name":"./data/plot-issues/scopes-001.parquet","path":"./_file/data/plot-issues/scopes-001.1a92c7da.parquet","lastModified":1713964366103});
+registerFile("./data/datavis-survey/input.parquet", {"name":"./data/datavis-survey/input.parquet","path":"./_file/data/datavis-survey/input.3c68cc5a.parquet","lastModified":1714582192174});
+registerFile("./data/datavis-survey/scopes-001.parquet", {"name":"./data/datavis-survey/scopes-001.parquet","path":"./_file/data/datavis-survey/scopes-001.a868628d.parquet","lastModified":1714589778291});
 
 define({id: "b56a2c7c", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
 display(await(
@@ -86,23 +86,17 @@ display(await(
 ))
 }});
 
-define({id: "87615f11", inline: true, inputs: ["selected","Inputs","tableData","htl","display"], body: async (selected,Inputs,tableData,htl,display) => {
+define({id: "ad40d13a", inline: true, inputs: ["selected","Inputs","tableData","htl","display"], body: async (selected,Inputs,tableData,htl,display) => {
 display(await(
 selected.length == 1 ? Inputs.table([tableData[selected[0]]], { 
       columns: [
-        "title", "body",
-        "state",
-        "created_at",
-        "closed_at",
+        "DataVizNotUnderstood",
+        "Role",
+        "YearsDataVizExperience",
+        "Location",
         "label", 
         "cluster"
       ],
-      width: {
-        "title": 250,
-        "state": 40,
-        "label": 250,
-        "cluster": 40
-      },
       rows: 1 
     }) : htl.html`<div style="height:43px"></div>`
   
@@ -127,22 +121,17 @@ canvas.value = []
 return {canvas};
 }});
 
-define({id: "faa6bfd0", inputs: ["Inputs","tableData"], outputs: ["table"], body: (Inputs,tableData) => {
+define({id: "4fd62423", inputs: ["Inputs","tableData"], outputs: ["table"], body: (Inputs,tableData) => {
 const table = Inputs.table(tableData, { 
       columns: [
-        "title", "body",
-        "state",
-        "created_at",
-        "closed_at",
+        "DataVizNotUnderstood",
+        "Role",
+        "YearsDataVizExperience",
+        "Location",
         "label", 
         "cluster"
       ],
-      width: {
-        "title": 250,
-        "state": 40,
-        "label": 250,
-        "cluster": 40
-      },
+      
       rows: 25
     })
 return {table};
@@ -183,10 +172,10 @@ if(selected.length > 1) {
 return {tableData};
 }});
 
-define({id: "54bf3609", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
+define({id: "3864f1ca", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
 const db = DuckDBClient.of({
-  input: FileAttachment("./data/plot-issues/input.parquet"),
-  scope: FileAttachment("./data/plot-issues/scopes-001.parquet")
+  input: FileAttachment("./data/datavis-survey/input.parquet"),
+  scope: FileAttachment("./data/datavis-survey/scopes-001.parquet")
 });
 return {db};
 }});
@@ -235,8 +224,8 @@ return {scatter};
     <section class="observablehq-section-active">
       <summary>Example Analysis</summary>
       <ol>
-    <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
-    <li class="observablehq-link observablehq-link-active"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./datavis-survey">Datavis Survey</a></li>
+    <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
     <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
     </section>
@@ -310,7 +299,7 @@ return {scatter};
 <style>
 </style>
 <h1>Latent Scope: Plot Issues &amp; Pull Requests</h1>
-<h2><a href="https://osf.io/mrghc/?view_only" target="_blank" rel="noopener noreferrer">Source data</a>. Generated with <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a></h2>
+<h2><a href="https://gist.github.com/curran/003cca0643e9947162359268821415f5" target="_blank" rel="noopener noreferrer">Source data</a>. Generated with <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a></h2>
 <div style="border: 1px solid gray;">
   <span id="cell-b56a2c7c" class="observablehq--loading"></span>
 </div>
@@ -320,24 +309,24 @@ return {scatter};
   <div style="display:inline-block">
     <span id="cell-ca638f0b" class="observablehq--loading"></span>
   </div>
-  <span id="cell-87615f11" class="observablehq--loading"></span>
+  <span id="cell-ad40d13a" class="observablehq--loading"></span>
 </div>
 <div>
 <span id="cell-0d4fc4a7" class="observablehq--loading"></span>
 </div>
 <div id="cell-475e24c1" class="observablehq observablehq--block"></div>
 <div id="cell-c48adcf3" class="observablehq observablehq--block"></div>
-<div id="cell-faa6bfd0" class="observablehq observablehq--block"></div>
+<div id="cell-4fd62423" class="observablehq observablehq--block"></div>
 <div id="cell-667d1db1" class="observablehq observablehq--block"></div>
 <div id="cell-28b7ce7d" class="observablehq observablehq--block"></div>
 <div id="cell-0aa84107" class="observablehq observablehq--block"></div>
 <div id="cell-87812cc5" class="observablehq observablehq--block"></div>
-<div id="cell-54bf3609" class="observablehq observablehq--block"></div>
+<div id="cell-3864f1ca" class="observablehq observablehq--block"></div>
 <div id="cell-7dd34b16" class="observablehq observablehq--block"></div>
 <div id="cell-0e0057e1" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
-<nav><a rel="prev" href="./datavis-survey"><span>Datavis Survey</span></a><a rel="next" href="./us-federal-laws"><span>US Federal Laws</span></a></nav>
+<nav><a rel="prev" href="./exporting-data"><span>Exporting data</span></a><a rel="next" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
 <div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T17:52:21">May 1, 2024</a>.</div>
 </footer>
 </div>

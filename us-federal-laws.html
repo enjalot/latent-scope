@@ -12,7 +12,7 @@
 <link rel="modulepreload" href="./_observablehq/client.js">
 <link rel="modulepreload" href="./_observablehq/runtime.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
-<link rel="modulepreload" href="./_npm/@duckdb/duckdb-wasm@1.28.0/_esm.js">
+<link rel="modulepreload" href="./_observablehq/stdlib/duckdb.js">
 <link rel="modulepreload" href="./_import/components/scatter.8e757dc8.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
@@ -21,9 +21,9 @@
 <link rel="modulepreload" href="./_npm/d3-color@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/apache-arrow@16.0.0/_esm.js">
 <link rel="modulepreload" href="./_npm/parquet-wasm@0.6.0/_esm.js">
-<link rel="modulepreload" href="./_observablehq/stdlib/duckdb.js">
 <link rel="modulepreload" href="./_npm/htl@0.3.1/_esm.js">
 <link rel="modulepreload" href="./_observablehq/stdlib/inputs.js">
+<link rel="modulepreload" href="./_npm/@duckdb/duckdb-wasm@1.28.0/_esm.js">
 <link rel="modulepreload" href="./_npm/isoformat@0.2.1/_esm.js">
 <link rel="modulepreload" href="./_npm/pub-sub-es@2.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/regl@2.1.0/_esm.js">
@@ -39,8 +39,8 @@
 import {define} from "./_observablehq/client.js";
 import {registerFile} from "./_observablehq/stdlib.js";
 
-registerFile("./data/us-federal-laws/input.parquet", {"name":"./data/us-federal-laws/input.parquet","path":"./_file/data/us-federal-laws/input.10b10bb1.parquet","lastModified":1714593641918});
-registerFile("./data/us-federal-laws/scopes-001.parquet", {"name":"./data/us-federal-laws/scopes-001.parquet","path":"./_file/data/us-federal-laws/scopes-001.1e814c69.parquet","lastModified":1714593641922});
+registerFile("./data/us-federal-laws/input.parquet", {"name":"./data/us-federal-laws/input.parquet","path":"./_file/data/us-federal-laws/input.10b10bb1.parquet","lastModified":1710445266568});
+registerFile("./data/us-federal-laws/scopes-001.parquet", {"name":"./data/us-federal-laws/scopes-001.parquet","path":"./_file/data/us-federal-laws/scopes-001.1e814c69.parquet","lastModified":1710452788042});
 
 define({id: "b56a2c7c", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
 display(await(
@@ -177,10 +177,10 @@ if(selected.length > 1) {
 return {tableData};
 }});
 
-define({id: "91f87652", outputs: ["duckdb"], body: async () => {
-const duckdb = await import("./_npm/@duckdb/duckdb-wasm@1.28.0/_esm.js");
+define({id: "46e85306", outputs: ["DuckDBClient"], body: async () => {
+const {DuckDBClient} = await import("./_observablehq/stdlib/duckdb.js");
 
-return {duckdb};
+return {DuckDBClient};
 }});
 
 define({id: "d6c9bc9b", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
@@ -235,6 +235,7 @@ return {scatter};
     <section class="observablehq-section-active">
       <summary>Example Analysis</summary>
       <ol>
+    <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
     <li class="observablehq-link observablehq-link-active"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
@@ -325,13 +326,13 @@ return {scatter};
 <div id="cell-28b7ce7d" class="observablehq observablehq--block"></div>
 <div id="cell-0aa84107" class="observablehq observablehq--block"></div>
 <div id="cell-87812cc5" class="observablehq observablehq--block"></div>
-<div id="cell-91f87652" class="observablehq observablehq--block"></div>
+<div id="cell-46e85306" class="observablehq observablehq--block"></div>
 <div id="cell-d6c9bc9b" class="observablehq observablehq--block"></div>
 <div id="cell-7dd34b16" class="observablehq observablehq--block"></div>
 <div id="cell-0e0057e1" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T16:21:49">May 1, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T17:52:21">May 1, 2024</a>.</div>
 </footer>
 </div>

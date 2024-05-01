@@ -35,6 +35,7 @@ import "./_observablehq/client.js";
     <section>
       <summary>Example Analysis</summary>
       <ol>
+    <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
     <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
@@ -46,10 +47,17 @@ import "./_observablehq/client.js";
 <nav>
 <div>Contents</div>
 <ol>
+<li class="observablehq-secondary-link"><a href="#filters">Filters</a></li>
+<li class="observablehq-secondary-link"><a href="#filters%3A-similarity-search">Filters: Similarity Search</a></li>
+<li class="observablehq-secondary-link"><a href="#filters%3A-cluster">Filters: Cluster</a></li>
+<li class="observablehq-secondary-link"><a href="#filters%3A-tags">Filters: Tags</a></li>
+<li class="observablehq-secondary-link"><a href="#filters%3A-category">Filters: Category</a></li>
+<li class="observablehq-secondary-link"><a href="#filters%3A-selected-points">Filters: Selected points</a></li>
 <li class="observablehq-secondary-link"><a href="#curate">Curate</a></li>
 <li class="observablehq-secondary-link"><a href="#bulk-actions%3A-clusters">Bulk Actions: Clusters</a></li>
 <li class="observablehq-secondary-link"><a href="#bulk-actions%3A-tags">Bulk Actions: Tags</a></li>
 <li class="observablehq-secondary-link"><a href="#bulk-actions%3A-delete">Bulk Actions: Delete</a></li>
+<li class="observablehq-secondary-link"><a href="#export">Export</a></li>
 </ol>
 </nav>
 </aside>
@@ -114,17 +122,54 @@ import "./_observablehq/client.js";
 </header>
 <main id="observablehq-main" class="observablehq">
 <h1 id="explore" tabindex="-1"><a class="observablehq-header-anchor" href="#explore">Explore</a></h1>
-<p>If you've <a href="/install-and-config">Installed &amp; Configured</a> Latent Scope and generated <a href="/your-first-scope">Your first scope</a> you are ready to explore your data!</p>
-<p>Being able to pull together your data into meaningful groups, whether its through automatic clustering, similarity search or selecting areas of the map</p>
+<p>If you've <a href="install-and-config">Installed &amp; Configured</a> Latent Scope and generated <a href="your-first-scope">Your first scope</a> you are ready to explore your data!</p>
+<img src="./_file/assets/explore-curate/explore.1d744358.png" alt="Explore" class="pageshot">
+<p>The first thing you may notice is that you can interact with the map visualization on the left. You can pan and zoom.</p>
+<img src="./_file/assets/explore-curate/zoomed.81b5fdeb.png" alt="Zoomed" class="pageshot">
+<p>You can hover over points to see their values, clicking and dragging will lasso select multiple points.</p>
+<img src="./_file/assets/explore-curate/filter-select.1e405e6c.png" alt="select multiple points" class="pageshot">
+<h1 id="filters" tabindex="-1"><a class="observablehq-header-anchor" href="#filters">Filters</a></h1>
+<p>The panel at the top right of the page provides a number of ways to filter your data.</p>
+<img src="./_file/assets/explore-curate/filters.14fda9ec.png" alt="Filters" class="screenshot">
+<p>All rows of your data that match the filters will be shown in the table below and highlighted on the map. We will also cover bulk actions on filtered rows later in this guide.
+First, let's go through each of the filters.</p>
+<h2 id="filters%3A-similarity-search" tabindex="-1"><a class="observablehq-header-anchor" href="#filters%3A-similarity-search">Filters: Similarity Search</a></h2>
+<p>You can do a nearest neighbors similarity search by embedding the search text with the same embedding model used to create your scope.</p>
+<img src="./_file/assets/explore-curate/filter-search.1dc60950.png" alt="Filter search" class="pageshot">
+<p><em>You can optionally use any other embeddings you've created in the setup process, which may provide interesting insight into what different embedding models consider similar.</em></p>
+<h2 id="filters%3A-cluster" tabindex="-1"><a class="observablehq-header-anchor" href="#filters%3A-cluster">Filters: Cluster</a></h2>
+<p>You can select a cluster from the dropdown list to see only the datapoints in that cluster. You are able to change the cluster of a given datapoint using the dropdown inside the table. You can also bulk edit the cluster membership via the 📍 icon in the bulk actions menu.</p>
+<img src="./_file/assets/explore-curate/filter-cluster.76a9fef0.png" alt="Filter cluster" class="pageshot">
+<h2 id="filters%3A-tags" tabindex="-1"><a class="observablehq-header-anchor" href="#filters%3A-tags">Filters: Tags</a></h2>
+<p>If you've tagged any datapoints you can filter the table to only those with a given tag by clicking on it. You can tag datapoints at any time by clicking on the tag in the table row.</p>
+<img src="./_file/assets/explore-curate/filter-tagged.2b7eab7f.png" alt="Filter tags" class="pageshot">
+_You can also create a new tag in the right hand side if you have no tags selected, or rename a tag if you have one selected._
+<h2 id="filters%3A-category" tabindex="-1"><a class="observablehq-header-anchor" href="#filters%3A-category">Filters: Category</a></h2>
+<p>If your dataset has categorical columns (determined by Latent Scope as a column with 20 or fewer unique values when you ingest it), you can filter on their values.</p>
+<img src="./_file/assets/explore-curate/filter-column.a72ae524.png" alt="Filter categories" class="pageshot">
+<p><em>In the example data for your first scope the "Role" column has a handful of unique categories, so here we are filtering on all survey respondants who identified as Leadership.</em></p>
+<h2 id="filters%3A-selected-points" tabindex="-1"><a class="observablehq-header-anchor" href="#filters%3A-selected-points">Filters: Selected points</a></h2>
+<p>As stated above, when you click on a point or click and drag around multiple points on the map you filter to thosse.</p>
+<img src="./_file/assets/explore-curate/filter-select.1e405e6c.png" alt="Filter select" class="pageshot">
 <h1 id="curate" tabindex="-1"><a class="observablehq-header-anchor" href="#curate">Curate</a></h1>
-<p>A large motivation behind Latent Scope is not just to get a better view of your data, but to curate it in a way that would otherwise be far too manual and cumbersome.</p>
+<p>A large motivation behind Latent Scope is not just to get a better view of your data, but to curate it in a way that would otherwise be far too manual and cumbersome. Now that you can filter to meaningful subsets of points, there are a few actions you may want to take with them.</p>
 <h2 id="bulk-actions%3A-clusters" tabindex="-1"><a class="observablehq-header-anchor" href="#bulk-actions%3A-clusters">Bulk Actions: Clusters</a></h2>
-<p>The automatically generated clusters are intended to give you a head-start, a way to start organizing your data. You may find that there are datapoints that belong to the wrong cluster, or require a new cluster all together. For this we have bulk actions.</p>
+<p>The automatically generated clusters are intended to give you a head-start, a way to start organizing your data. You may find that there are datapoints that belong to the wrong cluster, or require a new cluster all together. You can update the cluster membership of filtered points via the 📍 icon and then selecting the cluster you want to set them to from the dropdown menu.</p>
+<img src="./_file/assets/explore-curate/curate-combine-cluster.a096059e.png" alt="Combine clusters" class="pageshot">
 <h2 id="bulk-actions%3A-tags" tabindex="-1"><a class="observablehq-header-anchor" href="#bulk-actions%3A-tags">Bulk Actions: Tags</a></h2>
+<p>You can add or remove a tag to all of your filtered points using the 🏷️ icon in the bulk action menu.</p>
+<img src="./_file/assets/explore-curate/curate-tag.fba5b885.png" alt="Curate tag" class="pageshot">
 <h2 id="bulk-actions%3A-delete" tabindex="-1"><a class="observablehq-header-anchor" href="#bulk-actions%3A-delete">Bulk Actions: Delete</a></h2>
+<p>If you find "bad" data in your dataset you may want to delete it from the scope altogether. You can delete filtered rows via the 🗑️ icon in the bulk action menu:</p>
+<img src="./_file/assets/explore-curate/curate-bulk-delete.e9ad827a.png" alt="Curate tag" class="pageshot">
+<p>When you delete rows they are only deleted from the scope data, not the original input data. You may have multiple scopes for a given input dataset and only the scope you are working on is affected.</p>
+<img src="./_file/assets/explore-curate/curate-deleted.5e6e7086.png" alt="Curate tag" class="pageshot">
+<p>Furthermore, we record all bulk actions performed on a scope in the <code>scopes/scope-001-transactions.json</code> file which has the original indices of the points affected by each bulk action. This way if you ever regret a decision you can figure out what was done. In the future we can make an undo feature using these transactions.</p>
+<h1 id="export" tabindex="-1"><a class="observablehq-header-anchor" href="#export">Export</a></h1>
+<p>Now that you've curated your data, you may want to export it for use in another part of your workflow or for publishing your own analysis. Check out the next section on <a href="exporting-data">Exporting data</a>!</p>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./your-first-scope"><span>Your First Scope</span></a><a rel="next" href="./exporting-data"><span>Exporting data</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T16:21:49">May 1, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T17:52:21">May 1, 2024</a>.</div>
 </footer>
 </div>

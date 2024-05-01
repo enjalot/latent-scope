@@ -35,6 +35,7 @@ import "./_observablehq/client.js";
     <section>
       <summary>Example Analysis</summary>
       <ol>
+    <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
     <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
@@ -121,9 +122,8 @@ import "./_observablehq/client.js";
 <p>Let's walk through creating your first scope. You can use the sample data in this guide or use your own data and follow along.
 To use the sample data you can <a href="https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/datavis-misunderstood.csv" target="_blank" rel="noopener noreferrer">download this csv</a>
 of survey questions and answers extracted from the <a href="https://gist.github.com/curran/003cca0643e9947162359268821415f5" target="_blank" rel="noopener noreferrer">2022 Data Visualization Society annual survey</a>.</p>
-<p>[YOUTUBE VIDEO WALKTHRU]</p>
 <h1 id="starting-the-tool" tabindex="-1"><a class="observablehq-header-anchor" href="#starting-the-tool">Starting the tool</a></h1>
-<p>If you've already <a href="/install-and-config">installed &amp; configured</a> Latent Scope, you can start the web UI</p>
+<p>If you've already <a href="install-and-config">installed &amp; configured</a> Latent Scope, you can start the web UI</p>
 <pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> ~/latent-scope-data
 ls-serve
 </code></pre>
@@ -172,18 +172,18 @@ Setting the <strong>Min Dist</strong> parameter higher will effectively spread o
 <p>This last step can make a huge difference in the exploration and curation experience, especially for larger datasets with lots of clusters. The goal is to summarize each cluster based on a sampling of the entries that fall in that cluster.</p>
 <img src="./_file/assets/first-scope/labels-01.c5b33517.png" alt="Project step" class="pageshot">
 <p>By default we just label each cluster with it's index, and if you want a very fast local CPU option you can use the <strong>nltk top-words</strong> method.
-Otherwise, you can choose from a short list of LLM providers to summarize your entries. See the <a href="/install-and-config#third-party-api-keys">Install &amp; Configure section</a> to add API keys for providers.</p>
+Otherwise, you can choose from a short list of LLM providers to summarize your entries. See the <a href="install-and-config#third-party-api-keys">Install &amp; Configure section</a> to add API keys for providers.</p>
 <img src="./_file/assets/first-scope/labels-models.f8a03e45.png" alt="Project step" class="pageshot">
 <p><em>We are actively looking to add <a href="https://github.com/enjalot/latent-scope/issues/2" target="_blank" rel="noopener noreferrer">more LLM models</a> and allow for <a href="https://github.com/enjalot/latent-scope/issues/35" target="_blank" rel="noopener noreferrer">custom endpoints</a>. In our experience the larger the LLM the better it performs, so we recommend using a service until local LLMs get more powerful (next month?)</em></p>
 <img src="./_file/assets/first-scope/labels-02.c3434ef6.png" alt="Project step" class="pageshot">
 <h1 id="save-scope" tabindex="-1"><a class="observablehq-header-anchor" href="#save-scope">Save Scope</a></h1>
 <p>The final step is really just naming your scope and giving it an optional description. <img src="./_file/assets/first-scope/scope-01.6a6413fd.png" alt="Project step" class="pageshot"></p>
-<p>Click the <strong>New Scope</strong> button to save the scope and pull together all of the data generated via the process into a convenient format ready for <a href="/exporting-data">Export</a> or <a href="/explore-and-curate">Exploration and Curation</a>.</p>
+<p>Click the <strong>New Scope</strong> button to save the scope and pull together all of the data generated via the process into a convenient format ready for <a href="exporting-data">Export</a> or <a href="explore-and-curate">Exploration and Curation</a>.</p>
 <img src="./_file/assets/first-scope/end.141d39f4.png" alt="Project step" class="pageshot">
 <p>Hopefully you find a new perspective on your data!</p>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./install-and-config"><span>Install &amp; Configure</span></a><a rel="next" href="./explore-and-curate"><span>Explore and Curate</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T16:21:49">May 1, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T17:52:21">May 1, 2024</a>.</div>
 </footer>
 </div>
