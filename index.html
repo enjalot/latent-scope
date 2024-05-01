@@ -1,18 +1,150 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Latent Scope</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Latent Scope</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/latent-scope/assets/index-cdAZXWR5.js"></script>
-    <link rel="stylesheet" crossorigin href="/latent-scope/assets/index-YtnC6oSN.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
-</html>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.css">
+<link rel="modulepreload" href="./_observablehq/client.js">
+<link rel="modulepreload" href="./_observablehq/runtime.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.js">
+<script type="module">
+
+import "./_observablehq/client.js";
+
+</script>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link observablehq-link-active"><a href="./">Latent Scope</a></li>
+  </ol>
+  <ol>
+    <section>
+      <summary>Guides</summary>
+      <ol>
+    <li class="observablehq-link"><a href="./install-and-config">Install &amp; Configure</a></li>
+    <li class="observablehq-link"><a href="./your-first-scope">Your First Scope</a></li>
+    <li class="observablehq-link"><a href="./explore-and-curate">Explore and Curate</a></li>
+    <li class="observablehq-link"><a href="./exporting-data">Exporting data</a></li>
+      </ol>
+    </section>
+    <section>
+      <summary>Example Analysis</summary>
+      <ol>
+    <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
+      </ol>
+    </section>
+  </ol>
+</nav>
+<script>{Object.assign(document.createElement("a"),{href:""}).password&&location.replace(location.href);const e=document.querySelector("#observablehq-sidebar"),t=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?t.checked=r==="true":t.indeterminate=!0;for(const o of document.querySelectorAll("#observablehq-sidebar summary")){const s=o.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${o.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<style>
+
+  #observablehq-header a[href] {
+    color: inherit;
+  }
+  
+  #observablehq-header a[target="_blank"] {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    text-decoration: none;
+  }
+  
+  #observablehq-header a[target="_blank"]:hover span {
+    text-decoration: underline;
+  }
+  
+  #observablehq-header a[target="_blank"]::after {
+    content: "\2197";
+  }
+  
+  #observablehq-header a[target="_blank"]:not(:hover, :focus)::after {
+    // color: var(--theme-foreground-muted);
+  }
+  
+  @container not (min-width: 640px) {
+    .hide-if-small {
+      display: none;
+    }
+  }
+  
+  .pageshot {
+    width: 60%;
+  }
+  .screenshot {
+    width: 55%;
+    margin: 0 24px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    margin-bottom: 16px;
+  }
+  
+  </style>
+  <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
+    <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
+      <a href="./">
+        Latent Scope
+      </a>
+      <span style="display: flex; align-items: baseline; gap: 0.5rem; font-size: 14px;">
+        <a target="_blank" href="https://github.com/enjalot/latent-scope" rel="noopener noreferrer">GitHub</a>
+        <a target="_blank" href="https://pypi.org/project/latentscope/" rel="noopener noreferrer">Python Module</a>
+        <a target="_blank" href="https://discord.gg/x7NvpnM4pY" rel="noopener noreferrer">Discord</a>
+        
+        <a target="_blank" href="https://github.com/enjalot/latent-scope-observable-examples" rel="noopener noreferrer">Examples Source</a>
+      </span>
+    </div>
+  </div>
+</header>
+<main id="observablehq-main" class="observablehq">
+<h1 id="latent-scope" tabindex="-1"><a class="observablehq-header-anchor" href="#latent-scope">Latent Scope</a></h1>
+<p>Latent Scope is an open source tool for interactively curating unstructured data. The tool enables a repeatable process for embedding, projecting, clustering, summarizing and visualizating text data.</p>
+<img src="./_file/assets/explore-curate/curate-combined-cluster.6e13554c.png" alt="The End" class="pageshot">
+<h2 id="getting-started" tabindex="-1"><a class="observablehq-header-anchor" href="#getting-started">Getting started</a></h2>
+<p>Follow the guides to get started:</p>
+<ol>
+<li><a href="/install-and-config">Install and Configure</a></li>
+<li><a href="/your-first-scope">Your First Scope</a></li>
+<li><a href="/explore-and-curate">Explore and Curate</a></li>
+<li><a href="/export-data">Exporting Data</a></li>
+</ol>
+<h2 id="example-analysis" tabindex="-1"><a class="observablehq-header-anchor" href="#example-analysis">Example Analysis</a></h2>
+<p>What can you do with Latent Scope? The following examples demonstrate the kinds of perspective and insights you can gain from your unstructured text data.</p>
+<ul>
+<li>Explore free-responses from surveys in this <a href="/datavis-survey">datavis survey analysis</a></li>
+<li>Cluster thousands of <a href="/plot-issues">GitHub issues and PRs</a></li>
+<li>Sort through two hundred years and tens of thousands of <a href="/us-federal-laws">US Federal laws</a></li>
+<li>Look in the mirror of your <a href="/tweets">tweets</a></li>
+</ul>
+<h2 id="inputs-and-outputs" tabindex="-1"><a class="observablehq-header-anchor" href="#inputs-and-outputs">Inputs and Outputs</a></h2>
+<p>To use Latent Scope you will need some data to input. This can be in the form of a CSV file, parquet file or a Pandas DataFrame.
+Currently, the focus of Latent Scope is unstructured text data, so you will need to choose a column that will be put through the process.</p>
+<img src="./_file/assets/process-crop.3880c569.png" alt="The End" class="screenshot">
+<p>The process will then go through a series of steps that result in a <strong>scope</strong>, a data format that captures the output of the process in a handy parquet file with a JSON metadata file.</p>
+<h2 id="design-principles" tabindex="-1"><a class="observablehq-header-anchor" href="#design-principles">Design Principles</a></h2>
+<p>This tool is meant to be a part of a broader data workflow, a lens that helps you see things in your data that you wouldn't otherwise have. That means it needs to be easy to get data in, and easily get useful data out.</p>
+<ol>
+<li>
+<p>Flat files
+All of the data that drives the app is stored in flat files. This is so that both final and intermediate outputs can easily be exported for other uses. It also makes it easy to see the status of any part of the process.</p>
+</li>
+<li>
+<p>Remember everything
+This tool is intended to aid in research, the purpose is experimentation and exploration. I developed it because far too often I try a lot of things and then I forget what parameters lead me down a promising path in the first place. All choices you make in the process are recorded in metadata files along with the output of the process.</p>
+</li>
+<li>
+<p>It's all about the indices
+We consider an input dataset the source of truth, a list of rows that can be indexed into. So all downstream operations, whether its embeddings, pointing to nearest neighbors or assigning data points to clusters, all use indices into the input dataset.</p>
+</li>
+</ol>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="next" href="./install-and-config"><span>Install &amp; Configure</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T16:21:49">May 1, 2024</a>.</div>
+</footer>
+</div>

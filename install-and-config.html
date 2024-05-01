@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Install and Configure | Latent Scope</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.css">
+<link rel="modulepreload" href="./_observablehq/client.js">
+<link rel="modulepreload" href="./_observablehq/runtime.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.js">
+<script type="module">
+
+import "./_observablehq/client.js";
+
+</script>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="./">Latent Scope</a></li>
+  </ol>
+  <ol>
+    <section class="observablehq-section-active">
+      <summary>Guides</summary>
+      <ol>
+    <li class="observablehq-link observablehq-link-active"><a href="./install-and-config">Install &amp; Configure</a></li>
+    <li class="observablehq-link"><a href="./your-first-scope">Your First Scope</a></li>
+    <li class="observablehq-link"><a href="./explore-and-curate">Explore and Curate</a></li>
+    <li class="observablehq-link"><a href="./exporting-data">Exporting data</a></li>
+      </ol>
+    </section>
+    <section>
+      <summary>Example Analysis</summary>
+      <ol>
+    <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
+      </ol>
+    </section>
+  </ol>
+</nav>
+<script>{Object.assign(document.createElement("a"),{href:""}).password&&location.replace(location.href);const e=document.querySelector("#observablehq-sidebar"),t=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?t.checked=r==="true":t.indeterminate=!0;for(const o of document.querySelectorAll("#observablehq-sidebar summary")){const s=o.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${o.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type), h2:first-child, :not(h1) + h2">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#configure">Configure</a></li>
+<li class="observablehq-secondary-link"><a href="#third-party-api-keys">Third Party API keys</a></li>
+</ol>
+</nav>
+</aside>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<style>
+
+  #observablehq-header a[href] {
+    color: inherit;
+  }
+  
+  #observablehq-header a[target="_blank"] {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    text-decoration: none;
+  }
+  
+  #observablehq-header a[target="_blank"]:hover span {
+    text-decoration: underline;
+  }
+  
+  #observablehq-header a[target="_blank"]::after {
+    content: "\2197";
+  }
+  
+  #observablehq-header a[target="_blank"]:not(:hover, :focus)::after {
+    // color: var(--theme-foreground-muted);
+  }
+  
+  @container not (min-width: 640px) {
+    .hide-if-small {
+      display: none;
+    }
+  }
+  
+  .pageshot {
+    width: 60%;
+  }
+  .screenshot {
+    width: 55%;
+    margin: 0 24px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    margin-bottom: 16px;
+  }
+  
+  </style>
+  <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
+    <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
+      <a href="./">
+        Latent Scope
+      </a>
+      <span style="display: flex; align-items: baseline; gap: 0.5rem; font-size: 14px;">
+        <a target="_blank" href="https://github.com/enjalot/latent-scope" rel="noopener noreferrer">GitHub</a>
+        <a target="_blank" href="https://pypi.org/project/latentscope/" rel="noopener noreferrer">Python Module</a>
+        <a target="_blank" href="https://discord.gg/x7NvpnM4pY" rel="noopener noreferrer">Discord</a>
+        
+        <a target="_blank" href="https://github.com/enjalot/latent-scope-observable-examples" rel="noopener noreferrer">Examples Source</a>
+      </span>
+    </div>
+  </div>
+</header>
+<main id="observablehq-main" class="observablehq">
+<h1 id="install-and-configure" tabindex="-1"><a class="observablehq-header-anchor" href="#install-and-configure">Install and Configure</a></h1>
+<p>To process your own data you'll need to install the python module and run it.
+It's recommended to create a folder where the library can store it's data.
+This is also a convenient place to make a virtual environment.</p>
+<pre data-language="bash"><code class="language-bash"><span class="hljs-comment"># make a directory for your data to live</span>
+<span class="hljs-built_in">mkdir</span> ~/latent-scope-data
+<span class="hljs-built_in">cd</span> ~/latent-scope-data
+
+<span class="hljs-comment"># create &amp; activate virtual environment</span>
+python3 -m venv lsenv
+<span class="hljs-built_in">source</span> lsenv/bin/activate
+
+<span class="hljs-comment"># install the module</span>
+pip install latentscope
+<span class="hljs-comment"># run the module, specifying the data directory and optionally a port to run on</span>
+ls-serve ~/latent-scope-data --port 5001
+</code></pre>
+<p>This will start a local webserver from which you can access the tool at <a href="http://localhost:5001" target="_blank" rel="noopener noreferrer">http://localhost:5001</a></p>
+<p>The next time you want to run Latent Scope you can simply do:</p>
+<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> ~/latent-scope-data
+ls-serve
+</code></pre>
+<h2 id="configure" tabindex="-1"><a class="observablehq-header-anchor" href="#configure">Configure</a></h2>
+<p>There are a few settings Latent Scope uses to run, they are stored in a <code>.env</code> file where you run <code>ls-serve</code> so if you followed the above example you could look in<br>
+<code>~/latent-scope-data/.env</code></p>
+<p>You can also see the settings in the web UI at <a href="http://localhost:5001/settings" target="_blank" rel="noopener noreferrer">http://localhost:5001/settings</a></p>
+<h2 id="third-party-api-keys" tabindex="-1"><a class="observablehq-header-anchor" href="#third-party-api-keys">Third Party API keys</a></h2>
+<p>You may want to use third party APIs like OpenAI to run parts of the latent scope process.
+You can do so by setting the API keys in <a href="http://localhost:5001/settings" target="_blank" rel="noopener noreferrer">http://localhost:5001/settings</a></p>
+<img src="./_file/assets/install/settings-api-keys.6e66515d.png" alt="Settings API Keys" style="height: 200px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); margin-top: 5px;">
+<p>or by manually adding them to <code>.env</code>:</p>
+<pre data-language="bash"><code class="language-bash">OPENAI_API_KEY=XXX
+TOGETHER_API_KEY=XXX
+MISTRAL_API_KEY=XXX
+VOYAGE_API_KEY=XXX
+COHERE_API_KEY=XXX
+</code></pre>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="prev" href="./"><span>Latent Scope</span></a><a rel="next" href="./your-first-scope"><span>Your First Scope</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T16:21:49">May 1, 2024</a>.</div>
+</footer>
+</div>

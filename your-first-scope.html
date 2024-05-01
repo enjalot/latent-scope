@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Your First Scope | Latent Scope</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
+<link rel="stylesheet" type="text/css" href="./_observablehq/theme-air,near-midnight.css">
+<link rel="modulepreload" href="./_observablehq/client.js">
+<link rel="modulepreload" href="./_observablehq/runtime.js">
+<link rel="modulepreload" href="./_observablehq/stdlib.js">
+<script type="module">
+
+import "./_observablehq/client.js";
+
+</script>
+<input id="observablehq-sidebar-toggle" type="checkbox" title="Toggle sidebar">
+<label id="observablehq-sidebar-backdrop" for="observablehq-sidebar-toggle"></label>
+<nav id="observablehq-sidebar">
+  <ol>
+    <label id="observablehq-sidebar-close" for="observablehq-sidebar-toggle"></label>
+    <li class="observablehq-link"><a href="./">Latent Scope</a></li>
+  </ol>
+  <ol>
+    <section class="observablehq-section-active">
+      <summary>Guides</summary>
+      <ol>
+    <li class="observablehq-link"><a href="./install-and-config">Install &amp; Configure</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./your-first-scope">Your First Scope</a></li>
+    <li class="observablehq-link"><a href="./explore-and-curate">Explore and Curate</a></li>
+    <li class="observablehq-link"><a href="./exporting-data">Exporting data</a></li>
+      </ol>
+    </section>
+    <section>
+      <summary>Example Analysis</summary>
+      <ol>
+    <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
+      </ol>
+    </section>
+  </ol>
+</nav>
+<script>{Object.assign(document.createElement("a"),{href:""}).password&&location.replace(location.href);const e=document.querySelector("#observablehq-sidebar"),t=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?t.checked=r==="true":t.indeterminate=!0;for(const o of document.querySelectorAll("#observablehq-sidebar summary")){const s=o.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${o.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
+<aside id="observablehq-toc" data-selector="h1:not(:first-of-type), h2:first-child, :not(h1) + h2">
+<nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#starting-the-tool">Starting the tool</a></li>
+<li class="observablehq-secondary-link"><a href="#the-process">The Process</a></li>
+<li class="observablehq-secondary-link"><a href="#uploading-your-data">Uploading your data</a></li>
+<li class="observablehq-secondary-link"><a href="#embed">Embed</a></li>
+<li class="observablehq-secondary-link"><a href="#project">Project</a></li>
+<li class="observablehq-secondary-link"><a href="#cluster">Cluster</a></li>
+<li class="observablehq-secondary-link"><a href="#auto-label-clusters">Auto-Label Clusters</a></li>
+<li class="observablehq-secondary-link"><a href="#save-scope">Save Scope</a></li>
+</ol>
+</nav>
+</aside>
+<div id="observablehq-center">
+<header id="observablehq-header">
+<style>
+
+  #observablehq-header a[href] {
+    color: inherit;
+  }
+  
+  #observablehq-header a[target="_blank"] {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    text-decoration: none;
+  }
+  
+  #observablehq-header a[target="_blank"]:hover span {
+    text-decoration: underline;
+  }
+  
+  #observablehq-header a[target="_blank"]::after {
+    content: "\2197";
+  }
+  
+  #observablehq-header a[target="_blank"]:not(:hover, :focus)::after {
+    // color: var(--theme-foreground-muted);
+  }
+  
+  @container not (min-width: 640px) {
+    .hide-if-small {
+      display: none;
+    }
+  }
+  
+  .pageshot {
+    width: 60%;
+  }
+  .screenshot {
+    width: 55%;
+    margin: 0 24px;
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.3);
+    margin-bottom: 16px;
+  }
+  
+  </style>
+  <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
+    <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
+      <a href="./">
+        Latent Scope
+      </a>
+      <span style="display: flex; align-items: baseline; gap: 0.5rem; font-size: 14px;">
+        <a target="_blank" href="https://github.com/enjalot/latent-scope" rel="noopener noreferrer">GitHub</a>
+        <a target="_blank" href="https://pypi.org/project/latentscope/" rel="noopener noreferrer">Python Module</a>
+        <a target="_blank" href="https://discord.gg/x7NvpnM4pY" rel="noopener noreferrer">Discord</a>
+        
+        <a target="_blank" href="https://github.com/enjalot/latent-scope-observable-examples" rel="noopener noreferrer">Examples Source</a>
+      </span>
+    </div>
+  </div>
+</header>
+<main id="observablehq-main" class="observablehq">
+<h1 id="your-first-scope" tabindex="-1"><a class="observablehq-header-anchor" href="#your-first-scope">Your First Scope</a></h1>
+<p>Let's walk through creating your first scope. You can use the sample data in this guide or use your own data and follow along.
+To use the sample data you can <a href="https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/datavis-misunderstood.csv" target="_blank" rel="noopener noreferrer">download this csv</a>
+of survey questions and answers extracted from the <a href="https://gist.github.com/curran/003cca0643e9947162359268821415f5" target="_blank" rel="noopener noreferrer">2022 Data Visualization Society annual survey</a>.</p>
+<p>[YOUTUBE VIDEO WALKTHRU]</p>
+<h1 id="starting-the-tool" tabindex="-1"><a class="observablehq-header-anchor" href="#starting-the-tool">Starting the tool</a></h1>
+<p>If you've already <a href="/install-and-config">installed &amp; configured</a> Latent Scope, you can start the web UI</p>
+<pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> ~/latent-scope-data
+ls-serve
+</code></pre>
+<p>and visit <a href="http://localhost:5001" target="_blank" rel="noopener noreferrer">http://localhost:5001</a></p>
+<h1 id="the-process" tabindex="-1"><a class="observablehq-header-anchor" href="#the-process">The Process</a></h1>
+<p>Latent Scope takes you through a five step process resulting in what we call a "scope". A scope contains all the relevant data needed to visualize and curate your dataset using embeddings. Each step in this process feeds into the next, this guide will walk you through the basics of the process so you can try it on your own data.</p>
+<img src="./_file/assets/process-crop.3880c569.png" alt="The End" class="screenshot">
+<p>At the end of the process you will see something like this, with your data ready to explore, curate and export:</p>
+<img src="./_file/assets/first-scope/end.141d39f4.png" alt="The End" class="pageshot">
+<h1 id="uploading-your-data" tabindex="-1"><a class="observablehq-header-anchor" href="#uploading-your-data">Uploading your data</a></h1>
+<p>The first thing you'll want to do is drop your data into the upload file box on the homepage. This will prompt you to choose a name for your project, which will essentially be a folder where the input data and all subsequent processed data will be stored. You can also <a href="https://github.com/enjalot/latent-scope/tree/main/notebooks" target="_blank" rel="noopener noreferrer">see examples</a> of using Python notebooks to ingest larger data files directly from Python in the github repository.</p>
+<img src="./_file/assets/first-scope/upload.6a96709e.png" alt="Upload a dataset" class="screenshot">
+<h1 id="embed" tabindex="-1"><a class="observablehq-header-anchor" href="#embed">Embed</a></h1>
+<p>The first step in the process is embedding your data. Immediately after uploading your data you will be taken to the "Setup" page to begin the process. There will be quite a lot on the screen: The top panel shows some information about the dataset including the inferred types of each column, The left column contains the panels for each step of the process and the right column contains a table view of a sample of the dataset.</p>
+<img src="./_file/assets/first-scope/embed-01.a5f06839.png" alt="Embed step" class="pageshot">
+<p>Let's take a closer look at the options available in the first step:</p>
+<img src="./_file/assets/first-scope/embed-01a.ffa47c22.png" alt="Embed step" class="screenshot">
+<p>The most important choice is <strong>Embedding on column</strong> which determines which field you want to use to embed your data. This should be a text field that you want to explore, typically it will be unstructured.</p>
+<p>The <em>Optional Prefix</em> allows you to prepend text to each piece of text being embedded, which some embedding models encourage (i.e "Document for retrieval:"). The <em>Batch Size</em> is how many text entries are being processed at once, reducing this can save memory if running locally but will make the process take longer.</p>
+<p>The next most important choice is the <strong>model</strong>:</p>
+<img src="./_file/assets/first-scope/embed-models.cd01dd78.png" alt="Embed step" class="pageshot">
+<p>We currently support a number of open source models via the HuggingFace transformers library (with <a href="https://github.com/enjalot/latent-scope/issues/14" target="_blank" rel="noopener noreferrer">plans for more</a>) as well as proprietary API models from providers like OpenAI, Mistral, Cohere and Voyage.</p>
+<p>When you click <strong>New Embedding</strong> the tool will run the command for calculating the embeddings on the column you've chosen.</p>
+<img src="./_file/assets/first-scope/embed-02.45a01cb1.png" alt="Embed step" class="pageshot">
+<p><em>Note the progress display is showing the actual output of the command line command being run by Latent Scope.</em></p>
+<p>When the embedding command is complete, you can select the new embedding via the <strong>Use Embedding</strong> button. In later steps you may decide you want to try a different embedding, in which case you would return to this step and generate another one to use.</p>
+<img src="./_file/assets/first-scope/embed-03.f3f7acc7.png" alt="Embed step" class="pageshot">
+<h1 id="project" tabindex="-1"><a class="observablehq-header-anchor" href="#project">Project</a></h1>
+<p>Once you've chosen your embedding, the next step is projecting the high-dimensional vectors to 2D points for use in clustering and visualization. We use <a href="https://umap-learn.readthedocs.io/en/latest/index.html" target="_blank" rel="noopener noreferrer">UMAP</a> to do this projection.</p>
+<img src="./_file/assets/first-scope/umap-01.7225b279.png" alt="Project step" class="pageshot">
+<p>There are a couple of choices, which are set to default values based on the number of data points in your dataset. Setting the <strong>Neighbors</strong> parameter higher will preserve more global information but also take longer.
+Setting the <strong>Min Dist</strong> parameter higher will effectively spread out the points, which may make clustering less effective.</p>
+<img src="./_file/assets/first-scope/umap-01a.34b8a214.png" alt="Project step" class="screenshot">
+<p><em>The <strong>+Align UMAPs</strong> button is an advanced option that can be used to generate UMAPs that consider multiple embeddings at one time, which will be explained in more detail in a future tutorial.</em></p>
+<p>You may find yourself trying UMAP with several different parameter choices to get a projection that looks suitable. Once you're happy (enough) click <strong>Use UMAP</strong> to progress to the next step!</p>
+<img src="./_file/assets/first-scope/umap-03.19cc9905.png" alt="Project step" class="pageshot">
+<p><em>An important philosophy behind Latent Scope is that each step tends to be more of an experiment than a certain choice. Often times when progressing through the steps we want to go back and try different choices. Latent Scope was designed to make it easy to keep track of your experimentations and allow you to easily select from them.</em></p>
+<h1 id="cluster" tabindex="-1"><a class="observablehq-header-anchor" href="#cluster">Cluster</a></h1>
+<p>The next step is to group our points into clusters using <a href="https://hdbscan.readthedocs.io/en/latest/index.html" target="_blank" rel="noopener noreferrer">HDBSCAN</a>.</p>
+<img src="./_file/assets/first-scope/cluster-01.a36c0df1.png" alt="Project step" class="pageshot">
+<p>The default options are scaled to your dataset size, but may need to be tweaked to get a suitable number of clusters. I've found that keeping the <strong>Min Samples</strong> low (and sometimes shrinking the <strong>Cluster Selection Epsilon</strong>) can help increase the number of clusters if there are too few.</p>
+<img src="./_file/assets/first-scope/cluster-01a.4be6b767.png" alt="Project step" class="screenshot">
+<p>When you are happy with a clustering, click <strong>Use Cluster</strong> and move on to the last step!</p>
+<img src="./_file/assets/first-scope/cluster-03.c04915bd.png" alt="Project step" class="pageshot">
+<h1 id="auto-label-clusters" tabindex="-1"><a class="observablehq-header-anchor" href="#auto-label-clusters">Auto-Label Clusters</a></h1>
+<p>This last step can make a huge difference in the exploration and curation experience, especially for larger datasets with lots of clusters. The goal is to summarize each cluster based on a sampling of the entries that fall in that cluster.</p>
+<img src="./_file/assets/first-scope/labels-01.c5b33517.png" alt="Project step" class="pageshot">
+<p>By default we just label each cluster with it's index, and if you want a very fast local CPU option you can use the <strong>nltk top-words</strong> method.
+Otherwise, you can choose from a short list of LLM providers to summarize your entries. See the <a href="/install-and-config#third-party-api-keys">Install &amp; Configure section</a> to add API keys for providers.</p>
+<img src="./_file/assets/first-scope/labels-models.f8a03e45.png" alt="Project step" class="pageshot">
+<p><em>We are actively looking to add <a href="https://github.com/enjalot/latent-scope/issues/2" target="_blank" rel="noopener noreferrer">more LLM models</a> and allow for <a href="https://github.com/enjalot/latent-scope/issues/35" target="_blank" rel="noopener noreferrer">custom endpoints</a>. In our experience the larger the LLM the better it performs, so we recommend using a service until local LLMs get more powerful (next month?)</em></p>
+<img src="./_file/assets/first-scope/labels-02.c3434ef6.png" alt="Project step" class="pageshot">
+<h1 id="save-scope" tabindex="-1"><a class="observablehq-header-anchor" href="#save-scope">Save Scope</a></h1>
+<p>The final step is really just naming your scope and giving it an optional description. <img src="./_file/assets/first-scope/scope-01.6a6413fd.png" alt="Project step" class="pageshot"></p>
+<p>Click the <strong>New Scope</strong> button to save the scope and pull together all of the data generated via the process into a convenient format ready for <a href="/exporting-data">Export</a> or <a href="/explore-and-curate">Exploration and Curation</a>.</p>
+<img src="./_file/assets/first-scope/end.141d39f4.png" alt="Project step" class="pageshot">
+<p>Hopefully you find a new perspective on your data!</p>
+</main>
+<footer id="observablehq-footer">
+<nav><a rel="prev" href="./install-and-config"><span>Install &amp; Configure</span></a><a rel="next" href="./explore-and-curate"><span>Explore and Curate</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-01T16:21:49">May 1, 2024</a>.</div>
+</footer>
+</div>
