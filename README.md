@@ -3,10 +3,14 @@
 [![PyPI version](https://img.shields.io/pypi/v/latentscope.svg)](https://pypi.org/project/latentscope/)
 
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
-[<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Example exploration">](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-007)
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/end.png?raw=true" height="480px"  alt="Setup your scope">
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-explore.png?raw=true" height="480px"  alt="Explore and Curate your data">
 
 The power of machine learning models to encode unstructured data into high-dimensional embeddings is relatively under-explored. Retrieval Augmented Generation has taken off as a popular usecase for embeddings, but do you feel confident in your understanding of why certain data is being retrieved? Do you have a clear picture of what all is in your dataset? Latentscope is like a microscope that allows you to get a new perspective on what's happening to your data when it's embedded. You can try similarity search with different embeddings, peruse automatically labeled clusters and zoom in on individual data points all while keeping the context of your entire dataset. 
 
+<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/process-crop.png?raw=true" height="480px"  alt="Setup your scope">
+
+Latent Scope is a tool that encodes a process, taking your input data and running it through the steps of Embedding, Projecting, Clustering and Labeling resulting in a nicely structured annotation useful as input to further analysis. You can also explore the annotated data within the web UI to get a better understanding of your dataset and curate it to get a better quality dataset.
 
 ## Getting started
 Follow the documentation guides to get started:
