@@ -24,7 +24,6 @@ What can you do with Latent Scope? The following examples demonstrate the kinds 
 * Explore free-responses from surveys in this [datavis survey analysis](https://enjalot.github.io/latent-scope/datavis-survey)
 * Cluster thousands of [GitHub issues and PRs](https://enjalot.github.io/latent-scope/plot-issues)
 * Sort through two hundred years and tens of thousands of [US Federal laws](https://enjalot.github.io/latent-scope/us-federal-laws)
-* Look in the mirror of your [tweets](https://enjalot.github.io/latent-scope/tweets)
 
 
 ### Quick Start
