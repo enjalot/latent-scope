@@ -1,56 +1,40 @@
-name: Build Web Client
+# name: Build Web Client
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'web/**'
+# on:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - 'web/**'
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: Checkout Repository
+#       uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: '18'
+#     - name: Set up Node.js
+#       uses: actions/setup-node@v1
+#       with:
+#         node-version: '18'
 
-    - name: Install Dependencies
-      run: npm install
-      working-directory: ./web
+#     - name: Install Dependencies
+#       run: npm install
+#       working-directory: ./web
 
-    - name: Build
-      # run: npm run production
-      run: npm run read_only
-      working-directory: ./web
+#     - name: Build
+#       run: npm run read_only
+#       working-directory: ./web
     
-    - name: List build directory contents
-      run: ls -lah dist/read_only
-      working-directory: ./web
+#     - name: List build directory contents
+#       run: ls -lah dist/read_only
+#       working-directory: ./web
 
-    # - name: Remove dist from .gitignore
-    #   run: sed -i '/dist/d' ./web/.gitignore
-
-    - name: Deploy to Dist Branch
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.BUILD_TOKEN }}
-        # publish_dir: .
-        publish_dir: web/dist/read_only # puts the index.html and assets in root of repo
-        # publish_branch: built
-        publish_branch: gh-pages
-        keep_files: false
-    # - name: Deploy to Built Branch
-    #   run: |
-    #     pwd
-    #     git config --global user.name 'Ian Johnson'
-    #     git config --global user.email 'enjalot@gmail.com'
-    #     git checkout -b built
-    #     git add -f web/dist/production
-    #     git commit -m "Deploying build"
-    #     git push --force https://${{ secrets.MY_PERSONAL_TOKEN }}:x-oauth-basic@github.com/enjalot/latent-scope.git built
-
+#     - name: Deploy to Dist Branch
+#       uses: peaceiris/actions-gh-pages@v3
+#       with:
+#         github_token: ${{ secrets.BUILD_TOKEN }}
+#         publish_dir: web/dist/read_only # puts the index.html and assets in root of repo
+#         publish_branch: gh-pages
+#         keep_files: false
