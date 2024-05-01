@@ -7,16 +7,20 @@ Quickly embed, project, cluster and explore a dataset. This project is a new kin
 
 The power of machine learning models to encode unstructured data into high-dimensional embeddings is relatively under-explored. Retrieval Augmented Generation has taken off as a popular usecase for embeddings, but do you feel confident in your understanding of why certain data is being retrieved? Do you have a clear picture of what all is in your dataset? Latentscope is like a microscope that allows you to get a new perspective on what's happening to your data when it's embedded. You can try similarity search with different embeddings, peruse automatically labeled clusters and zoom in on individual data points all while keeping the context of your entire dataset. 
 
-### Demo
-This tool is meant to be run locally or on a trusted server to process data for viewing in the latent scope. You can see the result of the process in a read-only [live demo](https://enjalot.github.io/latent-scope):
-* [datavis survey responses](https://enjalot.github.io/latent-scope/#/datasets/datavis-misunderstood/explore/scopes-001) - 700 survey responses
-* [Dolly 15k](https://enjalot.github.io/latent-scope/#/datasets/dolly15k/explore/scopes-001) - 15k instructions
-* [r/DadJokes](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-004) - 50k dad jokes
-* [emotion](https://enjalot.github.io/latent-scope/#/datasets/emotion/explore/scopes-001) - 400k emotion statements from Twitter
 
-The source of each demo dataset is documented in the notebooks linked below. Each demo was chosen to represent different scales of data as well as some common usecases.
+## Getting started
+Follow the documentation guides to get started:
+1. [Install and Configure](https://enjalot.github.io/latent-scope/install-and-config)
+2. [Your First Scope](https://enjalot.github.io/latent-scope/your-first-scope)
+3. [Explore and Curate](https://enjalot.github.io/latent-scope/explore-and-curate)
+4. [Exporting Data](https://enjalot.github.io/latent-scope/export-data)
 
-[<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/dadabase-scopes.png?raw=true" width="100%"  alt="Dadabase demo scopes">](https://enjalot.github.io/latent-scope)
+## Example Analysis
+What can you do with Latent Scope? The following examples demonstrate the kinds of perspective and insights you can gain from your unstructured text data.
+* Explore free-responses from surveys in this [datavis survey analysis](https://enjalot.github.io/latent-scope/datavis-survey)
+* Cluster thousands of [GitHub issues and PRs](https://enjalot.github.io/latent-scope/plot-issues)
+* Sort through two hundred years and tens of thousands of [US Federal laws](https://enjalot.github.io/latent-scope/us-federal-laws)
+* Look in the mirror of your [tweets](https://enjalot.github.io/latent-scope/tweets)
 
 
 ### Quick Start
@@ -31,12 +35,8 @@ ls-serve
 ```
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!  
-<img src="https://github.com/enjalot/latent-scope/blob/main/documentation/home.png?raw=true" width="320px"  alt="Ingest">  <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/0-ingest.png?raw=true" width="320px"  alt="Ingest">
 
-Once ingested, you will go through the following 6 steps: Embed, UMAP, Cluster, Label, Scope and Explore 
- <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/1-embed.png?raw=true" width="320px"  alt="Embed"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/2-umap.png?raw=true" width="320px"  alt="UMAP"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/3-cluster.png?raw=true" width="320px"  alt="Cluster"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/4-label.png?raw=true" width="320px"  alt="Label"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/5-scope.png?raw=true" width="320px"  alt="Scope"> <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/6-explore.png?raw=true" width="320px"  alt="Scope">
-
-Each step focuses on the relevant choices to move you to the next step. For example choosing which embedding model you want to use to embed with, or the parameters for UMAP. It's very likely you may want to try several choices at each step, which is why the final step before "Explore" is to make a "scope". You can make multiple scopes, as seen in the [dadabase example](https://enjalot.github.io/latent-scope/#/datasets/dadabase/explore/scopes-004) to explore your data through different lenses (i.e. OpenAI embeddings vs. Jina v2).
+See the [Your First Scope](https://enjalot.github.io/latent-scope/your-first-scope) guide for a detailed walk-through of the process.
 
 ### Python interface
 You can also ingest data from a Pandas dataframe using the Python interface:
