@@ -130,7 +130,9 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
             json.dump([], f)
     
     input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
-    combined_df = input_df[input_df.index.isin(scope_parquet['ls_index'])]
+    input_df.reset_index(inplace=True)
+    input_df = input_df[input_df['index'].isin(scope_parquet['ls_index'])]
+    combined_df = input_df.join(scope_parquet.set_index('ls_index'), on='index', rsuffix='_ls')
     combined_df.to_parquet(os.path.join(directory, id + "-input.parquet"))
 
     print("wrote scope", id)

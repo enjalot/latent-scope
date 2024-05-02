@@ -239,7 +239,8 @@ def delete_embedding():
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}*")}"'
+    path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}*").replace(" ", "\\ ")
+    command = f'rm -rf {path}'
     for umap in umaps_to_delete:
         delete_umap(dataset, umap)
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
@@ -284,10 +285,12 @@ def delete_umap(dataset, umap_id):
     
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}*")}"'
+    path = os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}*").replace(" ", "\\ ")
+    command = f'rm -rf {path}'
     # Create the rm -rf commands from the clusters_to_delete list
     for cluster in clusters_to_delete:
-        command += f'; rm "{os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*")}"'
+        cpath = os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*").replace(" ", "\\ ")
+        command += f'; rm -rf {cpath}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -310,7 +313,8 @@ def delete_cluster():
     dataset = request.args.get('dataset')
     cluster_id = request.args.get('cluster_id')
     job_id = str(uuid.uuid4())
-    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_id}*")}"'
+    path = os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_id}*").replace(" ", "\\ ")
+    command = f'rm -rf {path}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -354,7 +358,8 @@ def delete_scope():
     scope_id = request.args.get('scope_id')
 
     job_id = str(uuid.uuid4())
-    command = f'rm -rf "{os.path.join(DATA_DIR, dataset, "scopes", f"{scope_id}*")}"'
+    path = os.path.join(DATA_DIR, dataset, "scopes", f"{scope_id}*").replace(" ", "\\ ")
+    command = f'rm -rf {path}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

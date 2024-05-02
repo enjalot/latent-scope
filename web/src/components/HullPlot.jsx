@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 // import { scaleLinear } from 'd3-scale';
 import { line, curveLinearClosed, curveCatmullRomClosed } from 'd3-shape';
 import { select } from 'd3-selection';
-// import { transition } from 'd3-transition';
+import { transition } from 'd3-transition';
 import { easeExpOut, easeExpIn, easeCubicInOut} from 'd3-ease';
 // import { interpolate } from 'flubber';
 

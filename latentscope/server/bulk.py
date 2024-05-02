@@ -164,6 +164,7 @@ def delete_rows():
 
 def update_combined(df, dataset_id, scope_id):
   input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
-  combined_df = input_df[input_df.index.isin(df['ls_index'])]
+  input_df.reset_index(inplace=True)
+  input_df = input_df[input_df['index'].isin(df['ls_index'])]
+  combined_df = input_df.join(df.set_index('ls_index'), on='index', rsuffix='_ls')
   combined_df.to_parquet(os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + "-input.parquet"))
-
