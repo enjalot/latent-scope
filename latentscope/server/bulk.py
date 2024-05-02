@@ -56,6 +56,7 @@ def change_cluster():
 
   # write the parquet
   df.to_parquet(scope_file)
+  update_combined(df, dataset_id, scope_id)
 
   # recalculate the hulls
   for c in clusters:
@@ -104,6 +105,9 @@ def change_cluster_name():
   # update the label column in the parquet
   df[df['cluster'] == cluster]['label'] = new_label
   df.to_parquet(scope_file)
+
+  update_combined(df, dataset_id, scope_id)
+
   #write the scope meta to file
   with open(scope_meta_file, "w") as f:
     json.dump(scope_meta, f, indent=2)
@@ -131,6 +135,8 @@ def delete_rows():
 
   df.to_parquet(scope_file)
 
+  update_combined(df, dataset_id, scope_id)
+
   # recalculate hulls
   scope_meta_file = os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + ".json")
   with open(scope_meta_file) as f:
@@ -155,4 +161,9 @@ def delete_rows():
     "row_ids": row_ids
   })
   return jsonify({"success": True})
+
+def update_combined(df, dataset_id, scope_id):
+  input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
+  combined_df = input_df[input_df.index.isin(df['ls_index'])]
+  combined_df.to_parquet(os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + "-input.parquet"))
 

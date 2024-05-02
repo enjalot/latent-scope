@@ -1,10 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { scaleLinear } from 'd3-scale';
+import { useEffect, useRef } from 'react';
+// import { scaleLinear } from 'd3-scale';
 import { line, curveLinearClosed, curveCatmullRomClosed } from 'd3-shape';
 import { select } from 'd3-selection';
-import { transition } from 'd3-transition';
+// import { transition } from 'd3-transition';
 import { easeExpOut, easeExpIn, easeCubicInOut} from 'd3-ease';
-import { interpolate } from 'flubber';
+// import { interpolate } from 'flubber';
 
 import "./HullPlot.css"
 
@@ -95,21 +95,21 @@ const HullPlot = ({
       .delay(delay)
       .ease(easeCubicInOut)
       .style("opacity", 0.75)
-      // .attr("d", draw)
-      .attrTween("d", function(d,i) {
-        // console.log("d,i", d, i)
-        // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
-        const prev = prevHulls.current ? prevHulls.current[i] : null
-        // console.log(d, prev)
-        if(!prev) return () => draw(d)
-        const inter = interpolate(
-          draw(prev),
-          draw(d)
-        );
-        return function(t) {
-          return inter(t)
-        }
-      })
+      .attr("d", draw)
+      // .attrTween("d", function(d,i) {
+      //   // console.log("d,i", d, i)
+      //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
+      //   const prev = prevHulls.current ? prevHulls.current[i] : null
+      //   // console.log(d, prev)
+      //   if(!prev) return () => draw(d)
+      //   const inter = interpolate(
+      //     draw(prev),
+      //     draw(d)
+      //   );
+      //   return function(t) {
+      //     return inter(t)
+      //   }
+      // })
 
 
     setTimeout(() => {
