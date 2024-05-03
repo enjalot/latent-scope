@@ -1,0 +1,1079 @@
+{
+  "ls_version": "0.2.0",
+  "id": "scopes-001",
+  "embedding_id": "embedding-001",
+  "umap_id": "umap-001",
+  "cluster_id": "cluster-001",
+  "cluster_labels_id": "cluster-001-labels-001",
+  "label": "Datavis Not Understood",
+  "description": "Summarized by GPT-4-Turbo",
+  "dataset": {
+    "id": "datavis-notunderstood",
+    "length": 765,
+    "columns": [
+      "DataVizNotUnderstood",
+      "Role",
+      "YearsDataVizExperience",
+      "Location"
+    ],
+    "text_column": "DataVizNotUnderstood",
+    "column_metadata": {
+      "DataVizNotUnderstood": {
+        "type": "string",
+        "unique_values_count": 755
+      },
+      "Role": {
+        "type": "string",
+        "unique_values_count": 10,
+        "categories": [
+          "Analyst",
+          "Leadership (Manager, Director, VP, etc.)",
+          "Designer",
+          "Developer",
+          "None of these describes my role",
+          "Engineer",
+          "Scientist",
+          "Journalist",
+          "Teacher",
+          "Cartographer"
+        ],
+        "counts": {
+          "Analyst": 240,
+          "Leadership (Manager, Director, VP, etc.)": 110,
+          "Designer": 58,
+          "Developer": 47,
+          "None of these describes my role": 44,
+          "Engineer": 29,
+          "Scientist": 26,
+          "Journalist": 13,
+          "Teacher": 6,
+          "Cartographer": 3
+        }
+      },
+      "YearsDataVizExperience": {
+        "type": "string",
+        "unique_values_count": 31
+      },
+      "Location": {
+        "type": "string",
+        "unique_values_count": 62
+      }
+    },
+    "potential_embeddings": [],
+    "ls_version": "0.2.0"
+  },
+  "embedding": {
+    "id": "embedding-001",
+    "model_id": "transformers-jinaai___jina-embeddings-v2-small-en",
+    "dataset_id": "datavis-notunderstood",
+    "text_column": "DataVizNotUnderstood",
+    "dimensions": 512,
+    "prefix": ""
+  },
+  "umap": {
+    "id": "umap-001",
+    "embedding_id": "embedding-001",
+    "neighbors": 25,
+    "min_dist": 0.1
+  },
+  "cluster": {
+    "id": "cluster-001",
+    "umap_id": "umap-001",
+    "samples": 3,
+    "min_samples": 2,
+    "cluster_selection_epsilon": 0.05,
+    "n_clusters": 80,
+    "n_noise": 125
+  },
+  "cluster_labels": {
+    "id": "cluster-001-labels-001",
+    "cluster_id": "cluster-001",
+    "model_id": "openai-gpt-4-turbo-preview",
+    "text_column": "DataVizNotUnderstood",
+    "context": "",
+    "system_prompt": {
+      "role": "system",
+      "content": "You're job is to summarize lists of items with a short label of no more than 4 words. \n\nThe user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. \nDo not use punctuation, just return a few words that summarize the list."
+    },
+    "max_tokens": 127910
+  },
+  "cluster_labels_lookup": [
+    {
+      "label": "Understanding Acknowledgment",
+      "description": "This is cluster 0 with 6 items.",
+      "hull": [
+        650,
+        720,
+        568,
+        319,
+        587
+      ],
+      "cluster": 0
+    },
+    {
+      "label": "Data Management Challenges",
+      "description": "This is cluster 1 with 10 items.",
+      "hull": [
+        28,
+        759,
+        407,
+        417,
+        46,
+        405
+      ],
+      "cluster": 1
+    },
+    {
+      "label": "Project Management Philosophies",
+      "description": "This is cluster 2 with 6 items.",
+      "hull": [
+        364,
+        135,
+        212,
+        146,
+        367
+      ],
+      "cluster": 2
+    },
+    {
+      "label": "Visualization Time Challenges",
+      "description": "This is cluster 3 with 11 items.",
+      "hull": [
+        444,
+        504,
+        269,
+        217,
+        628,
+        737,
+        5
+      ],
+      "cluster": 3
+    },
+    {
+      "label": "Data Viz Creation Time",
+      "description": "This is cluster 4 with 11 items.",
+      "hull": [],
+      "cluster": 4
+    },
+    {
+      "label": "Complex Simplicity Efforts",
+      "description": "This is cluster 5 with 6 items.",
+      "hull": [
+        404,
+        534,
+        521,
+        762,
+        432
+      ],
+      "cluster": 5
+    },
+    {
+      "label": "Design Time and Value",
+      "description": "This is cluster 6 with 9 items.",
+      "hull": [
+        586,
+        496,
+        669,
+        60,
+        648,
+        715
+      ],
+      "cluster": 6
+    },
+    {
+      "label": "Design philosophy insights",
+      "description": "This is cluster 7 with 6 items.",
+      "hull": [
+        183,
+        275,
+        43,
+        38
+      ],
+      "cluster": 7
+    },
+    {
+      "label": "Design Principles",
+      "description": "This is cluster 8 with 8 items.",
+      "hull": [
+        606,
+        192,
+        421
+      ],
+      "cluster": 8
+    },
+    {
+      "label": "Design Process Insights",
+      "description": "This is cluster 9 with 5 items.",
+      "hull": [
+        563,
+        387,
+        579
+      ],
+      "cluster": 9
+    },
+    {
+      "label": "Design principles challenges",
+      "description": "This is cluster 10 with 4 items.",
+      "hull": [
+        235,
+        588,
+        602,
+        672
+      ],
+      "cluster": 10
+    },
+    {
+      "label": "Effort and Work Insights",
+      "description": "This is cluster 11 with 11 items.",
+      "hull": [
+        423,
+        603,
+        344,
+        159,
+        62
+      ],
+      "cluster": 11
+    },
+    {
+      "label": "Job Understanding Challenges",
+      "description": "This is cluster 12 with 5 items.",
+      "hull": [
+        566,
+        72,
+        310,
+        433
+      ],
+      "cluster": 12
+    },
+    {
+      "label": "Information and Trends",
+      "description": "This is cluster 13 with 7 items.",
+      "hull": [
+        753,
+        58,
+        252,
+        655,
+        642
+      ],
+      "cluster": 13
+    },
+    {
+      "label": "Time Investment Insights",
+      "description": "This is cluster 14 with 39 items.",
+      "hull": [
+        654,
+        703,
+        569,
+        713,
+        226,
+        743,
+        537,
+        522
+      ],
+      "cluster": 14
+    },
+    {
+      "label": "No issues reported",
+      "description": "This is cluster 15 with 6 items.",
+      "hull": [
+        196,
+        698,
+        466,
+        179
+      ],
+      "cluster": 15
+    },
+    {
+      "label": "Data visualization challenges",
+      "description": "This is cluster 16 with 5 items.",
+      "hull": [
+        317,
+        470,
+        709,
+        289,
+        406
+      ],
+      "cluster": 16
+    },
+    {
+      "label": "Data Management Challenges",
+      "description": "This is cluster 17 with 6 items.",
+      "hull": [
+        708,
+        590,
+        234,
+        99
+      ],
+      "cluster": 17
+    },
+    {
+      "label": "Design Principles",
+      "description": "This is cluster 18 with 8 items.",
+      "hull": [
+        224,
+        45,
+        438,
+        763,
+        338,
+        4
+      ],
+      "cluster": 18
+    },
+    {
+      "label": "Data Preparation Challenges",
+      "description": "This is cluster 19 with 5 items.",
+      "hull": [
+        251,
+        156,
+        624,
+        81
+      ],
+      "cluster": 19
+    },
+    {
+      "label": "Project Time Complexity",
+      "description": "This is cluster 20 with 15 items.",
+      "hull": [
+        208,
+        393,
+        301,
+        8,
+        714,
+        736
+      ],
+      "cluster": 20
+    },
+    {
+      "label": "Time and Effort Concerns",
+      "description": "This is cluster 21 with 18 items.",
+      "hull": [
+        584,
+        152,
+        59,
+        623,
+        618,
+        670,
+        266,
+        494
+      ],
+      "cluster": 21
+    },
+    {
+      "label": "Critical Thinking Tips",
+      "description": "This is cluster 22 with 6 items.",
+      "hull": [
+        10,
+        652,
+        605,
+        316
+      ],
+      "cluster": 22
+    },
+    {
+      "label": "Miscellaneous Responses",
+      "description": "This is cluster 23 with 26 items.",
+      "hull": [
+        373,
+        543,
+        281
+      ],
+      "cluster": 23
+    },
+    {
+      "label": "Data Visualization Myths",
+      "description": "This is cluster 24 with 8 items.",
+      "hull": [
+        15,
+        538,
+        211,
+        693,
+        458
+      ],
+      "cluster": 24
+    },
+    {
+      "label": "Creative process challenges",
+      "description": "This is cluster 25 with 4 items.",
+      "hull": [
+        32,
+        356,
+        374
+      ],
+      "cluster": 25
+    },
+    {
+      "label": "Misconceptions about Work",
+      "description": "This is cluster 26 with 11 items.",
+      "hull": [
+        674,
+        484,
+        227,
+        20,
+        760
+      ],
+      "cluster": 26
+    },
+    {
+      "label": "Data Cleaning Challenges",
+      "description": "This is cluster 27 with 19 items.",
+      "hull": [
+        447,
+        172,
+        710,
+        371,
+        695
+      ],
+      "cluster": 27
+    },
+    {
+      "label": "Data Preparation Challenges",
+      "description": "This is cluster 28 with 5 items.",
+      "hull": [
+        506,
+        151,
+        57,
+        105,
+        114
+      ],
+      "cluster": 28
+    },
+    {
+      "label": "Design Appreciation Challenges",
+      "description": "This is cluster 29 with 3 items.",
+      "hull": [
+        68,
+        425,
+        525
+      ],
+      "cluster": 29
+    },
+    {
+      "label": "Misunderstood design importance",
+      "description": "This is cluster 30 with 4 items.",
+      "hull": [
+        142,
+        139,
+        351
+      ],
+      "cluster": 30
+    },
+    {
+      "label": "Complexity and Difficulty",
+      "description": "This is cluster 31 with 5 items.",
+      "hull": [
+        51,
+        345,
+        369,
+        395
+      ],
+      "cluster": 31
+    },
+    {
+      "label": "Expectation Misalignment",
+      "description": "This is cluster 32 with 3 items.",
+      "hull": [
+        527,
+        662,
+        725
+      ],
+      "cluster": 32
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 33 with 4 items.",
+      "hull": [
+        513,
+        88,
+        581,
+        689
+      ],
+      "cluster": 33
+    },
+    {
+      "label": "Attention to Detail",
+      "description": "This is cluster 34 with 4 items.",
+      "hull": [
+        86,
+        408,
+        119,
+        688
+      ],
+      "cluster": 34
+    },
+    {
+      "label": "Project feedback themes",
+      "description": "This is cluster 35 with 7 items.",
+      "hull": [
+        465,
+        560,
+        388,
+        550,
+        265
+      ],
+      "cluster": 35
+    },
+    {
+      "label": "Data Tool Limitations",
+      "description": "This is cluster 36 with 12 items.",
+      "hull": [
+        213,
+        732,
+        164,
+        505,
+        35,
+        96
+      ],
+      "cluster": 36
+    },
+    {
+      "label": "Storytelling techniques",
+      "description": "This is cluster 37 with 4 items.",
+      "hull": [
+        666,
+        562,
+        323,
+        571,
+        514
+      ],
+      "cluster": 37
+    },
+    {
+      "label": "Misconceptions in Design",
+      "description": "This is cluster 38 with 12 items.",
+      "hull": [
+        376,
+        491,
+        93,
+        507
+      ],
+      "cluster": 38
+    },
+    {
+      "label": "Data Analysis Challenges",
+      "description": "This is cluster 39 with 7 items.",
+      "hull": [
+        746,
+        329,
+        609,
+        138,
+        161,
+        133,
+        292
+      ],
+      "cluster": 39
+    },
+    {
+      "label": "Data Visualization Challenges",
+      "description": "This is cluster 40 with 8 items.",
+      "hull": [
+        239,
+        340,
+        157,
+        386,
+        56
+      ],
+      "cluster": 40
+    },
+    {
+      "label": "Importance of Understanding",
+      "description": "This is cluster 41 with 7 items.",
+      "hull": [
+        495,
+        353,
+        389,
+        690,
+        399
+      ],
+      "cluster": 41
+    },
+    {
+      "label": "Dataviz Misconceptions",
+      "description": "This is cluster 42 with 3 items.",
+      "hull": [
+        500,
+        480,
+        154
+      ],
+      "cluster": 42
+    },
+    {
+      "label": "Misunderstood professional challenges",
+      "description": "This is cluster 43 with 8 items.",
+      "hull": [
+        270,
+        567,
+        260,
+        166,
+        684,
+        610
+      ],
+      "cluster": 43
+    },
+    {
+      "label": "Misunderstood Professional Value",
+      "description": "This is cluster 44 with 10 items.",
+      "hull": [
+        65,
+        314,
+        9,
+        758,
+        410,
+        47,
+        757
+      ],
+      "cluster": 44
+    },
+    {
+      "label": "Data Visualization Essentials",
+      "description": "This is cluster 45 with 10 items.",
+      "hull": [
+        199,
+        366,
+        696,
+        582,
+        163,
+        21,
+        361
+      ],
+      "cluster": 45
+    },
+    {
+      "label": "Data Management Insights",
+      "description": "This is cluster 46 with 5 items.",
+      "hull": [
+        19,
+        167,
+        309,
+        508
+      ],
+      "cluster": 46
+    },
+    {
+      "label": "Data Communication Strategy",
+      "description": "This is cluster 47 with 6 items.",
+      "hull": [
+        173,
+        82,
+        511,
+        328
+      ],
+      "cluster": 47
+    },
+    {
+      "label": "Business Knowledge Importance",
+      "description": "This is cluster 48 with 22 items.",
+      "hull": [
+        336,
+        518,
+        450,
+        596,
+        293,
+        476,
+        87,
+        533
+      ],
+      "cluster": 48
+    },
+    {
+      "label": "Challenges in Expertise Development",
+      "description": "This is cluster 49 with 9 items.",
+      "hull": [
+        307,
+        197,
+        744,
+        707,
+        48
+      ],
+      "cluster": 49
+    },
+    {
+      "label": "Excel vs Data Viz Misconceptions",
+      "description": "This is cluster 50 with 5 items.",
+      "hull": [
+        103,
+        454,
+        210,
+        699
+      ],
+      "cluster": 50
+    },
+    {
+      "label": "Data Visualization Challenges",
+      "description": "This is cluster 51 with 11 items.",
+      "hull": [
+        675,
+        306,
+        123,
+        91,
+        532,
+        53
+      ],
+      "cluster": 51
+    },
+    {
+      "label": "Data Visualization Challenges",
+      "description": "This is cluster 52 with 6 items.",
+      "hull": [
+        431,
+        640,
+        54,
+        643
+      ],
+      "cluster": 52
+    },
+    {
+      "label": "Challenges in Decision-Making",
+      "description": "This is cluster 53 with 7 items.",
+      "hull": [
+        585,
+        355,
+        155,
+        291,
+        311
+      ],
+      "cluster": 53
+    },
+    {
+      "label": "Understanding Challenges",
+      "description": "This is cluster 54 with 6 items.",
+      "hull": [
+        67,
+        613,
+        429,
+        731
+      ],
+      "cluster": 54
+    },
+    {
+      "label": "Data visualization challenges",
+      "description": "This is cluster 55 with 5 items.",
+      "hull": [
+        749,
+        545,
+        320,
+        229
+      ],
+      "cluster": 55
+    },
+    {
+      "label": "Resistance to Data Visualization",
+      "description": "This is cluster 56 with 8 items.",
+      "hull": [
+        26,
+        490,
+        665,
+        298,
+        30,
+        61
+      ],
+      "cluster": 56
+    },
+    {
+      "label": "Challenges in Data Visualization",
+      "description": "This is cluster 57 with 10 items.",
+      "hull": [
+        7,
+        174,
+        535,
+        607,
+        198
+      ],
+      "cluster": 57
+    },
+    {
+      "label": "Data Visualization Challenges",
+      "description": "This is cluster 58 with 12 items.",
+      "hull": [
+        134,
+        501,
+        472,
+        558,
+        442
+      ],
+      "cluster": 58
+    },
+    {
+      "label": "Data Visualization Time Commitment",
+      "description": "This is cluster 59 with 23 items.",
+      "hull": [
+        27,
+        3,
+        333,
+        673,
+        222,
+        519,
+        424,
+        740
+      ],
+      "cluster": 59
+    },
+    {
+      "label": "Data Literacy Insights",
+      "description": "This is cluster 60 with 11 items.",
+      "hull": [
+        468,
+        402,
+        294,
+        486,
+        729,
+        25,
+        397,
+        187
+      ],
+      "cluster": 60
+    },
+    {
+      "label": "Data Visualization Misconceptions",
+      "description": "This is cluster 61 with 8 items.",
+      "hull": [
+        126,
+        346,
+        755,
+        194,
+        692,
+        392
+      ],
+      "cluster": 61
+    },
+    {
+      "label": "Data Visualization Importance",
+      "description": "This is cluster 62 with 5 items.",
+      "hull": [
+        463,
+        443,
+        499,
+        141
+      ],
+      "cluster": 62
+    },
+    {
+      "label": "Challenges in Data Visualization",
+      "description": "This is cluster 63 with 12 items.",
+      "hull": [
+        92,
+        685,
+        516,
+        574,
+        272
+      ],
+      "cluster": 63
+    },
+    {
+      "label": "Dataviz Misconceptions",
+      "description": "This is cluster 64 with 14 items.",
+      "hull": [
+        216,
+        113,
+        302,
+        556,
+        102,
+        131
+      ],
+      "cluster": 64
+    },
+    {
+      "label": "Data Visualization Efforts",
+      "description": "This is cluster 65 with 9 items.",
+      "hull": [
+        653,
+        177,
+        723,
+        493,
+        595,
+        186
+      ],
+      "cluster": 65
+    },
+    {
+      "label": "Visualization challenges and value",
+      "description": "This is cluster 66 with 10 items.",
+      "hull": [
+        121,
+        271,
+        721,
+        401,
+        339,
+        677,
+        189
+      ],
+      "cluster": 66
+    },
+    {
+      "label": "Data Visualization Process",
+      "description": "This is cluster 67 with 13 items.",
+      "hull": [
+        168,
+        110,
+        726,
+        706,
+        611,
+        593
+      ],
+      "cluster": 67
+    },
+    {
+      "label": "Data Visualization Challenges",
+      "description": "This is cluster 68 with 27 items.",
+      "hull": [
+        418,
+        89,
+        630,
+        594,
+        203,
+        276,
+        108,
+        629
+      ],
+      "cluster": 68
+    },
+    {
+      "label": "Misconceptions in Data Visualization",
+      "description": "This is cluster 69 with 18 items.",
+      "hull": [
+        730,
+        552,
+        512,
+        461,
+        278,
+        530,
+        370
+      ],
+      "cluster": 69
+    },
+    {
+      "label": "Data Visualization Misconceptions",
+      "description": "This is cluster 70 with 19 items.",
+      "hull": [
+        700,
+        124,
+        608,
+        18,
+        679,
+        341,
+        120
+      ],
+      "cluster": 70
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 71 with 10 items.",
+      "hull": [
+        100,
+        223,
+        580,
+        321,
+        165,
+        348,
+        178
+      ],
+      "cluster": 71
+    },
+    {
+      "label": "Data Reporting Best Practices",
+      "description": "This is cluster 72 with 3 items.",
+      "hull": [
+        549,
+        225,
+        55
+      ],
+      "cluster": 72
+    },
+    {
+      "label": "Data Analysis Insights",
+      "description": "This is cluster 73 with 12 items.",
+      "hull": [
+        284,
+        400,
+        671,
+        526,
+        529,
+        218,
+        555
+      ],
+      "cluster": 73
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 74 with 7 items.",
+      "hull": [
+        546,
+        111,
+        283,
+        326,
+        712,
+        350
+      ],
+      "cluster": 74
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 75 with 4 items.",
+      "hull": [
+        604,
+        290,
+        347,
+        428
+      ],
+      "cluster": 75
+    },
+    {
+      "label": "Data Visualization Advocacy",
+      "description": "This is cluster 76 with 10 items.",
+      "hull": [
+        22,
+        612,
+        83
+      ],
+      "cluster": 76
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 77 with 8 items.",
+      "hull": [
+        188,
+        312,
+        553,
+        195
+      ],
+      "cluster": 77
+    },
+    {
+      "label": "Data Visualization Importance",
+      "description": "This is cluster 78 with 8 items.",
+      "hull": [
+        337,
+        657,
+        705,
+        414,
+        112
+      ],
+      "cluster": 78
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 79 with 25 items.",
+      "hull": [
+        398,
+        377,
+        734,
+        697,
+        637,
+        299,
+        144,
+        464
+      ],
+      "cluster": 79
+    }
+  ],
+  "rows": 747,
+  "columns": [
+    "x",
+    "y",
+    "cluster",
+    "raw_cluster",
+    "label",
+    "ls_index"
+  ],
+  "size": 20553,
+  "timestamp": "2024-05-01 12:54:12"
+}
