@@ -1,0 +1,673 @@
+{
+  "ls_version": "0.2.0",
+  "id": "scopes-001",
+  "embedding_id": "embedding-002",
+  "umap_id": "umap-001",
+  "cluster_id": "cluster-001",
+  "cluster_labels_id": "cluster-001-labels-001",
+  "label": "Plot issues & PRs",
+  "description": "OpenAI large embeddings an GPT4-turbo summary",
+  "dataset": {
+    "id": "plot_issues",
+    "length": 1864,
+    "columns": [
+      "text",
+      "state",
+      "created_at",
+      "closed_at",
+      "user",
+      "type",
+      "title",
+      "body"
+    ],
+    "text_column": "text",
+    "column_metadata": {
+      "text": {
+        "type": "string",
+        "unique_values_count": 1863
+      },
+      "state": {
+        "type": "string",
+        "unique_values_count": 2,
+        "categories": [
+          "closed",
+          "open"
+        ]
+      },
+      "created_at": {
+        "type": "string",
+        "unique_values_count": 1864
+      },
+      "closed_at": {
+        "type": "string",
+        "unique_values_count": 1446
+      },
+      "user": {
+        "type": "string",
+        "unique_values_count": 135
+      },
+      "type": {
+        "type": "string",
+        "unique_values_count": 2,
+        "categories": [
+          "pull_request",
+          "issue"
+        ]
+      },
+      "title": {
+        "type": "string",
+        "unique_values_count": 1848
+      },
+      "body": {
+        "type": "string",
+        "unique_values_count": 1695
+      }
+    },
+    "potential_embeddings": []
+  },
+  "embedding": {
+    "id": "embedding-002",
+    "model_id": "openai-text-embedding-3-large",
+    "dataset_id": "plot_issues",
+    "text_column": "text",
+    "dimensions": 3072,
+    "prefix": ""
+  },
+  "umap": {
+    "id": "umap-001",
+    "embedding_id": "embedding-002",
+    "neighbors": 25,
+    "min_dist": 0.1
+  },
+  "cluster": {
+    "id": "cluster-001",
+    "umap_id": "umap-001",
+    "samples": 15,
+    "min_samples": 5,
+    "cluster_selection_epsilon": 0.005,
+    "n_clusters": 35,
+    "n_noise": 524
+  },
+  "cluster_labels": {
+    "id": "cluster-001-labels-001",
+    "cluster_id": "cluster-001",
+    "model_id": "openai-gpt-4-turbo-preview",
+    "text_column": "text",
+    "context": "The items in this list are github issues and pull requests for a data visualization library. Please summarize the content accordingly",
+    "system_prompt": {
+      "role": "system",
+      "content": "You're job is to summarize lists of items with a short label of no more than 4 words. \nThe items in this list are github issues and pull requests for a data visualization library. Please summarize the content accordingly\nThe user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. \nDo not use punctuation, just return a few words that summarize the list."
+    },
+    "max_tokens": 127887
+  },
+  "cluster_labels_lookup": [
+    {
+      "label": "Faceting and errors",
+      "description": "This is cluster 0 with 136 items.",
+      "hull": [
+        842,
+        1336,
+        525,
+        597,
+        1166,
+        195,
+        255,
+        1751,
+        1597
+      ],
+      "cluster": 0
+    },
+    {
+      "label": "Dodge enhancements",
+      "description": "This is cluster 1 with 25 items.",
+      "hull": [
+        1003,
+        1169,
+        586,
+        1078,
+        69,
+        68,
+        972
+      ],
+      "cluster": 1
+    },
+    {
+      "label": "Testing and TypeScript updates",
+      "description": "This is cluster 2 with 87 items.",
+      "hull": [
+        319,
+        926,
+        515,
+        560,
+        1426,
+        1778,
+        894
+      ],
+      "cluster": 2
+    },
+    {
+      "label": "Documentation and Features",
+      "description": "This is cluster 3 with 31 items.",
+      "hull": [
+        461,
+        806,
+        729,
+        1228,
+        193,
+        274
+      ],
+      "cluster": 3
+    },
+    {
+      "label": "Typos and Links",
+      "description": "This is cluster 4 with 54 items.",
+      "hull": [
+        10,
+        3,
+        797,
+        908,
+        884,
+        40,
+        174,
+        876,
+        1272,
+        1510
+      ],
+      "cluster": 4
+    },
+    {
+      "label": "Documentation updates",
+      "description": "This is cluster 5 with 44 items.",
+      "hull": [
+        434,
+        465,
+        654,
+        7,
+        569,
+        594,
+        700,
+        1631
+      ],
+      "cluster": 5
+    },
+    {
+      "label": "SVG enhancements",
+      "description": "This is cluster 6 with 39 items.",
+      "hull": [
+        1469,
+        1772,
+        454,
+        1752,
+        180,
+        1366,
+        1201,
+        1581
+      ],
+      "cluster": 6
+    },
+    {
+      "label": "CSS and Styling",
+      "description": "This is cluster 7 with 46 items.",
+      "hull": [
+        933,
+        1611,
+        1290,
+        1738,
+        509,
+        299,
+        1590,
+        1817,
+        1858,
+        219,
+        1753,
+        1268
+      ],
+      "cluster": 7
+    },
+    {
+      "label": "Transform enhancements and documentation",
+      "description": "This is cluster 8 with 45 items.",
+      "hull": [
+        1070,
+        1117,
+        1674,
+        1207,
+        1222,
+        1455,
+        1398,
+        1013,
+        1075
+      ],
+      "cluster": 8
+    },
+    {
+      "label": "Scale and insets",
+      "description": "This is cluster 9 with 28 items.",
+      "hull": [
+        954,
+        1314,
+        1325,
+        853,
+        1077,
+        740,
+        811
+      ],
+      "cluster": 9
+    },
+    {
+      "label": "Sorting enhancements",
+      "description": "This is cluster 10 with 50 items.",
+      "hull": [
+        1726,
+        1519,
+        32,
+        1515,
+        602,
+        855,
+        629,
+        1656
+      ],
+      "cluster": 10
+    },
+    {
+      "label": "Interval Adjustments",
+      "description": "This is cluster 11 with 97 items.",
+      "hull": [
+        1389,
+        1429,
+        1409,
+        1550,
+        1112,
+        1111,
+        294,
+        1154,
+        1102
+      ],
+      "cluster": 11
+    },
+    {
+      "label": "Scale enhancements",
+      "description": "This is cluster 12 with 88 items.",
+      "hull": [
+        1400,
+        1252,
+        736,
+        1342,
+        1497,
+        1496,
+        1319,
+        1509,
+        631,
+        1277
+      ],
+      "cluster": 12
+    },
+    {
+      "label": "Color scale enhancements",
+      "description": "This is cluster 13 with 63 items.",
+      "hull": [
+        1050,
+        714,
+        627,
+        1033,
+        1345,
+        1733,
+        1735,
+        1492
+      ],
+      "cluster": 13
+    },
+    {
+      "label": "Color and opacity legends",
+      "description": "This is cluster 14 with 65 items.",
+      "hull": [
+        1126,
+        1260,
+        1512,
+        999,
+        626,
+        706,
+        315,
+        1198
+      ],
+      "cluster": 14
+    },
+    {
+      "label": "Dark Mode Enhancements",
+      "description": "This is cluster 15 with 24 items.",
+      "hull": [
+        1818,
+        1104,
+        462,
+        1259,
+        1127,
+        162,
+        1332
+      ],
+      "cluster": 15
+    },
+    {
+      "label": "Interaction improvements",
+      "description": "This is cluster 16 with 50 items.",
+      "hull": [
+        56,
+        895,
+        57,
+        510,
+        1806,
+        463,
+        925,
+        1141,
+        345,
+        1859
+      ],
+      "cluster": 16
+    },
+    {
+      "label": "Interactive Features Enhancements",
+      "description": "This is cluster 17 with 38 items.",
+      "hull": [
+        292,
+        179,
+        1163,
+        259,
+        29,
+        43
+      ],
+      "cluster": 17
+    },
+    {
+      "label": "Visualization Rendering Enhancements",
+      "description": "This is cluster 18 with 43 items.",
+      "hull": [
+        1273,
+        980,
+        1062,
+        1244,
+        1775,
+        1231,
+        824,
+        1213,
+        1086,
+        1662,
+        1197,
+        1805,
+        170
+      ],
+      "cluster": 18
+    },
+    {
+      "label": "Plot improvements and fixes",
+      "description": "This is cluster 19 with 22 items.",
+      "hull": [
+        1130,
+        1024,
+        0,
+        1495,
+        1531,
+        1037,
+        1743,
+        1748
+      ],
+      "cluster": 19
+    },
+    {
+      "label": "Feature requests and fixes",
+      "description": "This is cluster 20 with 71 items.",
+      "hull": [
+        8,
+        1262,
+        545,
+        398,
+        1243,
+        1173,
+        248
+      ],
+      "cluster": 20
+    },
+    {
+      "label": "Plot improvements and features",
+      "description": "This is cluster 21 with 87 items.",
+      "hull": [
+        397,
+        544,
+        200,
+        112,
+        482,
+        886,
+        1380,
+        1596,
+        1188,
+        1769,
+        1035,
+        1324
+      ],
+      "cluster": 21
+    },
+    {
+      "label": "Plot enhancements and fixes",
+      "description": "This is cluster 22 with 48 items.",
+      "hull": [
+        977,
+        132,
+        1438,
+        872,
+        1053,
+        111,
+        1414,
+        139,
+        1728,
+        1165,
+        1746,
+        306,
+        38,
+        658
+      ],
+      "cluster": 22
+    },
+    {
+      "label": "Stack enhancements",
+      "description": "This is cluster 23 with 24 items.",
+      "hull": [
+        1760,
+        734,
+        1747,
+        1442,
+        23
+      ],
+      "cluster": 23
+    },
+    {
+      "label": "Data Visualization Enhancements",
+      "description": "This is cluster 24 with 61 items.",
+      "hull": [
+        1155,
+        1300,
+        1556,
+        1097,
+        1016,
+        1088,
+        1669,
+        1608,
+        1456
+      ],
+      "cluster": 24
+    },
+    {
+      "label": "Geo and Markup Enhancements",
+      "description": "This is cluster 25 with 52 items.",
+      "hull": [
+        741,
+        955,
+        1801,
+        950,
+        1717,
+        1837,
+        206,
+        826,
+        783,
+        796,
+        769
+      ],
+      "cluster": 25
+    },
+    {
+      "label": "Chart Margins and Labels",
+      "description": "This is cluster 26 with 29 items.",
+      "hull": [
+        1057,
+        1740,
+        119,
+        1846,
+        782,
+        110,
+        1447,
+        1707
+      ],
+      "cluster": 26
+    },
+    {
+      "label": "Marker and Text Improvements",
+      "description": "This is cluster 27 with 48 items.",
+      "hull": [
+        756,
+        1192,
+        1749,
+        100,
+        962,
+        1220,
+        1063,
+        1038,
+        487
+      ],
+      "cluster": 27
+    },
+    {
+      "label": "Data visualization enhancements",
+      "description": "This is cluster 28 with 62 items.",
+      "hull": [
+        1296,
+        264,
+        761,
+        1152,
+        719,
+        822,
+        121,
+        1709,
+        1628,
+        667
+      ],
+      "cluster": 28
+    },
+    {
+      "label": "Clipping and Rendering Enhancements",
+      "description": "This is cluster 29 with 33 items.",
+      "hull": [
+        1334,
+        821,
+        1248,
+        173,
+        1683,
+        536,
+        1708,
+        383,
+        1823,
+        1862
+      ],
+      "cluster": 29
+    },
+    {
+      "label": "Transform enhancements",
+      "description": "This is cluster 30 with 33 items.",
+      "hull": [
+        1567,
+        1123,
+        1549,
+        882,
+        1604,
+        1834,
+        1681,
+        1663
+      ],
+      "cluster": 30
+    },
+    {
+      "label": "Reducer and Transform Enhancements",
+      "description": "This is cluster 31 with 65 items.",
+      "hull": [
+        1376,
+        581,
+        1672,
+        829,
+        1432,
+        1666,
+        1764,
+        1257,
+        1583
+      ],
+      "cluster": 31
+    },
+    {
+      "label": "Axis and Mark Enhancements",
+      "description": "This is cluster 32 with 80 items.",
+      "hull": [
+        912,
+        570,
+        1196,
+        1537,
+        1757,
+        778,
+        1073,
+        1816,
+        497,
+        1830
+      ],
+      "cluster": 32
+    },
+    {
+      "label": "Tooltip enhancements",
+      "description": "This is cluster 33 with 54 items.",
+      "hull": [
+        298,
+        1802,
+        15,
+        44,
+        263,
+        418,
+        406,
+        236,
+        427,
+        359,
+        273
+      ],
+      "cluster": 33
+    },
+    {
+      "label": "Enhancements and fixes",
+      "description": "This is cluster 34 with 42 items.",
+      "hull": [
+        1504,
+        230,
+        374,
+        1233,
+        683,
+        1768,
+        262,
+        82,
+        58
+      ],
+      "cluster": 34
+    }
+  ],
+  "rows": 1864,
+  "columns": [
+    "x",
+    "y",
+    "cluster",
+    "raw_cluster",
+    "label",
+    "ls_index"
+  ],
+  "size": 40033,
+  "timestamp": "2024-04-23 17:45:39"
+}
