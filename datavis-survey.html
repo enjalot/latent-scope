@@ -14,8 +14,8 @@
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
 <link rel="modulepreload" href="./_import/components/scatter.e6a504c8.js">
 <link rel="modulepreload" href="./_import/components/hull.532abe46.js">
-<link rel="modulepreload" href="./_import/components/tooltip.10184b2e.js">
-<link rel="modulepreload" href="./_import/components/clusterCard.e0d27e96.js">
+<link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
+<link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
@@ -88,137 +88,80 @@ Inputs.table(da, {
 ))
 }});
 
-define({id: "1f167906", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
+define({id: "9577b65f", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
 display(await(
-resize((width) => scatter(data.toArray(), { 
-        canvas, 
-        width, 
-        height: 500, 
-        pointSize: 5,
-        color: (d) => d.cluster 
-    }))
-))
-}});
+Plot.plot({
+        marks: [
+          Plot.hull(hulls.flatMap(d => d), {
+            x: "x",
+            y: "y",
+            z: "cluster",
+            fill: "lightgray",
+            fillOpacity: 0.1,
+            stroke: "lightgray",
+            curve: "catmull-rom",
+          }),
+          Plot.dot(da, {
+            x: "x",
+            y: "y",
+            r: 2,
+            fill: "cluster",
+            title: d => `${d["cluster"]}: ${d["label"]}
+Role: ${d["Role"]}
 
-define({id: "f67d1c0a", inline: true, inputs: ["hull","hulls","map","display"], body: async (hull,hulls,map,display) => {
-display(await(
-hull(hulls, { 
-        width: map.width,
-        height: map.height,
-        xd: map.xd,
-        yd: map.yd
-      })
-      
-))
-}});
-
-define({id: "8d266656", inline: true, inputs: ["hp","hull","hulls","map","display"], body: async (hp,hull,hulls,map,display) => {
-display(await(
-hp ? hull([hulls[hp.cluster]], { 
-        fill: "rgba(20,20,20,0.25)",
-        width: map.width,
-        height: map.height,
-        xd: map.xd,
-        yd: map.yd
-      }) : "" 
-))
-}});
-
-define({id: "97380187", inline: true, inputs: ["tip","display"], body: async (tip,display) => {
-display(await(
-tip
-))
-}});
-
-define({id: "cc07bada", inline: true, inputs: ["isMobileDevice","display"], body: async (isMobileDevice,display) => {
-display(await(
-isMobileDevice ? "Warning: regl-scatter does not play well on mobile. Please keep scrolling to see the analysis. Interacting with the map should be done on a desktop." : ""
-))
-}});
-
-define({id: "46313d53", inline: true, inputs: ["data","display"], body: async (data,display) => {
-display(await(
-data.toArray().length
-))
-}});
-
-define({id: "459eff35", inline: true, inputs: ["map","display"], body: async (map,display) => {
-display(await(
-map.selected.length
-))
-}});
-
-define({id: "1e7819ac", inline: true, inputs: ["map","display"], body: async (map,display) => {
-display(await(
-!map.selected.length ? "Hold shift + drag to select multiple points.":""
-))
-}});
-
-define({id: "c6084855", inline: true, inputs: ["map","Inputs","canvas","display"], body: async (map,Inputs,canvas,display) => {
-display(await(
-        map.selected.length ? Inputs.button("Deselect", {
-          value: null, 
-          reduce: () => canvas.scatter.select([])
-        }) : ""
-    
-))
-}});
-
-define({id: "9f102f97", inline: true, inputs: ["Inputs","tableData","display"], body: async (Inputs,tableData,display) => {
-display(await(
-Inputs.table(tableData, { 
-        columns: [
-          "DataVizNotUnderstood",
-          "Role",
-          "label", 
+${d["DataVizNotUnderstood"]}`,
+            tip: true
+          }),
         ],
-        width: {
-          "DataVizNotUnderstood": "40%",
-        },
-        rows: 15
+        width: 500,
+        height: 500,
+        margin: 20,
+        color: { scheme: "cool" },
+        y: { axis: null},
+        x: { axis: null },
       })
 ))
 }});
 
-define({id: "89cf0656", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "80ad06eb", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(27, "These responses confirm a long-standing belief I've personally held: that cleaning and preparing data is a huge part of data visualization work. This principle is part of the motivation for building Latent Scope, a robust process for adding structure to data so it becomes possible to visualize!", tableConfig, da, scope)
+clusterCard(27, {description: "These responses confirm a long-standing belief I've personally held: that cleaning and preparing data is a huge part of data visualization work. This principle is part of the motivation for building Latent Scope, a robust process for adding structure to data so it becomes possible to visualize!", tableConfig, da, scope, hulls})
 ))
 }});
 
-define({id: "740ef63f", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "67b20c5d", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(28, "These responses all seem like they would fit just as well in cluster 27.", tableConfig, da, scope)
+clusterCard(28,{description: "These responses all seem like they would fit just as well in cluster 27.", tableConfig, da, scope, hulls})
 ))
 }});
 
-define({id: "ca7629cc", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "ae80f216", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(3, "Data viz takes time!", tableConfig, da, scope)
+clusterCard(3, {description: "Data viz takes time!", tableConfig, da, scope, hulls})
 ))
 }});
 
-define({id: "bdb989c9", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "df7bfc52", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(14, "Notice the conspicious lack of the word 'viz' in these responses. Otherwise they would fit well in Cluster 3.", tableConfig, da, scope)
+clusterCard(14, {description: "Notice the conspicious lack of the word 'viz' in these responses. Otherwise they would fit well in Cluster 3.", tableConfig, da, scope, hulls})
 ))
 }});
 
-define({id: "d42aceb2", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "b1aef65e", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(20, "Again, these responses could be reasonably combined with Cluster 3 or 14, but as the label implies there is the added idea of complexity, details and intention added to many responses.", tableConfig, da, scope)
+clusterCard(20, {description: "Again, these responses could be reasonably combined with Cluster 3 or 14, but as the label implies there is the added idea of complexity, details and intention added to many responses.", tableConfig, da, scope, hulls})
 ))
 }});
 
-define({id: "242df983", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "39d66148", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(21, "Here is more time, but now we also have a lot more 'effort' mixed in.", tableConfig, da, scope)
+clusterCard(21, {description: "Here is more time, but now we also have a lot more 'effort' mixed in.", tableConfig, da, scope, hulls})
 ))
 }});
 
-define({id: "be70aba8", inline: true, inputs: ["clusterCard","tableConfig","da","scope","display"], body: async (clusterCard,tableConfig,da,scope,display) => {
+define({id: "21edfd7c", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(11, "Speaking of effort, these responses are all about effort and don't mention time explicitly.", tableConfig, da, scope)
+clusterCard(11, {description: "Speaking of effort, these responses are all about effort and don't mention time explicitly.", tableConfig, da, scope, hulls})
 ))
 }});
 
@@ -233,9 +176,9 @@ const selcluster = view(Inputs.select(scope.cluster_labels_lookup, { value: d =>
 return {selcluster};
 }});
 
-define({id: "50c7e9d8", inline: true, inputs: ["clusterCard","selcluster","tableConfig","da","scope","display"], body: async (clusterCard,selcluster,tableConfig,da,scope,display) => {
+define({id: "966b0f2d", inline: true, inputs: ["clusterCard","selcluster","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selcluster,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(selcluster.cluster, "", tableConfig, da, scope)
+clusterCard(selcluster.cluster, {description: "", tableConfig, da, scope, hulls})
 ))
 }});
 
@@ -340,7 +283,7 @@ console.log("hulls!", hulls)
 }});
 
 define({id: "d89547a4", outputs: ["scatter","hull","tooltip","clusterCard"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.10184b2e.js"), import("./_import/components/clusterCard.e0d27e96.js")]);
+const [{scatter}, {hull}, {tooltip}, {clusterCard}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js")]);
 
 return {scatter,hull,tooltip,clusterCard};
 }});
@@ -386,7 +329,7 @@ return {isMobileDevice};
 <div id="observablehq-center">
 <header id="observablehq-header">
 
-  <link rel="stylesheet" type="text/css" href="./_file/index.3a8c2c1c.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.0fc11091.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -414,32 +357,7 @@ return {isMobileDevice};
   <span id="cell-1b1151e3" class="observablehq--loading"></span>
 </div>
 <p>As you can see, it's not very straightforward to pick out patterns just by scrolling through the text, so let's take a look at what Latent Scope gave us:</p>
-<div style="border: 1px solid gray; position:relative; height: 500px;">
-  <div>
-      <span id="cell-1f167906" class="observablehq--loading"></span>
-  </div>
-  <div style="position:absolute;top:0;pointer-events:none;">
-      <span id="cell-f67d1c0a" class="observablehq--loading"></span>
-  </div>
-  <div style="position:absolute;top:0;pointer-events:none;">
-      <span id="cell-8d266656" class="observablehq--loading"></span>
-  </div>
-<p><span id="cell-97380187" class="observablehq--loading"></span></p>
-</div>
-<div class="red">
-<span id="cell-cc07bada" class="observablehq--loading"></span>
-</div>
-<div>
-  <span id="cell-46313d53" class="observablehq--loading"></span> points. 
-  <span id="cell-459eff35" class="observablehq--loading"></span> points selected. <i><span id="cell-1e7819ac" class="observablehq--loading"></span></i>
-  <div style="display:inline-block">
-    <span id="cell-c6084855" class="observablehq--loading"></span>
-  </div>
-</div>
-<br>
-<div class="static-table">
-  <span id="cell-9f102f97" class="observablehq--loading"></span>
-</div>
+<div id="cell-9577b65f" class="observablehq observablehq--block observablehq--loading"></div>
 <p>The map is created by going through the 4 step process in Latent scope:</p>
 <ol>
 <li>Embed - run each piece of text through an embedding model</li>
@@ -451,35 +369,35 @@ return {isMobileDevice};
 Of course these automated steps are never perfect, so Latent Scope is designed to both let you tweak the parameters of each step as well as manually re-categorize data once the process is finished. For more details see the <a href="explore-and-curate">explore and curate guide</a>.</p>
 <p>Let's take a closer look at some of the clusters we got, starting with my favorite (because it's so true!)</p>
 <div>
-  <span id="cell-89cf0656" class="observablehq--loading"></span>
+  <span id="cell-80ad06eb" class="observablehq--loading"></span>
 </div>
 <p>As I mentioned, the process isn't perfect, and here we see a cluster that could have easily been combined with Cluster 27:</p>
 <div>
-  <span id="cell-740ef63f" class="observablehq--loading"></span>
+  <span id="cell-67b20c5d" class="observablehq--loading"></span>
 </div>
 <p>In fact, I did use the explore tool to combine a couple of clusters into this one:</p>
 <div>
-  <span id="cell-ca7629cc" class="observablehq--loading"></span>
+  <span id="cell-ae80f216" class="observablehq--loading"></span>
 </div>
 <p>And we can see that how much time it takes to make data visualizations is a common response, there is this other large cluster:</p>
 <div>
-  <span id="cell-bdb989c9" class="observablehq--loading"></span>
+  <span id="cell-df7bfc52" class="observablehq--loading"></span>
 </div>
 <p>As you can see, the embeddings (and UMAP, and clustering) may separate text based on different concepts. The last two clusters are conceptually very similar with the main difference being that most people used the word "viz" in one cluster and not in the other. I find it quite amazing that this level of separation is possible, but it may sometimes not be what you want to separate.</p>
 <p>The theme of time and effort is expressed further in other clusters:</p>
 <div>
-  <span id="cell-d42aceb2" class="observablehq--loading"></span>
+  <span id="cell-b1aef65e" class="observablehq--loading"></span>
 </div>
 <div>
-  <span id="cell-242df983" class="observablehq--loading"></span>
+  <span id="cell-39d66148" class="observablehq--loading"></span>
 </div>
 <div>
-  <span id="cell-be70aba8" class="observablehq--loading"></span>
+  <span id="cell-21edfd7c" class="observablehq--loading"></span>
 </div>
 <p>Whew! Data visualization certainly takes a lot of time and effort! There are many more clusters to explore (<span id="cell-0f29dbbb" class="observablehq--loading"></span> in fact), instead of listing them all out let's end with a little interactive choice:</p>
 <div id="cell-92fb4788" class="observablehq observablehq--block"></div>
 <div>
-  <span id="cell-50c7e9d8" class="observablehq--loading"></span>
+  <span id="cell-966b0f2d" class="observablehq--loading"></span>
 </div>
 <p>What are you waiting for? Try <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a> out on your own data!</p>
 <div id="cell-7b2ff0a5" class="observablehq observablehq--block"></div>
@@ -501,6 +419,6 @@ Of course these automated steps are never perfect, so Latent Scope is designed t
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./exporting-data"><span>Exporting data</span></a><a rel="next" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-05T10:03:35">May 5, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T00:03:47">May 6, 2024</a>.</div>
 </footer>
 </div>

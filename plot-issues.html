@@ -14,8 +14,9 @@
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
 <link rel="modulepreload" href="./_import/components/scatter.e6a504c8.js">
 <link rel="modulepreload" href="./_import/components/hull.532abe46.js">
-<link rel="modulepreload" href="./_import/components/tooltip.10184b2e.js">
-<link rel="modulepreload" href="./_import/components/clusterCard.e0d27e96.js">
+<link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
+<link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
+<link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
@@ -33,6 +34,11 @@
 <link rel="modulepreload" href="./_observablehq/stdlib/duckdb.js">
 <link rel="modulepreload" href="./_npm/@duckdb/duckdb-wasm@1.28.0/_esm.js">
 <link rel="modulepreload" href="./_npm/isoformat@0.2.1/_esm.js">
+<link rel="modulepreload" href="./_node/mdurl@2.0.0/index.js">
+<link rel="modulepreload" href="./_node/uc.micro@2.1.0/index.js">
+<link rel="modulepreload" href="./_node/entities@4.5.0/index.js">
+<link rel="modulepreload" href="./_node/linkify-it@5.0.0/index.js">
+<link rel="modulepreload" href="./_node/punycode.js@2.3.1/index.js">
 <link rel="modulepreload" href="./_npm/pub-sub-es@2.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/regl@2.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/_esm.js">
@@ -73,94 +79,37 @@ import {registerFile} from "./_observablehq/stdlib.js";
 registerFile("./data/plot-issues/scopes-001-input.parquet", {"name":"./data/plot-issues/scopes-001-input.parquet","path":"./_file/data/plot-issues/scopes-001-input.d4a7fc58.parquet","lastModified":1714916581622});
 registerFile("./data/plot-issues/scopes-001.json", {"name":"./data/plot-issues/scopes-001.json","mimeType":"application/json","path":"./_file/data/plot-issues/scopes-001.75e606c2.json","lastModified":1714916581624});
 
-define({id: "1f167906", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
+define({id: "9179fadb", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
 display(await(
-resize((width) => scatter(data.toArray(), { 
-        canvas, 
-        width, 
-        height: 500, 
-        pointSize: 5,
-        color: (d) => d.cluster 
-    }))
-))
-}});
+Plot.plot({
+        marks: [
+          Plot.hull(hulls.flatMap(d => d), {
+            x: "x",
+            y: "y",
+            z: "cluster",
+            fill: "lightgray",
+            fillOpacity: 0.1,
+            stroke: "lightgray",
+            curve: "catmull-rom",
+          }),
+          Plot.dot(da, {
+            x: "x",
+            y: "y",
+            r: 2,
+            fill: "cluster",
+            title: d => `${d["type"]} ${d["state"]}
+${d["title"]}]
 
-define({id: "f67d1c0a", inline: true, inputs: ["hull","hulls","map","display"], body: async (hull,hulls,map,display) => {
-display(await(
-hull(hulls, { 
-        width: map.width,
-        height: map.height,
-        xd: map.xd,
-        yd: map.yd
-      })
-      
-))
-}});
-
-define({id: "8d266656", inline: true, inputs: ["hp","hull","hulls","map","display"], body: async (hp,hull,hulls,map,display) => {
-display(await(
-hp ? hull([hulls[hp.cluster]], { 
-        fill: "rgba(20,20,20,0.25)",
-        width: map.width,
-        height: map.height,
-        xd: map.xd,
-        yd: map.yd
-      }) : "" 
-))
-}});
-
-define({id: "97380187", inline: true, inputs: ["tip","display"], body: async (tip,display) => {
-display(await(
-tip
-))
-}});
-
-define({id: "cc07bada", inline: true, inputs: ["isMobileDevice","display"], body: async (isMobileDevice,display) => {
-display(await(
-isMobileDevice ? "Warning: regl-scatter does not play well on mobile. Please keep scrolling to see the analysis. Interacting with the map should be done on a desktop." : ""
-))
-}});
-
-define({id: "46313d53", inline: true, inputs: ["data","display"], body: async (data,display) => {
-display(await(
-data.toArray().length
-))
-}});
-
-define({id: "459eff35", inline: true, inputs: ["map","display"], body: async (map,display) => {
-display(await(
-map.selected.length
-))
-}});
-
-define({id: "1e7819ac", inline: true, inputs: ["map","display"], body: async (map,display) => {
-display(await(
-!map.selected.length ? "Hold shift + drag to select multiple points.":""
-))
-}});
-
-define({id: "c6084855", inline: true, inputs: ["map","Inputs","canvas","display"], body: async (map,Inputs,canvas,display) => {
-display(await(
-        map.selected.length ? Inputs.button("Deselect", {
-          value: null, 
-          reduce: () => canvas.scatter.select([])
-        }) : ""
-    
-))
-}});
-
-define({id: "d1ea8c3a", inline: true, inputs: ["Inputs","tableData","display"], body: async (Inputs,tableData,display) => {
-display(await(
-Inputs.table(tableData, { 
-        columns: [
-          "text",
-          "state",
-          "type",
+${d["body"]}`,
+            tip: true
+          }),
         ],
-        width: {
-          "text": "40%"
-        },
-        rows: 15
+        width: 500,
+        height: 500,
+        margin: 30,
+        color: { scheme: "cool" },
+        y: { axis: null},
+        x: { axis: null },
       })
 ))
 }});
@@ -170,9 +119,33 @@ const selcluster = view(Inputs.select(scope.cluster_labels_lookup, { value: d =>
 return {selcluster};
 }});
 
-define({id: "50c7e9d8", inline: true, inputs: ["clusterCard","selcluster","tableConfig","da","scope","display"], body: async (clusterCard,selcluster,tableConfig,da,scope,display) => {
+define({id: "b2d6691b", inline: true, inputs: ["clusterCard","selcluster","Plot","da","tableConfig","scope","hulls","display"], body: async (clusterCard,selcluster,Plot,da,tableConfig,scope,hulls,display) => {
 display(await(
-clusterCard(selcluster.cluster, "", tableConfig, da, scope)
+clusterCard(selcluster.cluster, {
+    description: "", 
+    plot: Plot.plot({
+        marks: [
+          Plot.barX(da, Plot.groupY({x: "count"}, {
+            filter: d => d.cluster == selcluster.cluster,
+            y: "type",
+            x: "count",
+            fill: "state",
+            tip: true
+          }))
+        ],
+        marginLeft: 80,
+        marginBottom: 30,
+        width: 300,
+        height: 300,
+        y: { label: null },
+        x: { label: null },
+        style: { "background-color": "white" }
+      }),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
 ))
 }});
 
@@ -180,7 +153,7 @@ define({id: "765fa948", body: () => {
 // ----------------------------------------------------------
 }});
 
-define({id: "2b86bbb5", outputs: ["tableConfig"], body: () => {
+define({id: "74b0c55c", outputs: ["tableConfig"], body: () => {
 const tableConfig = { 
   columns: [
     "text",
@@ -190,6 +163,8 @@ const tableConfig = {
   width: {
     "text": "60%"
   },
+  sort: "state",
+  reverse: true,
   rows: 15
 }
 return {tableConfig};
@@ -210,18 +185,18 @@ let hp = da[map.hovered[0]]
 return {hp};
 }});
 
-define({id: "d0bb13db", inputs: ["hp","tip","map"], body: (hp,tip,map) => {
+define({id: "0ae181aa", inputs: ["hp","tip","map","md"], body: (hp,tip,map,md) => {
 if(hp) {
   // display the tooltip
   // console.log("p, sel", p, selected)
-  tip.show(hp, map, `
+  tip.show(hp, map, md.unsafe(`
   <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
   <br/>
   <span>state: ${hp["state"]}
   <span>type: ${hp["type"]}
   <br/>
   ${hp["text"]}
-  `)
+  `))
 } else {
   tip.hide()
 }
@@ -278,10 +253,24 @@ console.log("scope!", scope)
 console.log("hulls!", hulls)
 }});
 
-define({id: "d89547a4", outputs: ["scatter","hull","tooltip","clusterCard"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.10184b2e.js"), import("./_import/components/clusterCard.e0d27e96.js")]);
+define({id: "8f058b05", outputs: ["scatter","hull","tooltip","clusterCard","markdownit"], body: async () => {
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js")]);
 
-return {scatter,hull,tooltip,clusterCard};
+// import matter from "npm:gray-matter";
+return {scatter,hull,tooltip,clusterCard,markdownit};
+}});
+
+define({id: "2af7ab58", inputs: ["markdownit"], outputs: ["Markdown","md"], body: (markdownit) => {
+const Markdown = new markdownit({html: true});
+
+const md = {
+  unsafe(string) {
+    const template = document.createElement("template");
+    template.innerHTML = Markdown.render(string);
+    return template.content.cloneNode(true);
+  }
+};
+return {Markdown,md};
 }});
 
 define({id: "5f76811e", outputs: ["isMobileDevice"], body: () => {
@@ -325,7 +314,7 @@ return {isMobileDevice};
 <div id="observablehq-center">
 <header id="observablehq-header">
 
-  <link rel="stylesheet" type="text/css" href="./_file/index.3a8c2c1c.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.0fc11091.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -346,42 +335,17 @@ return {isMobileDevice};
 </style>
 <h1>Latent Scope: Plot Issues &amp; Pull Requests</h1>
 <h2><a href="https://osf.io/mrghc/?view_only" target="_blank" rel="noopener noreferrer">Source data</a>. Generated with <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a></h2>
-<div style="border: 1px solid gray; position:relative; height: 500px;">
-  <div>
-      <span id="cell-1f167906" class="observablehq--loading"></span>
-  </div>
-  <div style="position:absolute;top:0;pointer-events:none;">
-      <span id="cell-f67d1c0a" class="observablehq--loading"></span>
-  </div>
-  <div style="position:absolute;top:0;pointer-events:none;">
-      <span id="cell-8d266656" class="observablehq--loading"></span>
-  </div>
-<p><span id="cell-97380187" class="observablehq--loading"></span></p>
-</div>
-<div class="red">
-<span id="cell-cc07bada" class="observablehq--loading"></span>
-</div>
-<div>
-  <span id="cell-46313d53" class="observablehq--loading"></span> points. 
-  <span id="cell-459eff35" class="observablehq--loading"></span> points selected. <i><span id="cell-1e7819ac" class="observablehq--loading"></span></i>
-  <div style="display:inline-block">
-    <span id="cell-c6084855" class="observablehq--loading"></span>
-  </div>
-</div>
-<br>
-<div class="static-table">
-  <span id="cell-d1ea8c3a" class="observablehq--loading"></span>
-</div>
+<div id="cell-9179fadb" class="observablehq observablehq--block observablehq--loading"></div>
 <div id="cell-92fb4788" class="observablehq observablehq--block"></div>
 <div>
-  <span id="cell-50c7e9d8" class="observablehq--loading"></span>
+  <span id="cell-b2d6691b" class="observablehq--loading"></span>
 </div>
 <div id="cell-765fa948" class="observablehq observablehq--block"></div>
-<div id="cell-2b86bbb5" class="observablehq observablehq--block"></div>
+<div id="cell-74b0c55c" class="observablehq observablehq--block"></div>
 <div id="cell-117b7a30" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
 <div id="cell-b32210e2" class="observablehq observablehq--block"></div>
-<div id="cell-d0bb13db" class="observablehq observablehq--block"></div>
+<div id="cell-0ae181aa" class="observablehq observablehq--block"></div>
 <div id="cell-77f718ba" class="observablehq observablehq--block"></div>
 <div id="cell-005a856b" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
@@ -390,11 +354,12 @@ return {isMobileDevice};
 <div id="cell-bee957c8" class="observablehq observablehq--block"></div>
 <div id="cell-0f267664" class="observablehq observablehq--block"></div>
 <div id="cell-5551e850" class="observablehq observablehq--block"></div>
-<div id="cell-d89547a4" class="observablehq observablehq--block"></div>
+<div id="cell-8f058b05" class="observablehq observablehq--block"></div>
+<div id="cell-2af7ab58" class="observablehq observablehq--block"></div>
 <div id="cell-5f76811e" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./datavis-survey"><span>Datavis Survey</span></a><a rel="next" href="./us-federal-laws"><span>US Federal Laws</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-05T10:03:35">May 5, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T00:03:47">May 6, 2024</a>.</div>
 </footer>
 </div>

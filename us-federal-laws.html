@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Latent Scope: U.S. Federal Laws | Latent Scope</title>
+<title>50k U.S. Federal Laws | Latent Scope</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.css">
@@ -12,19 +12,34 @@
 <link rel="modulepreload" href="./_observablehq/client.js">
 <link rel="modulepreload" href="./_observablehq/runtime.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
-<link rel="modulepreload" href="./_observablehq/stdlib/duckdb.js">
 <link rel="modulepreload" href="./_import/components/scatter.e6a504c8.js">
+<link rel="modulepreload" href="./_import/components/hull.532abe46.js">
+<link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
+<link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
+<link rel="modulepreload" href="./_import/components/clusterListCard.2bd231cb.js">
+<link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
+<link rel="modulepreload" href="./_npm/d3-selection@3.0.0/_esm.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-color@3.1.0/_esm.js">
-<link rel="modulepreload" href="./_npm/apache-arrow@16.0.0/_esm.js">
-<link rel="modulepreload" href="./_npm/parquet-wasm@0.6.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-transition@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-shape@3.2.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-ease@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/htl@0.3.1/_esm.js">
 <link rel="modulepreload" href="./_observablehq/stdlib/inputs.js">
+<link rel="modulepreload" href="./_npm/@observablehq/plot@0.6.14/_esm.js">
+<link rel="modulepreload" href="./_npm/apache-arrow@16.0.0/_esm.js">
+<link rel="modulepreload" href="./_npm/parquet-wasm@0.6.0/_esm.js">
+<link rel="modulepreload" href="./_observablehq/stdlib/duckdb.js">
 <link rel="modulepreload" href="./_npm/@duckdb/duckdb-wasm@1.28.0/_esm.js">
 <link rel="modulepreload" href="./_npm/isoformat@0.2.1/_esm.js">
+<link rel="modulepreload" href="./_node/mdurl@2.0.0/index.js">
+<link rel="modulepreload" href="./_node/uc.micro@2.1.0/index.js">
+<link rel="modulepreload" href="./_node/entities@4.5.0/index.js">
+<link rel="modulepreload" href="./_node/linkify-it@5.0.0/index.js">
+<link rel="modulepreload" href="./_node/punycode.js@2.3.1/index.js">
 <link rel="modulepreload" href="./_npm/pub-sub-es@2.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/regl@2.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/_esm.js">
@@ -32,25 +47,103 @@
 <link rel="modulepreload" href="./_npm/d3-time@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-time-format@4.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/internmap@2.0.3/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-dispatch@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-timer@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-path@3.1.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3@7.9.0/_esm.js">
+<link rel="modulepreload" href="./_npm/interval-tree-1d@1.0.4/_esm.js">
 <link rel="modulepreload" href="./_npm/tslib@2.6.2/_esm.js">
 <link rel="modulepreload" href="./_npm/flatbuffers@23.5.26/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-axis@3.0.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-brush@3.0.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-chord@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-contour@4.0.2/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-delaunay@6.0.4/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-drag@3.0.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-dsv@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-fetch@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-force@3.0.0/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-geo@3.1.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-hierarchy@3.1.2/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-polygon@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-quadtree@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-random@3.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/d3-zoom@3.0.0/_esm.js">
+<link rel="modulepreload" href="./_npm/binary-search-bounds@2.0.5/_esm.js">
+<link rel="modulepreload" href="./_npm/delaunator@5.0.1/_esm.js">
+<link rel="modulepreload" href="./_npm/robust-predicates@3.0.2/_esm.js">
 <script type="module">
 
 import {define} from "./_observablehq/client.js";
 import {registerFile} from "./_observablehq/stdlib.js";
 
-registerFile("./data/us-federal-laws/input.parquet", {"name":"./data/us-federal-laws/input.parquet","path":"./_file/data/us-federal-laws/input.10b10bb1.parquet","lastModified":1710445266568});
-registerFile("./data/us-federal-laws/scopes-001.parquet", {"name":"./data/us-federal-laws/scopes-001.parquet","path":"./_file/data/us-federal-laws/scopes-001.1e814c69.parquet","lastModified":1710452788042});
+registerFile("./data/us-federal-laws/scopes-001-input.parquet", {"name":"./data/us-federal-laws/scopes-001-input.parquet","path":"./_file/data/us-federal-laws/scopes-001-input.6e83fc83.parquet","lastModified":1714964112377});
+registerFile("./data/us-federal-laws/scopes-001.json", {"name":"./data/us-federal-laws/scopes-001.json","mimeType":"application/json","path":"./_file/data/us-federal-laws/scopes-001.9ebaeb56.json","lastModified":1714776026270});
 
-define({id: "b56a2c7c", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
+define({id: "ea5bbdba", inline: true, inputs: ["isMobileDevice","Plot","hulls","display"], body: async (isMobileDevice,Plot,hulls,display) => {
+display(await(
+isMobileDevice ? Plot.plot({
+        marks: [
+          Plot.hull(hulls.flatMap(d => d), {
+            x: "x",
+            y: "y",
+            z: "cluster",
+            fill: "cluster",
+            fillOpacity: 0.5,
+            stroke: "lightgray",
+            curve: "catmull-rom",
+          }),
+        ],
+        width: 500,
+        height: 500,
+        margin: 20,
+        color: { scheme: "cool" },
+        y: { axis: null},
+        x: { axis: null },
+      })
+      :  "" 
+))
+}});
+
+define({id: "7f998601", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
 display(await(
 resize((width) => scatter(data.toArray(), { 
-    canvas, 
-    width, 
-    height: 500, 
-    color: (d) => d.cluster 
-    //color: (d) => d.raw_cluster
-  }))
+        canvas, 
+        width, 
+        height: 500, 
+        pointSize: 2,
+        color: (d) => d.cluster 
+    }))
+))
+}});
+
+define({id: "f67d1c0a", inline: true, inputs: ["hull","hulls","map","display"], body: async (hull,hulls,map,display) => {
+display(await(
+hull(hulls, { 
+        width: map.width,
+        height: map.height,
+        xd: map.xd,
+        yd: map.yd
+      })
+      
+))
+}});
+
+define({id: "8d266656", inline: true, inputs: ["hp","hull","hulls","map","display"], body: async (hp,hull,hulls,map,display) => {
+display(await(
+hp ? hull([hulls[hp.cluster]], { 
+        fill: "rgba(20,20,20,0.25)",
+        width: map.width,
+        height: map.height,
+        xd: map.xd,
+        yd: map.yd
+      }) : "" 
+))
+}});
+
+define({id: "97380187", inline: true, inputs: ["tip","display"], body: async (tip,display) => {
+display(await(
+tip
 ))
 }});
 
@@ -60,25 +153,21 @@ data.toArray().length
 ))
 }});
 
-define({id: "14be7f3c", inline: true, inputs: ["display","selected"], body: (display,selected) => {
-display(selected.length)
-}});
-
-define({id: "b6999918", inline: true, inputs: ["selected","display"], body: async (selected,display) => {
+define({id: "459eff35", inline: true, inputs: ["map","display"], body: async (map,display) => {
 display(await(
-selected.length == 1 ? "hovered" : "selected"
+map.selected.length
 ))
 }});
 
-define({id: "c4a24530", inline: true, inputs: ["selected","display"], body: async (selected,display) => {
+define({id: "1e7819ac", inline: true, inputs: ["map","display"], body: async (map,display) => {
 display(await(
-!selected.length ? "Hold shift + drag to select multiple points.":""
+!map.selected.length ? "Hold shift + drag to select multiple points.":""
 ))
 }});
 
-define({id: "ca638f0b", inline: true, inputs: ["selected","Inputs","canvas","display"], body: async (selected,Inputs,canvas,display) => {
+define({id: "c6084855", inline: true, inputs: ["map","Inputs","canvas","display"], body: async (map,Inputs,canvas,display) => {
 display(await(
-        selected.length > 1 ? Inputs.button("Deselect", {
+        map.selected.length ? Inputs.button("Deselect", {
           value: null, 
           reduce: () => canvas.scatter.select([])
         }) : ""
@@ -86,132 +175,287 @@ display(await(
 ))
 }});
 
-define({id: "52813c6b", inline: true, inputs: ["selected","Inputs","tableData","htl","display"], body: async (selected,Inputs,tableData,htl,display) => {
+define({id: "7b10de6d", inline: true, inputs: ["Inputs","tableData","display"], body: async (Inputs,tableData,display) => {
 display(await(
-selected.length == 1 ? Inputs.table([tableData[selected[0]]], { 
-      columns: [
-        "Title", 
-        "date_of_passage", 
-        "label", 
-        "cluster"
-      ],
-      width: {
-        "date_of_passage": 100,
-        "label": 250,
-        "cluster": 40
-      },
-      rows: 1 
-    }) : htl.html`<div style="height:43px"></div>`
-  
+Inputs.table(tableData, { 
+        columns: [
+          "Title",
+          "date_of_passage",
+          "label",
+        ],
+        sort: "date_of_passage",
+        width: {
+          "Title": "80%"
+        },
+        rows: 15
+      })
 ))
 }});
 
-define({id: "0d4fc4a7", inline: true, inputs: ["table","display"], body: async (table,display) => {
+define({id: "308c7536", inline: true, inputs: ["clusterCard","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterCard,dateBars,tableConfig,da,scope,hulls,display) => {
 display(await(
-table
+clusterCard(10, {
+    description: "Poor Sally McGee! And why was the pleasure-yacht named 'Fearless' in the first place? If you had a typo in your boat name in 1872 you had to get Congress to help you fix it: 'To change the name of the schooner La Pette to La Petite.'", 
+    plot: dateBars(10),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
 ))
 }});
 
-define({id: "475e24c1", inputs: ["view","canvas"], outputs: ["selected"], body: (view,canvas) => {
-const selected = view(canvas)
-return {selected};
+define({id: "bb318056", inline: true, inputs: ["clusterCard","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterCard,dateBars,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(59, {
+    description: "", 
+    plot: dateBars(10),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
 }});
 
-define({id: "c48adcf3", outputs: ["canvas"], body: () => {
-// TODO: this recreates the canvas
+define({id: "62c50bb7", inline: true, inputs: ["clusterCard","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterCard,dateBars,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(15, {
+    description: "", 
+    plot: dateBars(15),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "92fb4788", inputs: ["view","Inputs","scope"], outputs: ["selcluster"], body: (view,Inputs,scope) => {
+const selcluster = view(Inputs.select(scope.cluster_labels_lookup, { value: d => d.cluster, format: x => x.cluster + ": " + x.label, label: "Cluster:"}))
+return {selcluster};
+}});
+
+define({id: "706bdc3b", inline: true, inputs: ["clusterCard","selcluster","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selcluster,dateBars,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(selcluster.cluster, {
+    description: "", 
+    plot: dateBars(selcluster.cluster),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "f8b269cb", outputs: ["bridgeClusters"], body: () => {
+const bridgeClusters = [72, 73, 74, 75, 76, 77, 79, 80,81, 83, 85, 88, 89, 90, 91, 92, 93, 97, 98]
+return {bridgeClusters};
+}});
+
+define({id: "e88be7e1", inline: true, inputs: ["clusterListCard","bridgeClusters","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterListCard,bridgeClusters,dateBars,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterListCard(bridgeClusters, {
+    heading: "Bridge Building",
+    plot: dateBars(bridgeClusters),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls 
+})
+))
+}});
+
+define({id: "dcd871c6", outputs: ["dcClusters"], body: () => {
+const dcClusters = [123, 106, 107, 109, 110, 111, 112, 114, 116, 118, 119]
+return {dcClusters};
+}});
+
+define({id: "60b8c5cb", inline: true, inputs: ["clusterListCard","dcClusters","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterListCard,dcClusters,dateBars,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterListCard(dcClusters, {
+    heading: "Washington D.C.",
+    plot: dateBars(dcClusters),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls 
+})
+))
+}});
+
+define({id: "aff71acf", outputs: ["naClusters"], body: () => {
+const naClusters = [105, 127, 141, 146,  178, 183, 190, 204, 205, 210, 211]
+return {naClusters};
+}});
+
+define({id: "a071a0ac", inline: true, inputs: ["clusterListCard","naClusters","dateBars","tableConfig","da","scope","hulls","display"], body: async (clusterListCard,naClusters,dateBars,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterListCard(naClusters, {
+    heading: "Native American",
+    plot: dateBars(naClusters),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls 
+})
+))
+}});
+
+define({id: "117b7a30", inputs: ["view","canvas"], outputs: ["map"], body: (view,canvas) => {
+const map = view(canvas)
+return {map};
+}});
+
+define({id: "08e9e9b6", inputs: ["tooltip"], outputs: ["tip"], body: (tooltip) => {
+const tip = tooltip({})
+return {tip};
+}});
+
+define({id: "b32210e2", inputs: ["da","map"], outputs: ["hp"], body: (da,map) => {
+let hp = da[map.hovered[0]]
+return {hp};
+}});
+
+define({id: "447b69af", inputs: ["hp","tip","map","md"], body: (hp,tip,map,md) => {
+if(hp) {
+  // display the tooltip
+  // console.log("p, sel", p, selected)
+  tip.show(hp, map, md.unsafe(`
+  <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
+  <br/>
+  <span>${hp["date_of_passage"]}
+  <br/>
+  ${hp["Title"]}
+  `))
+} else {
+  tip.hide()
+}
+}});
+
+define({id: "3fa829a8", outputs: ["tableConfig"], body: () => {
+const tableConfig = { 
+  columns: [
+    "Title",
+    "date_of_passage",
+  ],
+  width: {
+    "Title": "80%"
+  },
+  sort: "date_of_passage",
+  reverse: false,
+  rows: 15
+}
+return {tableConfig};
+}});
+
+define({id: "77f718ba", outputs: ["canvas"], body: () => {
 const canvas = document.createElement("canvas")
-canvas.value = []
 return {canvas};
 }});
 
-define({id: "6123d116", inputs: ["Inputs","tableData"], outputs: ["table"], body: (Inputs,tableData) => {
-const table = Inputs.table(tableData, { 
-      columns: [
-        "Title", 
-        "date_of_passage", 
-        "label", 
-        "cluster"
-      ],
-      width: {
-        "date_of_passage": 100,
-        "label": 250,
-        "cluster": 40
-      },
-      rows: 25
-    })
-return {table};
-}});
-
-define({id: "667d1db1", inputs: ["view","table"], outputs: ["chosen"], body: (view,table) => {
-const chosen = view(table)
-return {chosen};
-}});
-
-define({id: "28b7ce7d", inputs: ["selected","chosen","tableData"], outputs: ["indices"], body: (selected,chosen,tableData) => {
-// indices of the rows selected from the table so we can highlight them on the map
-let indices = []
-if(!selected.length && (chosen.length < tableData.length)) {
-  indices = chosen.map(c => tableData.indexOf(c))
-}
-return {indices};
-}});
-
-define({id: "0aa84107", inputs: ["indices","canvas"], body: (indices,canvas) => {
-// highlight and zoom to points chosen on the table
-if(indices.length && canvas.scatter) {
-  canvas.scatter.select(indices, { preventEvent: true })
-  // canvas.scatter.zoomToPoints(indices, { padding: 0.1  })
-} else {
-  // can't undo it because this updates everytime scatter zooms for some reason
-  // canvas.scatter.zoomToOrigin()
-}
-}});
-
-define({id: "87812cc5", inputs: ["data","selected"], outputs: ["tableData"], body: (data,selected) => {
-let tableData = data.toArray()
-if(selected.length > 1) {
-  tableData = []
-  const da = data.toArray()
-  selected.forEach(i => tableData.push(da[i]))
+define({id: "005a856b", inputs: ["map","da"], outputs: ["tableData"], body: (map,da) => {
+let tableData = []
+if(map.selected.length > 0) {
+  // tableData = []
+  map.selected.forEach(i => tableData.push(da[i]))
 }
 return {tableData};
 }});
 
-define({id: "46e85306", outputs: ["DuckDBClient"], body: async () => {
-const {DuckDBClient} = await import("./_observablehq/stdlib/duckdb.js");
-
-return {DuckDBClient};
+define({id: "06bd66db", inputs: ["scope","da"], outputs: ["hulls"], body: (scope,da) => {
+// calculate the hull points
+const hulls = scope.cluster_labels_lookup.map(c => {
+  return c.hull.map(idx => da.find(d => d.index === idx))
+})
+return {hulls};
 }});
 
-define({id: "d6c9bc9b", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
+define({id: "cae631e1", inputs: ["Plot","da"], outputs: ["dateBars"], body: (Plot,da) => {
+function dateBars(cluster) {
+  let filter = d => d.cluster == cluster
+  if (Array.isArray(cluster)) {
+    filter = d => cluster.indexOf(d.cluster) >= 0
+  }
+  return Plot.plot({
+    marks: [
+      Plot.barX(da, Plot.binY({x: "count"}, {
+        filter,
+        y: d => new Date(d["date_of_passage"]).getFullYear(),
+        x: "count",
+      }))
+    ],
+    marginLeft: 80,
+    marginBottom: 30,
+    width: 300,
+    height: 300,
+    y: { label: null, tickFormat: x => Math.floor(x).toString() },
+    x: { label: null },
+    style: { "background-color": "white" }
+  })
+}
+return {dateBars};
+}});
+
+define({id: "b1d51dcc", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
 const db = DuckDBClient.of({
-  input: FileAttachment("./data/us-federal-laws/input.parquet"),
-  scope: FileAttachment("./data/us-federal-laws/scopes-001.parquet")
+  scope: FileAttachment("./data/us-federal-laws/scopes-001-input.parquet")
 });
 return {db};
 }});
 
-define({id: "7dd34b16", inputs: ["db"], outputs: ["data"], body: (db) => {
+define({id: "5076ebc7", inputs: ["FileAttachment"], outputs: ["scope"], body: (FileAttachment) => {
+const scope = FileAttachment("./data/us-federal-laws/scopes-001.json").json()
+return {scope};
+}});
+
+define({id: "bee957c8", inputs: ["db"], outputs: ["data"], body: (db) => {
 // const rows = db.sql`SELECT * FROM input`
-// const scope = db.sql`SELECT * FROM scope`
-const data = db.sql`
-  WITH input_with_row_number AS (
-    SELECT *, ROW_NUMBER() OVER () AS rn FROM input
-  ),
-  scope_with_row_number AS (
-    SELECT *, ROW_NUMBER() OVER () AS rn FROM scope
-  )
-  SELECT input_with_row_number.*, scope_with_row_number.*
-  FROM input_with_row_number
-  JOIN scope_with_row_number ON input_with_row_number.rn = scope_with_row_number.rn
-`
+const data = db.sql`SELECT * FROM scope`
 return {data};
 }});
 
-define({id: "0e0057e1", outputs: ["scatter"], body: async () => {
-const {scatter} = await import("./_import/components/scatter.e6a504c8.js");
+define({id: "0f267664", inputs: ["data"], outputs: ["da"], body: (data) => {
+const da = data.toArray().map(d => d.toJSON())
+return {da};
+}});
 
-return {scatter};
+define({id: "5551e850", inputs: ["da","scope","hulls"], body: (da,scope,hulls) => {
+console.log("data!", da)
+console.log("scope!", scope)
+console.log("hulls!", hulls)
+}});
+
+define({id: "b76a4451", outputs: ["scatter","hull","tooltip","clusterCard","clusterListCard","markdownit","select"], body: async () => {
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {clusterListCard}, {default: markdownit}, {select}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_import/components/clusterListCard.2bd231cb.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-selection@3.0.0/_esm.js")]);
+
+// import matter from "npm:gray-matter";
+return {scatter,hull,tooltip,clusterCard,clusterListCard,markdownit,select};
+}});
+
+define({id: "2af7ab58", inputs: ["markdownit"], outputs: ["Markdown","md"], body: (markdownit) => {
+const Markdown = new markdownit({html: true});
+
+const md = {
+  unsafe(string) {
+    const template = document.createElement("template");
+    template.innerHTML = Markdown.render(string);
+    return template.content.cloneNode(true);
+  }
+};
+return {Markdown,md};
+}});
+
+define({id: "5f76811e", outputs: ["isMobileDevice"], body: () => {
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+return {isMobileDevice};
+}});
+
+define({id: "74b5d617", inputs: ["isMobileDevice","select"], body: (isMobileDevice,select) => {
+if(isMobileDevice) {
+  select(".regl-container").style("display", "none")
+}
 }});
 
 </script>
@@ -246,7 +490,7 @@ return {scatter};
 <div id="observablehq-center">
 <header id="observablehq-header">
 
-  <link rel="stylesheet" type="text/css" href="./_file/index.3a8c2c1c.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.0fc11091.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -263,36 +507,83 @@ return {scatter};
   </div>
 </header>
 <main id="observablehq-main" class="observablehq">
-<h1 id="latent-scope%3A-u.s.-federal-laws" tabindex="-1"><a class="observablehq-header-anchor" href="#latent-scope%3A-u.s.-federal-laws">Latent Scope: U.S. Federal Laws</a></h1>
-<h2><a href="https://osf.io/mrghc/?view_only" target="_blank" rel="noopener noreferrer">Source data</a>. Generated with <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a></h2>
-<div style="border: 1px solid gray;">
-  <span id="cell-b56a2c7c" class="observablehq--loading"></span>
+<h1 id="50k-u.s.-federal-laws" tabindex="-1"><a class="observablehq-header-anchor" href="#50k-u.s.-federal-laws">50k U.S. Federal Laws</a></h1>
+<p><a href="https://osf.io/mrghc/?view_only" target="_blank" rel="noopener noreferrer">Source data</a> from <a href="https://www.data-is-plural.com/archive/2024-02-28-edition/" target="_blank" rel="noopener noreferrer">Data is Plural 2024.02.28 edition</a></p>
+<div>
+<span id="cell-ea5bbdba" class="observablehq--loading"></span>
+<div>
+<div class="regl-container" style="border: 1px solid gray; position:relative; height: 500px;" "="">
+  <div>
+      <span id="cell-7f998601" class="observablehq--loading"></span> 
+  </div>
+  <div style="position:absolute;top:0;pointer-events:none;">
+      <span id="cell-f67d1c0a" class="observablehq--loading"></span>
+  </div>
+  <div style="position:absolute;top:0;pointer-events:none;">
+      <span id="cell-8d266656" class="observablehq--loading"></span>
+  </div>
+  <span id="cell-97380187" class="observablehq--loading"></span>
 </div>
 <div>
   <span id="cell-46313d53" class="observablehq--loading"></span> points. 
-  <span id="cell-14be7f3c" class="observablehq--loading"></span> points <span id="cell-b6999918" class="observablehq--loading"></span>. <span id="cell-c4a24530" class="observablehq--loading"></span>
+  <span id="cell-459eff35" class="observablehq--loading"></span> points selected. <i><span id="cell-1e7819ac" class="observablehq--loading"></span></i>
   <div style="display:inline-block">
-    <span id="cell-ca638f0b" class="observablehq--loading"></span>
+    <span id="cell-c6084855" class="observablehq--loading"></span>
   </div>
-  <span id="cell-52813c6b" class="observablehq--loading"></span>
+</div>
+<br>
+<div class="static-table">
+  <span id="cell-7b10de6d" class="observablehq--loading"></span>
+</div>
+</div>
+<p>My favorite clusters</p>
+<div>
+  <span id="cell-308c7536" class="observablehq--loading"></span>
 </div>
 <div>
-<span id="cell-0d4fc4a7" class="observablehq--loading"></span>
+  <span id="cell-bb318056" class="observablehq--loading"></span>
 </div>
-<div id="cell-475e24c1" class="observablehq observablehq--block"></div>
-<div id="cell-c48adcf3" class="observablehq observablehq--block"></div>
-<div id="cell-6123d116" class="observablehq observablehq--block"></div>
-<div id="cell-667d1db1" class="observablehq observablehq--block"></div>
-<div id="cell-28b7ce7d" class="observablehq observablehq--block"></div>
-<div id="cell-0aa84107" class="observablehq observablehq--block"></div>
-<div id="cell-87812cc5" class="observablehq observablehq--block"></div>
-<div id="cell-46e85306" class="observablehq observablehq--block"></div>
-<div id="cell-d6c9bc9b" class="observablehq observablehq--block"></div>
-<div id="cell-7dd34b16" class="observablehq observablehq--block"></div>
-<div id="cell-0e0057e1" class="observablehq observablehq--block"></div>
-</main>
+<p>Most boring cluster</p>
+<div>
+  <span id="cell-62c50bb7" class="observablehq--loading"></span>
+</div>
+<div id="cell-92fb4788" class="observablehq observablehq--block"></div>
+<div>
+  <span id="cell-706bdc3b" class="observablehq--loading"></span>
+</div>
+<div id="cell-f8b269cb" class="observablehq observablehq--block"></div>
+<div>
+<span id="cell-e88be7e1" class="observablehq--loading"></span>
+</div>
+<div id="cell-dcd871c6" class="observablehq observablehq--block"></div>
+<div>
+<span id="cell-60b8c5cb" class="observablehq--loading"></span>
+</div>
+<div id="cell-aff71acf" class="observablehq observablehq--block"></div>
+<div>
+<span id="cell-a071a0ac" class="observablehq--loading"></span>
+</div>
+<div id="cell-117b7a30" class="observablehq observablehq--block"></div>
+<div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
+<div id="cell-b32210e2" class="observablehq observablehq--block"></div>
+<div id="cell-447b69af" class="observablehq observablehq--block"></div>
+<div id="cell-3fa829a8" class="observablehq observablehq--block"></div>
+<div id="cell-77f718ba" class="observablehq observablehq--block"></div>
+<div id="cell-005a856b" class="observablehq observablehq--block"></div>
+<div id="cell-06bd66db" class="observablehq observablehq--block"></div>
+<div id="cell-cae631e1" class="observablehq observablehq--block"></div>
+<div id="cell-b1d51dcc" class="observablehq observablehq--block"></div>
+<div id="cell-5076ebc7" class="observablehq observablehq--block"></div>
+<div id="cell-bee957c8" class="observablehq observablehq--block"></div>
+<div id="cell-0f267664" class="observablehq observablehq--block"></div>
+<div id="cell-5551e850" class="observablehq observablehq--block"></div>
+<div id="cell-b76a4451" class="observablehq observablehq--block"></div>
+<div id="cell-2af7ab58" class="observablehq observablehq--block"></div>
+<div id="cell-5f76811e" class="observablehq observablehq--block"></div>
+<div id="cell-74b5d617" class="observablehq observablehq--block"></div>
+</div></main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-05T10:03:35">May 5, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T00:03:47">May 6, 2024</a>.</div>
 </footer>
 </div>

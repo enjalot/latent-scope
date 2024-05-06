@@ -1,0 +1,5082 @@
+{
+  "ls_version": "0.2.1",
+  "id": "scopes-001",
+  "embedding_id": "embedding-001",
+  "umap_id": "umap-009",
+  "cluster_id": "cluster-004",
+  "cluster_labels_id": "cluster-004-labels-002",
+  "label": "OpenAI Small + GPT-4 Turbo",
+  "description": "",
+  "dataset": {
+    "id": "us-federal-laws",
+    "length": 49746,
+    "columns": [
+      "row_number",
+      "action",
+      "Title",
+      "sal_volume",
+      "sal_page_start",
+      "BillCitation",
+      "congress_number",
+      "chapter",
+      "session_number",
+      "pl_no",
+      "date_of_passage",
+      "secondary_date",
+      "dates_conflict",
+      "Source",
+      "URL",
+      "alternate_sal_volume",
+      "alternate_sal_page_start",
+      "has_alternate_sal_citation"
+    ],
+    "text_column": "Title",
+    "column_metadata": {
+      "row_number": {
+        "type": "number",
+        "unique_values_count": 49746,
+        "extent": [
+          1,
+          49746
+        ]
+      },
+      "action": {
+        "type": "string",
+        "unique_values_count": 4,
+        "categories": [
+          "An Act",
+          "Joint Resolution",
+          "A Resolution",
+          "Resolution"
+        ],
+        "counts": {
+          "An Act": 40024,
+          "Joint Resolution": 4305,
+          "A Resolution": 449,
+          "Resolution": 132
+        }
+      },
+      "Title": {
+        "type": "string",
+        "unique_values_count": 47878
+      },
+      "sal_volume": {
+        "type": "number",
+        "unique_values_count": 133,
+        "extent": [
+          1,
+          136
+        ]
+      },
+      "sal_page_start": {
+        "type": "number",
+        "unique_values_count": 4032,
+        "extent": [
+          1.0,
+          6295.0
+        ]
+      },
+      "BillCitation": {
+        "type": "string",
+        "unique_values_count": 12159
+      },
+      "congress_number": {
+        "type": "number",
+        "unique_values_count": 117,
+        "extent": [
+          1,
+          117
+        ]
+      },
+      "chapter": {
+        "type": "number",
+        "unique_values_count": 1980,
+        "extent": [
+          0.0,
+          3947.0
+        ]
+      },
+      "session_number": {
+        "type": "number",
+        "unique_values_count": 4,
+        "extent": [
+          1.0,
+          4.0
+        ]
+      },
+      "pl_no": {
+        "type": "string",
+        "unique_values_count": 35750
+      },
+      "date_of_passage": {
+        "type": "string",
+        "unique_values_count": 12951
+      },
+      "secondary_date": {
+        "type": "string",
+        "unique_values_count": 101
+      },
+      "dates_conflict": {
+        "type": "unknown",
+        "unique_values_count": 2
+      },
+      "Source": {
+        "type": "string",
+        "unique_values_count": 2,
+        "categories": [
+          "HeinOnline",
+          "GPO"
+        ],
+        "counts": {
+          "HeinOnline": 29080,
+          "GPO": 3685
+        }
+      },
+      "URL": {
+        "type": "string",
+        "unique_values_count": 19517,
+        "url": true
+      },
+      "alternate_sal_volume": {
+        "type": "number",
+        "unique_values_count": 72,
+        "extent": [
+          65.0,
+          136.0
+        ]
+      },
+      "alternate_sal_page_start": {
+        "type": "number",
+        "unique_values_count": 4026,
+        "extent": [
+          2.0,
+          6295.0
+        ]
+      },
+      "has_alternate_sal_citation": {
+        "type": "number",
+        "unique_values_count": 2,
+        "extent": [
+          false,
+          true
+        ]
+      }
+    },
+    "potential_embeddings": [],
+    "ls_version": "0.2.1"
+  },
+  "embedding": {
+    "id": "embedding-001",
+    "model_id": "openai-text-embedding-3-small",
+    "dataset_id": "us-federal-laws",
+    "text_column": "Title",
+    "dimensions": 1536,
+    "prefix": ""
+  },
+  "umap": {
+    "id": "umap-009",
+    "embedding_id": "embedding-001",
+    "neighbors": 100,
+    "min_dist": 0.1,
+    "align": "embedding-001,embedding-003,embedding-005,embedding-006,embedding-007,embedding-009,embedding-011",
+    "align_id": "umap-009"
+  },
+  "cluster": {
+    "id": "cluster-004",
+    "umap_id": "umap-009",
+    "samples": 25,
+    "min_samples": 5,
+    "cluster_selection_epsilon": 0.005,
+    "n_clusters": 272,
+    "n_noise": 15237
+  },
+  "cluster_labels": {
+    "id": "cluster-004-labels-002",
+    "cluster_id": "cluster-004",
+    "model_id": "openai-gpt-4-turbo-preview",
+    "text_column": "Title",
+    "context": "",
+    "system_prompt": {
+      "role": "system",
+      "content": "You're job is to summarize lists of items with a short label of no more than 4 words. \n\nThe user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. \nDo not use punctuation, just return a few words that summarize the list."
+    },
+    "max_tokens": 127910
+  },
+  "cluster_labels_lookup": [
+    {
+      "label": "Veterans Facilities Designations",
+      "description": "This is cluster 0 with 87 items.",
+      "hull": [
+        45672,
+        38590,
+        39069,
+        26708,
+        47147,
+        49046
+      ],
+      "cluster": 0
+    },
+    {
+      "label": "National Stockpile Management",
+      "description": "This is cluster 1 with 112 items.",
+      "hull": [
+        37738,
+        37024,
+        37567,
+        30473,
+        29878,
+        38421,
+        37737
+      ],
+      "cluster": 1
+    },
+    {
+      "label": "Diplomatic Funding Legislation",
+      "description": "This is cluster 2 with 71 items.",
+      "hull": [
+        3206,
+        6301,
+        7972,
+        13227,
+        16546,
+        11159,
+        11582,
+        2721
+      ],
+      "cluster": 2
+    },
+    {
+      "label": "Pension Appropriations Laws",
+      "description": "This is cluster 3 with 34 items.",
+      "hull": [
+        3006,
+        3215,
+        3327,
+        3924,
+        3538,
+        3468,
+        7764,
+        48
+      ],
+      "cluster": 3
+    },
+    {
+      "label": "Pension appropriations history",
+      "description": "This is cluster 4 with 71 items.",
+      "hull": [
+        7666,
+        15741,
+        8411,
+        4566,
+        3987
+      ],
+      "cluster": 4
+    },
+    {
+      "label": "Indian Affairs Funding",
+      "description": "This is cluster 5 with 115 items.",
+      "hull": [
+        7425,
+        2984,
+        7678,
+        16130,
+        17346,
+        7992
+      ],
+      "cluster": 5
+    },
+    {
+      "label": "Congressional Eulogy Publications",
+      "description": "This is cluster 6 with 49 items.",
+      "hull": [
+        8435,
+        9069,
+        8057,
+        9839,
+        10561,
+        10703
+      ],
+      "cluster": 6
+    },
+    {
+      "label": "Bank alterations and mergers",
+      "description": "This is cluster 7 with 68 items.",
+      "hull": [
+        14686,
+        7692,
+        9417,
+        9292,
+        9129
+      ],
+      "cluster": 7
+    },
+    {
+      "label": "Post-Office Appropriations",
+      "description": "This is cluster 8 with 93 items.",
+      "hull": [
+        17987,
+        10061,
+        10615,
+        4506,
+        10517,
+        18158
+      ],
+      "cluster": 8
+    },
+    {
+      "label": "US Debt Limit Legislation",
+      "description": "This is cluster 9 with 85 items.",
+      "hull": [
+        21590,
+        38173,
+        39655,
+        39647,
+        42827,
+        31131,
+        46936,
+        35586,
+        36518,
+        24407
+      ],
+      "cluster": 9
+    },
+    {
+      "label": "Vessel Name Regulations",
+      "description": "This is cluster 10 with 133 items.",
+      "hull": [
+        4543,
+        7288,
+        1680,
+        21971,
+        8102,
+        6511,
+        7471
+      ],
+      "cluster": 10
+    },
+    {
+      "label": "American Register Grants",
+      "description": "This is cluster 11 with 107 items.",
+      "hull": [
+        13257,
+        9294,
+        7040,
+        6720,
+        12375,
+        13317
+      ],
+      "cluster": 11
+    },
+    {
+      "label": "Smithsonian Regents Appointments",
+      "description": "This is cluster 12 with 155 items.",
+      "hull": [
+        43046,
+        38508,
+        42745,
+        8231,
+        4860,
+        43063,
+        44925,
+        48274
+      ],
+      "cluster": 12
+    },
+    {
+      "label": "Hydroelectric Project Extensions",
+      "description": "This is cluster 13 with 43 items.",
+      "hull": [
+        44355,
+        44428,
+        48796,
+        48798,
+        48797,
+        48813,
+        47364,
+        45865,
+        46756,
+        33865,
+        40349
+      ],
+      "cluster": 13
+    },
+    {
+      "label": "Interior Department Funding",
+      "description": "This is cluster 14 with 34 items.",
+      "hull": [
+        28785,
+        22000,
+        23915,
+        22190,
+        25745,
+        28312,
+        28580,
+        28917
+      ],
+      "cluster": 14
+    },
+    {
+      "label": "USPS Building Dedications",
+      "description": "This is cluster 15 with 918 items.",
+      "hull": [
+        47109,
+        49276,
+        49532,
+        49232,
+        45256,
+        47995,
+        42253
+      ],
+      "cluster": 15
+    },
+    {
+      "label": "Federal Building Designations",
+      "description": "This is cluster 16 with 349 items.",
+      "hull": [
+        48314,
+        47800,
+        38677,
+        48125,
+        39803,
+        48164
+      ],
+      "cluster": 16
+    },
+    {
+      "label": "Government appropriations",
+      "description": "This is cluster 17 with 31 items.",
+      "hull": [
+        26853,
+        25207,
+        22561,
+        22159,
+        22222
+      ],
+      "cluster": 17
+    },
+    {
+      "label": "US bankruptcy legislation updates",
+      "description": "This is cluster 18 with 55 items.",
+      "hull": [
+        2711,
+        29535,
+        26983,
+        23857,
+        7793
+      ],
+      "cluster": 18
+    },
+    {
+      "label": "Bankruptcy Legislation Amendments",
+      "description": "This is cluster 19 with 74 items.",
+      "hull": [
+        24592,
+        38690,
+        42351,
+        49385,
+        49361,
+        35739
+      ],
+      "cluster": 19
+    },
+    {
+      "label": "Historical Appropriations",
+      "description": "This is cluster 20 with 111 items.",
+      "hull": [
+        27416,
+        26778,
+        25123,
+        25453,
+        26807,
+        24009,
+        24567,
+        22493,
+        20848,
+        19418,
+        18961,
+        23204
+      ],
+      "cluster": 20
+    },
+    {
+      "label": "Agricultural appropriations history",
+      "description": "This is cluster 21 with 28 items.",
+      "hull": [
+        11655,
+        13006,
+        13875,
+        16545,
+        16374,
+        12317,
+        10983
+      ],
+      "cluster": 21
+    },
+    {
+      "label": "Agriculture Department Funding",
+      "description": "This is cluster 22 with 51 items.",
+      "hull": [
+        19577,
+        20785,
+        16784,
+        10148,
+        26941,
+        26523,
+        28304
+      ],
+      "cluster": 22
+    },
+    {
+      "label": "Government funding bills",
+      "description": "This is cluster 23 with 36 items.",
+      "hull": [
+        28276,
+        23913,
+        21871,
+        18123,
+        26642,
+        25747,
+        28299
+      ],
+      "cluster": 23
+    },
+    {
+      "label": "Defense Infrastructure Funding",
+      "description": "This is cluster 24 with 37 items.",
+      "hull": [
+        3211,
+        2669,
+        17322,
+        16737,
+        17183,
+        25237
+      ],
+      "cluster": 24
+    },
+    {
+      "label": "Government funding appropriations",
+      "description": "This is cluster 25 with 75 items.",
+      "hull": [
+        22204,
+        23495,
+        23329,
+        18121,
+        17888,
+        26601,
+        28201,
+        28626,
+        28485,
+        27038,
+        23871
+      ],
+      "cluster": 25
+    },
+    {
+      "label": "Historical appropriations summaries",
+      "description": "This is cluster 26 with 113 items.",
+      "hull": [
+        25113,
+        25382,
+        27636,
+        26167,
+        26017,
+        25279,
+        25700,
+        26089,
+        23625
+      ],
+      "cluster": 26
+    },
+    {
+      "label": "Alaska municipal projects",
+      "description": "This is cluster 27 with 43 items.",
+      "hull": [
+        18264,
+        22255,
+        27070,
+        23033,
+        16859
+      ],
+      "cluster": 27
+    },
+    {
+      "label": "Alaska Legislation and Acts",
+      "description": "This is cluster 28 with 447 items.",
+      "hull": [
+        27394,
+        27637,
+        39896,
+        20955,
+        30941,
+        32543,
+        33032,
+        27970,
+        48244
+      ],
+      "cluster": 28
+    },
+    {
+      "label": "Government Appropriations Acts",
+      "description": "This is cluster 29 with 66 items.",
+      "hull": [
+        38839,
+        44772,
+        44561,
+        44971,
+        48488,
+        44967
+      ],
+      "cluster": 29
+    },
+    {
+      "label": "Appropriations Legislation",
+      "description": "This is cluster 30 with 38 items.",
+      "hull": [
+        45298,
+        45448,
+        44599,
+        44997,
+        45733,
+        45336,
+        45449
+      ],
+      "cluster": 30
+    },
+    {
+      "label": "Government appropriations",
+      "description": "This is cluster 31 with 29 items.",
+      "hull": [
+        3434,
+        6262,
+        4257,
+        3913,
+        4067,
+        3004,
+        2856,
+        2813
+      ],
+      "cluster": 31
+    },
+    {
+      "label": "Government appropriations",
+      "description": "This is cluster 32 with 145 items.",
+      "hull": [
+        4553,
+        3819,
+        17707,
+        13669,
+        16667,
+        16542,
+        16379,
+        4499,
+        4414
+      ],
+      "cluster": 32
+    },
+    {
+      "label": "Government appropriations",
+      "description": "This is cluster 33 with 69 items.",
+      "hull": [
+        452,
+        1112,
+        64,
+        515,
+        7829,
+        49387,
+        16488,
+        2394
+      ],
+      "cluster": 33
+    },
+    {
+      "label": "Military financial measures",
+      "description": "This is cluster 34 with 91 items.",
+      "hull": [
+        2720,
+        4749,
+        1424,
+        2615,
+        4882,
+        2528,
+        1013,
+        3172,
+        2521,
+        2187,
+        3053
+      ],
+      "cluster": 34
+    },
+    {
+      "label": "Government appropriations",
+      "description": "This is cluster 35 with 167 items.",
+      "hull": [
+        6421,
+        2562,
+        17132,
+        7782,
+        8223,
+        3667,
+        9498
+      ],
+      "cluster": 35
+    },
+    {
+      "label": "Army Appropriations",
+      "description": "This is cluster 36 with 89 items.",
+      "hull": [
+        5600,
+        6694,
+        6364,
+        9133,
+        5719,
+        16836,
+        13874,
+        17187
+      ],
+      "cluster": 36
+    },
+    {
+      "label": "Defense Funding Legislation",
+      "description": "This is cluster 37 with 33 items.",
+      "hull": [
+        8768,
+        3588,
+        5381,
+        8003,
+        6043,
+        6107,
+        9387,
+        4748
+      ],
+      "cluster": 37
+    },
+    {
+      "label": "Government funding and fortifications",
+      "description": "This is cluster 38 with 89 items.",
+      "hull": [
+        4760,
+        1368,
+        1742,
+        340,
+        4253,
+        887,
+        6776,
+        4820
+      ],
+      "cluster": 38
+    },
+    {
+      "label": "Fiscal appropriations resolutions",
+      "description": "This is cluster 39 with 38 items.",
+      "hull": [
+        46051,
+        45950,
+        46982,
+        47862,
+        48365,
+        48173,
+        41600
+      ],
+      "cluster": 39
+    },
+    {
+      "label": "Fiscal appropriations and resolutions",
+      "description": "This is cluster 40 with 215 items.",
+      "hull": [
+        29848,
+        41691,
+        41966,
+        35378,
+        28404,
+        28516,
+        45893,
+        39059
+      ],
+      "cluster": 40
+    },
+    {
+      "label": "Agriculture Appropriations Acts",
+      "description": "This is cluster 41 with 45 items.",
+      "hull": [
+        38082,
+        31599,
+        31007,
+        33329,
+        44047,
+        47384,
+        46065,
+        40107
+      ],
+      "cluster": 41
+    },
+    {
+      "label": "Atomic Energy Legislation",
+      "description": "This is cluster 42 with 129 items.",
+      "hull": [
+        21091,
+        37654,
+        36985,
+        40837,
+        47444,
+        45689,
+        47091
+      ],
+      "cluster": 42
+    },
+    {
+      "label": "Military Academy Funding",
+      "description": "This is cluster 43 with 110 items.",
+      "hull": [
+        37510,
+        33031,
+        34171,
+        37463,
+        26629,
+        8662,
+        17270,
+        28845,
+        28884
+      ],
+      "cluster": 43
+    },
+    {
+      "label": "Congressional Gold Medal Awards",
+      "description": "This is cluster 44 with 144 items.",
+      "hull": [
+        33650,
+        7208,
+        42088,
+        31732,
+        38161,
+        44992,
+        49692,
+        49727,
+        45744,
+        33256,
+        27511
+      ],
+      "cluster": 44
+    },
+    {
+      "label": "Historical Celebrations and Commissions",
+      "description": "This is cluster 45 with 116 items.",
+      "hull": [
+        31309,
+        29936,
+        42900,
+        23240,
+        30409,
+        30231,
+        36849,
+        48696,
+        48904,
+        42513
+      ],
+      "cluster": 45
+    },
+    {
+      "label": "Naval Appropriations and Expositions",
+      "description": "This is cluster 46 with 150 items.",
+      "hull": [
+        7019,
+        13489,
+        23046,
+        16084,
+        6579,
+        2123,
+        3153,
+        48626,
+        30154
+      ],
+      "cluster": 46
+    },
+    {
+      "label": "Naval appropriations and participation",
+      "description": "This is cluster 47 with 131 items.",
+      "hull": [
+        16485,
+        20380,
+        3049,
+        4069,
+        16254,
+        3274,
+        12284,
+        19273,
+        4176,
+        43882
+      ],
+      "cluster": 47
+    },
+    {
+      "label": "US Government Resolutions",
+      "description": "This is cluster 48 with 41 items.",
+      "hull": [
+        30053,
+        46505,
+        48652,
+        41928,
+        41478,
+        32687,
+        46188,
+        46586
+      ],
+      "cluster": 48
+    },
+    {
+      "label": "Historical Designations and Commemorations",
+      "description": "This is cluster 49 with 45 items.",
+      "hull": [
+        42865,
+        37751,
+        47460,
+        41179,
+        41702,
+        43220,
+        41474,
+        42480,
+        42733
+      ],
+      "cluster": 49
+    },
+    {
+      "label": "Infrastructure and Project Authorizations",
+      "description": "This is cluster 50 with 208 items.",
+      "hull": [
+        39247,
+        22113,
+        4172,
+        20450,
+        4322,
+        18357,
+        17361,
+        12972,
+        26487,
+        18622,
+        16847
+      ],
+      "cluster": 50
+    },
+    {
+      "label": "Congress Timing and Commemorations",
+      "description": "This is cluster 51 with 129 items.",
+      "hull": [
+        46047,
+        1730,
+        120,
+        6057,
+        22367,
+        31439,
+        38378,
+        31709,
+        31728,
+        41262,
+        42040,
+        40237,
+        29140
+      ],
+      "cluster": 51
+    },
+    {
+      "label": "Post-road Legislation",
+      "description": "This is cluster 52 with 104 items.",
+      "hull": [
+        3729,
+        8987,
+        2808
+      ],
+      "cluster": 52
+    },
+    {
+      "label": "Commemorative coinage and stamps",
+      "description": "This is cluster 53 with 89 items.",
+      "hull": [
+        44904,
+        47016,
+        32801,
+        5520,
+        17021,
+        23399,
+        38427
+      ],
+      "cluster": 53
+    },
+    {
+      "label": "Commemorative Medals and Coins",
+      "description": "This is cluster 54 with 146 items.",
+      "hull": [
+        39044,
+        44856,
+        18817,
+        24484,
+        38136,
+        33919,
+        36293
+      ],
+      "cluster": 54
+    },
+    {
+      "label": "Historical Commemorations",
+      "description": "This is cluster 55 with 36 items.",
+      "hull": [
+        33064,
+        33115,
+        40185,
+        30637,
+        35041,
+        37417,
+        42069
+      ],
+      "cluster": 55
+    },
+    {
+      "label": "Historical Commemorations and Resolutions",
+      "description": "This is cluster 56 with 61 items.",
+      "hull": [
+        48198,
+        43168,
+        41973,
+        42059,
+        40825,
+        40745,
+        40871,
+        45095,
+        31488,
+        41860,
+        45136
+      ],
+      "cluster": 56
+    },
+    {
+      "label": "Historical Commemorations",
+      "description": "This is cluster 57 with 51 items.",
+      "hull": [
+        41379,
+        40150,
+        41404,
+        42793,
+        39052,
+        37560,
+        41771
+      ],
+      "cluster": 57
+    },
+    {
+      "label": "National Observances",
+      "description": "This is cluster 58 with 627 items.",
+      "hull": [
+        46214,
+        43411,
+        43248,
+        42169,
+        43415,
+        28248,
+        40322,
+        37538,
+        30254,
+        41578,
+        42008
+      ],
+      "cluster": 58
+    },
+    {
+      "label": "National Awareness Weeks",
+      "description": "This is cluster 59 with 646 items.",
+      "hull": [
+        42079,
+        43249,
+        41821,
+        41522,
+        41387,
+        37542,
+        35118,
+        41307,
+        43394,
+        42808,
+        44064,
+        41796
+      ],
+      "cluster": 59
+    },
+    {
+      "label": "Legislative Relief Acts",
+      "description": "This is cluster 60 with 125 items.",
+      "hull": [
+        24329,
+        5967,
+        8460,
+        1529,
+        77,
+        2221,
+        7881,
+        9193,
+        9502,
+        46
+      ],
+      "cluster": 60
+    },
+    {
+      "label": "Veterans Legislation Summary",
+      "description": "This is cluster 61 with 174 items.",
+      "hull": [
+        49094,
+        42423,
+        49347,
+        38293,
+        48776,
+        40310,
+        42903,
+        39721,
+        43705,
+        48852
+      ],
+      "cluster": 61
+    },
+    {
+      "label": "Government Appropriation Acts",
+      "description": "This is cluster 62 with 40 items.",
+      "hull": [
+        39093,
+        43508,
+        38335,
+        34895,
+        42993,
+        49707,
+        49014
+      ],
+      "cluster": 62
+    },
+    {
+      "label": "Government Appropriations Acts",
+      "description": "This is cluster 63 with 63 items.",
+      "hull": [
+        42992,
+        44791,
+        44044,
+        40105,
+        38264,
+        39459
+      ],
+      "cluster": 63
+    },
+    {
+      "label": "Historical appropriations acts",
+      "description": "This is cluster 64 with 74 items.",
+      "hull": [
+        33958,
+        40276,
+        30920,
+        29213,
+        30047,
+        31950
+      ],
+      "cluster": 64
+    },
+    {
+      "label": "Government Appropriations Acts",
+      "description": "This is cluster 65 with 90 items.",
+      "hull": [
+        46466,
+        46460,
+        35207,
+        30532,
+        36047,
+        38533,
+        29504,
+        29826
+      ],
+      "cluster": 65
+    },
+    {
+      "label": "US Government Appropriations",
+      "description": "This is cluster 66 with 214 items.",
+      "hull": [
+        37311,
+        46512,
+        31651,
+        47976,
+        39382,
+        47309,
+        47006,
+        36411,
+        38781,
+        33653
+      ],
+      "cluster": 66
+    },
+    {
+      "label": "Judicial and Public Works Legislation",
+      "description": "This is cluster 67 with 58 items.",
+      "hull": [
+        27312,
+        549,
+        25372,
+        39297,
+        2979,
+        17277,
+        12841,
+        1459,
+        28030,
+        6915,
+        20377
+      ],
+      "cluster": 67
+    },
+    {
+      "label": "Infrastructure Development Acts",
+      "description": "This is cluster 68 with 77 items.",
+      "hull": [
+        9997,
+        23603,
+        23778,
+        19107,
+        10190,
+        10470,
+        6060,
+        2121
+      ],
+      "cluster": 68
+    },
+    {
+      "label": "Legislative Actions",
+      "description": "This is cluster 69 with 144 items.",
+      "hull": [
+        29331,
+        28795,
+        31232,
+        30910,
+        37803,
+        19405,
+        15304,
+        2959,
+        3519,
+        21396,
+        32331,
+        12387
+      ],
+      "cluster": 69
+    },
+    {
+      "label": "Water Resource Compacts",
+      "description": "This is cluster 70 with 114 items.",
+      "hull": [
+        12973,
+        17117,
+        17208,
+        31844,
+        16945,
+        41023,
+        6164,
+        11461
+      ],
+      "cluster": 70
+    },
+    {
+      "label": "Legislation and Relief Acts",
+      "description": "This is cluster 71 with 90 items.",
+      "hull": [
+        6035,
+        14156,
+        9570,
+        19642,
+        4618,
+        443,
+        12835,
+        2172
+      ],
+      "cluster": 71
+    },
+    {
+      "label": "Bridge Construction Legislation",
+      "description": "This is cluster 72 with 55 items.",
+      "hull": [
+        24019,
+        6179,
+        17281,
+        17457,
+        19118,
+        15707,
+        19880,
+        15423,
+        19012,
+        10783
+      ],
+      "cluster": 72
+    },
+    {
+      "label": "Bridge and Dam Construction",
+      "description": "This is cluster 73 with 133 items.",
+      "hull": [
+        20270,
+        20864,
+        21101,
+        18715,
+        20436,
+        7338,
+        9788,
+        29644,
+        10492,
+        19331
+      ],
+      "cluster": 73
+    },
+    {
+      "label": "Bridge construction authorizations",
+      "description": "This is cluster 74 with 41 items.",
+      "hull": [
+        19910,
+        20416,
+        19949,
+        16723,
+        21575,
+        11399
+      ],
+      "cluster": 74
+    },
+    {
+      "label": "Bridge construction authorizations",
+      "description": "This is cluster 75 with 62 items.",
+      "hull": [
+        23640,
+        19470,
+        622,
+        20729,
+        20763,
+        19958,
+        13838
+      ],
+      "cluster": 75
+    },
+    {
+      "label": "Bridge and Infrastructure Legislation",
+      "description": "This is cluster 76 with 197 items.",
+      "hull": [
+        35366,
+        21465,
+        30908,
+        13571,
+        20672,
+        6958,
+        30710,
+        12082,
+        13030,
+        10676,
+        9442,
+        6146,
+        19196,
+        44307
+      ],
+      "cluster": 76
+    },
+    {
+      "label": "Bridge and Dam Legislation",
+      "description": "This is cluster 77 with 220 items.",
+      "hull": [
+        18137,
+        2897,
+        26939,
+        7434,
+        9044,
+        2342,
+        14484,
+        10097,
+        19983,
+        21381,
+        21037,
+        20549,
+        20231
+      ],
+      "cluster": 77
+    },
+    {
+      "label": "Infrastructure and Bridge Legislation",
+      "description": "This is cluster 78 with 74 items.",
+      "hull": [
+        2818,
+        20665,
+        21062,
+        19609,
+        20789,
+        22431,
+        19185,
+        33862,
+        2199,
+        26535,
+        5757
+      ],
+      "cluster": 78
+    },
+    {
+      "label": "Bridge Construction Authorizations",
+      "description": "This is cluster 79 with 202 items.",
+      "hull": [
+        2095,
+        26507,
+        25407,
+        20469,
+        20279,
+        16627,
+        26834,
+        20336,
+        13808,
+        25154
+      ],
+      "cluster": 79
+    },
+    {
+      "label": "Infrastructure projects",
+      "description": "This is cluster 80 with 132 items.",
+      "hull": [
+        11887,
+        32044,
+        30982,
+        10717,
+        10363,
+        22129,
+        21650,
+        17800,
+        18551,
+        24021,
+        23111,
+        19098,
+        8163,
+        13171
+      ],
+      "cluster": 80
+    },
+    {
+      "label": "Bridge and road construction",
+      "description": "This is cluster 81 with 441 items.",
+      "hull": [
+        19145,
+        13534,
+        16741,
+        21739,
+        15505,
+        20724,
+        18783,
+        3086,
+        6485,
+        24020,
+        13261,
+        17036
+      ],
+      "cluster": 81
+    },
+    {
+      "label": "US Judicial System Legislation",
+      "description": "This is cluster 82 with 130 items.",
+      "hull": [
+        1585,
+        2190,
+        4339,
+        14965,
+        5853,
+        11850,
+        6813,
+        9130,
+        11594,
+        6693,
+        15451
+      ],
+      "cluster": 82
+    },
+    {
+      "label": "Bridge Construction Permissions",
+      "description": "This is cluster 83 with 132 items.",
+      "hull": [
+        2111,
+        11327,
+        9581,
+        13553,
+        20922,
+        19742,
+        18400,
+        20843,
+        19866,
+        9453
+      ],
+      "cluster": 83
+    },
+    {
+      "label": "US Judicial Legislation",
+      "description": "This is cluster 84 with 137 items.",
+      "hull": [
+        26249,
+        13240,
+        15609,
+        7488,
+        9620,
+        8141,
+        7399,
+        29058,
+        17164,
+        23428,
+        12298
+      ],
+      "cluster": 84
+    },
+    {
+      "label": "Bridge construction legislation",
+      "description": "This is cluster 85 with 37 items.",
+      "hull": [
+        20522,
+        9996,
+        10720,
+        10180,
+        27161
+      ],
+      "cluster": 85
+    },
+    {
+      "label": "Judicial System Amendments",
+      "description": "This is cluster 86 with 147 items.",
+      "hull": [
+        28272,
+        38476,
+        18403,
+        1996,
+        9595,
+        23569,
+        36864,
+        35048
+      ],
+      "cluster": 86
+    },
+    {
+      "label": "US Judicial System Adjustments",
+      "description": "This is cluster 87 with 748 items.",
+      "hull": [
+        8319,
+        11047,
+        44666,
+        33984,
+        47464,
+        10104,
+        4263,
+        1815,
+        2399,
+        14560,
+        23646
+      ],
+      "cluster": 87
+    },
+    {
+      "label": "Ohio River Bridge Projects",
+      "description": "This is cluster 88 with 47 items.",
+      "hull": [
+        21404,
+        22491,
+        27060,
+        27157,
+        21962,
+        20968,
+        19682,
+        20167
+      ],
+      "cluster": 88
+    },
+    {
+      "label": "Bridge Construction Authorizations",
+      "description": "This is cluster 89 with 234 items.",
+      "hull": [
+        17090,
+        19896,
+        19780,
+        20174,
+        22933,
+        19806,
+        10224,
+        9970,
+        7125,
+        21872,
+        14704
+      ],
+      "cluster": 89
+    },
+    {
+      "label": "Missouri River Bridge Projects",
+      "description": "This is cluster 90 with 107 items.",
+      "hull": [
+        16057,
+        21760,
+        26178,
+        24769,
+        27950,
+        20765,
+        17264,
+        27772,
+        26275
+      ],
+      "cluster": 90
+    },
+    {
+      "label": "Bridge Construction Legislation",
+      "description": "This is cluster 91 with 383 items.",
+      "hull": [
+        21227,
+        21715,
+        23071,
+        23974,
+        11072,
+        10308,
+        15819,
+        19481,
+        14728,
+        2082
+      ],
+      "cluster": 91
+    },
+    {
+      "label": "Bridge and Dam Legislation",
+      "description": "This is cluster 92 with 213 items.",
+      "hull": [
+        11996,
+        14752,
+        24025,
+        20640,
+        16719,
+        13895,
+        13348,
+        11222,
+        11319
+      ],
+      "cluster": 92
+    },
+    {
+      "label": "Bridge and Road Legislation",
+      "description": "This is cluster 93 with 260 items.",
+      "hull": [
+        16622,
+        22739,
+        3368,
+        44863,
+        30866,
+        12988,
+        2340,
+        22979,
+        34246,
+        9980,
+        10372,
+        21024
+      ],
+      "cluster": 93
+    },
+    {
+      "label": "Government Funding Legislation",
+      "description": "This is cluster 94 with 71 items.",
+      "hull": [
+        39695,
+        28354,
+        28588,
+        44635,
+        43387,
+        40513,
+        41267,
+        41706,
+        49738
+      ],
+      "cluster": 94
+    },
+    {
+      "label": "US Judicial System Reforms",
+      "description": "This is cluster 95 with 84 items.",
+      "hull": [
+        16448,
+        22010,
+        2264,
+        24190,
+        1496,
+        42116,
+        3296,
+        47478,
+        2783,
+        15909,
+        4678,
+        12471,
+        18708,
+        7843,
+        4508
+      ],
+      "cluster": 95
+    },
+    {
+      "label": "Judiciary System Amendments",
+      "description": "This is cluster 96 with 126 items.",
+      "hull": [
+        4294,
+        14630,
+        1897,
+        150,
+        24287,
+        32387,
+        718,
+        16615,
+        7445,
+        12494,
+        6765,
+        5898
+      ],
+      "cluster": 96
+    },
+    {
+      "label": "Bridge and Dam Legislation",
+      "description": "This is cluster 97 with 355 items.",
+      "hull": [
+        7332,
+        7141,
+        18959,
+        13822,
+        16179,
+        24434,
+        16797,
+        19786,
+        3982
+      ],
+      "cluster": 97
+    },
+    {
+      "label": "Bridge and Dam Authorizations",
+      "description": "This is cluster 98 with 103 items.",
+      "hull": [
+        26665,
+        14180,
+        23440,
+        24081,
+        15768,
+        15252,
+        18297,
+        19870,
+        15787,
+        12413,
+        9759,
+        10509
+      ],
+      "cluster": 98
+    },
+    {
+      "label": "US Legislative Actions",
+      "description": "This is cluster 99 with 57 items.",
+      "hull": [
+        12239,
+        15528,
+        1190,
+        550,
+        7896,
+        7359,
+        5413,
+        8204,
+        8717,
+        9509,
+        1316
+      ],
+      "cluster": 99
+    },
+    {
+      "label": "Military and Civic Support Legislation",
+      "description": "This is cluster 100 with 75 items.",
+      "hull": [
+        10681,
+        7341,
+        2289,
+        43326,
+        23458,
+        9134,
+        1561,
+        1172,
+        16296
+      ],
+      "cluster": 100
+    },
+    {
+      "label": "Congressional Recognitions and Salaries",
+      "description": "This is cluster 101 with 129 items.",
+      "hull": [
+        8447,
+        8078,
+        8843,
+        16688,
+        4231,
+        28441,
+        8044,
+        6866,
+        15784
+      ],
+      "cluster": 101
+    },
+    {
+      "label": "Congressional Appropriations and Activities",
+      "description": "This is cluster 102 with 97 items.",
+      "hull": [
+        4279,
+        81,
+        30335,
+        33974,
+        3952,
+        7177,
+        9626,
+        1026,
+        1096
+      ],
+      "cluster": 102
+    },
+    {
+      "label": "Trade and Environmental Legislation",
+      "description": "This is cluster 103 with 170 items.",
+      "hull": [
+        29438,
+        10684,
+        48841,
+        29883,
+        40000,
+        34194,
+        43076,
+        34147,
+        24970,
+        36808,
+        29231
+      ],
+      "cluster": 103
+    },
+    {
+      "label": "Military and Veterans Events",
+      "description": "This is cluster 104 with 59 items.",
+      "hull": [
+        7922,
+        21145,
+        36352,
+        36187,
+        21740,
+        41899,
+        19412,
+        21005,
+        19183
+      ],
+      "cluster": 104
+    },
+    {
+      "label": "Indian Tribes Judgment Funds",
+      "description": "This is cluster 105 with 137 items.",
+      "hull": [
+        40440,
+        38013,
+        37177,
+        31220,
+        39211,
+        36084,
+        40551,
+        40407,
+        40601,
+        37467
+      ],
+      "cluster": 105
+    },
+    {
+      "label": "DC Government Funding",
+      "description": "This is cluster 106 with 80 items.",
+      "hull": [
+        16520,
+        27012,
+        26621,
+        18517,
+        11846,
+        7862,
+        11153,
+        12562,
+        10044,
+        16972
+      ],
+      "cluster": 106
+    },
+    {
+      "label": "DC Legal Amendments",
+      "description": "This is cluster 107 with 60 items.",
+      "hull": [
+        22762,
+        33497,
+        35753,
+        32944,
+        30186,
+        34072,
+        31815,
+        36044,
+        34657,
+        35804
+      ],
+      "cluster": 107
+    },
+    {
+      "label": "US Appropriations Acts",
+      "description": "This is cluster 108 with 56 items.",
+      "hull": [
+        49655,
+        49262,
+        49721,
+        45463,
+        40528,
+        39523,
+        42595,
+        49251,
+        6334
+      ],
+      "cluster": 108
+    },
+    {
+      "label": "District of Columbia Legislation",
+      "description": "This is cluster 109 with 109 items.",
+      "hull": [
+        35715,
+        34353,
+        35108,
+        35352,
+        29411,
+        30394,
+        25421,
+        27478,
+        45462,
+        40602
+      ],
+      "cluster": 109
+    },
+    {
+      "label": "DC Infrastructure Legislation",
+      "description": "This is cluster 110 with 297 items.",
+      "hull": [
+        23282,
+        15760,
+        13922,
+        13223,
+        6456,
+        5530,
+        13750,
+        14018,
+        10884,
+        12853,
+        25501,
+        13010
+      ],
+      "cluster": 110
+    },
+    {
+      "label": "District of Columbia Legislation",
+      "description": "This is cluster 111 with 96 items.",
+      "hull": [
+        30272,
+        33698,
+        5000,
+        24894,
+        9038,
+        2100,
+        20367,
+        28844,
+        21675,
+        34487
+      ],
+      "cluster": 111
+    },
+    {
+      "label": "District of Columbia Legislation",
+      "description": "This is cluster 112 with 88 items.",
+      "hull": [
+        25870,
+        25249,
+        41098,
+        36712,
+        44742,
+        32502,
+        29090,
+        29674,
+        29497,
+        36748
+      ],
+      "cluster": 112
+    },
+    {
+      "label": "Veterans and Memorials Legislation",
+      "description": "This is cluster 113 with 112 items.",
+      "hull": [
+        49103,
+        45488,
+        28796,
+        17810,
+        17731,
+        26653,
+        26948,
+        24372,
+        31104,
+        38856
+      ],
+      "cluster": 113
+    },
+    {
+      "label": "Washington infrastructure legislation",
+      "description": "This is cluster 114 with 107 items.",
+      "hull": [
+        21727,
+        11177,
+        11193,
+        10447,
+        11162,
+        878,
+        15255,
+        18420
+      ],
+      "cluster": 114
+    },
+    {
+      "label": "Agriculture Legislation Evolution",
+      "description": "This is cluster 115 with 68 items.",
+      "hull": [
+        47864,
+        35678,
+        33712,
+        42282,
+        40657,
+        45164,
+        47079,
+        49158,
+        44743,
+        33207,
+        49463
+      ],
+      "cluster": 115
+    },
+    {
+      "label": "Historic Incorporations and Amendments",
+      "description": "This is cluster 116 with 167 items.",
+      "hull": [
+        19083,
+        10745,
+        3419,
+        7957,
+        10277,
+        9397,
+        43346,
+        14367,
+        11853,
+        27455,
+        42957,
+        29856,
+        5791
+      ],
+      "cluster": 116
+    },
+    {
+      "label": "US Memorial Legislation",
+      "description": "This is cluster 117 with 255 items.",
+      "hull": [
+        44001,
+        4539,
+        38558,
+        27989,
+        37699,
+        18655,
+        21694,
+        294,
+        7392,
+        42664,
+        29581
+      ],
+      "cluster": 117
+    },
+    {
+      "label": "DC Institutional Legislation",
+      "description": "This is cluster 118 with 116 items.",
+      "hull": [
+        36803,
+        34794,
+        19968,
+        17849,
+        25364,
+        19200,
+        14020,
+        32030,
+        34121
+      ],
+      "cluster": 118
+    },
+    {
+      "label": "District of Columbia Legislation",
+      "description": "This is cluster 119 with 217 items.",
+      "hull": [
+        11483,
+        23597,
+        2274,
+        968,
+        1714,
+        15595,
+        19683,
+        16811,
+        15098,
+        12546,
+        7780,
+        12940,
+        14231
+      ],
+      "cluster": 119
+    },
+    {
+      "label": "Legislative acts and amendments",
+      "description": "This is cluster 120 with 50 items.",
+      "hull": [
+        35664,
+        34328,
+        37252,
+        40275,
+        39991,
+        28119,
+        25455,
+        37887,
+        18382,
+        29428,
+        16559
+      ],
+      "cluster": 120
+    },
+    {
+      "label": "Maritime and Trade Legislation",
+      "description": "This is cluster 121 with 181 items.",
+      "hull": [
+        47125,
+        27792,
+        18242,
+        18036,
+        27254,
+        27685,
+        27770,
+        36820,
+        33013,
+        34788
+      ],
+      "cluster": 121
+    },
+    {
+      "label": "Legislation and Canal Zone Affairs",
+      "description": "This is cluster 122 with 190 items.",
+      "hull": [
+        14639,
+        26888,
+        3540,
+        21562,
+        16551,
+        15705,
+        17712,
+        22442,
+        32577,
+        5953,
+        22884,
+        32732,
+        27700
+      ],
+      "cluster": 122
+    },
+    {
+      "label": "U.S. District of Columbia Legislation",
+      "description": "This is cluster 123 with 1411 items.",
+      "hull": [
+        44366,
+        24351,
+        36029,
+        19052,
+        15466,
+        23363,
+        9725,
+        3193,
+        12902,
+        43784,
+        35896,
+        31221,
+        37367
+      ],
+      "cluster": 123
+    },
+    {
+      "label": "Washington D.C. legislative actions",
+      "description": "This is cluster 124 with 117 items.",
+      "hull": [
+        8297,
+        11226,
+        13733,
+        6682,
+        21938,
+        1954,
+        33692,
+        3453,
+        14689,
+        9702,
+        4956,
+        12462,
+        28691
+      ],
+      "cluster": 124
+    },
+    {
+      "label": "Infrastructure and Conservation Acts",
+      "description": "This is cluster 125 with 72 items.",
+      "hull": [
+        12193,
+        37986,
+        18338,
+        11520,
+        26022,
+        6474,
+        8380,
+        14118,
+        38793,
+        14595
+      ],
+      "cluster": 125
+    },
+    {
+      "label": "US legislative actions",
+      "description": "This is cluster 126 with 195 items.",
+      "hull": [
+        2097,
+        36624,
+        27607,
+        31626,
+        26589,
+        31140,
+        10526,
+        18377,
+        26996,
+        40835,
+        36377,
+        24945,
+        25639,
+        17946,
+        10264,
+        21567,
+        6984
+      ],
+      "cluster": 126
+    },
+    {
+      "label": "Indian Affairs Legislation",
+      "description": "This is cluster 127 with 45 items.",
+      "hull": [
+        6134,
+        27483,
+        27186,
+        27390,
+        22687,
+        15418,
+        18674,
+        36457,
+        20250,
+        35420,
+        11717
+      ],
+      "cluster": 127
+    },
+    {
+      "label": "US Legislative Actions",
+      "description": "This is cluster 128 with 72 items.",
+      "hull": [
+        34486,
+        24971,
+        18114,
+        11934,
+        11428,
+        32888,
+        19293,
+        17096,
+        1515,
+        3210,
+        11666,
+        18970,
+        3633
+      ],
+      "cluster": 128
+    },
+    {
+      "label": "Capitol and Memorials Legislation",
+      "description": "This is cluster 129 with 205 items.",
+      "hull": [
+        9145,
+        31566,
+        33182,
+        13088,
+        16076,
+        46984,
+        16213,
+        22355,
+        11100,
+        21302,
+        9854,
+        19750,
+        9118,
+        5496
+      ],
+      "cluster": 129
+    },
+    {
+      "label": "Library and Presidential Provisions",
+      "description": "This is cluster 130 with 78 items.",
+      "hull": [
+        19726,
+        3986,
+        24104,
+        725,
+        35153,
+        34998,
+        32886,
+        36967,
+        20381
+      ],
+      "cluster": 130
+    },
+    {
+      "label": "Legislative Measures",
+      "description": "This is cluster 131 with 161 items.",
+      "hull": [
+        25897,
+        21182,
+        34716,
+        16041,
+        8344,
+        21637,
+        9593,
+        26346,
+        7389,
+        30650,
+        24647,
+        30580,
+        22914,
+        21965,
+        26625,
+        6311
+      ],
+      "cluster": 131
+    },
+    {
+      "label": "Military and Naval Support",
+      "description": "This is cluster 132 with 95 items.",
+      "hull": [
+        11801,
+        5613,
+        2592,
+        17016,
+        10592,
+        19359,
+        18719,
+        15135,
+        18907,
+        934
+      ],
+      "cluster": 132
+    },
+    {
+      "label": "Railroad and Dam Legislation",
+      "description": "This is cluster 133 with 96 items.",
+      "hull": [
+        20241,
+        32615,
+        22426,
+        29393,
+        18186,
+        18133,
+        11375,
+        8077,
+        16881,
+        4319,
+        11718,
+        5721
+      ],
+      "cluster": 133
+    },
+    {
+      "label": "Military and land legislation",
+      "description": "This is cluster 134 with 146 items.",
+      "hull": [
+        21395,
+        38817,
+        19560,
+        20129,
+        6335,
+        27988,
+        18105,
+        26532,
+        3338,
+        28293,
+        23894,
+        17020,
+        24668,
+        1663,
+        9947
+      ],
+      "cluster": 134
+    },
+    {
+      "label": "Legislative Actions",
+      "description": "This is cluster 135 with 174 items.",
+      "hull": [
+        24908,
+        16353,
+        22305,
+        12521,
+        7693,
+        6713,
+        2110,
+        3938,
+        17168,
+        23801,
+        12371,
+        7656,
+        15337
+      ],
+      "cluster": 135
+    },
+    {
+      "label": "Regulatory and Commerce Amendments",
+      "description": "This is cluster 136 with 146 items.",
+      "hull": [
+        16059,
+        22581,
+        31879,
+        22551,
+        35208,
+        34007,
+        31878,
+        28465,
+        28044,
+        33854,
+        34442,
+        36891,
+        39409
+      ],
+      "cluster": 136
+    },
+    {
+      "label": "Tariff and Trade Legislation",
+      "description": "This is cluster 137 with 141 items.",
+      "hull": [
+        26340,
+        29129,
+        25866,
+        27077,
+        17834,
+        33264,
+        26240,
+        39241,
+        46604,
+        25134
+      ],
+      "cluster": 137
+    },
+    {
+      "label": "Historical legislative actions",
+      "description": "This is cluster 138 with 80 items.",
+      "hull": [
+        4385,
+        10014,
+        14906,
+        8614,
+        10136,
+        2582,
+        5915,
+        12636,
+        6020,
+        23503
+      ],
+      "cluster": 138
+    },
+    {
+      "label": "Military Donations and Monuments",
+      "description": "This is cluster 139 with 304 items.",
+      "hull": [
+        8835,
+        21092,
+        19594,
+        15618,
+        7367,
+        2483,
+        2823,
+        12310,
+        12247,
+        10533,
+        13560,
+        15267,
+        5030,
+        12065,
+        8998
+      ],
+      "cluster": 139
+    },
+    {
+      "label": "Legislative Acts and Amendments",
+      "description": "This is cluster 140 with 103 items.",
+      "hull": [
+        43045,
+        7703,
+        23406,
+        7299,
+        16855,
+        14448,
+        21894,
+        29255,
+        47748,
+        37461,
+        4368
+      ],
+      "cluster": 140
+    },
+    {
+      "label": "Indian Territory legislation",
+      "description": "This is cluster 141 with 149 items.",
+      "hull": [
+        13288,
+        13858,
+        12549,
+        12922,
+        12006,
+        27966,
+        22656,
+        2933,
+        11917,
+        4472,
+        18063,
+        12781,
+        9787,
+        13160
+      ],
+      "cluster": 141
+    },
+    {
+      "label": "Maritime and Fisheries Legislation",
+      "description": "This is cluster 142 with 129 items.",
+      "hull": [
+        39414,
+        36987,
+        36004,
+        38655,
+        36296,
+        28922,
+        40354,
+        39125,
+        31469
+      ],
+      "cluster": 142
+    },
+    {
+      "label": "Legislation and Appropriations",
+      "description": "This is cluster 143 with 171 items.",
+      "hull": [
+        39479,
+        43518,
+        40080,
+        37041,
+        46312,
+        47351,
+        39215,
+        45168,
+        44571,
+        49159,
+        48717
+      ],
+      "cluster": 143
+    },
+    {
+      "label": "Legislative Acts",
+      "description": "This is cluster 144 with 130 items.",
+      "hull": [
+        35421,
+        35770,
+        24560,
+        23211,
+        16070,
+        39197,
+        32965,
+        18074,
+        28970,
+        47617,
+        21458,
+        32328
+      ],
+      "cluster": 144
+    },
+    {
+      "label": "Maritime and legislative actions",
+      "description": "This is cluster 145 with 70 items.",
+      "hull": [
+        29225,
+        29706,
+        28069,
+        3701,
+        220,
+        720,
+        33775,
+        9220,
+        12477,
+        25765,
+        26840
+      ],
+      "cluster": 145
+    },
+    {
+      "label": "Native American Legislation",
+      "description": "This is cluster 146 with 76 items.",
+      "hull": [
+        45468,
+        49210,
+        45373,
+        45406,
+        45371,
+        43543,
+        43624,
+        38250,
+        43893
+      ],
+      "cluster": 146
+    },
+    {
+      "label": "Historical legislative actions",
+      "description": "This is cluster 147 with 81 items.",
+      "hull": [
+        7375,
+        15054,
+        4853,
+        25850,
+        3384,
+        6464,
+        512,
+        17872,
+        571,
+        3600,
+        27458
+      ],
+      "cluster": 147
+    },
+    {
+      "label": "Environmental Conservation Laws",
+      "description": "This is cluster 148 with 481 items.",
+      "hull": [
+        39225,
+        48056,
+        37555,
+        46026,
+        47238,
+        42701,
+        34809,
+        44168,
+        37447,
+        27949,
+        49201,
+        39162,
+        43622,
+        43707,
+        44962
+      ],
+      "cluster": 148
+    },
+    {
+      "label": "US Territories Legislation",
+      "description": "This is cluster 149 with 173 items.",
+      "hull": [
+        29470,
+        46159,
+        33987,
+        38224,
+        21779,
+        19427,
+        25472,
+        13277,
+        33967,
+        25305,
+        27757,
+        30124,
+        37169,
+        38038
+      ],
+      "cluster": 149
+    },
+    {
+      "label": "Legislative Acts Summary",
+      "description": "This is cluster 150 with 85 items.",
+      "hull": [
+        15124,
+        39715,
+        23534,
+        22957,
+        23824,
+        35757,
+        31279,
+        22115,
+        39260,
+        47323,
+        15061,
+        23818,
+        37767
+      ],
+      "cluster": 150
+    },
+    {
+      "label": "Legislation and Policy Changes",
+      "description": "This is cluster 151 with 92 items.",
+      "hull": [
+        12917,
+        18499,
+        26600,
+        30640,
+        28028,
+        44669,
+        28711,
+        28771,
+        20618
+      ],
+      "cluster": 151
+    },
+    {
+      "label": "Public Lands Legislation",
+      "description": "This is cluster 152 with 106 items.",
+      "hull": [
+        43740,
+        12031,
+        31322,
+        33226,
+        41965,
+        37038,
+        42797,
+        32050,
+        21068,
+        21517
+      ],
+      "cluster": 152
+    },
+    {
+      "label": "Hawaii legislation and policy",
+      "description": "This is cluster 153 with 291 items.",
+      "hull": [
+        23926,
+        37573,
+        29704,
+        17951,
+        16424,
+        47519,
+        46599,
+        33564,
+        36390,
+        33105,
+        38938,
+        33758,
+        46192,
+        20895,
+        24163,
+        47565,
+        23581
+      ],
+      "cluster": 153
+    },
+    {
+      "label": "Legislation on Mining and Conservation",
+      "description": "This is cluster 154 with 116 items.",
+      "hull": [
+        23159,
+        35530,
+        35794,
+        43228,
+        23251,
+        45351,
+        38592,
+        31549,
+        42205,
+        36595,
+        33518
+      ],
+      "cluster": 154
+    },
+    {
+      "label": "Legislative Measures",
+      "description": "This is cluster 155 with 128 items.",
+      "hull": [
+        31525,
+        5226,
+        31825,
+        32973,
+        35270,
+        38244,
+        21832,
+        37075,
+        27258,
+        16033,
+        16822,
+        27777,
+        32680
+      ],
+      "cluster": 155
+    },
+    {
+      "label": "Military and Veteran Support",
+      "description": "This is cluster 156 with 146 items.",
+      "hull": [
+        3348,
+        11744,
+        5270,
+        9159,
+        15655,
+        3848,
+        21175,
+        3102,
+        24165,
+        9998,
+        9462,
+        14634
+      ],
+      "cluster": 156
+    },
+    {
+      "label": "Veterans Benefits Legislation",
+      "description": "This is cluster 157 with 158 items.",
+      "hull": [
+        28301,
+        30683,
+        21960,
+        27096,
+        38340,
+        48423,
+        44101,
+        47991,
+        33273,
+        25293,
+        24456,
+        24293
+      ],
+      "cluster": 157
+    },
+    {
+      "label": "Environmental Legislation and Conservation",
+      "description": "This is cluster 158 with 101 items.",
+      "hull": [
+        48498,
+        41017,
+        46433,
+        34131,
+        33896,
+        34679,
+        29951,
+        46193,
+        31107,
+        37837,
+        33797,
+        562
+      ],
+      "cluster": 158
+    },
+    {
+      "label": "US Legislative Acts",
+      "description": "This is cluster 159 with 137 items.",
+      "hull": [
+        45432,
+        45535,
+        48761,
+        42182,
+        38498,
+        43638,
+        44786,
+        38782,
+        44471,
+        49685,
+        38447
+      ],
+      "cluster": 159
+    },
+    {
+      "label": "US Legislative Acts",
+      "description": "This is cluster 160 with 89 items.",
+      "hull": [
+        43152,
+        38850,
+        42717,
+        38442,
+        38331,
+        38846,
+        44165,
+        37264,
+        43639,
+        46425,
+        44947,
+        41245,
+        43172,
+        45529
+      ],
+      "cluster": 160
+    },
+    {
+      "label": "Navigation and Infrastructure",
+      "description": "This is cluster 161 with 187 items.",
+      "hull": [
+        41677,
+        699,
+        14462,
+        28013,
+        8695,
+        4743,
+        15773,
+        19238,
+        16959,
+        531,
+        12466,
+        3181,
+        502,
+        17564
+      ],
+      "cluster": 161
+    },
+    {
+      "label": "Congressional acts and establishments",
+      "description": "This is cluster 162 with 109 items.",
+      "hull": [
+        2855,
+        11203,
+        20309,
+        7711,
+        22538,
+        42800,
+        9311,
+        13563,
+        3251,
+        14110,
+        17763,
+        24763
+      ],
+      "cluster": 162
+    },
+    {
+      "label": "Legislative Acts Summary",
+      "description": "This is cluster 163 with 150 items.",
+      "hull": [
+        21013,
+        8244,
+        13354,
+        102,
+        16616,
+        7289,
+        1739,
+        19034,
+        5045,
+        354
+      ],
+      "cluster": 163
+    },
+    {
+      "label": "US Legislative Actions",
+      "description": "This is cluster 164 with 463 items.",
+      "hull": [
+        6512,
+        3030,
+        10010,
+        16356,
+        10243,
+        16618,
+        27709,
+        11498,
+        9862,
+        5829,
+        21012,
+        13112,
+        10757,
+        4917,
+        2799
+      ],
+      "cluster": 164
+    },
+    {
+      "label": "Maritime and Port Legislation",
+      "description": "This is cluster 165 with 248 items.",
+      "hull": [
+        2685,
+        7460,
+        9898,
+        18753,
+        16593,
+        12815,
+        1571,
+        9594,
+        44358,
+        6090,
+        48943,
+        11038,
+        14252,
+        3654
+      ],
+      "cluster": 165
+    },
+    {
+      "label": "U.S. Legislative Acts",
+      "description": "This is cluster 166 with 204 items.",
+      "hull": [
+        1004,
+        492,
+        3613,
+        13156,
+        11124,
+        9589,
+        6278,
+        353,
+        23885,
+        8895,
+        11050,
+        3415,
+        7867,
+        16558
+      ],
+      "cluster": 166
+    },
+    {
+      "label": "Environmental and Land Acts",
+      "description": "This is cluster 167 with 145 items.",
+      "hull": [
+        43616,
+        17876,
+        43099,
+        26299,
+        17807,
+        37574,
+        47957,
+        43428,
+        43089,
+        42519
+      ],
+      "cluster": 167
+    },
+    {
+      "label": "Land and Property Legislation",
+      "description": "This is cluster 168 with 190 items.",
+      "hull": [
+        1968,
+        2469,
+        25063,
+        39342,
+        9857,
+        28674,
+        11268,
+        30907,
+        21469,
+        34077,
+        21931,
+        4483,
+        1068,
+        36329,
+        28204,
+        3382,
+        970
+      ],
+      "cluster": 168
+    },
+    {
+      "label": "Agricultural and Environmental Legislation",
+      "description": "This is cluster 169 with 63 items.",
+      "hull": [
+        36337,
+        34635,
+        35575,
+        30468,
+        36834,
+        30508,
+        23446,
+        43694,
+        44551,
+        49017,
+        44714
+      ],
+      "cluster": 169
+    },
+    {
+      "label": "Agricultural Policy and Support",
+      "description": "This is cluster 170 with 147 items.",
+      "hull": [
+        14218,
+        9987,
+        29756,
+        46278,
+        38731,
+        30620,
+        39930,
+        38310,
+        38660,
+        49405,
+        40777,
+        27382,
+        40436
+      ],
+      "cluster": 170
+    },
+    {
+      "label": "Agricultural Policy Amendments",
+      "description": "This is cluster 171 with 499 items.",
+      "hull": [
+        44916,
+        37085,
+        44144,
+        33372,
+        28145,
+        36559,
+        27647,
+        33949,
+        34166,
+        30881,
+        37587,
+        17920,
+        32548
+      ],
+      "cluster": 171
+    },
+    {
+      "label": "Legislative Acts and Amendments",
+      "description": "This is cluster 172 with 161 items.",
+      "hull": [
+        27629,
+        16941,
+        49305,
+        43614,
+        44998,
+        48602,
+        33276,
+        27383,
+        46084,
+        33946,
+        49599,
+        39794,
+        48226,
+        26860
+      ],
+      "cluster": 172
+    },
+    {
+      "label": "Social Security and Health Legislation",
+      "description": "This is cluster 173 with 54 items.",
+      "hull": [
+        37882,
+        29422,
+        34448,
+        47078,
+        37775,
+        47584,
+        47257,
+        41094,
+        40567
+      ],
+      "cluster": 173
+    },
+    {
+      "label": "Social and Health Legislation",
+      "description": "This is cluster 174 with 61 items.",
+      "hull": [
+        37069,
+        43361,
+        44959,
+        39793,
+        38352,
+        33248,
+        41435,
+        44607,
+        45886,
+        23958
+      ],
+      "cluster": 174
+    },
+    {
+      "label": "US land management legislation",
+      "description": "This is cluster 175 with 208 items.",
+      "hull": [
+        34489,
+        23349,
+        17713,
+        3964,
+        27271,
+        696,
+        5140,
+        28449,
+        32884,
+        28130,
+        22823,
+        33710
+      ],
+      "cluster": 175
+    },
+    {
+      "label": "US Land Legislation",
+      "description": "This is cluster 176 with 227 items.",
+      "hull": [
+        10978,
+        31200,
+        27978,
+        4149,
+        24983,
+        2236,
+        46204,
+        34247,
+        19659,
+        6136,
+        5239,
+        2267,
+        21608,
+        30013
+      ],
+      "cluster": 176
+    },
+    {
+      "label": "Public Lands Legislation",
+      "description": "This is cluster 177 with 177 items.",
+      "hull": [
+        5373,
+        2515,
+        5731,
+        4054,
+        24433,
+        22543,
+        30484,
+        15938,
+        22966,
+        22157,
+        27543,
+        20863,
+        5556
+      ],
+      "cluster": 177
+    },
+    {
+      "label": "Indian Affairs Legislation",
+      "description": "This is cluster 178 with 114 items.",
+      "hull": [
+        46993,
+        34566,
+        33490,
+        49471,
+        33500,
+        40928,
+        41859,
+        40398,
+        38467,
+        39696,
+        44161
+      ],
+      "cluster": 178
+    },
+    {
+      "label": "Land and National Parks Legislation",
+      "description": "This is cluster 179 with 221 items.",
+      "hull": [
+        31963,
+        33365,
+        17394,
+        17223,
+        27045,
+        26484,
+        28451,
+        12075,
+        28420,
+        1304,
+        23738,
+        29995,
+        36307
+      ],
+      "cluster": 179
+    },
+    {
+      "label": "Government Property Transactions",
+      "description": "This is cluster 180 with 151 items.",
+      "hull": [
+        7144,
+        2927,
+        27185,
+        3404,
+        13135,
+        12492,
+        17871,
+        20361,
+        23862,
+        13690,
+        2479,
+        795,
+        26
+      ],
+      "cluster": 180
+    },
+    {
+      "label": "US land management acts",
+      "description": "This is cluster 181 with 408 items.",
+      "hull": [
+        7614,
+        6011,
+        11535,
+        23360,
+        21697,
+        3262,
+        9821,
+        621,
+        20017,
+        36444,
+        31,
+        35382,
+        38470,
+        30980,
+        18554,
+        16207,
+        6240
+      ],
+      "cluster": 181
+    },
+    {
+      "label": "US territorial development legislation",
+      "description": "This is cluster 182 with 256 items.",
+      "hull": [
+        15766,
+        735,
+        2386,
+        8865,
+        3507,
+        6710,
+        4317,
+        14491,
+        7804,
+        16137,
+        17450,
+        3003,
+        29943,
+        2726,
+        3990
+      ],
+      "cluster": 182
+    },
+    {
+      "label": "US Land and Indian Affairs",
+      "description": "This is cluster 183 with 476 items.",
+      "hull": [
+        31912,
+        9046,
+        15943,
+        10297,
+        21988,
+        13415,
+        23521,
+        16874,
+        20516,
+        3278,
+        7404,
+        7776,
+        8584
+      ],
+      "cluster": 183
+    },
+    {
+      "label": "Historical Preservation Legislation",
+      "description": "This is cluster 184 with 127 items.",
+      "hull": [
+        28417,
+        30453,
+        29439,
+        43482,
+        30529,
+        31538,
+        35297,
+        27613,
+        35284,
+        32190,
+        33307,
+        33025,
+        25081
+      ],
+      "cluster": 184
+    },
+    {
+      "label": "Historic and Conservation Legislation",
+      "description": "This is cluster 185 with 79 items.",
+      "hull": [
+        36510,
+        45626,
+        29061,
+        14043,
+        46207,
+        14023,
+        40966,
+        43245,
+        10512,
+        29833,
+        37810,
+        46804,
+        33364
+      ],
+      "cluster": 185
+    },
+    {
+      "label": "Environmental and Resource Management Legislation",
+      "description": "This is cluster 186 with 205 items.",
+      "hull": [
+        19417,
+        43048,
+        35103,
+        39944,
+        17928,
+        44860,
+        42014,
+        40437,
+        37997,
+        19027
+      ],
+      "cluster": 186
+    },
+    {
+      "label": "US Land Management Legislation",
+      "description": "This is cluster 187 with 120 items.",
+      "hull": [
+        34642,
+        27850,
+        27509,
+        19222,
+        49618,
+        27634,
+        45708,
+        32823,
+        46480,
+        25979,
+        34816,
+        46680
+      ],
+      "cluster": 187
+    },
+    {
+      "label": "Land Policy and Management",
+      "description": "This is cluster 188 with 295 items.",
+      "hull": [
+        1563,
+        20497,
+        3027,
+        3436,
+        8979,
+        27734,
+        10391,
+        6229,
+        3084,
+        6384,
+        6085,
+        1312
+      ],
+      "cluster": 188
+    },
+    {
+      "label": "US land legislation",
+      "description": "This is cluster 189 with 1006 items.",
+      "hull": [
+        814,
+        29429,
+        18718,
+        11791,
+        6130,
+        17816,
+        2207,
+        1025,
+        32730,
+        12701,
+        8158,
+        2533,
+        28173,
+        37231,
+        29707,
+        30224
+      ],
+      "cluster": 189
+    },
+    {
+      "label": "Indian Tribal Claims and Payments",
+      "description": "This is cluster 190 with 108 items.",
+      "hull": [
+        18941,
+        18743,
+        22981,
+        32966,
+        30735,
+        42175,
+        25933,
+        22075,
+        27121,
+        18375,
+        18474,
+        22761
+      ],
+      "cluster": 190
+    },
+    {
+      "label": "Court of Claims jurisdiction",
+      "description": "This is cluster 191 with 59 items.",
+      "hull": [
+        29927,
+        9643,
+        19501,
+        24172,
+        20371,
+        28598,
+        39795,
+        39796
+      ],
+      "cluster": 191
+    },
+    {
+      "label": "Environmental and Conservation Laws",
+      "description": "This is cluster 192 with 142 items.",
+      "hull": [
+        46287,
+        16809,
+        22853,
+        44397,
+        48057,
+        42842,
+        44394,
+        41643,
+        46353,
+        38307,
+        20514,
+        44525
+      ],
+      "cluster": 192
+    },
+    {
+      "label": "Legislative and Social Reforms",
+      "description": "This is cluster 193 with 83 items.",
+      "hull": [
+        38262,
+        33190,
+        46881,
+        24084,
+        43192,
+        36057,
+        32386,
+        44641,
+        33493,
+        35783,
+        43820,
+        49466
+      ],
+      "cluster": 193
+    },
+    {
+      "label": "Legislative Amendments and Acts",
+      "description": "This is cluster 194 with 106 items.",
+      "hull": [
+        30835,
+        29511,
+        21754,
+        26033,
+        49717,
+        29937,
+        23386,
+        22801,
+        24007,
+        27753,
+        30854,
+        33143
+      ],
+      "cluster": 194
+    },
+    {
+      "label": "US Land Management Legislation",
+      "description": "This is cluster 195 with 188 items.",
+      "hull": [
+        48900,
+        23284,
+        16563,
+        19177,
+        6613,
+        36281,
+        5252,
+        23802,
+        16857,
+        6032,
+        9603,
+        23727,
+        14102,
+        24170,
+        10278,
+        10706,
+        6493,
+        21768
+      ],
+      "cluster": 195
+    },
+    {
+      "label": "Land Management Legislation",
+      "description": "This is cluster 196 with 100 items.",
+      "hull": [
+        6969,
+        20581,
+        16187,
+        20019,
+        12269,
+        45929,
+        21006,
+        10207,
+        18877,
+        4221
+      ],
+      "cluster": 196
+    },
+    {
+      "label": "Environmental and Conservation Legislation",
+      "description": "This is cluster 197 with 148 items.",
+      "hull": [
+        30973,
+        37399,
+        36797,
+        26557,
+        21425,
+        36693,
+        38054,
+        35218,
+        28810,
+        17272,
+        37067,
+        29156,
+        22960
+      ],
+      "cluster": 197
+    },
+    {
+      "label": "Land Management Legislation",
+      "description": "This is cluster 198 with 90 items.",
+      "hull": [
+        21605,
+        27789,
+        24099,
+        7737,
+        29263,
+        2863,
+        32767,
+        15589,
+        16378,
+        3943,
+        27340,
+        5321,
+        19032
+      ],
+      "cluster": 198
+    },
+    {
+      "label": "US Legislation Themes",
+      "description": "This is cluster 199 with 348 items.",
+      "hull": [
+        3860,
+        14333,
+        10826,
+        2446,
+        45863,
+        18224,
+        39152,
+        28685,
+        12990,
+        23096,
+        34995,
+        6806,
+        8854,
+        4699,
+        25553,
+        32286
+      ],
+      "cluster": 199
+    },
+    {
+      "label": "Land Management Legislation",
+      "description": "This is cluster 200 with 136 items.",
+      "hull": [
+        32122,
+        21455,
+        46820,
+        44554,
+        15572,
+        16035,
+        16778,
+        16460,
+        14820,
+        19311,
+        38330
+      ],
+      "cluster": 200
+    },
+    {
+      "label": "Environmental and Water Legislation",
+      "description": "This is cluster 201 with 68 items.",
+      "hull": [
+        45835,
+        37948,
+        35837,
+        37061,
+        39759,
+        40958,
+        40947,
+        44202,
+        39208,
+        46227
+      ],
+      "cluster": 201
+    },
+    {
+      "label": "US Natural Resource Management",
+      "description": "This is cluster 202 with 397 items.",
+      "hull": [
+        18975,
+        39977,
+        23535,
+        32455,
+        28460,
+        22043,
+        46833,
+        30848,
+        36792,
+        36435,
+        35672,
+        49133
+      ],
+      "cluster": 202
+    },
+    {
+      "label": "Water and Wilderness Legislation",
+      "description": "This is cluster 203 with 86 items.",
+      "hull": [
+        39372,
+        29748,
+        41755,
+        19756,
+        37489,
+        38398,
+        38351,
+        37111,
+        44844,
+        32541,
+        34548,
+        30781
+      ],
+      "cluster": 203
+    },
+    {
+      "label": "American Indigenous Legislation",
+      "description": "This is cluster 204 with 470 items.",
+      "hull": [
+        39133,
+        33269,
+        32144,
+        28106,
+        47227,
+        14572,
+        27330,
+        20242,
+        25934,
+        40696,
+        38079,
+        40821,
+        39038,
+        32028,
+        40463
+      ],
+      "cluster": 204
+    },
+    {
+      "label": "Indian Tribal Legislation",
+      "description": "This is cluster 205 with 134 items.",
+      "hull": [
+        39608,
+        47919,
+        32818,
+        39095,
+        18030,
+        39948,
+        33011,
+        20947,
+        20457,
+        30656,
+        44405,
+        38822
+      ],
+      "cluster": 205
+    },
+    {
+      "label": "Environmental Legislation Initiatives",
+      "description": "This is cluster 206 with 84 items.",
+      "hull": [
+        43186,
+        38455,
+        38282,
+        49528,
+        39272,
+        43780,
+        34354,
+        38517,
+        45308,
+        42301
+      ],
+      "cluster": 206
+    },
+    {
+      "label": "Environmental Conservation Legislation",
+      "description": "This is cluster 207 with 104 items.",
+      "hull": [
+        43588,
+        43861,
+        43862,
+        40875,
+        41047,
+        41802,
+        47119,
+        45317,
+        47661,
+        28503,
+        46183,
+        37971,
+        31437
+      ],
+      "cluster": 207
+    },
+    {
+      "label": "Veterans Benefits Legislation",
+      "description": "This is cluster 208 with 142 items.",
+      "hull": [
+        48022,
+        48505,
+        49143,
+        26262,
+        46951,
+        23402,
+        36310,
+        34180,
+        21306,
+        35296,
+        37088,
+        28256,
+        47401,
+        40341,
+        31649,
+        47551
+      ],
+      "cluster": 208
+    },
+    {
+      "label": "Veterans Affairs Amendments",
+      "description": "This is cluster 209 with 315 items.",
+      "hull": [
+        34460,
+        28444,
+        30634,
+        36479,
+        29183,
+        47477,
+        48778,
+        48453,
+        49535,
+        49728,
+        48462,
+        46724
+      ],
+      "cluster": 209
+    },
+    {
+      "label": "US Indian Affairs Legislation",
+      "description": "This is cluster 210 with 152 items.",
+      "hull": [
+        16176,
+        32961,
+        33736,
+        38949,
+        36620,
+        18818,
+        32476,
+        24637,
+        32086,
+        34298,
+        36713
+      ],
+      "cluster": 210
+    },
+    {
+      "label": "US Indian Affairs Legislation",
+      "description": "This is cluster 211 with 667 items.",
+      "hull": [
+        46773,
+        15399,
+        18366,
+        8575,
+        3363,
+        7605,
+        9841,
+        13774,
+        10919,
+        12615,
+        27722,
+        4957,
+        31168,
+        34564
+      ],
+      "cluster": 211
+    },
+    {
+      "label": "Land Exchange and Conveyance Legislation",
+      "description": "This is cluster 212 with 991 items.",
+      "hull": [
+        20053,
+        30947,
+        11706,
+        25687,
+        26452,
+        31516,
+        19055,
+        21044,
+        41617,
+        23541,
+        19822,
+        32470,
+        7317,
+        10407,
+        32147,
+        17639
+      ],
+      "cluster": 212
+    },
+    {
+      "label": "Government Compensation Regulations",
+      "description": "This is cluster 213 with 149 items.",
+      "hull": [
+        12498,
+        31973,
+        8851,
+        6108,
+        25349,
+        28899,
+        15544,
+        21339,
+        5154,
+        642,
+        26136,
+        4876,
+        1256,
+        28635,
+        9588
+      ],
+      "cluster": 213
+    },
+    {
+      "label": "US Government Publishing Acts",
+      "description": "This is cluster 214 with 364 items.",
+      "hull": [
+        28761,
+        40,
+        9883,
+        11921,
+        5563,
+        28041,
+        41847,
+        9345,
+        9622,
+        49
+      ],
+      "cluster": 214
+    },
+    {
+      "label": "US Government Operations",
+      "description": "This is cluster 215 with 121 items.",
+      "hull": [
+        39035,
+        82,
+        26911,
+        6075,
+        8758,
+        3824,
+        21564,
+        5371,
+        5780,
+        450,
+        9131,
+        8120,
+        15154,
+        3467
+      ],
+      "cluster": 215
+    },
+    {
+      "label": "US Legislative Actions",
+      "description": "This is cluster 216 with 83 items.",
+      "hull": [
+        3561,
+        4448,
+        3997,
+        8718,
+        11422,
+        5593,
+        24607,
+        6729
+      ],
+      "cluster": 216
+    },
+    {
+      "label": "US Legislative Acts",
+      "description": "This is cluster 217 with 145 items.",
+      "hull": [
+        4106,
+        5816,
+        4366,
+        15771,
+        4230,
+        952,
+        9960,
+        4283,
+        5564,
+        24994,
+        2395,
+        86,
+        1685,
+        1796
+      ],
+      "cluster": 217
+    },
+    {
+      "label": "Legislative Acts and Amendments",
+      "description": "This is cluster 218 with 127 items.",
+      "hull": [
+        38913,
+        48860,
+        39438,
+        33335,
+        36158,
+        34735,
+        42684,
+        39788,
+        42899,
+        39501,
+        49632,
+        43797,
+        46289,
+        36129
+      ],
+      "cluster": 218
+    },
+    {
+      "label": "Government Employee Benefits",
+      "description": "This is cluster 219 with 169 items.",
+      "hull": [
+        42375,
+        48977,
+        37550,
+        45593,
+        49309,
+        31388,
+        33021,
+        37210,
+        27652,
+        35908,
+        27869,
+        38759,
+        40563,
+        28875,
+        28209,
+        47246,
+        48032
+      ],
+      "cluster": 219
+    },
+    {
+      "label": "Government Policy and Infrastructure",
+      "description": "This is cluster 220 with 105 items.",
+      "hull": [
+        7378,
+        21149,
+        20429,
+        21536,
+        19759,
+        3739,
+        20406,
+        24251,
+        22889,
+        25084
+      ],
+      "cluster": 220
+    },
+    {
+      "label": "Historical US Legislation",
+      "description": "This is cluster 221 with 140 items.",
+      "hull": [
+        4243,
+        226,
+        5949,
+        1787,
+        451,
+        10832,
+        506,
+        1637,
+        4839,
+        402,
+        1285,
+        303,
+        11260,
+        10176
+      ],
+      "cluster": 221
+    },
+    {
+      "label": "Postal and Military Legislation",
+      "description": "This is cluster 222 with 226 items.",
+      "hull": [
+        6132,
+        17014,
+        17842,
+        28080,
+        25860,
+        26689,
+        33116,
+        23383,
+        22976,
+        18802,
+        30051,
+        22549,
+        26782,
+        40746,
+        3522,
+        3632
+      ],
+      "cluster": 222
+    },
+    {
+      "label": "Legislative Acts",
+      "description": "This is cluster 223 with 177 items.",
+      "hull": [
+        38443,
+        45064,
+        41214,
+        48248,
+        44767,
+        35333,
+        46151,
+        49190,
+        49699
+      ],
+      "cluster": 223
+    },
+    {
+      "label": "US Legislative Actions",
+      "description": "This is cluster 224 with 83 items.",
+      "hull": [
+        35803,
+        48450,
+        31008,
+        48980,
+        46301,
+        47277,
+        47165,
+        49004
+      ],
+      "cluster": 224
+    },
+    {
+      "label": "Legislative Amendments and Extensions",
+      "description": "This is cluster 225 with 185 items.",
+      "hull": [
+        33778,
+        36562,
+        38045,
+        34606,
+        48583,
+        49032,
+        33407,
+        37782,
+        9284,
+        37278,
+        43920,
+        29622,
+        47902
+      ],
+      "cluster": 225
+    },
+    {
+      "label": "Legislative Amendments and Acts",
+      "description": "This is cluster 226 with 143 items.",
+      "hull": [
+        33588,
+        33127,
+        29137,
+        46235,
+        46341,
+        47025,
+        48130,
+        36723,
+        32266,
+        48608
+      ],
+      "cluster": 226
+    },
+    {
+      "label": "Legislative Amendments and Acts",
+      "description": "This is cluster 227 with 120 items.",
+      "hull": [
+        29446,
+        37889,
+        24789,
+        35993,
+        26719,
+        43456,
+        40530,
+        29782,
+        30264,
+        35683,
+        26908
+      ],
+      "cluster": 227
+    },
+    {
+      "label": "Military and Postal Legislation",
+      "description": "This is cluster 228 with 185 items.",
+      "hull": [
+        25707,
+        16249,
+        26638,
+        34997,
+        17030,
+        26126,
+        28710,
+        15648,
+        31821,
+        30436,
+        28415,
+        35429,
+        31913,
+        27204,
+        35962
+      ],
+      "cluster": 228
+    },
+    {
+      "label": "Legislation and Policy Acts",
+      "description": "This is cluster 229 with 179 items.",
+      "hull": [
+        32415,
+        46518,
+        37503,
+        47266,
+        43435,
+        42524,
+        32248,
+        23254,
+        28243,
+        49612,
+        36729,
+        41616,
+        38471
+      ],
+      "cluster": 229
+    },
+    {
+      "label": "US Legislative Acts",
+      "description": "This is cluster 230 with 145 items.",
+      "hull": [
+        47636,
+        37443,
+        45942,
+        38373,
+        46609,
+        47202,
+        47103,
+        46225,
+        45401,
+        47587,
+        48074,
+        45442,
+        46644,
+        47145
+      ],
+      "cluster": 230
+    },
+    {
+      "label": "US Legislative Acts",
+      "description": "This is cluster 231 with 100 items.",
+      "hull": [
+        31305,
+        42330,
+        49439,
+        31922,
+        37241,
+        46633,
+        49646,
+        45971,
+        16893,
+        40774
+      ],
+      "cluster": 231
+    },
+    {
+      "label": "Legislative Amendments and Acts",
+      "description": "This is cluster 232 with 100 items.",
+      "hull": [
+        36502,
+        46677,
+        38883,
+        39386,
+        37772,
+        35642,
+        35735,
+        46030,
+        37306,
+        47167,
+        39373,
+        46869
+      ],
+      "cluster": 232
+    },
+    {
+      "label": "Legislative Amendments and Extensions",
+      "description": "This is cluster 233 with 368 items.",
+      "hull": [
+        48868,
+        46826,
+        33036,
+        33303,
+        32695,
+        33234,
+        29921,
+        35480,
+        48628,
+        41529,
+        35920
+      ],
+      "cluster": 233
+    },
+    {
+      "label": "Legislative Amendments",
+      "description": "This is cluster 234 with 86 items.",
+      "hull": [
+        30604,
+        36434,
+        24069,
+        35500,
+        24911,
+        28536,
+        47598,
+        31346,
+        31141,
+        31120,
+        38893,
+        44223,
+        18846
+      ],
+      "cluster": 234
+    },
+    {
+      "label": "U.S. Legislation Amendments",
+      "description": "This is cluster 235 with 195 items.",
+      "hull": [
+        17447,
+        17267,
+        24649,
+        28857,
+        33706,
+        27203,
+        25632,
+        17597,
+        33404,
+        21700,
+        22769,
+        26254,
+        6063
+      ],
+      "cluster": 235
+    },
+    {
+      "label": "Military and Veteran Support Legislation",
+      "description": "This is cluster 236 with 180 items.",
+      "hull": [
+        29804,
+        19170,
+        25078,
+        2224,
+        16673,
+        6539,
+        7609,
+        7750,
+        19387,
+        9023,
+        28813
+      ],
+      "cluster": 236
+    },
+    {
+      "label": "Military Appointments and Honors",
+      "description": "This is cluster 237 with 312 items.",
+      "hull": [
+        20401,
+        24325,
+        26632,
+        28661,
+        31212,
+        4431,
+        26783,
+        19680,
+        5090,
+        10405,
+        168
+      ],
+      "cluster": 237
+    },
+    {
+      "label": "Banking and Financial Legislation",
+      "description": "This is cluster 238 with 200 items.",
+      "hull": [
+        30821,
+        18005,
+        23427,
+        48326,
+        18237,
+        25099,
+        32998,
+        35251,
+        33723,
+        35966,
+        34407,
+        36451,
+        25820
+      ],
+      "cluster": 238
+    },
+    {
+      "label": "Legislative Acts and Amendments",
+      "description": "This is cluster 239 with 135 items.",
+      "hull": [
+        32786,
+        41511,
+        44271,
+        40037,
+        48655,
+        42213,
+        33243,
+        39497,
+        45090,
+        47618,
+        35836,
+        47571,
+        47335,
+        46357,
+        40761,
+        39463
+      ],
+      "cluster": 239
+    },
+    {
+      "label": "Government Policy Updates",
+      "description": "This is cluster 240 with 155 items.",
+      "hull": [
+        35031,
+        33717,
+        33304,
+        32919,
+        46899,
+        41900,
+        29404,
+        37594,
+        35381
+      ],
+      "cluster": 240
+    },
+    {
+      "label": "Disaster and Safety Legislation",
+      "description": "This is cluster 241 with 150 items.",
+      "hull": [
+        38017,
+        40790,
+        43032,
+        43114,
+        42332,
+        38454,
+        47662,
+        40920,
+        44022,
+        39163
+      ],
+      "cluster": 241
+    },
+    {
+      "label": "Energy and Environmental Legislation",
+      "description": "This is cluster 242 with 84 items.",
+      "hull": [
+        42315,
+        41353,
+        41937,
+        45866,
+        44441,
+        42271,
+        39096,
+        39267,
+        40094
+      ],
+      "cluster": 242
+    },
+    {
+      "label": "- Legislative Amendments",
+      "description": "This is cluster 243 with 153 items.",
+      "hull": [
+        43789,
+        39746,
+        42258,
+        41067,
+        44900,
+        34727,
+        38303,
+        24357,
+        41653,
+        37982,
+        40678,
+        46939,
+        32955
+      ],
+      "cluster": 243
+    },
+    {
+      "label": "Legislative Acts Overview",
+      "description": "This is cluster 244 with 123 items.",
+      "hull": [
+        41996,
+        39439,
+        40046,
+        38961,
+        37229,
+        39712,
+        38269,
+        29890,
+        46406,
+        39512,
+        44352,
+        39667,
+        42763
+      ],
+      "cluster": 244
+    },
+    {
+      "label": "Military and Veterans Pensions",
+      "description": "This is cluster 245 with 167 items.",
+      "hull": [
+        28949,
+        17933,
+        26655,
+        18181,
+        17105,
+        749,
+        12978,
+        28250,
+        25905,
+        17295,
+        7235,
+        27932,
+        9607,
+        20685
+      ],
+      "cluster": 245
+    },
+    {
+      "label": "US International Relations Legislation",
+      "description": "This is cluster 246 with 135 items.",
+      "hull": [
+        7212,
+        39275,
+        7525,
+        3664,
+        7971,
+        7921,
+        2824,
+        8170,
+        283,
+        1453,
+        4908
+      ],
+      "cluster": 246
+    },
+    {
+      "label": "Naval development and enhancements",
+      "description": "This is cluster 247 with 127 items.",
+      "hull": [
+        11898,
+        26932,
+        19623,
+        8333,
+        3136,
+        25226,
+        4623,
+        5629,
+        5367,
+        22216,
+        12319,
+        8438
+      ],
+      "cluster": 247
+    },
+    {
+      "label": "Maritime Legislation and Trade",
+      "description": "This is cluster 248 with 291 items.",
+      "hull": [
+        824,
+        29082,
+        16017,
+        29417,
+        44012,
+        37182,
+        23368,
+        16215,
+        6190,
+        4761,
+        1297,
+        7225,
+        22500,
+        14981
+      ],
+      "cluster": 248
+    },
+    {
+      "label": "US Military Legislation",
+      "description": "This is cluster 249 with 706 items.",
+      "hull": [
+        18771,
+        2531,
+        7350,
+        10364,
+        3276,
+        37084,
+        2974,
+        33220,
+        17073
+      ],
+      "cluster": 249
+    },
+    {
+      "label": "Governmental Operations",
+      "description": "This is cluster 250 with 205 items.",
+      "hull": [
+        10209,
+        26065,
+        22118,
+        6867,
+        26426,
+        31335,
+        4740,
+        3423,
+        2857,
+        27998,
+        10437,
+        508,
+        13620
+      ],
+      "cluster": 250
+    },
+    {
+      "label": "Aeronautics and Trade Legislation",
+      "description": "This is cluster 251 with 110 items.",
+      "hull": [
+        49185,
+        33233,
+        30137,
+        29761,
+        19883,
+        34862,
+        31194,
+        29126,
+        39468
+      ],
+      "cluster": 251
+    },
+    {
+      "label": "US Legislative Acts",
+      "description": "This is cluster 252 with 110 items.",
+      "hull": [
+        47645,
+        43806,
+        44109,
+        46979,
+        43700,
+        48674,
+        49395,
+        48021,
+        35625,
+        44781,
+        46686
+      ],
+      "cluster": 252
+    },
+    {
+      "label": "US Legislative Amendments",
+      "description": "This is cluster 253 with 134 items.",
+      "hull": [
+        23904,
+        11234,
+        6283,
+        19562,
+        23416,
+        26533,
+        20143,
+        25883,
+        17369,
+        20409
+      ],
+      "cluster": 253
+    },
+    {
+      "label": "Legislative Acts Summaries",
+      "description": "This is cluster 254 with 70 items.",
+      "hull": [
+        42564,
+        39815,
+        47921,
+        44368,
+        48566,
+        48253,
+        46430,
+        42289,
+        43237,
+        46634
+      ],
+      "cluster": 254
+    },
+    {
+      "label": "US Legislation Adjustments",
+      "description": "This is cluster 255 with 519 items.",
+      "hull": [
+        38366,
+        45009,
+        38528,
+        41318,
+        30750,
+        46995,
+        26355,
+        37978,
+        28,
+        575,
+        29679,
+        29734,
+        31072,
+        46360,
+        47956
+      ],
+      "cluster": 255
+    },
+    {
+      "label": "Legislative Acts and Agreements",
+      "description": "This is cluster 256 with 312 items.",
+      "hull": [
+        48219,
+        36252,
+        47953,
+        32326,
+        47677,
+        47077,
+        34567,
+        38966,
+        49074,
+        40840,
+        38516,
+        48375,
+        47905,
+        42692
+      ],
+      "cluster": 256
+    },
+    {
+      "label": "Legislation Amendments",
+      "description": "This is cluster 257 with 219 items.",
+      "hull": [
+        31109,
+        26054,
+        27773,
+        27116,
+        35109,
+        35399,
+        32058,
+        27378,
+        32373,
+        37855,
+        32342,
+        31544
+      ],
+      "cluster": 257
+    },
+    {
+      "label": "US Military and Veterans Legislation",
+      "description": "This is cluster 258 with 868 items.",
+      "hull": [
+        24385,
+        23837,
+        15894,
+        24445,
+        22721,
+        23346,
+        33611,
+        37878,
+        31555,
+        36404,
+        47216,
+        47469,
+        37394,
+        38395,
+        35569
+      ],
+      "cluster": 258
+    },
+    {
+      "label": "Regulatory and financial reforms",
+      "description": "This is cluster 259 with 195 items.",
+      "hull": [
+        39151,
+        35362,
+        32551,
+        24137,
+        20579,
+        24927,
+        48316,
+        34942,
+        30749,
+        35727,
+        33413
+      ],
+      "cluster": 259
+    },
+    {
+      "label": "Drug education grants",
+      "description": "This is cluster 260 with 1925 items.",
+      "hull": [
+        42683,
+        42775,
+        48899,
+        45770,
+        47183,
+        28850,
+        37326,
+        28082,
+        28538,
+        20876,
+        47513,
+        35120,
+        38158,
+        33427,
+        37260,
+        37848,
+        49576,
+        39077
+      ],
+      "cluster": 260
+    },
+    {
+      "label": "Maritime and Navigation Laws",
+      "description": "This is cluster 261 with 82 items.",
+      "hull": [
+        284,
+        10441,
+        35805,
+        29605,
+        9741,
+        18044,
+        28038,
+        23190,
+        16554,
+        6551
+      ],
+      "cluster": 261
+    },
+    {
+      "label": "Maritime and Navigation Legislation",
+      "description": "This is cluster 262 with 94 items.",
+      "hull": [
+        5599,
+        14363,
+        28039,
+        39778,
+        31811,
+        38320,
+        31002,
+        14663,
+        31001,
+        13169,
+        2926
+      ],
+      "cluster": 262
+    },
+    {
+      "label": "US Legislative Measures",
+      "description": "This is cluster 263 with 366 items.",
+      "hull": [
+        14411,
+        28617,
+        35656,
+        16669,
+        23656,
+        154,
+        16472,
+        9916,
+        17120,
+        2931,
+        4704,
+        13657,
+        770,
+        1411,
+        14690,
+        12941,
+        6280,
+        16585,
+        839
+      ],
+      "cluster": 263
+    },
+    {
+      "label": "US legislative actions",
+      "description": "This is cluster 264 with 237 items.",
+      "hull": [
+        5228,
+        3185,
+        267,
+        26224,
+        2591,
+        4850,
+        7262,
+        5456,
+        5395,
+        22200
+      ],
+      "cluster": 264
+    },
+    {
+      "label": "US Legislation Themes",
+      "description": "This is cluster 265 with 95 items.",
+      "hull": [
+        11878,
+        11496,
+        17319,
+        11709,
+        6832,
+        395,
+        2661,
+        6252
+      ],
+      "cluster": 265
+    },
+    {
+      "label": "Government Policy Amendments",
+      "description": "This is cluster 266 with 152 items.",
+      "hull": [
+        12572,
+        6615,
+        5399,
+        22436,
+        854,
+        7390,
+        21155,
+        9767,
+        17494,
+        20228,
+        5986,
+        17064
+      ],
+      "cluster": 266
+    },
+    {
+      "label": "US Legislative Amendments",
+      "description": "This is cluster 267 with 543 items.",
+      "hull": [
+        30613,
+        32292,
+        34650,
+        34315,
+        17743,
+        9818,
+        12998,
+        6978,
+        38338,
+        568,
+        8848,
+        8994,
+        22441,
+        15717,
+        17839,
+        24916,
+        32463
+      ],
+      "cluster": 267
+    },
+    {
+      "label": "Legislative Amendments",
+      "description": "This is cluster 268 with 136 items.",
+      "hull": [
+        33990,
+        33584,
+        29173,
+        29672,
+        9673,
+        27110,
+        14223,
+        29593,
+        24197,
+        30981,
+        41716,
+        47898,
+        47716
+      ],
+      "cluster": 268
+    },
+    {
+      "label": "Government Operations and Policies",
+      "description": "This is cluster 269 with 217 items.",
+      "hull": [
+        11751,
+        3448,
+        39798,
+        680,
+        5806,
+        6001,
+        1154,
+        1386,
+        13327,
+        4737,
+        7097,
+        26796,
+        24530,
+        15927,
+        6041
+      ],
+      "cluster": 269
+    },
+    {
+      "label": "Legislative proposals",
+      "description": "This is cluster 270 with 181 items.",
+      "hull": [
+        5442,
+        7492,
+        27317,
+        794,
+        282,
+        13369,
+        15556,
+        15778,
+        22906,
+        15827,
+        8063,
+        25034
+      ],
+      "cluster": 270
+    },
+    {
+      "label": "Postal and Financial Legislation",
+      "description": "This is cluster 271 with 1135 items.",
+      "hull": [
+        16942,
+        35787,
+        23666,
+        24988,
+        26585,
+        27570,
+        6961,
+        5838,
+        1107,
+        28340,
+        9052,
+        3721,
+        10042
+      ],
+      "cluster": 271
+    }
+  ],
+  "rows": 49746,
+  "columns": [
+    "x",
+    "y",
+    "cluster",
+    "raw_cluster",
+    "label",
+    "ls_index"
+  ],
+  "size": 1065841,
+  "timestamp": "2024-05-03 18:40:26"
+}
