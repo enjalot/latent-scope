@@ -17,10 +17,10 @@
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
 <link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
 <link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
+<link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
-<link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-color@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-selection@3.0.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-transition@3.0.1/_esm.js">
@@ -39,13 +39,13 @@
 <link rel="modulepreload" href="./_node/entities@4.5.0/index.js">
 <link rel="modulepreload" href="./_node/linkify-it@5.0.0/index.js">
 <link rel="modulepreload" href="./_node/punycode.js@2.3.1/index.js">
+<link rel="modulepreload" href="./_npm/internmap@2.0.3/_esm.js">
 <link rel="modulepreload" href="./_npm/pub-sub-es@2.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/regl@2.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-format@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-time@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-time-format@4.1.0/_esm.js">
-<link rel="modulepreload" href="./_npm/internmap@2.0.3/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-dispatch@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-timer@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-path@3.1.0/_esm.js">
@@ -78,6 +78,12 @@ import {registerFile} from "./_observablehq/stdlib.js";
 
 registerFile("./data/enjalot-tweets/scopes-001-input.parquet", {"name":"./data/enjalot-tweets/scopes-001-input.parquet","path":"./_file/data/enjalot-tweets/scopes-001-input.7f644919.parquet","lastModified":1714776460422});
 registerFile("./data/enjalot-tweets/scopes-001.json", {"name":"./data/enjalot-tweets/scopes-001.json","mimeType":"application/json","path":"./_file/data/enjalot-tweets/scopes-001.fe2ed940.json","lastModified":1714776460399});
+
+define({id: "755f6a01", inline: true, inputs: ["max","da","min","display"], body: async (max,da,min,display) => {
+display(await(
+max(da, d => d.year) - min(da, d => d.year)
+))
+}});
 
 define({id: "aa68ff38", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
 display(await(
@@ -114,16 +120,80 @@ ${d["full_text"]}`,
 ))
 }});
 
-define({id: "92fb4788", inputs: ["view","Inputs","scope"], outputs: ["selcluster"], body: (view,Inputs,scope) => {
-const selcluster = view(Inputs.select(scope.cluster_labels_lookup, { value: d => d.cluster, format: x => x.cluster + ": " + x.label, label: "Cluster:"}))
-return {selcluster};
+define({id: "8ff0b1db", inline: true, inputs: ["clusterTableData","display"], body: async (clusterTableData,display) => {
+display(await(
+clusterTableData.length
+))
 }});
 
-define({id: "e83054f4", inline: true, inputs: ["clusterCard","selcluster","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selcluster,barPlot,tableConfig,da,scope,hulls,display) => {
+define({id: "c133b744", inline: true, inputs: ["da","display"], body: async (da,display) => {
 display(await(
-clusterCard(selcluster.cluster, {
+da.length
+))
+}});
+
+define({id: "85389ac9", inline: true, inputs: ["Inputs","da","tableConfig","display"], body: async (Inputs,da,tableConfig,display) => {
+display(await(
+Inputs.table(da, {...tableConfig, columns: [
+    "cluster",
+    "label",
+    "full_text",
+    "favorite_count",
+    "retweet_count",
+    "tweet_id"
+  ],
+  width: {
+    ...tableConfig.width,
+    full_text: "40%",
+    tweet_id: 70,
+    cluster: 50,
+    label: 200
+  }
+})
+))
+}});
+
+define({id: "8ff0b1db-1", inline: true, inputs: ["clusterTableData","display"], body: async (clusterTableData,display) => {
+display(await(
+clusterTableData.length
+))
+}});
+
+define({id: "ec6d2531", inputs: ["scope","da","sum","min","max","view","Inputs","sparkbar"], outputs: ["clusterTableData","selclusterTable"], body: (scope,da,sum,min,max,view,Inputs,sparkbar) => {
+const clusterTableData = scope.cluster_labels_lookup.map(c => {
+  let dc = da.filter(d => d.cluster == c.cluster)
+  return {
+    cluster: c.cluster,
+    label: c.label,
+    count: dc.length,
+    favorites: sum(dc, d => d.favorite_count),
+    retweets: sum(dc, d => d.retweet_count),
+    min_date: min(dc, d => d.created_at),
+    max_date: max(dc, d => d.created_at),
+  }
+})
+const selclusterTable = view(Inputs.table(clusterTableData, {
+  format: {
+    "favorites": sparkbar(max(clusterTableData, d => d.favorites), "lightblue"),
+    "retweets": sparkbar(max(clusterTableData, d => d.retweets), "orange"),
+  },
+  width: {
+    "cluster": 50,
+    "label": "20%"
+  },
+  sort: "favorites",
+  reverse: true,
+  multiple: false,
+  value: clusterTableData[62]
+}))
+return {clusterTableData,selclusterTable};
+}});
+
+define({id: "a2fdee09", inline: true, inputs: ["clusterCard","selclusterTable","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selclusterTable,barPlot,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(selclusterTable.cluster, {
     description: "", 
-    plot: barPlot(selcluster.cluster, { field: "year"}),
+    plot: barPlot(selclusterTable.cluster),
     tableConfig, 
     da, 
     scope, 
@@ -136,17 +206,28 @@ define({id: "765fa948", body: () => {
 // ----------------------------------------------------------
 }});
 
-define({id: "7b0ca756", outputs: ["tableConfig"], body: () => {
+define({id: "6933f8ba", inputs: ["htl"], outputs: ["tableConfig"], body: (htl) => {
 const tableConfig = { 
   columns: [
     "full_text",
     "created_at",
-    "type",
+    "favorite_count",
+    "retweet_count",
+    "tweet_id",
   ],
-  width: {
-    "full_text": "60%"
+  header: {
+    "tweet_id": "link"
   },
-  sort: "created_at",
+  format: {
+    "tweet_id": x => htl.html`<a target=_blank href="https://twitter.com/i/web/status/${x}">tweet</a>`
+  },
+  width: {
+    "full_text": "60%",
+    "favorite_count": 50,
+    "retweet_count": 50,
+    "tweet_id": 60
+  },
+  sort: "favorite_count",
   reverse: true,
   rows: 15
 }
@@ -214,6 +295,21 @@ function barPlot(cluster, {
 return {barPlot};
 }});
 
+define({id: "5d395032", inputs: ["htl"], outputs: ["sparkbar"], body: (htl) => {
+function sparkbar(max, color) {
+  return x => htl.html`<div style="
+    background: ${color};
+    width: ${100 * x / max}%;
+    float: right;
+    padding-right: 3px;
+    box-sizing: border-box;
+    overflow: visible;
+    display: flex;
+    justify-content: end;">${x.toLocaleString("en")}`
+}
+return {sparkbar};
+}});
+
 define({id: "77f718ba", outputs: ["canvas"], body: () => {
 const canvas = document.createElement("canvas")
 return {canvas};
@@ -248,9 +344,9 @@ const scope = FileAttachment("./data/enjalot-tweets/scopes-001.json").json()
 return {scope};
 }});
 
-define({id: "bee957c8", inputs: ["db"], outputs: ["data"], body: (db) => {
+define({id: "74e9b455", inputs: ["db"], outputs: ["data"], body: (db) => {
 // const rows = db.sql`SELECT * FROM input`
-const data = db.sql`SELECT * FROM scope`
+const data = db.sql`SELECT *,id::string AS tweet_id FROM scope`
 return {data};
 }});
 
@@ -265,11 +361,11 @@ console.log("scope!", scope)
 console.log("hulls!", hulls)
 }});
 
-define({id: "8f058b05", outputs: ["scatter","hull","tooltip","clusterCard","markdownit"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js")]);
+define({id: "4f5bc22b", outputs: ["scatter","hull","tooltip","clusterCard","markdownit","min","max","sum"], body: async () => {
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}, {min, max, sum}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
 
-// import matter from "npm:gray-matter";
-return {scatter,hull,tooltip,clusterCard,markdownit};
+
+return {scatter,hull,tooltip,clusterCard,markdownit,min,max,sum};
 }});
 
 define({id: "2af7ab58", inputs: ["markdownit"], outputs: ["Markdown","md"], body: (markdownit) => {
@@ -354,36 +450,58 @@ return {isMobileDevice};
   </div>
 </header>
 <main id="observablehq-main" class="observablehq">
-<style>
-</style>
 <h1 id="enjalot's-tweets" tabindex="-1"><a class="observablehq-header-anchor" href="#enjalot's-tweets">enjalot's tweets</a></h1>
-<h2 id="looking-in-the-mirror-of-10%2C000-tweets" tabindex="-1"><a class="observablehq-header-anchor" href="#looking-in-the-mirror-of-10%2C000-tweets">Looking in the mirror of 10,000 tweets</a></h2>
+<h2 id="looking-in-the-mirror-of-years-and-10%2C965-tweets." tabindex="-1"><a class="observablehq-header-anchor" href="#looking-in-the-mirror-of-years-and-10%2C965-tweets.">Looking in the mirror of <span id="cell-755f6a01" class="observablehq--loading"></span> years and 10,965 tweets.</a></h2>
+<p>Oh god this could get embarrassing.
+The problem with powerful visualization tools is that they will show you things whether you wanted to see them or not.
+For most of my career I've used Twitter mainly in a professional capacity, but as we will see my younger self was sometimes a bit flippant.</p>
+<p>Social media is of course a place where we run into unmanageable amounts of unstructured text data.
+As we've seen in the <a href="datavis-survey">Datavis Survey</a> and <a href="plot-issues">GitHub Issues</a> analyses, we can use Latent Scope to pull some structure out of the text and combine it with whatever interesting metadata we already have.</p>
+<p>I don't expect you to care, let alone read, all of my tweets, so this time we'll jump straight into the map and start exploring clusters.
+Hopefully displaying my shame will serve as an example of the kinds of insights one might gain from clustering and visualizing their own textual data.</p>
+<p>If you still want to analyze your own tweets by the end of this, you can follow the instructions in <a href="https://observablehq.com/@observablehq/save-and-analyze-your-twitter-archive" target="_blank" rel="noopener noreferrer">this notebook</a> to download and then process your tweets into a format that matches this analysis.</p>
 <div id="cell-aa68ff38" class="observablehq observablehq--block observablehq--loading"></div>
-<div id="cell-92fb4788" class="observablehq observablehq--block"></div>
+<p>Each of the dots in the above map is a tweet, and all those tweets went through the 4 step process in Latent scope:</p>
+<ol>
+<li>Embed - run each piece of text through an embedding model</li>
+<li>Project - run the high-dimensional embeddings through UMAP</li>
+<li>Cluster - run the 2-dimensional UMAP coordinates through HDBSCAN</li>
+<li>Label - ask an LLM to create a label by summarizing a list of text taken from each cluster</li>
+</ol>
+<p>So at the end of this process we have <span id="cell-8ff0b1db" class="observablehq--loading"></span> clusters carving up our <span id="cell-c133b744" class="observablehq--loading"></span> tweets.
+Every row of our input data is annotated with a cluster index and label:</p>
+<div class="card">
+<span id="cell-85389ac9" class="observablehq--loading"></span>
+</div>
+<p><span id="cell-8ff0b1db-1" class="observablehq--loading"></span> clusters is better than 10,000 but it's still quite a lot.
+Let's use some common metrics to explore our clusters, namely likes and rewteets.</p>
+<p><em>Click on the radio button on the left of each cluster to select it and see the details in the card below</em></p>
+<div id="cell-ec6d2531" class="observablehq observablehq--block"></div>
 <div>
-  <span id="cell-e83054f4" class="observablehq--loading"></span>
+  <span id="cell-a2fdee09" class="observablehq--loading"></span>
 </div>
 <div id="cell-765fa948" class="observablehq observablehq--block"></div>
-<div id="cell-7b0ca756" class="observablehq observablehq--block"></div>
+<div id="cell-6933f8ba" class="observablehq observablehq--block"></div>
 <div id="cell-117b7a30" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
 <div id="cell-b32210e2" class="observablehq observablehq--block"></div>
 <div id="cell-0ae181aa" class="observablehq observablehq--block"></div>
 <div id="cell-f41efc62" class="observablehq observablehq--block"></div>
+<div id="cell-5d395032" class="observablehq observablehq--block"></div>
 <div id="cell-77f718ba" class="observablehq observablehq--block"></div>
 <div id="cell-005a856b" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
 <div id="cell-e2c49c1e" class="observablehq observablehq--block"></div>
 <div id="cell-97140297" class="observablehq observablehq--block"></div>
-<div id="cell-bee957c8" class="observablehq observablehq--block"></div>
+<div id="cell-74e9b455" class="observablehq observablehq--block"></div>
 <div id="cell-0f267664" class="observablehq observablehq--block"></div>
 <div id="cell-5551e850" class="observablehq observablehq--block"></div>
-<div id="cell-8f058b05" class="observablehq observablehq--block"></div>
+<div id="cell-4f5bc22b" class="observablehq observablehq--block"></div>
 <div id="cell-2af7ab58" class="observablehq observablehq--block"></div>
 <div id="cell-5f76811e" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a><a rel="next" href="./us-federal-laws"><span>US Federal Laws</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T17:26:57">May 6, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T18:12:51">May 6, 2024</a>.</div>
 </footer>
 </div>
