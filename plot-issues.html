@@ -17,10 +17,10 @@
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
 <link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
 <link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
+<link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
-<link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-color@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-selection@3.0.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-transition@3.0.1/_esm.js">
@@ -39,13 +39,13 @@
 <link rel="modulepreload" href="./_node/entities@4.5.0/index.js">
 <link rel="modulepreload" href="./_node/linkify-it@5.0.0/index.js">
 <link rel="modulepreload" href="./_node/punycode.js@2.3.1/index.js">
+<link rel="modulepreload" href="./_npm/internmap@2.0.3/_esm.js">
 <link rel="modulepreload" href="./_npm/pub-sub-es@2.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/regl@2.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-format@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-time@3.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-time-format@4.1.0/_esm.js">
-<link rel="modulepreload" href="./_npm/internmap@2.0.3/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-dispatch@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-timer@3.0.1/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-path@3.1.0/_esm.js">
@@ -76,10 +76,40 @@
 import {define} from "./_observablehq/client.js";
 import {registerFile} from "./_observablehq/stdlib.js";
 
-registerFile("./data/plot-issues/scopes-001-input.parquet", {"name":"./data/plot-issues/scopes-001-input.parquet","path":"./_file/data/plot-issues/scopes-001-input.d4a7fc58.parquet","lastModified":1714916581622});
-registerFile("./data/plot-issues/scopes-001.json", {"name":"./data/plot-issues/scopes-001.json","mimeType":"application/json","path":"./_file/data/plot-issues/scopes-001.75e606c2.json","lastModified":1714916581624});
+registerFile("./data/plot-issues/scopes-001-input.parquet", {"name":"./data/plot-issues/scopes-001-input.parquet","path":"./_file/data/plot-issues/scopes-001-input.91e9d573.parquet","lastModified":1715026957620});
+registerFile("./data/plot-issues/scopes-001.json", {"name":"./data/plot-issues/scopes-001.json","mimeType":"application/json","path":"./_file/data/plot-issues/scopes-001.98095f12.json","lastModified":1715026957607});
 
-define({id: "9179fadb", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
+define({id: "f1430161", inline: true, inputs: ["da","display"], body: async (da,display) => {
+display(await(
+da.filter(d => d.type == "issue").length
+))
+}});
+
+define({id: "d94a8a7f", inline: true, inputs: ["da","display"], body: async (da,display) => {
+display(await(
+da.filter(d => d.type == "issue" && d.state == "open").length
+))
+}});
+
+define({id: "64afd7da", inline: true, inputs: ["da","display"], body: async (da,display) => {
+display(await(
+da.filter(d => d.type =="pull_request").length
+))
+}});
+
+define({id: "2e9c3dbe", inline: true, inputs: ["da","display"], body: async (da,display) => {
+display(await(
+da.filter(d => d.type =="pull_request" && d.state == "open").length
+))
+}});
+
+define({id: "271f1a63", inline: true, inputs: ["Inputs","da","tableConfig","display"], body: async (Inputs,da,tableConfig,display) => {
+display(await(
+Inputs.table(da, tableConfig)
+))
+}});
+
+define({id: "2d05d675", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
 display(await(
 Plot.plot({
         marks: [
@@ -97,9 +127,11 @@ Plot.plot({
             y: "y",
             r: 2,
             fill: "cluster",
-            title: d => `${d["type"]} ${d["state"]}
-${d["title"]}]
+            title: d => `${d["cluster"]}: ${d["label"]}
+${d["type"]} ${d["state"]}
 
+${d["title"]}
+---
 ${d["body"]}`,
             tip: true
           }),
@@ -114,33 +146,103 @@ ${d["body"]}`,
 ))
 }});
 
-define({id: "92fb4788", inputs: ["view","Inputs","scope"], outputs: ["selcluster"], body: (view,Inputs,scope) => {
-const selcluster = view(Inputs.select(scope.cluster_labels_lookup, { value: d => d.cluster, format: x => x.cluster + ": " + x.label, label: "Cluster:"}))
-return {selcluster};
+define({id: "8ff0b1db", inline: true, inputs: ["clusterTableData","display"], body: async (clusterTableData,display) => {
+display(await(
+clusterTableData.length
+))
 }});
 
-define({id: "b2d6691b", inline: true, inputs: ["clusterCard","selcluster","Plot","da","tableConfig","scope","hulls","display"], body: async (clusterCard,selcluster,Plot,da,tableConfig,scope,hulls,display) => {
+define({id: "c133b744", inline: true, inputs: ["da","display"], body: async (da,display) => {
 display(await(
-clusterCard(selcluster.cluster, {
+da.length
+))
+}});
+
+define({id: "03c69930", inline: true, inputs: ["Inputs","da","tableConfig","display"], body: async (Inputs,da,tableConfig,display) => {
+display(await(
+Inputs.table(da, {...tableConfig, columns: [
+    "cluster",
+    "label",
+    "html_url",
+    "text",
+    "state",
+    "type"
+  ],
+  width: {
+    ...tableConfig.width,
+    text: "50%",
+    cluster: 50,
+    label: 200
+  }
+})
+))
+}});
+
+define({id: "274901b6", inline: true, inputs: ["clusterCard","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,barPlot,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(11, {
     description: "", 
-    plot: Plot.plot({
-        marks: [
-          Plot.barX(da, Plot.groupY({x: "count"}, {
-            filter: d => d.cluster == selcluster.cluster,
-            y: "type",
-            x: "count",
-            fill: "state",
-            tip: true
-          }))
-        ],
-        marginLeft: 80,
-        marginBottom: 30,
-        width: 300,
-        height: 300,
-        y: { label: null },
-        x: { label: null },
-        style: { "background-color": "white" }
-      }),
+    plot: barPlot(11),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "184abd23", inline: true, inputs: ["clusterCard","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,barPlot,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(0, {
+    description: "", 
+    plot: barPlot(0),
+    tableConfig: { ...tableConfig, sort: "comments" }, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "238fb43c", inputs: ["scope","da","sum","min","max","view","Inputs","sparkbar"], outputs: ["clusterTableData","selclusterTable"], body: (scope,da,sum,min,max,view,Inputs,sparkbar) => {
+const clusterTableData = scope.cluster_labels_lookup.map(c => {
+  let dc = da.filter(d => d.cluster == c.cluster)
+  return {
+    cluster: c.cluster,
+    label: c.label,
+    open_issues: dc.filter(d => d.state == "open" && d.type == "issue").length,
+    closed_issues: dc.filter(d => d.state == "closed" && d.type == "issue").length,
+    open_pull_requests: dc.filter(d => d.state == "open" && d.type == "pull_request").length,
+    closed_pull_requests: dc.filter(d => d.state == "closed" && d.type == "pull_request").length,
+    comments: sum(dc, d => d.comments),
+    min_date: min(dc, d => d.created_at),
+    max_date: max(dc, d => d.created_at),
+  }
+})
+const selclusterTable = view(Inputs.table(clusterTableData, {
+  format: {
+    "open_issues": sparkbar(max(clusterTableData, d => d.open_issues), "orange"),
+    "open_pull_requests": sparkbar(max(clusterTableData, d => d.open_pull_requests), "orange"),
+    "closed_issues": sparkbar(max(clusterTableData, d => d.closed_issues), "lightblue"),
+    "closed_pull_requests": sparkbar(max(clusterTableData, d => d.closed_pull_requests), "lightblue"),
+  },
+  width: {
+    "cluster": 50,
+    "label": "20%"
+  },
+  sort: "open_issues",
+  reverse: true,
+  multiple: false,
+  value: clusterTableData[11]
+}))
+return {clusterTableData,selclusterTable};
+}});
+
+define({id: "a2fdee09", inline: true, inputs: ["clusterCard","selclusterTable","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selclusterTable,barPlot,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(selclusterTable.cluster, {
+    description: "", 
+    plot: barPlot(selclusterTable.cluster),
     tableConfig, 
     da, 
     scope, 
@@ -153,15 +255,26 @@ define({id: "765fa948", body: () => {
 // ----------------------------------------------------------
 }});
 
-define({id: "74b0c55c", outputs: ["tableConfig"], body: () => {
+define({id: "f0de993b", inputs: ["htl"], outputs: ["tableConfig"], body: (htl) => {
 const tableConfig = { 
   columns: [
+    "html_url",
     "text",
     "state",
     "type",
+    "user",
+    "comments"
   ],
+  header: {
+    "html_url": "url"
+  },
+  format: {
+    "html_url": x => htl.html`<a href=${x}>${x.split("/")[x.split("/").length - 1]}</a>`
+  },
   width: {
-    "text": "60%"
+    "text": "60%",
+    "html_url": 40,
+    "comments": 70,
   },
   sort: "state",
   reverse: true,
@@ -200,6 +313,50 @@ if(hp) {
 } else {
   tip.hide()
 }
+}});
+
+define({id: "ab477e02", inputs: ["Plot","da"], outputs: ["barPlot"], body: (Plot,da) => {
+function barPlot(cluster, {
+  width = 300,
+  height = 300,
+} = {}) {
+  return Plot.plot({
+        marks: [
+          Plot.barX(da, Plot.groupY({x: "count"}, {
+            filter: d => d.cluster == cluster,
+            y: "type",
+            x: "count",
+            fill: "state",
+            tip: true,
+            order: ["open", "closed"]
+          }))
+        ],
+        marginLeft: 80,
+        marginBottom: 30,
+        width,
+        height,
+        y: { label: null },
+        x: { label: null, grid: true },
+        color: { range: ["lightblue", "orange", ]},
+        style: { "background-color": "#f0f0f0" }
+      })
+}
+return {barPlot};
+}});
+
+define({id: "5d395032", inputs: ["htl"], outputs: ["sparkbar"], body: (htl) => {
+function sparkbar(max, color) {
+  return x => htl.html`<div style="
+    background: ${color};
+    width: ${100 * x / max}%;
+    float: right;
+    padding-right: 3px;
+    box-sizing: border-box;
+    overflow: visible;
+    display: flex;
+    justify-content: end;">${x.toLocaleString("en")}`
+}
+return {sparkbar};
 }});
 
 define({id: "77f718ba", outputs: ["canvas"], body: () => {
@@ -253,11 +410,11 @@ console.log("scope!", scope)
 console.log("hulls!", hulls)
 }});
 
-define({id: "8f058b05", outputs: ["scatter","hull","tooltip","clusterCard","markdownit"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js")]);
+define({id: "4f5bc22b", outputs: ["scatter","hull","tooltip","clusterCard","markdownit","min","max","sum"], body: async () => {
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}, {min, max, sum}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
 
-// import matter from "npm:gray-matter";
-return {scatter,hull,tooltip,clusterCard,markdownit};
+
+return {scatter,hull,tooltip,clusterCard,markdownit,min,max,sum};
 }});
 
 define({id: "2af7ab58", inputs: ["markdownit"], outputs: ["Markdown","md"], body: (markdownit) => {
@@ -301,6 +458,7 @@ return {isMobileDevice};
       <ol>
     <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link observablehq-link-active"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link"><a href="./enjalot-tweets">enjalot&#x27;s tweets</a></li>
     <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
     </section>
@@ -314,7 +472,17 @@ return {isMobileDevice};
 <div id="observablehq-center">
 <header id="observablehq-header">
 
-  <link rel="stylesheet" type="text/css" href="./_file/index.0fc11091.css">
+  <!-- Google tag (gtag.js) -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-W8EM95KSJZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-W8EM95KSJZ');
+  </script>
+  
+  <link rel="stylesheet" type="text/css" href="./_file/index.1728f3a6.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -331,21 +499,65 @@ return {isMobileDevice};
   </div>
 </header>
 <main id="observablehq-main" class="observablehq">
-<style>
-</style>
-<h1>Latent Scope: Plot Issues &amp; Pull Requests</h1>
-<h2><a href="https://osf.io/mrghc/?view_only" target="_blank" rel="noopener noreferrer">Source data</a>. Generated with <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a></h2>
-<div id="cell-9179fadb" class="observablehq observablehq--block observablehq--loading"></div>
-<div id="cell-92fb4788" class="observablehq observablehq--block"></div>
-<div>
-  <span id="cell-b2d6691b" class="observablehq--loading"></span>
+<h1 id="github-issues-%26-prs" tabindex="-1"><a class="observablehq-header-anchor" href="#github-issues-%26-prs">GitHub Issues &amp; PRs</a></h1>
+<p>Collecting feedback from users and customers is an easy way to end up with an enormous amount of unstructured text data, even when there is useful structured data associated with it.
+For example, managing a popular open source repository can lead to hundreds of issues and pull requests.</p>
+<p>Let's use <a href="https://observablehq.com/plot/what-is-plot" target="_blank" rel="noopener noreferrer">Observable Plot</a> as an example, not only is it the visualization library I'm using for these analyses,
+with <span id="cell-f1430161" class="observablehq--loading"></span> issues (<span id="cell-d94a8a7f" class="observablehq--loading"></span> open)
+and <span id="cell-64afd7da" class="observablehq--loading"></span> pull requests (<span id="cell-2e9c3dbe" class="observablehq--loading"></span> open)
+there is a lot of feedback to sort through.</p>
+<p>To get the data we'll use the excellent <a href="https://observablehq.com/@tmcw/github-burndown" target="_blank" rel="noopener noreferrer">GitHub Burndown</a> notebook, where you could enter your own API key to fetch all the issues &amp; PRs for a repository you control. You can download the resulting data via Observable's interface like so:
+<img src="./_file/assets/plot-issues/download_json.b49a354e.png" style="width:80%;"></p>
+<p>The notebook itself provides some interesting visualizations focused around when issues are opened and closed:</p>
+<img src="./_file/assets/plot-issues/burndown.e73d2fc2.png" style="width:80%;">
+<p>We want to focus on the contents of the issues, and just like in our <a href="datavis-survey">Datavis Survey example</a>, just scrolling through a table and reading every issue isn't practical at all:</p>
+<div class="card">
+<span id="cell-271f1a63" class="observablehq--loading"></span>
 </div>
+<p>So again, we use Latent Scope's process to create a map of our unstructured text data:</p>
+<div id="cell-2d05d675" class="observablehq observablehq--block observablehq--loading"></div>
+<p>The map is created by going through the 4 step process in Latent scope:</p>
+<ol>
+<li>Embed - run each piece of text through an embedding model</li>
+<li>Project - run the high-dimensional embeddings through UMAP</li>
+<li>Cluster - run the 2-dimensional UMAP coordinates through HDBSCAN</li>
+<li>Label - ask an LLM to create a label by summarizing a list of text taken from each cluster</li>
+</ol>
+<p>So at the end of this process we have <span id="cell-8ff0b1db" class="observablehq--loading"></span> clusters carving up our <span id="cell-c133b744" class="observablehq--loading"></span> issues and pull requests.
+Every row of our input data is annotated with a cluster index and label:</p>
+<div class="card">
+<span id="cell-03c69930" class="observablehq--loading"></span>
+</div>
+<p>We've essentially added some new structure that we can use to filter and group our data, while still attaching the valuable structured metadata we already had.</p>
+<p>For example, one thing we might be interested in is the cluster with the most open issues:</p>
+<div>
+  <span id="cell-274901b6" class="observablehq--loading"></span>
+</div>
+<p>We might also be interested in which cluster has the most comments, as that can be another indication of how much interest in (or struggles with) certain concepts users are having.</p>
+<div>
+  <span id="cell-184abd23" class="observablehq--loading"></span>
+</div>
+<p>It would also be great to get insight into the clusters as a whole.
+We can create a data table that displays key metrics computed for each cluster.
+We can then also click on the radio button next to each cluster to select it and view it in more detail.
+Sorting the table allows us to investigate the various metrics we may care about in relation to the clusters.</p>
+<div id="cell-238fb43c" class="observablehq observablehq--block"></div>
+<div>
+  <span id="cell-a2fdee09" class="observablehq--loading"></span>
+</div>
+<p>At the end of the day, the insights to be found depend heavily on your relationship to the dataset.
+If this was your repository it might be more illuminating who is opening the issues or pull requests.
+It could be that some clusters represent recently added features and when the issues are opened matters more.</p>
+<p>The important thing is to take a look, with Latent Scope you can <a href="exporting-data">easily export</a> your annotated data and analyze it in the tool of your choice.
+Personally, I've been enjoying <a href="https://observablehq.com/plot/" target="_blank" rel="noopener noreferrer">Observable Plot</a> inside <a href="https://observablehq.com/framework/" target="_blank" rel="noopener noreferrer">Observable Framework</a> to make this site with my exported scopes.</p>
 <div id="cell-765fa948" class="observablehq observablehq--block"></div>
-<div id="cell-74b0c55c" class="observablehq observablehq--block"></div>
+<div id="cell-f0de993b" class="observablehq observablehq--block"></div>
 <div id="cell-117b7a30" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
 <div id="cell-b32210e2" class="observablehq observablehq--block"></div>
 <div id="cell-0ae181aa" class="observablehq observablehq--block"></div>
+<div id="cell-ab477e02" class="observablehq observablehq--block"></div>
+<div id="cell-5d395032" class="observablehq observablehq--block"></div>
 <div id="cell-77f718ba" class="observablehq observablehq--block"></div>
 <div id="cell-005a856b" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
@@ -354,12 +566,12 @@ return {isMobileDevice};
 <div id="cell-bee957c8" class="observablehq observablehq--block"></div>
 <div id="cell-0f267664" class="observablehq observablehq--block"></div>
 <div id="cell-5551e850" class="observablehq observablehq--block"></div>
-<div id="cell-8f058b05" class="observablehq observablehq--block"></div>
+<div id="cell-4f5bc22b" class="observablehq observablehq--block"></div>
 <div id="cell-2af7ab58" class="observablehq observablehq--block"></div>
 <div id="cell-5f76811e" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
-<nav><a rel="prev" href="./datavis-survey"><span>Datavis Survey</span></a><a rel="next" href="./us-federal-laws"><span>US Federal Laws</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T00:03:47">May 6, 2024</a>.</div>
+<nav><a rel="prev" href="./datavis-survey"><span>Datavis Survey</span></a><a rel="next" href="./enjalot-tweets"><span>enjalot&#x27;s tweets</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T17:26:57">May 6, 2024</a>.</div>
 </footer>
 </div>

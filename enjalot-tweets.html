@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Datavis Survey Analysis | Latent Scope</title>
+<title>enjalot&#x27;s tweets | Latent Scope</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&amp;display=swap" crossorigin>
 <link rel="preload" as="style" href="./_observablehq/theme-air,near-midnight.css">
@@ -16,6 +16,7 @@
 <link rel="modulepreload" href="./_import/components/hull.532abe46.js">
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
 <link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
+<link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
@@ -33,6 +34,11 @@
 <link rel="modulepreload" href="./_observablehq/stdlib/duckdb.js">
 <link rel="modulepreload" href="./_npm/@duckdb/duckdb-wasm@1.28.0/_esm.js">
 <link rel="modulepreload" href="./_npm/isoformat@0.2.1/_esm.js">
+<link rel="modulepreload" href="./_node/mdurl@2.0.0/index.js">
+<link rel="modulepreload" href="./_node/uc.micro@2.1.0/index.js">
+<link rel="modulepreload" href="./_node/entities@4.5.0/index.js">
+<link rel="modulepreload" href="./_node/linkify-it@5.0.0/index.js">
+<link rel="modulepreload" href="./_node/punycode.js@2.3.1/index.js">
 <link rel="modulepreload" href="./_npm/pub-sub-es@2.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/regl@2.1.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-interpolate@3.0.1/_esm.js">
@@ -70,25 +76,10 @@
 import {define} from "./_observablehq/client.js";
 import {registerFile} from "./_observablehq/stdlib.js";
 
-registerFile("./data/datavis-survey/scopes-001-input.parquet", {"name":"./data/datavis-survey/scopes-001-input.parquet","path":"./_file/data/datavis-survey/scopes-001-input.b9718cf2.parquet","lastModified":1714675430620});
-registerFile("./data/datavis-survey/scopes-001.json", {"name":"./data/datavis-survey/scopes-001.json","mimeType":"application/json","path":"./_file/data/datavis-survey/scopes-001.d44da6f0.json","lastModified":1714675430621});
+registerFile("./data/enjalot-tweets/scopes-001-input.parquet", {"name":"./data/enjalot-tweets/scopes-001-input.parquet","path":"./_file/data/enjalot-tweets/scopes-001-input.7f644919.parquet","lastModified":1714776460422});
+registerFile("./data/enjalot-tweets/scopes-001.json", {"name":"./data/enjalot-tweets/scopes-001.json","mimeType":"application/json","path":"./_file/data/enjalot-tweets/scopes-001.fe2ed940.json","lastModified":1714776460399});
 
-define({id: "1b1151e3", inline: true, inputs: ["Inputs","da","display"], body: async (Inputs,da,display) => {
-display(await(
-Inputs.table(da, { 
-        columns: [
-          "DataVizNotUnderstood",
-          "Role",
-        ],
-        width: {
-          "DataVizNotUnderstood": "70%",
-        },
-        rows:10 
-      })
-))
-}});
-
-define({id: "9577b65f", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
+define({id: "aa68ff38", inputs: ["Plot","hulls","da","display"], body: async (Plot,hulls,da,display) => {
 display(await(
 Plot.plot({
         marks: [
@@ -104,70 +95,22 @@ Plot.plot({
           Plot.dot(da, {
             x: "x",
             y: "y",
-            r: 2,
+            r: 1,
             fill: "cluster",
-            title: d => `${d["cluster"]}: ${d["label"]}
-Role: ${d["Role"]}
+            title: d => `${d["cluster"]}: ${d["label"]} 
+${d["type"]} ${d["created_at"]}
 
-${d["DataVizNotUnderstood"]}`,
+${d["full_text"]}`,
             tip: true
           }),
         ],
         width: 500,
         height: 500,
-        margin: 20,
+        margin: 30,
         color: { scheme: "cool" },
         y: { axis: null},
         x: { axis: null },
       })
-))
-}});
-
-define({id: "80ad06eb", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(27, {description: "These responses confirm a long-standing belief I've personally held: that cleaning and preparing data is a huge part of data visualization work. This principle is part of the motivation for building Latent Scope, a robust process for adding structure to data so it becomes possible to visualize!", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "67b20c5d", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(28,{description: "These responses all seem like they would fit just as well in cluster 27.", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "ae80f216", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(3, {description: "Data viz takes time!", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "df7bfc52", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(14, {description: "Notice the conspicious lack of the word 'viz' in these responses. Otherwise they would fit well in Cluster 3.", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "b1aef65e", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(20, {description: "Again, these responses could be reasonably combined with Cluster 3 or 14, but as the label implies there is the added idea of complexity, details and intention added to many responses.", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "39d66148", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(21, {description: "Here is more time, but now we also have a lot more 'effort' mixed in.", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "21edfd7c", inline: true, inputs: ["clusterCard","tableConfig","da","scope","hulls","display"], body: async (clusterCard,tableConfig,da,scope,hulls,display) => {
-display(await(
-clusterCard(11, {description: "Speaking of effort, these responses are all about effort and don't mention time explicitly.", tableConfig, da, scope, hulls})
-))
-}});
-
-define({id: "0f29dbbb", inline: true, inputs: ["scope","display"], body: async (scope,display) => {
-display(await(
-scope.cluster_labels_lookup.length
 ))
 }});
 
@@ -176,26 +119,36 @@ const selcluster = view(Inputs.select(scope.cluster_labels_lookup, { value: d =>
 return {selcluster};
 }});
 
-define({id: "966b0f2d", inline: true, inputs: ["clusterCard","selcluster","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selcluster,tableConfig,da,scope,hulls,display) => {
+define({id: "e83054f4", inline: true, inputs: ["clusterCard","selcluster","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selcluster,barPlot,tableConfig,da,scope,hulls,display) => {
 display(await(
-clusterCard(selcluster.cluster, {description: "", tableConfig, da, scope, hulls})
+clusterCard(selcluster.cluster, {
+    description: "", 
+    plot: barPlot(selcluster.cluster, { field: "year"}),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
 ))
 }});
 
-define({id: "7b2ff0a5", body: () => {
-// -------------------------------------------------
+define({id: "765fa948", body: () => {
+// ----------------------------------------------------------
 }});
 
-define({id: "8db63f16", outputs: ["tableConfig"], body: () => {
+define({id: "7b0ca756", outputs: ["tableConfig"], body: () => {
 const tableConfig = { 
   columns: [
-    "DataVizNotUnderstood",
-    "Role",
+    "full_text",
+    "created_at",
+    "type",
   ],
   width: {
-    "DataVizNotUnderstood": "70%",
+    "full_text": "60%"
   },
-  rows: 12
+  sort: "created_at",
+  reverse: true,
+  rows: 15
 }
 return {tableConfig};
 }});
@@ -215,20 +168,50 @@ let hp = da[map.hovered[0]]
 return {hp};
 }});
 
-define({id: "93aa8b33", inputs: ["hp","tip","map"], body: (hp,tip,map) => {
+define({id: "0ae181aa", inputs: ["hp","tip","map","md"], body: (hp,tip,map,md) => {
 if(hp) {
   // display the tooltip
   // console.log("p, sel", p, selected)
-  tip.show(hp, map, `
+  tip.show(hp, map, md.unsafe(`
   <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
   <br/>
-  <span>Role: ${hp["Role"]}
+  <span>state: ${hp["state"]}
+  <span>type: ${hp["type"]}
   <br/>
-  ${hp["DataVizNotUnderstood"]}
-  `)
+  ${hp["text"]}
+  `))
 } else {
   tip.hide()
 }
+}});
+
+define({id: "f41efc62", inputs: ["Plot","da"], outputs: ["barPlot"], body: (Plot,da) => {
+function barPlot(cluster, {
+  field = "type",
+  width = 300,
+  height = 300,
+} = {}) {
+  return Plot.plot({
+        marks: [
+          Plot.barX(da, Plot.groupY({x: "count"}, {
+            filter: d => d.cluster == cluster,
+            y: field,
+            x: "count",
+            // fill: "state",
+            tip: true,
+            // order: ["open", "closed"]
+          }))
+        ],
+        marginLeft: 80,
+        marginBottom: 30,
+        width,
+        height,
+        y: { label: null, tickFormat: x => x.toString() },
+        x: { label: null, grid: true },
+        style: { "background-color": "#f0f0f0" }
+      })
+}
+return {barPlot};
 }});
 
 define({id: "77f718ba", outputs: ["canvas"], body: () => {
@@ -253,15 +236,15 @@ const hulls = scope.cluster_labels_lookup.map(c => {
 return {hulls};
 }});
 
-define({id: "7205427d", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
+define({id: "e2c49c1e", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
 const db = DuckDBClient.of({
-  scope: FileAttachment("./data/datavis-survey/scopes-001-input.parquet")
+  scope: FileAttachment("./data/enjalot-tweets/scopes-001-input.parquet")
 });
 return {db};
 }});
 
-define({id: "0fe0d076", inputs: ["FileAttachment"], outputs: ["scope"], body: (FileAttachment) => {
-const scope = FileAttachment("./data/datavis-survey/scopes-001.json").json()
+define({id: "97140297", inputs: ["FileAttachment"], outputs: ["scope"], body: (FileAttachment) => {
+const scope = FileAttachment("./data/enjalot-tweets/scopes-001.json").json()
 return {scope};
 }});
 
@@ -282,10 +265,24 @@ console.log("scope!", scope)
 console.log("hulls!", hulls)
 }});
 
-define({id: "d89547a4", outputs: ["scatter","hull","tooltip","clusterCard"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js")]);
+define({id: "8f058b05", outputs: ["scatter","hull","tooltip","clusterCard","markdownit"], body: async () => {
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js")]);
 
-return {scatter,hull,tooltip,clusterCard};
+// import matter from "npm:gray-matter";
+return {scatter,hull,tooltip,clusterCard,markdownit};
+}});
+
+define({id: "2af7ab58", inputs: ["markdownit"], outputs: ["Markdown","md"], body: (markdownit) => {
+const Markdown = new markdownit({html: true});
+
+const md = {
+  unsafe(string) {
+    const template = document.createElement("template");
+    template.innerHTML = Markdown.render(string);
+    return template.content.cloneNode(true);
+  }
+};
+return {Markdown,md};
 }});
 
 define({id: "5f76811e", outputs: ["isMobileDevice"], body: () => {
@@ -314,9 +311,9 @@ return {isMobileDevice};
     <section class="observablehq-section-active">
       <summary>Example Analysis</summary>
       <ol>
-    <li class="observablehq-link observablehq-link-active"><a href="./datavis-survey">Datavis Survey</a></li>
+    <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
-    <li class="observablehq-link"><a href="./enjalot-tweets">enjalot&#x27;s tweets</a></li>
+    <li class="observablehq-link observablehq-link-active"><a href="./enjalot-tweets">enjalot&#x27;s tweets</a></li>
     <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
     </section>
@@ -357,79 +354,36 @@ return {isMobileDevice};
   </div>
 </header>
 <main id="observablehq-main" class="observablehq">
-<h1>Survey Analysis Example</h1>
-<!-- <h2><a href="https://gist.github.com/curran/003cca0643e9947162359268821415f5">Source data</a>. Generated with <a href="https://github.com/enjalot/latent-scope">Latent Scope</a></h2> -->
-<p>A common source of valuable unstructured text data is the free response questions often asked in surveys. This data is of course difficult to work with, as typical techniques for finding insights in surveys focus on structured data like the answers to multiple choice questions.</p>
-<p>The data used to setup <a href="your-first-scope">your first scope</a> is in fact the 765 responses to the question:
-<em>"What do you think people you work with just don't get about the data visualization work that you do?"</em></p>
-<p>Let's take a look at how Latent Scope can help us pull out some insight from those responses by examining the clusters it's identified. Note that this page is using the exported scope from the <a href="your-first-scope">your first scope</a> guide, and much of this analysis could be done within the tool.</p>
-<p>Before we get to the fun visualizations, let's take a look at the input data. The data is an extract of the <a href="https://gist.github.com/curran/003cca0643e9947162359268821415f5" target="_blank" rel="noopener noreferrer">full survey</a>, where the answer to the question is stored in <code>DataVizNotUnderstood</code>, and we also have multiple-choice answer of the respondant's <code>Role</code>:</p>
-<div class="static-table">
-  <span id="cell-1b1151e3" class="observablehq--loading"></span>
-</div>
-<p>As you can see, it's not very straightforward to pick out patterns just by scrolling through the text, so let's take a look at what Latent Scope gave us:</p>
-<div id="cell-9577b65f" class="observablehq observablehq--block observablehq--loading"></div>
-<p>The map is created by going through the 4 step process in Latent scope:</p>
-<ol>
-<li>Embed - run each piece of text through an embedding model</li>
-<li>Project - run the high-dimensional embeddings through UMAP</li>
-<li>Cluster - run the 2-dimensional UMAP coordinates through HDBSCAN</li>
-<li>Label - ask an LLM to create a label by summarizing a list of text taken from each cluster</li>
-</ol>
-<p>What the process gives us is a workable categorization of the text data based on the patterns captured by the embedding model and the labeling of the LLM.
-Of course these automated steps are never perfect, so Latent Scope is designed to both let you tweak the parameters of each step as well as manually re-categorize data once the process is finished. For more details see the <a href="explore-and-curate">explore and curate guide</a>.</p>
-<p>Let's take a closer look at some of the clusters we got, starting with my favorite (because it's so true!)</p>
-<div>
-  <span id="cell-80ad06eb" class="observablehq--loading"></span>
-</div>
-<p>As I mentioned, the process isn't perfect, and here we see a cluster that could have easily been combined with Cluster 27:</p>
-<div>
-  <span id="cell-67b20c5d" class="observablehq--loading"></span>
-</div>
-<p>In fact, I did use the explore tool to combine a couple of clusters into this one:</p>
-<div>
-  <span id="cell-ae80f216" class="observablehq--loading"></span>
-</div>
-<p>And we can see that how much time it takes to make data visualizations is a common response, there is this other large cluster:</p>
-<div>
-  <span id="cell-df7bfc52" class="observablehq--loading"></span>
-</div>
-<p>As you can see, the embeddings (and UMAP, and clustering) may separate text based on different concepts. The last two clusters are conceptually very similar with the main difference being that most people used the word "viz" in one cluster and not in the other. I find it quite amazing that this level of separation is possible, but it may sometimes not be what you want to separate.</p>
-<p>The theme of time and effort is expressed further in other clusters:</p>
-<div>
-  <span id="cell-b1aef65e" class="observablehq--loading"></span>
-</div>
-<div>
-  <span id="cell-39d66148" class="observablehq--loading"></span>
-</div>
-<div>
-  <span id="cell-21edfd7c" class="observablehq--loading"></span>
-</div>
-<p>Whew! Data visualization certainly takes a lot of time and effort! There are many more clusters to explore (<span id="cell-0f29dbbb" class="observablehq--loading"></span> in fact), instead of listing them all out let's end with a little interactive choice:</p>
+<style>
+</style>
+<h1 id="enjalot's-tweets" tabindex="-1"><a class="observablehq-header-anchor" href="#enjalot's-tweets">enjalot's tweets</a></h1>
+<h2 id="looking-in-the-mirror-of-10%2C000-tweets" tabindex="-1"><a class="observablehq-header-anchor" href="#looking-in-the-mirror-of-10%2C000-tweets">Looking in the mirror of 10,000 tweets</a></h2>
+<div id="cell-aa68ff38" class="observablehq observablehq--block observablehq--loading"></div>
 <div id="cell-92fb4788" class="observablehq observablehq--block"></div>
 <div>
-  <span id="cell-966b0f2d" class="observablehq--loading"></span>
+  <span id="cell-e83054f4" class="observablehq--loading"></span>
 </div>
-<p>What are you waiting for? Try <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a> out on your own data!</p>
-<div id="cell-7b2ff0a5" class="observablehq observablehq--block"></div>
-<div id="cell-8db63f16" class="observablehq observablehq--block"></div>
+<div id="cell-765fa948" class="observablehq observablehq--block"></div>
+<div id="cell-7b0ca756" class="observablehq observablehq--block"></div>
 <div id="cell-117b7a30" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
 <div id="cell-b32210e2" class="observablehq observablehq--block"></div>
-<div id="cell-93aa8b33" class="observablehq observablehq--block"></div>
+<div id="cell-0ae181aa" class="observablehq observablehq--block"></div>
+<div id="cell-f41efc62" class="observablehq observablehq--block"></div>
 <div id="cell-77f718ba" class="observablehq observablehq--block"></div>
 <div id="cell-005a856b" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
-<div id="cell-7205427d" class="observablehq observablehq--block"></div>
-<div id="cell-0fe0d076" class="observablehq observablehq--block"></div>
+<div id="cell-e2c49c1e" class="observablehq observablehq--block"></div>
+<div id="cell-97140297" class="observablehq observablehq--block"></div>
 <div id="cell-bee957c8" class="observablehq observablehq--block"></div>
 <div id="cell-0f267664" class="observablehq observablehq--block"></div>
 <div id="cell-5551e850" class="observablehq observablehq--block"></div>
-<div id="cell-d89547a4" class="observablehq observablehq--block"></div>
+<div id="cell-8f058b05" class="observablehq observablehq--block"></div>
+<div id="cell-2af7ab58" class="observablehq observablehq--block"></div>
 <div id="cell-5f76811e" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
-<nav><a rel="prev" href="./exporting-data"><span>Exporting data</span></a><a rel="next" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
+<nav><a rel="prev" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a><a rel="next" href="./us-federal-laws"><span>US Federal Laws</span></a></nav>
 <div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T17:26:57">May 6, 2024</a>.</div>
 </footer>
 </div>

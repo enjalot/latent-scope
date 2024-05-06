@@ -26,7 +26,7 @@
 import {define} from "./_observablehq/client.js";
 import {registerFile} from "./_observablehq/stdlib.js";
 
-registerFile("./data/plot-issues/scopes-001.parquet", {"name":"./data/plot-issues/scopes-001.parquet","path":"./data/plot-issues/scopes-001.parquet"});
+registerFile("./data/plot-issues/scopes-001.parquet", {"name":"./data/plot-issues/scopes-001.parquet","path":"./_file/data/plot-issues/scopes-001.e1259b56.parquet","lastModified":1715026957606});
 
 define({id: "258713ac", inputs: ["DuckDBClient","FileAttachment"], outputs: ["db"], body: (DuckDBClient,FileAttachment) => {
 const db = DuckDBClient.of({
@@ -69,6 +69,7 @@ Inputs.table(data.toArray())
       <ol>
     <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link"><a href="./enjalot-tweets">enjalot&#x27;s tweets</a></li>
     <li class="observablehq-link"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
     </section>
@@ -84,13 +85,27 @@ Inputs.table(data.toArray())
 <li class="observablehq-secondary-link"><a href="#scope">Scope</a></li>
 <li class="observablehq-secondary-link"><a href="#dataset">Dataset</a></li>
 <li class="observablehq-secondary-link"><a href="#embeddings">Embeddings</a></li>
+<li class="observablehq-secondary-link"><a href="#umaps">UMAPS</a></li>
+<li class="observablehq-secondary-link"><a href="#clusters">Clusters</a></li>
+<li class="observablehq-secondary-link"><a href="#scopes">Scopes</a></li>
+<li class="observablehq-secondary-link"><a href="#tags">Tags</a></li>
 </ol>
 </nav>
 </aside>
 <div id="observablehq-center">
 <header id="observablehq-header">
 
-  <link rel="stylesheet" type="text/css" href="./_file/index.0fc11091.css">
+  <!-- Google tag (gtag.js) -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-W8EM95KSJZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-W8EM95KSJZ');
+  </script>
+  
+  <link rel="stylesheet" type="text/css" href="./_file/index.1728f3a6.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -119,21 +134,35 @@ If you've somehow forgotten where you set it up, you can go to the settings page
 <img src="./_file/assets/export/export.cfb8f0ae.png" alt="Export" class="pageshot">
 <p>Let's go through each of the headings in the Export page and give a brief overview of the data available for download.</p>
 <h1 id="scope" tabindex="-1"><a class="observablehq-header-anchor" href="#scope">Scope</a></h1>
-<p>The most useful data to get is the Scope data. The <code>scopes-XXX.parquet</code> file will contain a row for each row of your input data (minus any you deleted through the bulk actions).</p>
+<p>The most useful data to get is the Scope data. The <strong><code>scopes-XXX.parquet</code></strong> file will contain a row for each row of your input data (minus any you deleted through the bulk actions).
+The <strong><code>scopes-XXX-input.parquet</code></strong> has the input data joined to the scope, so you should find all the original columns you had when you ingested the data as well as the additional scope columns.</p>
 <p>The columns of this parquet include <code>x</code> and <code>y</code> which are the UMAP coordinates, <code>cluster</code> which is the cluster number, <code>raw_cluster</code> which is the cluster number if we didn't automatically assign each point to the closest cluster, <code>label</code> which is the name given to the cluster via the labeling process and <code>ls_index</code> which is the index into the original data.</p>
 <div id="cell-258713ac" class="observablehq observablehq--block"></div>
 <div id="cell-6b5390cf" class="observablehq observablehq--block"></div>
 <p><span id="cell-dc9d3eb2" class="observablehq--loading"></span></p>
-<p>The <code>scopes-XXX.json</code> file contains the metadata from each step in the process, so all of the choices you made when setting up the scope including the parameters used are included.</p>
+<p>The <strong><code>scopes-XXX.json</code></strong> file contains the metadata from each step in the process, so all of the choices you made when setting up the scope including the parameters used are included.</p>
 <p>It also has the metadata for each cluster in the <code>cluster_labels_lookup</code> which includes the hull indices that can be used to draw boundaries around the cluster (these indices are into the original input data, so if you deleted points you'd need to map via the ls_index column).</p>
 <h1 id="dataset" tabindex="-1"><a class="observablehq-header-anchor" href="#dataset">Dataset</a></h1>
 <p>When your input dataset is ingested, Latent Scope creates input.parquet regardless of the input format. If you did upload a file you will also see that original file listed. Additionally, the <code>meta.json</code> file has information about the dataset such as the <code>column_metadata</code> which includes the inferred data types of each column as well as if any of them are categorical.</p>
 <h1 id="embeddings" tabindex="-1"><a class="observablehq-header-anchor" href="#embeddings">Embeddings</a></h1>
 <p>Each time the embedding step is computed two files are created: <code>embeddings-XXX.h5</code> and <code>embeddings-XXX.json</code>. The H5 file stores the embedding vectors. The format was chosen because it is portable, often used in scientific computing and allows dynamically adding to the array. This means that if the embedding process is somehow interrupted it can resume from where it last left off.</p>
-<p>The JSON file contains the parameters chosen.</p>
+<p>The JSON file contains the parameters chosen during the embedding step.</p>
+<h1 id="umaps" tabindex="-1"><a class="observablehq-header-anchor" href="#umaps">UMAPS</a></h1>
+<p>Each time you run through "Step 2. Project" in the process you create three <code>umap-XXX</code> files.
+A parquet that stores the x,y coordinates for each row, a JSON that stores the parameters you chose and a PNG that serves as a thumbnail preview.</p>
+<h1 id="clusters" tabindex="-1"><a class="observablehq-header-anchor" href="#clusters">Clusters</a></h1>
+<p>Each time you run through "Step 3. Cluster" in the process you create three <code>cluster-XXX</code> files.
+A parquet that stores the cluster index for each row, a JSON that stores the parameters you chose and a PNG that serves as a thumbnail preview.</p>
+<p>When you run "Step 4. Auto-label" two new <code>-labes-XXX</code> files will be created.
+A parquet that has a row for each cluster with its index, label and hull points. The JSON will store the parameters chosen.</p>
+<h1 id="scopes" tabindex="-1"><a class="observablehq-header-anchor" href="#scopes">Scopes</a></h1>
+<p>Scopes are covered above, except for the addition of <code>scopes-XXX-transactions.json</code> which stores a transaction object for every time a bulk action is performed on the scope.
+This way you can see when and what data was deleted or re-categorized.</p>
+<h1 id="tags" tabindex="-1"><a class="observablehq-header-anchor" href="#tags">Tags</a></h1>
+<p>Each tag has a <code>.indices</code> file, which is really just a plain text file with an index on each row.</p>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./explore-and-curate"><span>Explore and Curate</span></a><a rel="next" href="./datavis-survey"><span>Datavis Survey</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T00:03:47">May 6, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T17:26:57">May 6, 2024</a>.</div>
 </footer>
 </div>

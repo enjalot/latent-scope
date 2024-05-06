@@ -105,39 +105,39 @@ isMobileDevice ? Plot.plot({
 ))
 }});
 
-define({id: "7f998601", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
+define({id: "7a64ee31", inline: true, inputs: ["resize","scatter","data","canvas","display"], body: async (resize,scatter,data,canvas,display) => {
 display(await(
 resize((width) => scatter(data.toArray(), { 
-        canvas, 
-        width, 
-        height: 500, 
-        pointSize: 2,
-        color: (d) => d.cluster 
-    }))
+          canvas, 
+          width, 
+          height: 500, 
+          pointSize: 2,
+          color: (d) => d.cluster 
+      }))
 ))
 }});
 
-define({id: "f67d1c0a", inline: true, inputs: ["hull","hulls","map","display"], body: async (hull,hulls,map,display) => {
+define({id: "a7b470f1", inline: true, inputs: ["hull","hulls","map","display"], body: async (hull,hulls,map,display) => {
 display(await(
 hull(hulls, { 
-        width: map.width,
-        height: map.height,
-        xd: map.xd,
-        yd: map.yd
-      })
-      
+          width: map.width,
+          height: map.height,
+          xd: map.xd,
+          yd: map.yd
+        })
+        
 ))
 }});
 
-define({id: "8d266656", inline: true, inputs: ["hp","hull","hulls","map","display"], body: async (hp,hull,hulls,map,display) => {
+define({id: "32f7828e", inline: true, inputs: ["hp","hull","hulls","map","display"], body: async (hp,hull,hulls,map,display) => {
 display(await(
 hp ? hull([hulls[hp.cluster]], { 
-        fill: "rgba(20,20,20,0.25)",
-        width: map.width,
-        height: map.height,
-        xd: map.xd,
-        yd: map.yd
-      }) : "" 
+          fill: "rgba(20,20,20,0.25)",
+          width: map.width,
+          height: map.height,
+          xd: map.xd,
+          yd: map.yd
+        }) : "" 
 ))
 }});
 
@@ -165,30 +165,30 @@ display(await(
 ))
 }});
 
-define({id: "c6084855", inline: true, inputs: ["map","Inputs","canvas","display"], body: async (map,Inputs,canvas,display) => {
+define({id: "9d359218", inline: true, inputs: ["map","Inputs","canvas","display"], body: async (map,Inputs,canvas,display) => {
 display(await(
-        map.selected.length ? Inputs.button("Deselect", {
-          value: null, 
-          reduce: () => canvas.scatter.select([])
-        }) : ""
-    
+          map.selected.length ? Inputs.button("Deselect", {
+            value: null, 
+            reduce: () => canvas.scatter.select([])
+          }) : ""
+      
 ))
 }});
 
-define({id: "7b10de6d", inline: true, inputs: ["Inputs","tableData","display"], body: async (Inputs,tableData,display) => {
+define({id: "c698227c", inline: true, inputs: ["Inputs","tableData","display"], body: async (Inputs,tableData,display) => {
 display(await(
 Inputs.table(tableData, { 
-        columns: [
-          "Title",
-          "date_of_passage",
-          "label",
-        ],
-        sort: "date_of_passage",
-        width: {
-          "Title": "80%"
-        },
-        rows: 15
-      })
+          columns: [
+            "Title",
+            "date_of_passage",
+            "label",
+          ],
+          sort: "date_of_passage",
+          width: {
+            "Title": "60%"
+          },
+          rows: 15
+        })
 ))
 }});
 
@@ -372,7 +372,7 @@ const hulls = scope.cluster_labels_lookup.map(c => {
 return {hulls};
 }});
 
-define({id: "cae631e1", inputs: ["Plot","da"], outputs: ["dateBars"], body: (Plot,da) => {
+define({id: "881df1e0", inputs: ["Plot","da"], outputs: ["dateBars"], body: (Plot,da) => {
 function dateBars(cluster) {
   let filter = d => d.cluster == cluster
   if (Array.isArray(cluster)) {
@@ -392,7 +392,7 @@ function dateBars(cluster) {
     height: 300,
     y: { label: null, tickFormat: x => Math.floor(x).toString() },
     x: { label: null },
-    style: { "background-color": "white" }
+    // style: { "background-color": "white" }
   })
 }
 return {dateBars};
@@ -481,6 +481,7 @@ if(isMobileDevice) {
       <ol>
     <li class="observablehq-link"><a href="./datavis-survey">Datavis Survey</a></li>
     <li class="observablehq-link"><a href="./plot-issues">GitHub Issues &amp; PRs</a></li>
+    <li class="observablehq-link"><a href="./enjalot-tweets">enjalot&#x27;s tweets</a></li>
     <li class="observablehq-link observablehq-link-active"><a href="./us-federal-laws">US Federal Laws</a></li>
       </ol>
     </section>
@@ -490,7 +491,17 @@ if(isMobileDevice) {
 <div id="observablehq-center">
 <header id="observablehq-header">
 
-  <link rel="stylesheet" type="text/css" href="./_file/index.0fc11091.css">
+  <!-- Google tag (gtag.js) -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-W8EM95KSJZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-W8EM95KSJZ');
+  </script>
+  
+  <link rel="stylesheet" type="text/css" href="./_file/index.1728f3a6.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -511,30 +522,32 @@ if(isMobileDevice) {
 <p><a href="https://osf.io/mrghc/?view_only" target="_blank" rel="noopener noreferrer">Source data</a> from <a href="https://www.data-is-plural.com/archive/2024-02-28-edition/" target="_blank" rel="noopener noreferrer">Data is Plural 2024.02.28 edition</a></p>
 <div>
 <span id="cell-ea5bbdba" class="observablehq--loading"></span>
-<div>
-<div class="regl-container" style="border: 1px solid gray; position:relative; height: 500px;" "="">
+<div class="regl-container">
+  <div style="border: 1px solid gray; position:relative; height: 500px;" "="">
+    <div>
+        <span id="cell-7a64ee31" class="observablehq--loading"></span> 
+    </div>
+    <div style="position:absolute;top:0;pointer-events:none;">
+        <span id="cell-a7b470f1" class="observablehq--loading"></span>
+    </div>
+    <div style="position:absolute;top:0;pointer-events:none;">
+        <span id="cell-32f7828e" class="observablehq--loading"></span>
+    </div>
+    <div>
+      <span id="cell-97380187" class="observablehq--loading"></span>
+    </div>
+  </div>
   <div>
-      <span id="cell-7f998601" class="observablehq--loading"></span> 
+    <span id="cell-46313d53" class="observablehq--loading"></span> points. 
+    <span id="cell-459eff35" class="observablehq--loading"></span> points selected. <i><span id="cell-1e7819ac" class="observablehq--loading"></span></i>
+    <div style="display:inline-block">
+      <span id="cell-9d359218" class="observablehq--loading"></span>
+    </div>
   </div>
-  <div style="position:absolute;top:0;pointer-events:none;">
-      <span id="cell-f67d1c0a" class="observablehq--loading"></span>
+  <br>
+  <div class="static-table">
+    <span id="cell-c698227c" class="observablehq--loading"></span>
   </div>
-  <div style="position:absolute;top:0;pointer-events:none;">
-      <span id="cell-8d266656" class="observablehq--loading"></span>
-  </div>
-  <span id="cell-97380187" class="observablehq--loading"></span>
-</div>
-<div>
-  <span id="cell-46313d53" class="observablehq--loading"></span> points. 
-  <span id="cell-459eff35" class="observablehq--loading"></span> points selected. <i><span id="cell-1e7819ac" class="observablehq--loading"></span></i>
-  <div style="display:inline-block">
-    <span id="cell-c6084855" class="observablehq--loading"></span>
-  </div>
-</div>
-<br>
-<div class="static-table">
-  <span id="cell-7b10de6d" class="observablehq--loading"></span>
-</div>
 </div>
 <p>My favorite clusters</p>
 <div>
@@ -571,7 +584,7 @@ if(isMobileDevice) {
 <div id="cell-77f718ba" class="observablehq observablehq--block"></div>
 <div id="cell-005a856b" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
-<div id="cell-cae631e1" class="observablehq observablehq--block"></div>
+<div id="cell-881df1e0" class="observablehq observablehq--block"></div>
 <div id="cell-b1d51dcc" class="observablehq observablehq--block"></div>
 <div id="cell-5076ebc7" class="observablehq observablehq--block"></div>
 <div id="cell-bee957c8" class="observablehq observablehq--block"></div>
@@ -583,7 +596,7 @@ if(isMobileDevice) {
 <div id="cell-74b5d617" class="observablehq observablehq--block"></div>
 </div></main>
 <footer id="observablehq-footer">
-<nav><a rel="prev" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T00:03:47">May 6, 2024</a>.</div>
+<nav><a rel="prev" href="./enjalot-tweets"><span>enjalot&#x27;s tweets</span></a></nav>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T17:26:57">May 6, 2024</a>.</div>
 </footer>
 </div>

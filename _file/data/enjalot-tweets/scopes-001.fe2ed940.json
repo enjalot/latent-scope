@@ -1,0 +1,1986 @@
+{
+  "ls_version": "0.2.1",
+  "id": "scopes-001",
+  "embedding_id": "embedding-001",
+  "umap_id": "umap-001",
+  "cluster_id": "cluster-001",
+  "cluster_labels_id": "cluster-001-labels-001",
+  "label": "OpenAI Large + GPT-4 Turbo",
+  "description": "",
+  "dataset": {
+    "id": "enjalot-tweets",
+    "length": 10965,
+    "columns": [
+      "full_text",
+      "created_at",
+      "favorite_count",
+      "retweet_count",
+      "user_mentions",
+      "retweet",
+      "reply",
+      "type",
+      "id",
+      "lang",
+      "hour",
+      "day",
+      "month",
+      "dayOfMonth",
+      "year"
+    ],
+    "text_column": "full_text",
+    "column_metadata": {
+      "full_text": {
+        "type": "string",
+        "unique_values_count": 10960
+      },
+      "created_at": {
+        "type": "string",
+        "unique_values_count": 3093
+      },
+      "favorite_count": {
+        "type": "number",
+        "unique_values_count": 98,
+        "extent": [
+          0,
+          612
+        ]
+      },
+      "retweet_count": {
+        "type": "number",
+        "unique_values_count": 46,
+        "extent": [
+          0,
+          226
+        ]
+      },
+      "user_mentions": {
+        "type": "string",
+        "unique_values_count": 3412
+      },
+      "retweet": {
+        "type": "number",
+        "unique_values_count": 2,
+        "extent": [
+          false,
+          true
+        ]
+      },
+      "reply": {
+        "type": "number",
+        "unique_values_count": 2,
+        "extent": [
+          false,
+          true
+        ]
+      },
+      "type": {
+        "type": "string",
+        "unique_values_count": 3,
+        "categories": [
+          "tweet",
+          "reply",
+          "retweet"
+        ],
+        "counts": {
+          "tweet": 4997,
+          "reply": 3350,
+          "retweet": 2618
+        }
+      },
+      "id": {
+        "type": "number",
+        "unique_values_count": 10965,
+        "extent": [
+          901948808,
+          1785035733767537044
+        ]
+      },
+      "lang": {
+        "type": "string",
+        "unique_values_count": 32
+      },
+      "hour": {
+        "type": "number",
+        "unique_values_count": 24,
+        "extent": [
+          0,
+          23
+        ]
+      },
+      "day": {
+        "type": "string",
+        "unique_values_count": 7,
+        "categories": [
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Monday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
+        "counts": {
+          "Tuesday": 1919,
+          "Wednesday": 1788,
+          "Thursday": 1683,
+          "Monday": 1676,
+          "Friday": 1650,
+          "Saturday": 1143,
+          "Sunday": 1106
+        }
+      },
+      "month": {
+        "type": "string",
+        "unique_values_count": 12,
+        "categories": [
+          "October",
+          "September",
+          "May",
+          "July",
+          "August",
+          "November",
+          "April",
+          "June",
+          "February",
+          "December",
+          "March",
+          "January"
+        ],
+        "counts": {
+          "October": 1110,
+          "September": 1027,
+          "May": 1003,
+          "July": 1000,
+          "August": 993,
+          "November": 900,
+          "April": 891,
+          "June": 860,
+          "February": 843,
+          "December": 805,
+          "March": 786,
+          "January": 747
+        }
+      },
+      "dayOfMonth": {
+        "type": "number",
+        "unique_values_count": 31,
+        "extent": [
+          1,
+          31
+        ]
+      },
+      "year": {
+        "type": "number",
+        "unique_values_count": 17,
+        "extent": [
+          2008,
+          2024
+        ]
+      }
+    },
+    "potential_embeddings": [],
+    "ls_version": "0.2.1"
+  },
+  "embedding": {
+    "id": "embedding-001",
+    "model_id": "openai-text-embedding-3-large",
+    "dataset_id": "enjalot-tweets",
+    "text_column": "full_text",
+    "dimensions": 3072,
+    "prefix": ""
+  },
+  "umap": {
+    "id": "umap-001",
+    "embedding_id": "embedding-001",
+    "neighbors": 25,
+    "min_dist": 0.1
+  },
+  "cluster": {
+    "id": "cluster-001",
+    "umap_id": "umap-001",
+    "samples": 25,
+    "min_samples": 5,
+    "cluster_selection_epsilon": 0.005,
+    "n_clusters": 99,
+    "n_noise": 4358
+  },
+  "cluster_labels": {
+    "id": "cluster-001-labels-001",
+    "cluster_id": "cluster-001",
+    "model_id": "openai-gpt-4-turbo-preview",
+    "text_column": "full_text",
+    "context": "",
+    "system_prompt": {
+      "role": "system",
+      "content": "You're job is to summarize lists of items with a short label of no more than 4 words. \n\nThe user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. \nDo not use punctuation, just return a few words that summarize the list."
+    },
+    "max_tokens": 127910
+  },
+  "cluster_labels_lookup": [
+    {
+      "label": "DerbyJS discussions",
+      "description": "This is cluster 0 with 44 items.",
+      "hull": [
+        9798,
+        9048,
+        9047,
+        5488,
+        5568
+      ],
+      "cluster": 0
+    },
+    {
+      "label": "Blender and OpenCL discussions",
+      "description": "This is cluster 1 with 107 items.",
+      "hull": [
+        9633,
+        8568,
+        9768,
+        9772,
+        9578,
+        9754,
+        9777,
+        9790,
+        9544,
+        9537
+      ],
+      "cluster": 1
+    },
+    {
+      "label": "Crowdfunding Support",
+      "description": "This is cluster 2 with 86 items.",
+      "hull": [
+        9587,
+        4700,
+        6937,
+        6899,
+        5981,
+        4992,
+        2959,
+        4747,
+        4807,
+        4942,
+        9088
+      ],
+      "cluster": 2
+    },
+    {
+      "label": "BART and Transit Engagement",
+      "description": "This is cluster 3 with 113 items.",
+      "hull": [
+        6584,
+        9922,
+        6948,
+        6981,
+        6985,
+        6962,
+        5862,
+        5618,
+        9539
+      ],
+      "cluster": 3
+    },
+    {
+      "label": "Conference Badge Tweets",
+      "description": "This is cluster 4 with 36 items.",
+      "hull": [
+        2191,
+        1695,
+        1713,
+        1714,
+        2824,
+        4053,
+        2957
+      ],
+      "cluster": 4
+    },
+    {
+      "label": "D3.js Community Engagement",
+      "description": "This is cluster 5 with 50 items.",
+      "hull": [
+        8608,
+        6919,
+        2799,
+        10401,
+        10483,
+        10213,
+        10112,
+        10178,
+        10402,
+        1232
+      ],
+      "cluster": 5
+    },
+    {
+      "label": "Visual Art Collections",
+      "description": "This is cluster 6 with 75 items.",
+      "hull": [
+        5024,
+        4188,
+        4254,
+        7429,
+        5806,
+        4630,
+        6497
+      ],
+      "cluster": 6
+    },
+    {
+      "label": "3D Printing Enthusiasm",
+      "description": "This is cluster 7 with 53 items.",
+      "hull": [
+        8766,
+        7826,
+        8231,
+        5512,
+        4894,
+        5154,
+        5679,
+        6219
+      ],
+      "cluster": 7
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 8 with 132 items.",
+      "hull": [
+        7397,
+        8299,
+        5454,
+        8230,
+        9802,
+        6896,
+        9640,
+        7958,
+        3437,
+        8303
+      ],
+      "cluster": 8
+    },
+    {
+      "label": "Data visualization conference",
+      "description": "This is cluster 9 with 150 items.",
+      "hull": [
+        4585,
+        4079,
+        1691,
+        1645,
+        2898,
+        1670,
+        2832,
+        4353,
+        6543
+      ],
+      "cluster": 9
+    },
+    {
+      "label": "Data Visualization Events",
+      "description": "This is cluster 10 with 89 items.",
+      "hull": [
+        2502,
+        1986,
+        1773,
+        931,
+        10090,
+        1652,
+        2970,
+        1653,
+        2837,
+        4151,
+        1364,
+        2501
+      ],
+      "cluster": 10
+    },
+    {
+      "label": "Tech Jobs and Opinions",
+      "description": "This is cluster 11 with 67 items.",
+      "hull": [
+        2857,
+        9569,
+        6223,
+        974,
+        5570,
+        1833,
+        9326,
+        1770,
+        3739
+      ],
+      "cluster": 11
+    },
+    {
+      "label": "Oakland and Bay Area Activities",
+      "description": "This is cluster 12 with 84 items.",
+      "hull": [
+        9439,
+        8642,
+        7475,
+        5197,
+        5611,
+        5561,
+        5164,
+        8661
+      ],
+      "cluster": 12
+    },
+    {
+      "label": "Bay Area Connections",
+      "description": "This is cluster 13 with 73 items.",
+      "hull": [
+        6177,
+        8132,
+        8655,
+        6417,
+        8980,
+        7038,
+        5889,
+        7042,
+        7673
+      ],
+      "cluster": 13
+    },
+    {
+      "label": "Internet freedom and patent criticism",
+      "description": "This is cluster 14 with 39 items.",
+      "hull": [
+        6675,
+        6414,
+        5781,
+        8396,
+        9370,
+        9342
+      ],
+      "cluster": 14
+    },
+    {
+      "label": "Social Interactions",
+      "description": "This is cluster 15 with 78 items.",
+      "hull": [
+        7052,
+        8904,
+        2206,
+        8638,
+        1333,
+        9907,
+        10005,
+        7612,
+        3832,
+        8397,
+        3881,
+        5791,
+        6924
+      ],
+      "cluster": 15
+    },
+    {
+      "label": "Tech and Culture Reflections",
+      "description": "This is cluster 16 with 72 items.",
+      "hull": [
+        7377,
+        8012,
+        9473,
+        3100,
+        6525,
+        6475,
+        8173,
+        7463,
+        6745,
+        5179,
+        6940
+      ],
+      "cluster": 16
+    },
+    {
+      "label": "Tributary Discussions",
+      "description": "This is cluster 17 with 182 items.",
+      "hull": [
+        7406,
+        5299,
+        7169,
+        8217,
+        8896,
+        8741,
+        9260
+      ],
+      "cluster": 17
+    },
+    {
+      "label": "Genomics and Data Science",
+      "description": "This is cluster 18 with 34 items.",
+      "hull": [
+        711,
+        6044,
+        1217,
+        1216,
+        1221,
+        3862,
+        77,
+        2626,
+        906
+      ],
+      "cluster": 18
+    },
+    {
+      "label": "Election Data Visualization",
+      "description": "This is cluster 19 with 168 items.",
+      "hull": [
+        1136,
+        10062,
+        3559,
+        10910,
+        10251,
+        585,
+        10124,
+        745,
+        1226
+      ],
+      "cluster": 19
+    },
+    {
+      "label": "Coding with Fire Streams",
+      "description": "This is cluster 20 with 134 items.",
+      "hull": [
+        210,
+        10635,
+        10713,
+        10512,
+        10508,
+        8165,
+        10388,
+        1193,
+        757,
+        801,
+        10926
+      ],
+      "cluster": 20
+    },
+    {
+      "label": "Digital Collaboration Tools",
+      "description": "This is cluster 21 with 106 items.",
+      "hull": [
+        4746,
+        8600,
+        2212,
+        9543,
+        8145,
+        9514,
+        4162,
+        7590,
+        6738,
+        4718
+      ],
+      "cluster": 21
+    },
+    {
+      "label": "QuickDraw Dataset Insights",
+      "description": "This is cluster 22 with 35 items.",
+      "hull": [
+        1899,
+        2033,
+        2378,
+        2395,
+        2317,
+        2165,
+        1568
+      ],
+      "cluster": 22
+    },
+    {
+      "label": "AI and Machine Learning",
+      "description": "This is cluster 23 with 115 items.",
+      "hull": [
+        10336,
+        2432,
+        2736,
+        2173,
+        1827,
+        2161,
+        1778,
+        2634,
+        1037
+      ],
+      "cluster": 23
+    },
+    {
+      "label": "Observable Twitch Streams",
+      "description": "This is cluster 24 with 170 items.",
+      "hull": [
+        3558,
+        7719,
+        9281,
+        1081,
+        9067,
+        569,
+        630,
+        660,
+        10184,
+        10254,
+        469,
+        10546
+      ],
+      "cluster": 24
+    },
+    {
+      "label": "Tech and Coding Conversations",
+      "description": "This is cluster 25 with 135 items.",
+      "hull": [
+        6900,
+        10478,
+        7809,
+        3609,
+        9910,
+        8459,
+        9187,
+        6087,
+        7886
+      ],
+      "cluster": 25
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 26 with 102 items.",
+      "hull": [
+        8011,
+        9702,
+        9579,
+        9582,
+        9042,
+        6728,
+        9968,
+        6007,
+        4148,
+        6127,
+        3269
+      ],
+      "cluster": 26
+    },
+    {
+      "label": "Bay Area D3JS Meetups",
+      "description": "This is cluster 27 with 52 items.",
+      "hull": [
+        8701,
+        8057,
+        7206,
+        5271,
+        1704,
+        1647,
+        8713
+      ],
+      "cluster": 27
+    },
+    {
+      "label": "D3.js Community Engagement",
+      "description": "This is cluster 28 with 89 items.",
+      "hull": [
+        5377,
+        5912,
+        10851,
+        10849,
+        5985,
+        3106,
+        6133,
+        10219,
+        7524,
+        10594
+      ],
+      "cluster": 28
+    },
+    {
+      "label": "Digital Community Engagement",
+      "description": "This is cluster 29 with 93 items.",
+      "hull": [
+        4383,
+        4689,
+        4828,
+        422,
+        7781,
+        7608,
+        7553,
+        7166,
+        5970,
+        9745,
+        4189
+      ],
+      "cluster": 29
+    },
+    {
+      "label": "Diverse tweets and photos",
+      "description": "This is cluster 30 with 85 items.",
+      "hull": [
+        5572,
+        8035,
+        8971,
+        9854,
+        4885,
+        6539,
+        295,
+        7395,
+        6524
+      ],
+      "cluster": 30
+    },
+    {
+      "label": "D3.js Workshops & Talks",
+      "description": "This is cluster 31 with 112 items.",
+      "hull": [
+        7950,
+        8375,
+        2615,
+        6348,
+        3259,
+        7675,
+        4824,
+        2614,
+        5238,
+        6380,
+        4975
+      ],
+      "cluster": 31
+    },
+    {
+      "label": "D3.js Meetup Discussions",
+      "description": "This is cluster 32 with 209 items.",
+      "hull": [
+        7115,
+        5773,
+        2885,
+        9942,
+        1725,
+        9584,
+        9038,
+        475,
+        9024,
+        8793
+      ],
+      "cluster": 32
+    },
+    {
+      "label": "Social Media Musings",
+      "description": "This is cluster 33 with 78 items.",
+      "hull": [
+        9824,
+        8747,
+        8778,
+        9893,
+        9357,
+        7228,
+        2742,
+        9314,
+        7467
+      ],
+      "cluster": 33
+    },
+    {
+      "label": "D3.js meetups and talks",
+      "description": "This is cluster 34 with 108 items.",
+      "hull": [
+        3361,
+        7145,
+        7599,
+        8424,
+        5752,
+        5939,
+        6909,
+        1492,
+        5208,
+        5230,
+        1777
+      ],
+      "cluster": 34
+    },
+    {
+      "label": "D3.js Workshops",
+      "description": "This is cluster 35 with 106 items.",
+      "hull": [
+        6090,
+        3989,
+        5069,
+        1901,
+        7867,
+        3727,
+        2856,
+        6544,
+        5263,
+        6425,
+        4348,
+        6310,
+        1762,
+        7129,
+        1724,
+        5226
+      ],
+      "cluster": 35
+    },
+    {
+      "label": "Social interactions",
+      "description": "This is cluster 36 with 86 items.",
+      "hull": [
+        9982,
+        9220,
+        9964,
+        9829,
+        8360,
+        9895,
+        9886,
+        9257,
+        3595,
+        9979
+      ],
+      "cluster": 36
+    },
+    {
+      "label": "Email communications",
+      "description": "This is cluster 37 with 69 items.",
+      "hull": [
+        7020,
+        3413,
+        6036,
+        7105,
+        7120,
+        5969
+      ],
+      "cluster": 37
+    },
+    {
+      "label": "Urban Innovation and Lifestyle",
+      "description": "This is cluster 38 with 43 items.",
+      "hull": [
+        7443,
+        9008,
+        5870,
+        9538,
+        5051,
+        6126,
+        4995,
+        6465,
+        7930
+      ],
+      "cluster": 38
+    },
+    {
+      "label": "@mrejfox interactions",
+      "description": "This is cluster 39 with 130 items.",
+      "hull": [
+        8475,
+        2771,
+        2998,
+        7726,
+        8120,
+        9869,
+        5734,
+        10595,
+        779
+      ],
+      "cluster": 39
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 40 with 189 items.",
+      "hull": [
+        6099,
+        1066,
+        1667,
+        8953,
+        5800,
+        4020,
+        7006,
+        8966,
+        9177,
+        10361,
+        8580,
+        4835,
+        3792,
+        10781
+      ],
+      "cluster": 40
+    },
+    {
+      "label": "Data visualization tweets",
+      "description": "This is cluster 41 with 114 items.",
+      "hull": [
+        5644,
+        3736,
+        8273,
+        4586,
+        2766,
+        9485,
+        2553,
+        4181,
+        2179,
+        2004,
+        1960,
+        10393,
+        2790
+      ],
+      "cluster": 41
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 42 with 71 items.",
+      "hull": [
+        4024,
+        868,
+        875,
+        8629,
+        3998,
+        7727,
+        8104,
+        3006,
+        4366,
+        10464
+      ],
+      "cluster": 42
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 43 with 420 items.",
+      "hull": [
+        7592,
+        8802,
+        611,
+        6184,
+        2801,
+        10891,
+        1206,
+        3473,
+        7226,
+        6360,
+        8576,
+        6817,
+        6415
+      ],
+      "cluster": 43
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 44 with 84 items.",
+      "hull": [
+        1567,
+        8086,
+        9980,
+        9232,
+        439,
+        10466,
+        3210,
+        5126,
+        8370
+      ],
+      "cluster": 44
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 45 with 92 items.",
+      "hull": [
+        6059,
+        10658,
+        10344,
+        6865,
+        361,
+        8438,
+        8728,
+        10647,
+        2399
+      ],
+      "cluster": 45
+    },
+    {
+      "label": "Machine Learning Exploration",
+      "description": "This is cluster 46 with 128 items.",
+      "hull": [
+        10204,
+        32,
+        932,
+        1447,
+        10530,
+        2920,
+        1427,
+        1101,
+        2037,
+        2848,
+        9050,
+        1344,
+        10416
+      ],
+      "cluster": 46
+    },
+    {
+      "label": "Data Clustering Discussions",
+      "description": "This is cluster 47 with 70 items.",
+      "hull": [
+        1722,
+        5329,
+        492,
+        2252,
+        10529,
+        3253,
+        1391,
+        10315
+      ],
+      "cluster": 47
+    },
+    {
+      "label": "Data insights and reflections",
+      "description": "This is cluster 48 with 72 items.",
+      "hull": [
+        5129,
+        5077,
+        7466,
+        1420,
+        3560,
+        5479,
+        1755,
+        1608,
+        3604
+      ],
+      "cluster": 48
+    },
+    {
+      "label": "Emoji Projects",
+      "description": "This is cluster 49 with 155 items.",
+      "hull": [
+        1491,
+        649,
+        10668,
+        414,
+        2565,
+        5818,
+        7912,
+        10555,
+        4579,
+        9451,
+        3663,
+        10591
+      ],
+      "cluster": 49
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 50 with 128 items.",
+      "hull": [
+        1709,
+        4708,
+        10557,
+        6363,
+        2221,
+        1853,
+        6205,
+        2639,
+        8142,
+        2946,
+        10958,
+        10822
+      ],
+      "cluster": 50
+    },
+    {
+      "label": "Personal Reflections",
+      "description": "This is cluster 51 with 87 items.",
+      "hull": [
+        9915,
+        9965,
+        9243,
+        444,
+        6504,
+        9147,
+        9084,
+        10552,
+        8805,
+        7953,
+        7814,
+        2950
+      ],
+      "cluster": 51
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 52 with 73 items.",
+      "hull": [
+        10962,
+        7885,
+        2981,
+        1354,
+        3244,
+        1285,
+        4617,
+        4355,
+        7723,
+        10380,
+        7635,
+        9466
+      ],
+      "cluster": 52
+    },
+    {
+      "label": "Online musings",
+      "description": "This is cluster 53 with 147 items.",
+      "hull": [
+        6819,
+        1234,
+        6595,
+        8690,
+        367,
+        10451,
+        3698,
+        2807,
+        9111,
+        5830,
+        9985,
+        5727
+      ],
+      "cluster": 53
+    },
+    {
+      "label": "Mixed Social Media Posts",
+      "description": "This is cluster 54 with 99 items.",
+      "hull": [
+        4440,
+        10632,
+        4787,
+        8068,
+        8631,
+        9651,
+        6485,
+        2044,
+        4679,
+        10738
+      ],
+      "cluster": 54
+    },
+    {
+      "label": "Mixed Engagements",
+      "description": "This is cluster 55 with 67 items.",
+      "hull": [
+        972,
+        9031,
+        9989,
+        481,
+        665,
+        162,
+        271,
+        3840
+      ],
+      "cluster": 55
+    },
+    {
+      "label": "Data visualization discussions",
+      "description": "This is cluster 56 with 54 items.",
+      "hull": [
+        3802,
+        10092,
+        270,
+        1587,
+        2687,
+        1592,
+        7457,
+        5717,
+        1576
+      ],
+      "cluster": 56
+    },
+    {
+      "label": "Data and Visualization Insights",
+      "description": "This is cluster 57 with 46 items.",
+      "hull": [
+        1091,
+        4675,
+        6295,
+        7550,
+        10678,
+        9487,
+        2029,
+        2027
+      ],
+      "cluster": 57
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 58 with 86 items.",
+      "hull": [
+        9506,
+        25,
+        8536,
+        1386,
+        9051,
+        9571,
+        1595,
+        1676,
+        10236,
+        2461,
+        1458,
+        10232,
+        1351,
+        3963
+      ],
+      "cluster": 58
+    },
+    {
+      "label": "Data Science Reflections",
+      "description": "This is cluster 59 with 74 items.",
+      "hull": [
+        1443,
+        6680,
+        6640,
+        138,
+        1256,
+        7158,
+        1430
+      ],
+      "cluster": 59
+    },
+    {
+      "label": "Data Visualization Reflections",
+      "description": "This is cluster 60 with 56 items.",
+      "hull": [
+        8161,
+        10598,
+        10709,
+        4861,
+        8508,
+        10065,
+        9926,
+        10876,
+        1505
+      ],
+      "cluster": 60
+    },
+    {
+      "label": "Data Visualization and ML Insights",
+      "description": "This is cluster 61 with 102 items.",
+      "hull": [
+        9500,
+        10052,
+        1390,
+        1397,
+        2479,
+        1475,
+        4454,
+        3773,
+        2101
+      ],
+      "cluster": 61
+    },
+    {
+      "label": "ObservableHQ Highlights",
+      "description": "This is cluster 62 with 261 items.",
+      "hull": [
+        562,
+        4015,
+        1737,
+        10470,
+        823,
+        140,
+        1177,
+        1190,
+        10660,
+        10621,
+        10863
+      ],
+      "cluster": 62
+    },
+    {
+      "label": "Data Visualization Discussions",
+      "description": "This is cluster 63 with 61 items.",
+      "hull": [
+        941,
+        8933,
+        589,
+        7496,
+        7275,
+        907,
+        3670
+      ],
+      "cluster": 63
+    },
+    {
+      "label": "Data Visualization Interactions",
+      "description": "This is cluster 64 with 93 items.",
+      "hull": [
+        3527,
+        1182,
+        1108,
+        1727,
+        945,
+        939,
+        10239,
+        412,
+        7450,
+        2084
+      ],
+      "cluster": 64
+    },
+    {
+      "label": "Data Visualization Discussion",
+      "description": "This is cluster 65 with 101 items.",
+      "hull": [
+        10040,
+        7713,
+        8235,
+        2088,
+        3562,
+        4662,
+        473,
+        1088,
+        10271,
+        240,
+        10025,
+        10695,
+        1495,
+        437,
+        3208,
+        7728
+      ],
+      "cluster": 65
+    },
+    {
+      "label": "Tech Hip-Hop References",
+      "description": "This is cluster 66 with 189 items.",
+      "hull": [
+        9391,
+        6823,
+        9512,
+        1686,
+        1689,
+        9332,
+        5149,
+        6727,
+        2137,
+        7167,
+        9343
+      ],
+      "cluster": 66
+    },
+    {
+      "label": "Hip-hop and Reflection",
+      "description": "This is cluster 67 with 159 items.",
+      "hull": [
+        9925,
+        9465,
+        10954,
+        8912,
+        9290,
+        7304,
+        9890,
+        8123,
+        8281,
+        2781,
+        480,
+        6418,
+        5932,
+        7489,
+        9752
+      ],
+      "cluster": 67
+    },
+    {
+      "label": "Data Visualization Tools",
+      "description": "This is cluster 68 with 99 items.",
+      "hull": [
+        2214,
+        777,
+        8595,
+        10540,
+        374,
+        370,
+        1515,
+        1313,
+        3901,
+        1,
+        3131,
+        10492,
+        5106
+      ],
+      "cluster": 68
+    },
+    {
+      "label": "Data visualization insights",
+      "description": "This is cluster 69 with 59 items.",
+      "hull": [
+        814,
+        4858,
+        2908,
+        973,
+        628,
+        5955,
+        10206,
+        2492,
+        1322
+      ],
+      "cluster": 69
+    },
+    {
+      "label": "Digital Privacy Concerns",
+      "description": "This is cluster 70 with 72 items.",
+      "hull": [
+        5467,
+        5100,
+        1560,
+        949,
+        6369,
+        7451,
+        965,
+        2585,
+        9846
+      ],
+      "cluster": 70
+    },
+    {
+      "label": "Racial injustice discussion",
+      "description": "This is cluster 71 with 78 items.",
+      "hull": [
+        2770,
+        3809,
+        4028,
+        4782,
+        962,
+        5009,
+        5651,
+        942,
+        903,
+        955,
+        3204
+      ],
+      "cluster": 71
+    },
+    {
+      "label": "Social Media Interactions",
+      "description": "This is cluster 72 with 120 items.",
+      "hull": [
+        543,
+        1910,
+        697,
+        6454,
+        430,
+        6150,
+        2748,
+        7368,
+        3287,
+        7884,
+        8559,
+        65,
+        4810
+      ],
+      "cluster": 72
+    },
+    {
+      "label": "Data Visualization Discussions",
+      "description": "This is cluster 73 with 106 items.",
+      "hull": [
+        2122,
+        10706,
+        2431,
+        1305,
+        10794,
+        9286,
+        349,
+        6089,
+        555,
+        325,
+        1132
+      ],
+      "cluster": 73
+    },
+    {
+      "label": "Tech and Creativity Insights",
+      "description": "This is cluster 74 with 91 items.",
+      "hull": [
+        503,
+        606,
+        8694,
+        925,
+        1359,
+        3077,
+        2810,
+        9355,
+        1519,
+        2916
+      ],
+      "cluster": 74
+    },
+    {
+      "label": "Software development insights",
+      "description": "This is cluster 75 with 304 items.",
+      "hull": [
+        1053,
+        10496,
+        10528,
+        989,
+        4597,
+        741,
+        6115,
+        553,
+        10002,
+        529,
+        1263,
+        1107,
+        2285,
+        3983,
+        9714
+      ],
+      "cluster": 75
+    },
+    {
+      "label": "Tech and AI insights",
+      "description": "This is cluster 76 with 75 items.",
+      "hull": [
+        6627,
+        10255,
+        3430,
+        2328,
+        10101,
+        8614,
+        2698,
+        929,
+        2697,
+        10749,
+        5420,
+        1047,
+        3932,
+        6625
+      ],
+      "cluster": 76
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 77 with 142 items.",
+      "hull": [
+        3107,
+        6374,
+        3675,
+        4561,
+        7347,
+        8447,
+        2467,
+        3815,
+        4250,
+        6681,
+        85,
+        2828,
+        645,
+        4875
+      ],
+      "cluster": 77
+    },
+    {
+      "label": "Technology and Philosophy Insights",
+      "description": "This is cluster 78 with 58 items.",
+      "hull": [
+        1143,
+        4551,
+        7055,
+        1889,
+        1180,
+        3577,
+        3721,
+        5199,
+        6629,
+        1415,
+        5309,
+        10259,
+        1955
+      ],
+      "cluster": 78
+    },
+    {
+      "label": "Digital culture reflections",
+      "description": "This is cluster 79 with 78 items.",
+      "hull": [
+        6063,
+        4507,
+        3834,
+        9114,
+        6696,
+        2587,
+        8268,
+        1684
+      ],
+      "cluster": 79
+    },
+    {
+      "label": "Tech Culture Critique",
+      "description": "This is cluster 80 with 158 items.",
+      "hull": [
+        3101,
+        5301,
+        4379,
+        2193,
+        2593,
+        5174,
+        5322,
+        4705,
+        2484,
+        10888,
+        6048,
+        1196,
+        5112,
+        4996,
+        2586,
+        3085,
+        3082,
+        969
+      ],
+      "cluster": 80
+    },
+    {
+      "label": "Creative Tech Threads",
+      "description": "This is cluster 81 with 89 items.",
+      "hull": [
+        1908,
+        10885,
+        5207,
+        9669,
+        10269,
+        8681,
+        8798,
+        1264,
+        5146,
+        3626,
+        10187
+      ],
+      "cluster": 81
+    },
+    {
+      "label": "Creative process reflections",
+      "description": "This is cluster 82 with 216 items.",
+      "hull": [
+        4375,
+        957,
+        6084,
+        3570,
+        726,
+        1048,
+        5914,
+        6226,
+        1860,
+        5585,
+        1274,
+        1918,
+        5713,
+        2510
+      ],
+      "cluster": 82
+    },
+    {
+      "label": "Social Media Conversations",
+      "description": "This is cluster 83 with 139 items.",
+      "hull": [
+        7945,
+        10428,
+        6381,
+        5511,
+        10690,
+        8248,
+        8906,
+        3093,
+        4295,
+        9929,
+        3672,
+        5098,
+        8239
+      ],
+      "cluster": 83
+    },
+    {
+      "label": "Digital technology reflections",
+      "description": "This is cluster 84 with 169 items.",
+      "hull": [
+        9041,
+        566,
+        5292,
+        1685,
+        652,
+        4649,
+        8662,
+        3511,
+        8555,
+        10095,
+        1799,
+        5789
+      ],
+      "cluster": 84
+    },
+    {
+      "label": "Creative technology projects",
+      "description": "This is cluster 85 with 200 items.",
+      "hull": [
+        405,
+        10081,
+        9628,
+        733,
+        6136,
+        1318,
+        2538,
+        3903,
+        4464,
+        6303,
+        2049
+      ],
+      "cluster": 85
+    },
+    {
+      "label": "Technology and Creativity",
+      "description": "This is cluster 86 with 132 items.",
+      "hull": [
+        5000,
+        8961,
+        5876,
+        1030,
+        8996,
+        3814,
+        5257,
+        6228,
+        6083,
+        6953,
+        8363,
+        7414
+      ],
+      "cluster": 86
+    },
+    {
+      "label": "Social media interactions",
+      "description": "This is cluster 87 with 128 items.",
+      "hull": [
+        9646,
+        3312,
+        8054,
+        7244,
+        3576,
+        8566,
+        9185,
+        3245,
+        6739,
+        6737,
+        789,
+        9575,
+        9631
+      ],
+      "cluster": 87
+    },
+    {
+      "label": "Web Development Discussions",
+      "description": "This is cluster 88 with 163 items.",
+      "hull": [
+        9404,
+        10830,
+        3813,
+        291,
+        3181,
+        7818,
+        9072,
+        2158,
+        3805,
+        4183,
+        3806,
+        5393,
+        8125,
+        3462,
+        4528,
+        8480,
+        8274
+      ],
+      "cluster": 88
+    },
+    {
+      "label": "Command Line Enhancements",
+      "description": "This is cluster 89 with 108 items.",
+      "hull": [
+        4186,
+        8554,
+        4872,
+        8698,
+        3331,
+        3214,
+        7036,
+        4426,
+        3608,
+        8652,
+        3355,
+        467,
+        7527,
+        2156
+      ],
+      "cluster": 89
+    },
+    {
+      "label": "Creative coding discussions",
+      "description": "This is cluster 90 with 138 items.",
+      "hull": [
+        4234,
+        368,
+        2209,
+        7642,
+        10107,
+        185,
+        2878,
+        1844,
+        9304,
+        9586,
+        10520,
+        3877
+      ],
+      "cluster": 90
+    },
+    {
+      "label": "D3.js Community Activity",
+      "description": "This is cluster 91 with 178 items.",
+      "hull": [
+        4145,
+        2348,
+        2210,
+        6573,
+        4236,
+        5012,
+        1683,
+        7735,
+        4486,
+        4388,
+        4931,
+        8112,
+        2683
+      ],
+      "cluster": 91
+    },
+    {
+      "label": "D3.js Tutorials & Examples",
+      "description": "This is cluster 92 with 154 items.",
+      "hull": [
+        5640,
+        7887,
+        7997,
+        3012,
+        9016,
+        3465,
+        5867,
+        7199,
+        8126,
+        6013,
+        2447,
+        5517,
+        3731,
+        3709,
+        3744
+      ],
+      "cluster": 92
+    },
+    {
+      "label": "Data Visualization Discussions",
+      "description": "This is cluster 93 with 119 items.",
+      "hull": [
+        2859,
+        4416,
+        1866,
+        3510,
+        8313,
+        7776,
+        8046,
+        2624,
+        9417,
+        7753,
+        3584,
+        8777,
+        4089,
+        10009,
+        594,
+        10228
+      ],
+      "cluster": 93
+    },
+    {
+      "label": "D3.js discussions and projects",
+      "description": "This is cluster 94 with 75 items.",
+      "hull": [
+        8388,
+        4745,
+        4140,
+        4284,
+        3219,
+        679,
+        2332,
+        2335,
+        8319
+      ],
+      "cluster": 94
+    },
+    {
+      "label": "D3.js Discussions and Resources",
+      "description": "This is cluster 95 with 83 items.",
+      "hull": [
+        2686,
+        5430,
+        6715,
+        8005,
+        3240,
+        3246,
+        5281,
+        6684,
+        10932,
+        5060,
+        5695
+      ],
+      "cluster": 95
+    },
+    {
+      "label": "D3.js discussions",
+      "description": "This is cluster 96 with 125 items.",
+      "hull": [
+        3227,
+        5303,
+        5865,
+        74,
+        4393,
+        607,
+        5449,
+        4021
+      ],
+      "cluster": 96
+    },
+    {
+      "label": "Data Visualization Insights",
+      "description": "This is cluster 97 with 151 items.",
+      "hull": [
+        2392,
+        852,
+        8668,
+        34,
+        5438,
+        10086,
+        3298,
+        7775,
+        7383,
+        3281,
+        8191,
+        5838,
+        5972,
+        5711
+      ],
+      "cluster": 97
+    },
+    {
+      "label": "D3.js Development Highlights",
+      "description": "This is cluster 98 with 91 items.",
+      "hull": [
+        3296,
+        10514,
+        4553,
+        5401,
+        4472,
+        2430,
+        331,
+        2121,
+        8449,
+        7197
+      ],
+      "cluster": 98
+    }
+  ],
+  "rows": 10965,
+  "columns": [
+    "x",
+    "y",
+    "cluster",
+    "raw_cluster",
+    "label",
+    "ls_index"
+  ],
+  "size": 225097,
+  "timestamp": "2024-05-03 18:47:40"
+}
