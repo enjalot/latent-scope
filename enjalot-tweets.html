@@ -16,6 +16,7 @@
 <link rel="modulepreload" href="./_import/components/hull.532abe46.js">
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
 <link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
+<link rel="modulepreload" href="./_import/components/clusterListCard.2bd231cb.js">
 <link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
 <link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
@@ -159,7 +160,7 @@ clusterTableData.length
 ))
 }});
 
-define({id: "ec6d2531", inputs: ["scope","da","sum","min","max","view","Inputs","sparkbar"], outputs: ["clusterTableData","selclusterTable"], body: (scope,da,sum,min,max,view,Inputs,sparkbar) => {
+define({id: "d71f1a00", inputs: ["scope","da","sum","min","max","view","Inputs","sparkbar"], outputs: ["clusterTableData","selclusterTable"], body: (scope,da,sum,min,max,view,Inputs,sparkbar) => {
 const clusterTableData = scope.cluster_labels_lookup.map(c => {
   let dc = da.filter(d => d.cluster == c.cluster)
   return {
@@ -178,8 +179,16 @@ const selclusterTable = view(Inputs.table(clusterTableData, {
     "retweets": sparkbar(max(clusterTableData, d => d.retweets), "orange"),
   },
   width: {
-    "cluster": 50,
-    "label": "20%"
+    cluster: 20,
+    label: 200,
+    count: 50,
+    favorites: 100,
+    retweets: 100,
+    min_date: 100,
+    max_date: 100
+  },
+  header: {
+    "cluster": ""
   },
   sort: "favorites",
   reverse: true,
@@ -189,11 +198,24 @@ const selclusterTable = view(Inputs.table(clusterTableData, {
 return {clusterTableData,selclusterTable};
 }});
 
-define({id: "a2fdee09", inline: true, inputs: ["clusterCard","selclusterTable","barPlot","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selclusterTable,barPlot,tableConfig,da,scope,hulls,display) => {
+define({id: "399e02b8", inputs: ["htl","clusterTableData"], outputs: ["clusterDescription"], body: (htl,clusterTableData) => {
+function clusterDescription (cluster) {
+  return htl.html`<div>
+   <span style="border-bottom: 2px solid lightblue">favorites: ${clusterTableData[cluster].favorites}</span>
+   <br/>
+   <br/>
+   <span style="border-bottom: 2px solid orange">retweets: ${clusterTableData[cluster].retweets}</span>
+  </div>`
+}
+return {clusterDescription};
+}});
+
+define({id: "99062fda", inline: true, inputs: ["clusterCard","selclusterTable","clusterDescription","tableConfig","da","scope","hulls","display"], body: async (clusterCard,selclusterTable,clusterDescription,tableConfig,da,scope,hulls,display) => {
 display(await(
 clusterCard(selclusterTable.cluster, {
-    description: "", 
-    plot: barPlot(selclusterTable.cluster),
+    description: clusterDescription(selclusterTable.cluster),
+    //description: statPlot(selclusterTable.cluster), 
+    //plot: barPlot(selclusterTable.cluster),
     tableConfig, 
     da, 
     scope, 
@@ -202,11 +224,102 @@ clusterCard(selclusterTable.cluster, {
 ))
 }});
 
+define({id: "d9f750fe", inline: true, inputs: ["clusterCard","clusterDescription","tableConfig","da","scope","hulls","display"], body: async (clusterCard,clusterDescription,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(91, {
+    description: `Tweeting about D3.js since 2011`,
+    plot: clusterDescription(91),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "d2f57b05", inline: true, inputs: ["clusterCard","clusterDescription","tableConfig","da","scope","hulls","display"], body: async (clusterCard,clusterDescription,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterCard(66, {
+    description: `These are mostly late night tweets while I'm coding and listening to Lil' Wayne`,
+    plot: clusterDescription(66),
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "1e6996d1", inline: true, inputs: ["clusterListCard","tableConfig","da","scope","hulls","display"], body: async (clusterListCard,tableConfig,da,scope,hulls,display) => {
+display(await(
+clusterListCard([22,23, 46, 47], {
+    plot: `I first learned about latent space when I was working with @hardmaru on SketchRNN. I learned about dimensionality reduction working with @shancarter and @ch402 on Distill. Ever since then I've been trying to visualize latent space!`,
+    tableConfig, 
+    da, 
+    scope, 
+    hulls
+  })
+))
+}});
+
+define({id: "c4a38d0f", inputs: ["view","Inputs"], outputs: ["seltype"], body: (view,Inputs) => {
+const seltype = view(Inputs.select(["tweet", "reply", "retweet"]))
+return {seltype};
+}});
+
+define({id: "503f8a06", inputs: ["da","seltype"], outputs: ["fda"], body: (da,seltype) => {
+const fda = da.filter(d => d.type == seltype)
+return {fda};
+}});
+
+define({id: "a268418f", inputs: ["Plot","hulls","da","fda","display"], body: async (Plot,hulls,da,fda,display) => {
+display(await(
+Plot.plot({
+  marks: [
+    Plot.hull(hulls.flatMap(d => d), {
+      x: "x",
+      y: "y",
+      z: "cluster",
+      // fill: "lightgray",
+      // fillOpacity: 0.1,
+      stroke: "lightgray",
+      curve: "catmull-rom",
+    }),
+    Plot.dot(da, {
+      x: "x",
+      y: "y",
+      r: 1,
+      fill: "lightgray",
+      fillOpacity: 0.5,
+    }),
+    Plot.dot(fda, {
+      x: "x",
+      y: "y",
+      r: 2,
+      fillOpacity: 0.7,
+      fill: "cluster",
+      title: d => `${d["cluster"]}: ${d["label"]} 
+${d["type"]} ${d["created_at"]}
+
+${d["full_text"]}`,
+      tip: true
+    }),
+  ],
+  width: 500,
+  height: 500,
+  margin: 30,
+  color: { scheme: "cool" },
+  y: { axis: null},
+  x: { axis: null },
+})
+))
+}});
+
 define({id: "765fa948", body: () => {
 // ----------------------------------------------------------
 }});
 
-define({id: "6933f8ba", inputs: ["htl"], outputs: ["tableConfig"], body: (htl) => {
+define({id: "3f98e42b", inputs: ["htl"], outputs: ["tableConfig"], body: (htl) => {
 const tableConfig = { 
   columns: [
     "full_text",
@@ -223,9 +336,10 @@ const tableConfig = {
   },
   width: {
     "full_text": "60%",
-    "favorite_count": 50,
-    "retweet_count": 50,
-    "tweet_id": 60
+    "favorite_count": 65,
+    "retweet_count": 65,
+    "tweet_id": 60,
+    "created_at": 100,
   },
   sort: "favorite_count",
   reverse: true,
@@ -295,6 +409,40 @@ function barPlot(cluster, {
 return {barPlot};
 }});
 
+define({id: "881d56c2", inputs: ["max","clusterTableData","da","Plot"], outputs: ["statPlot"], body: (max,clusterTableData,da,Plot) => {
+function statPlot(cluster, {
+  field = "type",
+  width = 300,
+  height = 300,
+} = {}) {
+  let maxcount = max(clusterTableData, d => Math.max(d.favorites, d.retweets))
+  let cdata = da.filter(d => d.cluster == cluster)
+    .flatMap(d => [
+      {stat: "favorites", value: d.favorite_count}, 
+      {stat: "retweets", value: d.retweet_count}, 
+    ])
+  return Plot.plot({
+        marks: [
+          Plot.barX(cdata, Plot.groupY({x: "sum"}, {
+            y: "stat",
+            x: "value",
+            fill: "stat",
+            tip: true,
+          }))
+        ],
+        marginLeft: 80,
+        marginBottom: 30,
+        width,
+        height,
+        y: { label: null, tickFormat: x => x.toString() },
+        x: { label: null, grid: true, domain: [0, maxcount] },
+        color: { range: ["lightblue", "orange"]},
+        style: { "background-color": "#f0f0f0" }
+      })
+}
+return {statPlot};
+}});
+
 define({id: "5d395032", inputs: ["htl"], outputs: ["sparkbar"], body: (htl) => {
 function sparkbar(max, color) {
   return x => htl.html`<div style="
@@ -361,11 +509,11 @@ console.log("scope!", scope)
 console.log("hulls!", hulls)
 }});
 
-define({id: "4f5bc22b", outputs: ["scatter","hull","tooltip","clusterCard","markdownit","min","max","sum"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}, {min, max, sum}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
+define({id: "bdbd85b8", outputs: ["scatter","hull","tooltip","clusterCard","clusterListCard","markdownit","min","max","sum"], body: async () => {
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {clusterListCard}, {default: markdownit}, {min, max, sum}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_import/components/clusterListCard.2bd231cb.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
 
 
-return {scatter,hull,tooltip,clusterCard,markdownit,min,max,sum};
+return {scatter,hull,tooltip,clusterCard,clusterListCard,markdownit,min,max,sum};
 }});
 
 define({id: "2af7ab58", inputs: ["markdownit"], outputs: ["Markdown","md"], body: (markdownit) => {
@@ -418,6 +566,10 @@ return {isMobileDevice};
 <script>{Object.assign(document.createElement("a"),{href:""}).password&&location.replace(location.href);const e=document.querySelector("#observablehq-sidebar"),t=document.querySelector("#observablehq-sidebar-toggle"),r=sessionStorage.getItem("observablehq-sidebar");r?t.checked=r==="true":t.indeterminate=!0;for(const o of document.querySelectorAll("#observablehq-sidebar summary")){const s=o.parentElement;switch(sessionStorage.getItem(`observablehq-sidebar:${o.textContent}`)){case"true":s.open=!0;break;case"false":s.classList.contains("observablehq-section-active")||(s.open=!1);break}}addEventListener("beforeunload",()=>sessionStorage.setItem("observablehq-sidebar-scrolly",`${e.scrollTop}`));const a=sessionStorage.getItem("observablehq-sidebar-scrolly");a!=null&&(e.style.cssText="overflow: hidden;",e.scrollTop=+a,e.style.cssText="");}</script>
 <aside id="observablehq-toc" data-selector="h1:not(:first-of-type), h2:first-child, :not(h1) + h2">
 <nav>
+<div>Contents</div>
+<ol>
+<li class="observablehq-secondary-link"><a href="#filtering-on-metadata">Filtering on metadata</a></li>
+</ol>
 </nav>
 </aside>
 <div id="observablehq-center">
@@ -433,7 +585,7 @@ return {isMobileDevice};
     gtag('config', 'G-W8EM95KSJZ');
   </script>
   
-  <link rel="stylesheet" type="text/css" href="./_file/index.1728f3a6.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.f664becd.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -454,14 +606,10 @@ return {isMobileDevice};
 <h2 id="looking-in-the-mirror-of-years-and-10%2C965-tweets." tabindex="-1"><a class="observablehq-header-anchor" href="#looking-in-the-mirror-of-years-and-10%2C965-tweets.">Looking in the mirror of <span id="cell-755f6a01" class="observablehq--loading"></span> years and 10,965 tweets.</a></h2>
 <p>Oh god this could get embarrassing.
 The problem with powerful visualization tools is that they will show you things whether you wanted to see them or not.
-For most of my career I've used Twitter mainly in a professional capacity, but as we will see my younger self was sometimes a bit flippant.</p>
-<p>Social media is of course a place where we run into unmanageable amounts of unstructured text data.
-As we've seen in the <a href="datavis-survey">Datavis Survey</a> and <a href="plot-issues">GitHub Issues</a> analyses, we can use Latent Scope to pull some structure out of the text and combine it with whatever interesting metadata we already have.</p>
-<p>I don't expect you to care, let alone read, all of my tweets, so this time we'll jump straight into the map and start exploring clusters.
-Hopefully displaying my shame will serve as an example of the kinds of insights one might gain from clustering and visualizing their own textual data.</p>
-<p>If you still want to analyze your own tweets by the end of this, you can follow the instructions in <a href="https://observablehq.com/@observablehq/save-and-analyze-your-twitter-archive" target="_blank" rel="noopener noreferrer">this notebook</a> to download and then process your tweets into a format that matches this analysis.</p>
+For most of my career I've used Twitter mainly in a professional capacity, but as we will see my younger self was sometimes a bit flippant.
+Here goes nothing!</p>
 <div id="cell-aa68ff38" class="observablehq observablehq--block observablehq--loading"></div>
-<p>Each of the dots in the above map is a tweet, and all those tweets went through the 4 step process in Latent scope:</p>
+<p>Before we begin the analysis, I should point out that each of the dots in the above map is a tweet, and all those tweets went through the <a href="your-first-scope">4 step process</a> in Latent scope:</p>
 <ol>
 <li>Embed - run each piece of text through an embedding model</li>
 <li>Project - run the high-dimensional embeddings through UMAP</li>
@@ -471,22 +619,56 @@ Hopefully displaying my shame will serve as an example of the kinds of insights 
 <p>So at the end of this process we have <span id="cell-8ff0b1db" class="observablehq--loading"></span> clusters carving up our <span id="cell-c133b744" class="observablehq--loading"></span> tweets.
 Every row of our input data is annotated with a cluster index and label:</p>
 <div class="card">
+<div class="static-table">
 <span id="cell-85389ac9" class="observablehq--loading"></span>
 </div>
-<p><span id="cell-8ff0b1db-1" class="observablehq--loading"></span> clusters is better than 10,000 but it's still quite a lot.
-Let's use some common metrics to explore our clusters, namely likes and rewteets.</p>
-<p><em>Click on the radio button on the left of each cluster to select it and see the details in the card below</em></p>
-<div id="cell-ec6d2531" class="observablehq observablehq--block"></div>
-<div>
-  <span id="cell-a2fdee09" class="observablehq--loading"></span>
 </div>
+<p><span id="cell-8ff0b1db-1" class="observablehq--loading"></span> clusters is better than 10,000 but it's still quite a lot.
+Let's use some common metrics to explore our clusters, namely likes and rewteets.
+We can sort our list of clusters by the various column headers and see what's in each cluster:</p>
+<div class="input-card">
+<div id="cell-d71f1a00" class="observablehq observablehq--block"></div>
+</div>
+<p><em>Click on the radio button on the left of each cluster in the table to select it and see the details in the card below</em></p>
+<div id="cell-399e02b8" class="observablehq observablehq--block"></div>
+<div>
+  <span id="cell-99062fda" class="observablehq--loading"></span>
+</div>
+<p>As you can see from the first cluster in the list, I made a lot of tweets about Observable,
+especially Observable Plot which makes sense since it was a big part of my job to share my experience with these tools while I worked there.
+The opportunity to work with Mike Bostock at Observable was the culmination of 10 years of investment in the D3.js community, which you can see in the next most popular cluster:</p>
+<div>
+  <span id="cell-d9f750fe" class="observablehq--loading"></span>
+</div>
+<p>Ok, but now I feel a little like I'm bragging.
+Let's look at a cluster that represents my more unhinged thoughts, hopefully none of these get me cancelled 🫣 Honestly they will probably just make you 🙄.</p>
+<div>
+  <span id="cell-d2f57b05" class="observablehq--loading"></span>
+</div>
+<p>Alright, if you're still reading let's take a look at some clusters that are probably more relevant to your interests. Like these 4 that are all about AI and clustering!</p>
+<div>
+  <span id="cell-1e6996d1" class="observablehq--loading"></span>
+</div>
+<h2 id="filtering-on-metadata" tabindex="-1"><a class="observablehq-header-anchor" href="#filtering-on-metadata">Filtering on metadata</a></h2>
+<p>Alright, you've read through a bunch of the content.
+Let's take a break and consider an aspect of this data that is probably relevant to anyone who wants to cluster their data, whether its tweets or otherwise.</p>
+<p>The tweets you get from the archive are one of three things, a "tweet", a "reply" or a "retweet". Most likely we are only really interested in tweets as they represent the "original" thoughts. It is conceivable you might want to analyze your reply-game, or maybe see if there are patterns in what kind of stuff you retweet.
+So in that spirit lets see what happens when we filter our overall data down to just one of those three categories:</p>
+<div id="cell-c4a38d0f" class="observablehq observablehq--block"></div>
+<div id="cell-503f8a06" class="observablehq observablehq--block"></div>
+<div id="cell-a268418f" class="observablehq observablehq--block observablehq--loading"></div>
+<p>If you still want to analyze your own tweets after all of this, the first step is to request your archive from Twitter. You can follow the instructions in <a href="https://observablehq.com/@observablehq/save-and-analyze-your-twitter-archive" target="_blank" rel="noopener noreferrer">this notebook</a> to download and then process your tweets into a format that matches this analysis.
+The next step would be to run the CSV of your tweets through Latent Scope to get your clusters.
+Then you can look in your own tweet mirror!</p>
+<p>If you have questions feel free to get in touch on our <a href="https://discord.gg/x7NvpnM4pY" target="_blank" rel="noopener noreferrer">Discord server</a>!</p>
 <div id="cell-765fa948" class="observablehq observablehq--block"></div>
-<div id="cell-6933f8ba" class="observablehq observablehq--block"></div>
+<div id="cell-3f98e42b" class="observablehq observablehq--block"></div>
 <div id="cell-117b7a30" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
 <div id="cell-b32210e2" class="observablehq observablehq--block"></div>
 <div id="cell-0ae181aa" class="observablehq observablehq--block"></div>
 <div id="cell-f41efc62" class="observablehq observablehq--block"></div>
+<div id="cell-881d56c2" class="observablehq observablehq--block"></div>
 <div id="cell-5d395032" class="observablehq observablehq--block"></div>
 <div id="cell-77f718ba" class="observablehq observablehq--block"></div>
 <div id="cell-005a856b" class="observablehq observablehq--block"></div>
@@ -496,12 +678,12 @@ Let's use some common metrics to explore our clusters, namely likes and rewteets
 <div id="cell-74e9b455" class="observablehq observablehq--block"></div>
 <div id="cell-0f267664" class="observablehq observablehq--block"></div>
 <div id="cell-5551e850" class="observablehq observablehq--block"></div>
-<div id="cell-4f5bc22b" class="observablehq observablehq--block"></div>
+<div id="cell-bdbd85b8" class="observablehq observablehq--block"></div>
 <div id="cell-2af7ab58" class="observablehq observablehq--block"></div>
 <div id="cell-5f76811e" class="observablehq observablehq--block"></div>
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a><a rel="next" href="./us-federal-laws"><span>US Federal Laws</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T18:12:51">May 6, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-07T19:58:58">May 7, 2024</a>.</div>
 </footer>
 </div>

@@ -158,23 +158,23 @@ da.length
 ))
 }});
 
-define({id: "03c69930", inline: true, inputs: ["Inputs","da","tableConfig","display"], body: async (Inputs,da,tableConfig,display) => {
+define({id: "b4109138", inline: true, inputs: ["Inputs","da","tableConfig","display"], body: async (Inputs,da,tableConfig,display) => {
 display(await(
 Inputs.table(da, {...tableConfig, columns: [
-    "cluster",
-    "label",
-    "html_url",
-    "text",
-    "state",
-    "type"
-  ],
-  width: {
-    ...tableConfig.width,
-    text: "50%",
-    cluster: 50,
-    label: 200
-  }
-})
+        "cluster",
+        "label",
+        "html_url",
+        "text",
+        "state",
+        "type"
+      ],
+      width: {
+        ...tableConfig.width,
+        text: "50%",
+        cluster: 50,
+        label: 200
+      }
+    })
 ))
 }});
 
@@ -204,7 +204,7 @@ clusterCard(0, {
 ))
 }});
 
-define({id: "238fb43c", inputs: ["scope","da","sum","min","max","view","Inputs","sparkbar"], outputs: ["clusterTableData","selclusterTable"], body: (scope,da,sum,min,max,view,Inputs,sparkbar) => {
+define({id: "94c6ee98", inputs: ["scope","da","sum","min","max","view","Inputs","sparkbar"], outputs: ["clusterTableData","selclusterTable"], body: (scope,da,sum,min,max,view,Inputs,sparkbar) => {
 const clusterTableData = scope.cluster_labels_lookup.map(c => {
   let dc = da.filter(d => d.cluster == c.cluster)
   return {
@@ -227,13 +227,16 @@ const selclusterTable = view(Inputs.table(clusterTableData, {
     "closed_pull_requests": sparkbar(max(clusterTableData, d => d.closed_pull_requests), "lightblue"),
   },
   width: {
-    "cluster": 50,
+    "cluster": 20,
     "label": "20%"
+  },
+  header: {
+    "cluster": ""
   },
   sort: "open_issues",
   reverse: true,
   multiple: false,
-  value: clusterTableData[11]
+  value: clusterTableData[11],
 }))
 return {clusterTableData,selclusterTable};
 }});
@@ -255,7 +258,7 @@ define({id: "765fa948", body: () => {
 // ----------------------------------------------------------
 }});
 
-define({id: "f0de993b", inputs: ["htl"], outputs: ["tableConfig"], body: (htl) => {
+define({id: "d3d3654b", inputs: ["htl"], outputs: ["tableConfig"], body: (htl) => {
 const tableConfig = { 
   columns: [
     "html_url",
@@ -272,7 +275,7 @@ const tableConfig = {
     "html_url": x => htl.html`<a href=${x}>${x.split("/")[x.split("/").length - 1]}</a>`
   },
   width: {
-    "text": "60%",
+    "text": "50%",
     "html_url": 40,
     "comments": 70,
   },
@@ -482,7 +485,7 @@ return {isMobileDevice};
     gtag('config', 'G-W8EM95KSJZ');
   </script>
   
-  <link rel="stylesheet" type="text/css" href="./_file/index.1728f3a6.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.f664becd.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -512,7 +515,9 @@ there is a lot of feedback to sort through.</p>
 <img src="./_file/assets/plot-issues/burndown.e73d2fc2.png" style="width:80%;">
 <p>We want to focus on the contents of the issues, and just like in our <a href="datavis-survey">Datavis Survey example</a>, just scrolling through a table and reading every issue isn't practical at all:</p>
 <div class="card">
+<div class="static-table">
 <span id="cell-271f1a63" class="observablehq--loading"></span>
+</div>
 </div>
 <p>So again, we use Latent Scope's process to create a map of our unstructured text data:</p>
 <div id="cell-2d05d675" class="observablehq observablehq--block observablehq--loading"></div>
@@ -526,7 +531,9 @@ there is a lot of feedback to sort through.</p>
 <p>So at the end of this process we have <span id="cell-8ff0b1db" class="observablehq--loading"></span> clusters carving up our <span id="cell-c133b744" class="observablehq--loading"></span> issues and pull requests.
 Every row of our input data is annotated with a cluster index and label:</p>
 <div class="card">
-<span id="cell-03c69930" class="observablehq--loading"></span>
+  <div class="static-table">
+    <span id="cell-b4109138" class="observablehq--loading"></span>
+  </div>
 </div>
 <p>We've essentially added some new structure that we can use to filter and group our data, while still attaching the valuable structured metadata we already had.</p>
 <p>For example, one thing we might be interested in is the cluster with the most open issues:</p>
@@ -541,7 +548,10 @@ Every row of our input data is annotated with a cluster index and label:</p>
 We can create a data table that displays key metrics computed for each cluster.
 We can then also click on the radio button next to each cluster to select it and view it in more detail.
 Sorting the table allows us to investigate the various metrics we may care about in relation to the clusters.</p>
-<div id="cell-238fb43c" class="observablehq observablehq--block"></div>
+<div class="input-card">
+<div id="cell-94c6ee98" class="observablehq observablehq--block"></div>
+</div>
+<p><em>Click on the radio button on the left of each cluster in the table above to select it and see the details in the card below</em></p>
 <div>
   <span id="cell-a2fdee09" class="observablehq--loading"></span>
 </div>
@@ -551,7 +561,7 @@ It could be that some clusters represent recently added features and when the is
 <p>The important thing is to take a look, with Latent Scope you can <a href="exporting-data">easily export</a> your annotated data and analyze it in the tool of your choice.
 Personally, I've been enjoying <a href="https://observablehq.com/plot/" target="_blank" rel="noopener noreferrer">Observable Plot</a> inside <a href="https://observablehq.com/framework/" target="_blank" rel="noopener noreferrer">Observable Framework</a> to make this site with my exported scopes.</p>
 <div id="cell-765fa948" class="observablehq observablehq--block"></div>
-<div id="cell-f0de993b" class="observablehq observablehq--block"></div>
+<div id="cell-d3d3654b" class="observablehq observablehq--block"></div>
 <div id="cell-117b7a30" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
 <div id="cell-b32210e2" class="observablehq observablehq--block"></div>
@@ -572,6 +582,6 @@ Personally, I've been enjoying <a href="https://observablehq.com/plot/" target="
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./datavis-survey"><span>Datavis Survey</span></a><a rel="next" href="./enjalot-tweets"><span>enjalot&#x27;s tweets</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-06T18:12:51">May 6, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-07T19:58:58">May 7, 2024</a>.</div>
 </footer>
 </div>
