@@ -13,9 +13,9 @@
 <link rel="modulepreload" href="./_observablehq/runtime.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
 <link rel="modulepreload" href="./_import/components/scatter.e6a504c8.js">
-<link rel="modulepreload" href="./_import/components/hull.532abe46.js">
+<link rel="modulepreload" href="./_import/components/hull.f981bcf2.js">
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
-<link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
+<link rel="modulepreload" href="./_import/components/clusterCard.eba8a284.js">
 <link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
 <link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
@@ -286,9 +286,8 @@ const tableConfig = {
 return {tableConfig};
 }});
 
-define({id: "117b7a30", inputs: ["view","canvas"], outputs: ["map"], body: (view,canvas) => {
-const map = view(canvas)
-return {map};
+define({id: "de076962", body: () => {
+// const map = view(canvas)
 }});
 
 define({id: "08e9e9b6", inputs: ["tooltip"], outputs: ["tip"], body: (tooltip) => {
@@ -296,26 +295,25 @@ const tip = tooltip({})
 return {tip};
 }});
 
-define({id: "b32210e2", inputs: ["da","map"], outputs: ["hp"], body: (da,map) => {
-let hp = da[map.hovered[0]]
-return {hp};
+define({id: "b9443a04", body: () => {
+// let hp = da[map.hovered[0]]
 }});
 
-define({id: "0ae181aa", inputs: ["hp","tip","map","md"], body: (hp,tip,map,md) => {
-if(hp) {
-  // display the tooltip
-  // console.log("p, sel", p, selected)
-  tip.show(hp, map, md.unsafe(`
-  <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
-  <br/>
-  <span>state: ${hp["state"]}
-  <span>type: ${hp["type"]}
-  <br/>
-  ${hp["text"]}
-  `))
-} else {
-  tip.hide()
-}
+define({id: "144e9792", body: () => {
+// if(hp) {
+//   // display the tooltip
+//   // console.log("p, sel", p, selected)
+//   tip.show(hp, map, md.unsafe(`
+//   <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
+//   <br/>
+//   <span>state: ${hp["state"]}
+//   <span>type: ${hp["type"]}
+//   <br/>
+//   ${hp["text"]}
+//   `))
+// } else {
+//   tip.hide()
+// }
 }});
 
 define({id: "ab477e02", inputs: ["Plot","da"], outputs: ["barPlot"], body: (Plot,da) => {
@@ -362,18 +360,16 @@ function sparkbar(max, color) {
 return {sparkbar};
 }});
 
-define({id: "77f718ba", outputs: ["canvas"], body: () => {
-const canvas = document.createElement("canvas")
-return {canvas};
+define({id: "b0028f22", body: () => {
+// const canvas = document.createElement("canvas")
 }});
 
-define({id: "005a856b", inputs: ["map","da"], outputs: ["tableData"], body: (map,da) => {
-let tableData = []
-if(map.selected.length > 0) {
-  // tableData = []
-  map.selected.forEach(i => tableData.push(da[i]))
-}
-return {tableData};
+define({id: "520ae0fa", body: () => {
+// let tableData = []
+// if(map.selected.length > 0) {
+//   // tableData = []
+//   map.selected.forEach(i => tableData.push(da[i]))
+// }
 }});
 
 define({id: "06bd66db", inputs: ["scope","da"], outputs: ["hulls"], body: (scope,da) => {
@@ -414,7 +410,7 @@ console.log("hulls!", hulls)
 }});
 
 define({id: "4f5bc22b", outputs: ["scatter","hull","tooltip","clusterCard","markdownit","min","max","sum"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}, {min, max, sum}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
+const [{scatter}, {hull}, {tooltip}, {clusterCard}, {default: markdownit}, {min, max, sum}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.f981bcf2.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.eba8a284.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
 
 
 return {scatter,hull,tooltip,clusterCard,markdownit,min,max,sum};
@@ -485,7 +481,7 @@ return {isMobileDevice};
     gtag('config', 'G-W8EM95KSJZ');
   </script>
   
-  <link rel="stylesheet" type="text/css" href="./_file/index.f664becd.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.2320f840.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -562,14 +558,14 @@ It could be that some clusters represent recently added features and when the is
 Personally, I've been enjoying <a href="https://observablehq.com/plot/" target="_blank" rel="noopener noreferrer">Observable Plot</a> inside <a href="https://observablehq.com/framework/" target="_blank" rel="noopener noreferrer">Observable Framework</a> to make this site with my exported scopes.</p>
 <div id="cell-765fa948" class="observablehq observablehq--block"></div>
 <div id="cell-d3d3654b" class="observablehq observablehq--block"></div>
-<div id="cell-117b7a30" class="observablehq observablehq--block"></div>
+<div id="cell-de076962" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
-<div id="cell-b32210e2" class="observablehq observablehq--block"></div>
-<div id="cell-0ae181aa" class="observablehq observablehq--block"></div>
+<div id="cell-b9443a04" class="observablehq observablehq--block"></div>
+<div id="cell-144e9792" class="observablehq observablehq--block"></div>
 <div id="cell-ab477e02" class="observablehq observablehq--block"></div>
 <div id="cell-5d395032" class="observablehq observablehq--block"></div>
-<div id="cell-77f718ba" class="observablehq observablehq--block"></div>
-<div id="cell-005a856b" class="observablehq observablehq--block"></div>
+<div id="cell-b0028f22" class="observablehq observablehq--block"></div>
+<div id="cell-520ae0fa" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
 <div id="cell-c0f20c81" class="observablehq observablehq--block"></div>
 <div id="cell-6934042b" class="observablehq observablehq--block"></div>
@@ -582,6 +578,6 @@ Personally, I've been enjoying <a href="https://observablehq.com/plot/" target="
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./datavis-survey"><span>Datavis Survey</span></a><a rel="next" href="./enjalot-tweets"><span>enjalot&#x27;s tweets</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-07T19:58:58">May 7, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-08T12:58:30">May 8, 2024</a>.</div>
 </footer>
 </div>

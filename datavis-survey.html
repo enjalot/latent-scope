@@ -13,9 +13,9 @@
 <link rel="modulepreload" href="./_observablehq/runtime.js">
 <link rel="modulepreload" href="./_observablehq/stdlib.js">
 <link rel="modulepreload" href="./_import/components/scatter.e6a504c8.js">
-<link rel="modulepreload" href="./_import/components/hull.532abe46.js">
+<link rel="modulepreload" href="./_import/components/hull.f981bcf2.js">
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
-<link rel="modulepreload" href="./_import/components/clusterCard.bd6879f9.js">
+<link rel="modulepreload" href="./_import/components/clusterCard.eba8a284.js">
 <link rel="modulepreload" href="./_npm/regl-scatterplot@1.8.5/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale@4.0.2/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-scale-chromatic@3.1.0/_esm.js">
@@ -200,9 +200,8 @@ const tableConfig = {
 return {tableConfig};
 }});
 
-define({id: "117b7a30", inputs: ["view","canvas"], outputs: ["map"], body: (view,canvas) => {
-const map = view(canvas)
-return {map};
+define({id: "de076962", body: () => {
+// const map = view(canvas)
 }});
 
 define({id: "08e9e9b6", inputs: ["tooltip"], outputs: ["tip"], body: (tooltip) => {
@@ -210,39 +209,36 @@ const tip = tooltip({})
 return {tip};
 }});
 
-define({id: "b32210e2", inputs: ["da","map"], outputs: ["hp"], body: (da,map) => {
-let hp = da[map.hovered[0]]
-return {hp};
+define({id: "b9443a04", body: () => {
+// let hp = da[map.hovered[0]]
 }});
 
-define({id: "93aa8b33", inputs: ["hp","tip","map"], body: (hp,tip,map) => {
-if(hp) {
-  // display the tooltip
-  // console.log("p, sel", p, selected)
-  tip.show(hp, map, `
-  <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
-  <br/>
-  <span>Role: ${hp["Role"]}
-  <br/>
-  ${hp["DataVizNotUnderstood"]}
-  `)
-} else {
-  tip.hide()
-}
+define({id: "77220b31", body: () => {
+// if(hp) {
+//   // display the tooltip
+//   // console.log("p, sel", p, selected)
+//   tip.show(hp, map, `
+//   <i>Cluster ${hp["cluster"]}: ${hp["label"]}</i>
+//   <br/>
+//   <span>Role: ${hp["Role"]}
+//   <br/>
+//   ${hp["DataVizNotUnderstood"]}
+//   `)
+// } else {
+//   tip.hide()
+// }
 }});
 
-define({id: "77f718ba", outputs: ["canvas"], body: () => {
-const canvas = document.createElement("canvas")
-return {canvas};
+define({id: "b0028f22", body: () => {
+// const canvas = document.createElement("canvas")
 }});
 
-define({id: "005a856b", inputs: ["map","da"], outputs: ["tableData"], body: (map,da) => {
-let tableData = []
-if(map.selected.length > 0) {
-  // tableData = []
-  map.selected.forEach(i => tableData.push(da[i]))
-}
-return {tableData};
+define({id: "520ae0fa", body: () => {
+// let tableData = []
+// if(map.selected.length > 0) {
+//   // tableData = []
+//   map.selected.forEach(i => tableData.push(da[i]))
+// }
 }});
 
 define({id: "06bd66db", inputs: ["scope","da"], outputs: ["hulls"], body: (scope,da) => {
@@ -283,7 +279,7 @@ console.log("hulls!", hulls)
 }});
 
 define({id: "d89547a4", outputs: ["scatter","hull","tooltip","clusterCard"], body: async () => {
-const [{scatter}, {hull}, {tooltip}, {clusterCard}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.532abe46.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.bd6879f9.js")]);
+const [{scatter}, {hull}, {tooltip}, {clusterCard}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.f981bcf2.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.eba8a284.js")]);
 
 return {scatter,hull,tooltip,clusterCard};
 }});
@@ -340,7 +336,7 @@ return {isMobileDevice};
     gtag('config', 'G-W8EM95KSJZ');
   </script>
   
-  <link rel="stylesheet" type="text/css" href="./_file/index.f664becd.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.2320f840.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -413,12 +409,12 @@ Of course these automated steps are never perfect, so Latent Scope is designed t
 <p>What are you waiting for? Try <a href="https://github.com/enjalot/latent-scope" target="_blank" rel="noopener noreferrer">Latent Scope</a> out on your own data!</p>
 <div id="cell-7b2ff0a5" class="observablehq observablehq--block"></div>
 <div id="cell-8db63f16" class="observablehq observablehq--block"></div>
-<div id="cell-117b7a30" class="observablehq observablehq--block"></div>
+<div id="cell-de076962" class="observablehq observablehq--block"></div>
 <div id="cell-08e9e9b6" class="observablehq observablehq--block"></div>
-<div id="cell-b32210e2" class="observablehq observablehq--block"></div>
-<div id="cell-93aa8b33" class="observablehq observablehq--block"></div>
-<div id="cell-77f718ba" class="observablehq observablehq--block"></div>
-<div id="cell-005a856b" class="observablehq observablehq--block"></div>
+<div id="cell-b9443a04" class="observablehq observablehq--block"></div>
+<div id="cell-77220b31" class="observablehq observablehq--block"></div>
+<div id="cell-b0028f22" class="observablehq observablehq--block"></div>
+<div id="cell-520ae0fa" class="observablehq observablehq--block"></div>
 <div id="cell-06bd66db" class="observablehq observablehq--block"></div>
 <div id="cell-7205427d" class="observablehq observablehq--block"></div>
 <div id="cell-0fe0d076" class="observablehq observablehq--block"></div>
@@ -430,6 +426,6 @@ Of course these automated steps are never perfect, so Latent Scope is designed t
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./exporting-data"><span>Exporting data</span></a><a rel="next" href="./plot-issues"><span>GitHub Issues &amp; PRs</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-07T19:58:58">May 7, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-08T12:58:30">May 8, 2024</a>.</div>
 </footer>
 </div>
