@@ -57,7 +57,7 @@ import "./_observablehq/client.js";
     gtag('config', 'G-W8EM95KSJZ');
   </script>
   
-  <link rel="stylesheet" type="text/css" href="./_file/index.2730b0b3.css">
+  <link rel="stylesheet" type="text/css" href="./_file/index.0dcd799c.css">
   <div style="display: flex; align-items: center; gap: 0.5rem; height: 2.2rem; margin: -1.5rem -2rem 2rem -2rem; padding: 0.5rem 2rem; border-bottom: solid 1px var(--theme-foreground-faintest); font: 500 16px var(--sans-serif);">
     <div style="display: flex; flex-grow: 1; justify-content: space-between; align-items: baseline;">
       <a href="./">
@@ -75,8 +75,40 @@ import "./_observablehq/client.js";
 </header>
 <main id="observablehq-main" class="observablehq">
 <h1 id="latent-scope" tabindex="-1"><a class="observablehq-header-anchor" href="#latent-scope">Latent Scope</a></h1>
-<p>Latent Scope is an open source tool for interactively curating unstructured data. The tool enables a repeatable process for embedding, projecting, clustering, summarizing and visualizating text data.</p>
-<img src="./_file/assets/explore-curate/curate-combined-cluster.6e13554c.png" alt="The End" class="pageshot">
+<p>Latent Scope is an open source tool that leverages the latest in LLMs to embed, visualize, cluster and categorize your data.</p>
+<p>It's really two tools, a <b>pipeline tool</b> to systematically process your datasets and an <b>exploration interface</b> to visualize and edit your categorized data.
+Latent Scope can be run fully locally using only open-source models or it can leverage several popular model providers.</p>
+<img src="./_file/assets/ui.b62c1a17.png" alt="The UI" class="pageshot">
+<p>The pipeline is made up of several powerful pieces put together that work on unstructured text input:</p>
+<img src="./_file/assets/process-crop.3880c569.png" alt="The End" class="screenshot">
+<div class="process-cards">
+<div class="card process-card">
+<h2 id="1.-ingest" tabindex="-1"><a class="observablehq-header-anchor" href="#1.-ingest">1. Ingest</a></h2>
+<h3 id="ingest-your-data%2C-either-from-a-csv%2C-parquet-file-or-a-pandas-dataframe" tabindex="-1"><a class="observablehq-header-anchor" href="#ingest-your-data%2C-either-from-a-csv%2C-parquet-file-or-a-pandas-dataframe">Ingest your data, either from a CSV, Parquet file or a Pandas DataFrame</a></h3>
+</div>
+<div class="card process-card">
+<h2 id="2.-embed" tabindex="-1"><a class="observablehq-header-anchor" href="#2.-embed">2. Embed</a></h2>
+<h3 id="run-each-piece-of-text-through-an-embedding-model%2C-locally-or-via-3rd-party-api" tabindex="-1"><a class="observablehq-header-anchor" href="#run-each-piece-of-text-through-an-embedding-model%2C-locally-or-via-3rd-party-api">Run each piece of text through an embedding model, locally or via 3rd party API</a></h3>
+</div>
+<div class="card process-card">
+<h2 id="3.-project" tabindex="-1"><a class="observablehq-header-anchor" href="#3.-project">3. Project</a></h2>
+<h3 id="turn-the-embedding-vectors-into-x%2Cy-coordinates-with-umap" tabindex="-1"><a class="observablehq-header-anchor" href="#turn-the-embedding-vectors-into-x%2Cy-coordinates-with-umap">Turn the embedding vectors into x,y coordinates with UMAP</a></h3>
+</div>
+<div class="card process-card">
+<h2 id="4.-cluster" tabindex="-1"><a class="observablehq-header-anchor" href="#4.-cluster">4. Cluster</a></h2>
+<h3 id="organize-dense-groups-of-points-into-distinct-clusters-with-hdbscan" tabindex="-1"><a class="observablehq-header-anchor" href="#organize-dense-groups-of-points-into-distinct-clusters-with-hdbscan">Organize dense groups of points into distinct clusters with HDBSCAN</a></h3>
+</div>
+<div class="card process-card">
+<h2 id="5.-label" tabindex="-1"><a class="observablehq-header-anchor" href="#5.-label">5. Label</a></h2>
+<h3 id="ask-an-llm-to-create-a-label-for-each-cluster-by-summarizing-a-list-of-text-taken-from-each-cluster-(local-or-3rd-party-api)" tabindex="-1"><a class="observablehq-header-anchor" href="#ask-an-llm-to-create-a-label-for-each-cluster-by-summarizing-a-list-of-text-taken-from-each-cluster-(local-or-3rd-party-api)">Ask an LLM to create a label for each cluster by summarizing a list of text taken from each cluster (local or 3rd party API)</a></h3>
+</div>
+<div class="card process-card">
+<h2 id="6.-save" tabindex="-1"><a class="observablehq-header-anchor" href="#6.-save">6. Save</a></h2>
+<h3 id="save-your-scope%2C-preparing-it-for-exploration-or-export-for-use-in-other-tools." tabindex="-1"><a class="observablehq-header-anchor" href="#save-your-scope%2C-preparing-it-for-exploration-or-export-for-use-in-other-tools.">Save your scope, preparing it for exploration or export for use in other tools.</a></h3>
+</div>
+</div>
+<br>
+<p>Once you've put your data through this process you will be ready to explore and curate it in the exploration interface.</p>
 <h2 id="getting-started" tabindex="-1"><a class="observablehq-header-anchor" href="#getting-started">Getting started</a></h2>
 <p>Follow the guides to get started:</p>
 <ol>
@@ -90,12 +122,12 @@ import "./_observablehq/client.js";
 <ul>
 <li>Explore free-responses from surveys in this <a href="datavis-survey">datavis survey analysis</a></li>
 <li>Cluster thousands of <a href="plot-issues">GitHub issues and PRs</a></li>
-<li>Sort through two hundred years and tens of thousands of <a href="us-federal-laws">US Federal laws</a></li>
+<li>Analyze the popularity and content of <a href="enjalot-tweets">10,000 tweets</a></li>
+<li>Sort through two hundred years and 50,000 <a href="us-federal-laws">US Federal laws</a></li>
 </ul>
 <h2 id="inputs-and-outputs" tabindex="-1"><a class="observablehq-header-anchor" href="#inputs-and-outputs">Inputs and Outputs</a></h2>
 <p>To use Latent Scope you will need some data to input. This can be in the form of a CSV file, parquet file or a Pandas DataFrame.
 Currently, the focus of Latent Scope is unstructured text data, so you will need to choose a column that will be put through the process.</p>
-<img src="./_file/assets/process-crop.3880c569.png" alt="The End" class="screenshot">
 <p>The process will then go through a series of steps that result in a <strong>scope</strong>, a data format that captures the output of the process in a handy parquet file with a JSON metadata file.</p>
 <h2 id="design-principles" tabindex="-1"><a class="observablehq-header-anchor" href="#design-principles">Design Principles</a></h2>
 <p>This tool is meant to be a part of a broader data workflow, a lens that helps you see things in your data that you wouldn't otherwise have. That means it needs to be easy to get data in, and easily get useful data out.</p>
@@ -116,6 +148,6 @@ We consider an input dataset the source of truth, a list of rows that can be ind
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="next" href="./install-and-config"><span>Install &amp; Configure</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-08T13:39:15">May 8, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-10T15:08:00">May 10, 2024</a>.</div>
 </footer>
 </div>
