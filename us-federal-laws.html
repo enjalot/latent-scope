@@ -17,7 +17,7 @@
 <link rel="modulepreload" href="./_import/components/dynamicHull.09110e6a.js">
 <link rel="modulepreload" href="./_import/components/tooltip.c593267a.js">
 <link rel="modulepreload" href="./_import/components/clusterCard.eba8a284.js">
-<link rel="modulepreload" href="./_import/components/clusterListCard.2bd231cb.js">
+<link rel="modulepreload" href="./_import/components/clusterListCard.c2fe14e1.js">
 <link rel="modulepreload" href="./_node/markdown-it@14.0.0/index.js">
 <link rel="modulepreload" href="./_npm/d3-selection@3.0.0/_esm.js">
 <link rel="modulepreload" href="./_npm/d3-array@3.2.4/_esm.js">
@@ -331,13 +331,14 @@ const civilRights = (await FileAttachment("./data/us-federal-laws/Civil Rights.i
 return {civilRights};
 }});
 
-define({id: "c042747d", inputs: ["Plot","hulls","civilRights","display"], body: async (Plot,hulls,civilRights,display) => {
+define({id: "e64a9588", inputs: ["Plot","hulls","civilRights","display"], body: async (Plot,hulls,civilRights,display) => {
 display(await(
  Plot.plot({
         marks: [
           Plot.hull(hulls.flatMap(d => d), {
             x: "x",
             y: "y",
+            z: "cluster",
             fill: "cluster",
             fillOpacity: 0.1,
             stroke: "lightgray",
@@ -347,7 +348,10 @@ display(await(
           Plot.dot(civilRights, {
             x: "x",
             y: "y",
+            z: "cluster",
+            r: 2,
             fill: "cluster",
+            fill: "gray",
             title: d => `${d.Title}\n${d.date_of_passage}\n${d.cluster}: ${d.label}`,
             tip: true
           }),
@@ -502,7 +506,7 @@ console.log("hulls!", hulls)
 }});
 
 define({id: "bf752053", outputs: ["scatter","hull","dynamicHull","tooltip","clusterCard","clusterListCard","markdownit","select","min","max","sum","mean"], body: async () => {
-const [{scatter}, {hull}, {dynamicHull}, {tooltip}, {clusterCard}, {clusterListCard}, {default: markdownit}, {select}, {min, max, sum, mean}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.f981bcf2.js"), import("./_import/components/dynamicHull.09110e6a.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.eba8a284.js"), import("./_import/components/clusterListCard.2bd231cb.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-selection@3.0.0/_esm.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
+const [{scatter}, {hull}, {dynamicHull}, {tooltip}, {clusterCard}, {clusterListCard}, {default: markdownit}, {select}, {min, max, sum, mean}] = await Promise.all([import("./_import/components/scatter.e6a504c8.js"), import("./_import/components/hull.f981bcf2.js"), import("./_import/components/dynamicHull.09110e6a.js"), import("./_import/components/tooltip.c593267a.js"), import("./_import/components/clusterCard.eba8a284.js"), import("./_import/components/clusterListCard.c2fe14e1.js"), import("./_node/markdown-it@14.0.0/index.js"), import("./_npm/d3-selection@3.0.0/_esm.js"), import("./_npm/d3-array@3.2.4/_esm.js")]);
 
 
 return {scatter,hull,dynamicHull,tooltip,clusterCard,clusterListCard,markdownit,select,min,max,sum,mean};
@@ -695,7 +699,7 @@ With over 5% of the laws in the dataset found in the Washington D.C. cluster, yo
 <p>I wasn't able to identify clusters that related specifically to civil rights, but thanks to the embeddings I was able to use nearest neighbor search to find 150 laws that are related to the concept of civil rights.</p>
 <div id="cell-e16e65c2" class="observablehq observablehq--block"></div>
 <div class="card">
-<div id="cell-c042747d" class="observablehq observablehq--block observablehq--loading"></div>
+<div id="cell-e64a9588" class="observablehq observablehq--block observablehq--loading"></div>
   <div class="static-table">
     <span id="cell-60c87720" class="observablehq--loading"></span>
   </div>
@@ -725,6 +729,6 @@ What would it be like to leverage the clustering to determine relevance when imp
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./enjalot-tweets"><span>enjalot&#x27;s tweets</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-10T15:08:00">May 10, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-13T09:35:53">May 13, 2024</a>.</div>
 </footer>
 </div>
