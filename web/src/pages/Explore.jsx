@@ -488,7 +488,7 @@ const handleNewCluster = useCallback((label) => {
 
   useEffect(() => {
     let active = Object.values(columnFiltersActive).filter(d => !!d).length
-    console.log("active filters", active, columnFiltersActive)
+    // console.log("active filters", active, columnFiltersActive)
     if(active > 0) {
       columnQuery(columnFiltersActive)
     }
@@ -584,7 +584,7 @@ const handleNewCluster = useCallback((label) => {
             {scope?.ls_version && <span>
               <span>{scope?.description}</span>
               <br />
-              <span>{embedding?.model_id}</span>
+              <span>{embedding?.model_id}</span><br/>
               <span>{clusterLabels?.length} clusters</span>
             </span>}
             {!scope?.ls_version && <div className="scope-version-warning">

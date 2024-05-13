@@ -142,7 +142,7 @@ function Cluster({ dataset, cluster, umap, onNew, onChange}) {
         ))}
       </div>
       <br></br>
-        {localCluster && <button type="submit" onClick={() => onChange(localCluster)}>Use Cluster</button>} {localCluster?.id}
+        {localCluster && <button type="submit" onClick={() => onChange(localCluster)}>👉 Use {localCluster?.id}</button>}
     </div>
   );
 }

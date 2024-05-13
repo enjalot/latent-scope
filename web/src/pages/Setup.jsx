@@ -622,7 +622,7 @@ function Setup() {
               onClickLabel={(c) => { console.log("CLUSTER", c); setSelectedClusterLabel(c)}} 
             />
           </Stage>
-          <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope" allowToggle={false}>
+          <Stage active={stage == 5} complete={stage > 5} title="5. Save Scope" allowToggle={stage < 5}>
             <Scope 
               dataset={dataset} 
               scope={scope} 

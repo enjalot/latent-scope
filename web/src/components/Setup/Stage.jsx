@@ -7,13 +7,13 @@ function Stage({ active, complete, title, subtitle, children, allowToggle = true
   const [isCollapsed, setIsCollapsed] = useState(complete && allowToggle);
 
   useEffect(() => {
-    setIsCollapsed(complete && allowToggle)
-  }, [complete])
+    setIsCollapsed((complete || !active) && allowToggle)
+  }, [complete, active, allowToggle])
 
   // Toggle the collapsed state
   const toggleCollapse = () => {
     // If the stage is complete, allow toggling the collapsed state
-    if (allowToggle && complete) {
+    if (allowToggle && (complete || !active)) {
       setIsCollapsed(!isCollapsed);
     }
   };

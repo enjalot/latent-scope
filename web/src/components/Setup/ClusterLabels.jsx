@@ -106,6 +106,7 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
           // onLabelSets(labelsAvailable, lbl)
           setClusterLabelSets(labelsAvailable)
           onLabelSets(labelsAvailable)
+          setLocalSelected(lbl?.id)
         }).catch(err => {
           console.log(err)
           setClusterLabelSets([])
@@ -168,8 +169,8 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
         <br></br>
           <button type="submit" onClick={() => onChange(localSelected)}>
           {clusterLabelSets.length >= 1 ? 
-            "Use Labels" : 
-            "Use Default Labels"
+            "👉 Use Labels" : 
+            "👉 Use Default Labels"
           }
           </button>
           {clusterLabelSets.length >= 1 ? <select 

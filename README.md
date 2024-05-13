@@ -23,7 +23,7 @@ Follow the documentation guides to get started:
 What can you do with Latent Scope? The following examples demonstrate the kinds of perspective and insights you can gain from your unstructured text data.
 * Explore free-responses from surveys in this [datavis survey analysis](https://enjalot.github.io/latent-scope/datavis-survey)
 * Cluster thousands of [GitHub issues and PRs](https://enjalot.github.io/latent-scope/plot-issues)
-* Sort through two hundred years and tens of thousands of [US Federal laws](https://enjalot.github.io/latent-scope/us-federal-laws)
+* Explore 50,000 [US Federal laws](https://enjalot.github.io/latent-scope/us-federal-laws) spanning two hundred years.
 
 
 ### Quick Start
@@ -44,7 +44,7 @@ See the [Your First Scope](https://enjalot.github.io/latent-scope/your-first-sco
 ### Python interface
 You can also ingest data from a Pandas dataframe using the Python interface:
 ```python
-from latentscope import ls
+import latentscope as ls
 df = pd.read_parquet("...")
 ls.init("~/latent-scope-data") # you can also pass in openai_key="XXX", mistral_key="XXX" etc.)
 ls.ingest("dadabase", df, text_column="joke")

@@ -187,7 +187,7 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
           </Tooltip>
         </div> : null }
         <br></br>
-        {localUmap && <button type="submit" onClick={() => onChange(localUmap)}>Use UMAP</button>} {localUmap?.id}
+        {localUmap && <button type="submit" onClick={() => onChange(localUmap)}>👉 Use {localUmap?.id}</button>}
     </div>
   );
 }

@@ -275,7 +275,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
       )}
     )}
     <br></br>
-    {localEmbedding && <button type="submit" onClick={() => onChange(localEmbedding)}>Use embedding</button>} {localEmbedding?.id}
+    {localEmbedding && <button type="submit" onClick={() => onChange(localEmbedding)}>👉 Use {localEmbedding?.id}</button>} 
     </div>
     </div>
   );
