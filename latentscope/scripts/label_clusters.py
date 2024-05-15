@@ -87,10 +87,10 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     model.load_model()
     enc = model.encoder
 
-    system_prompt = {"role":"system", "content": f"""You're job is to summarize lists of items with a short label of no more than 4 words. 
+    system_prompt = {"role":"system", "content": f"""You're job is to summarize lists of items with a short label of no more than 4 words. The items are part of a cluster and the label will be used to distinguish this cluster from others, so pay attention to what makes this group of similar items distinct.
 {context}
 The user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. 
-Do not use punctuation, just return a few words that summarize the list."""}
+Do not use punctuation, Do not explain yourself, respond with only a few words that summarize the list."""}
 
     # TODO: why the extra 10 for openai?
     max_tokens = model.params["max_tokens"] - len(enc.encode(system_prompt["content"])) - 10
@@ -129,7 +129,7 @@ Do not use punctuation, just return a few words that summarize the list."""}
         try:
             time.sleep(0.01)
             messages=[
-                system_prompt, {"role":"user", "content": batch[0]} # TODO hardcoded batch size
+                system_prompt, {"role":"user", "content": "Here is a list of items, please summarize the list into a label using only a few words:\n" + batch[0]} # TODO hardcoded batch size
             ]
             label = model.chat(messages)
             labels.append(label)

@@ -10,16 +10,24 @@
     },
     {
         "provider": "openai",
-        "name": "gpt-3.5-turbo-0125",
-        "id": "openai-gpt-3.5-turbo",
+        "name": "gpt-4o",
+        "id": "openai-gpt-4o",
         "params": {
-            "max_tokens": 4096 
+            "max_tokens": 128000
         }
     },
     {
         "provider": "openai",
         "name": "gpt-4-turbo-preview",
         "id": "openai-gpt-4-turbo-preview",
+        "params": {
+            "max_tokens": 128000
+        }
+    },
+    {
+        "provider": "openai",
+        "name": "gpt-4-turbo",
+        "id": "openai-gpt-4-turbo",
         "params": {
             "max_tokens": 128000
         }
@@ -58,21 +66,11 @@
     },
     {
         "provider": "transformers",
-        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "sanitized_name": "TinyLlama___TinyLlama-1.1B-Chat-v1.0",
-        "id": "transformers-TinyLlama___TinyLlama-1.1B-Chat-v1.0",
+        "name": "meta-llama/Meta-Llama-3-8B-Instruct",
+        "sanitized_name": "meta-llama___Meta-Llama-3-8B-Instruct",
+        "id": "transformers-meta-llama___Meta-Llama-3-8B-Instruct",
         "params": {
-            "max_tokens": 2048
+            "max_tokens": 8192
         }
-    },
-    {
-      "provider": "transformers",
-      "name": "HuggingFaceH4/zephyr-7b-beta",
-      "sanitized_name": "HuggingFaceH4___zephyr-7b-beta",
-      "id": "transformers-HuggingFaceH4___zephyr-7b-beta",
-      "params": {
-        "max_tokens": 4096
-      }
     }
-
 ]

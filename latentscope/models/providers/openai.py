@@ -13,11 +13,7 @@ class OpenAIEmbedProvider(EmbedModelProvider):
             print("ERROR: No API key found for OpenAI")
             print("Missing 'OPENAI_API_KEY' variable in:", f"{os.getcwd()}/.env")
         self.client = OpenAI(api_key=api_key)
-        # special case for the new embedding models
-        if self.name in ["text-embedding-3-small", "text-embedding-3-large"]:
-            self.encoder = tiktoken.get_encoding("cl100k_base")
-        else:
-            self.encoder = tiktoken.encoding_for_model(self.name)
+        self.encoder = tiktoken.encoding_for_model(self.name)
 
     def embed(self, inputs, dimensions=None):
         time.sleep(0.01) # TODO proper rate limiting
@@ -45,6 +41,7 @@ class OpenAIChatProvider(ChatModelProvider):
         import tiktoken
         self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
         self.encoder = tiktoken.encoding_for_model(self.name)
+
 
     def chat(self, messages):
         response = self.client.chat.completions.create(
