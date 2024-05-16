@@ -10,7 +10,7 @@ from latentscope import __version__
 def main():
     parser = argparse.ArgumentParser(description='Ingest a dataset')
     parser.add_argument('id', type=str, help='Dataset id (directory name in data folder)')
-    parser.add_argument('--path', type=str, help='Path to csv or parquet file, otherwise assumes input.csv in dataset directory')
+    parser.add_argument('--path', type=str, help='Path to csv/parquet/json/jsonl/xlsx file, otherwise assumes input.csv in dataset directory')
     parser.add_argument('--text_column', type=str, help='Column to use as text for the scope')
     args = parser.parse_args()
     ingest_file(args.id, args.path, args.text_column)
@@ -40,9 +40,11 @@ def ingest_file(dataset_id, file_path, text_column = None):
     elif file_type == "parquet":
         df = pd.read_parquet(file)
     elif file_type == "jsonl":
-        with open(file, 'r') as f:
-            lines = f.readlines()
-            df = pd.DataFrame([json.loads(line) for line in lines])
+        df = pd.read_json(file, lines=True)
+    elif file_type == "json":
+        df = pd.read_json(file)
+    elif file_type == "xlsx":
+        df = pd.read_excel(file)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
 
