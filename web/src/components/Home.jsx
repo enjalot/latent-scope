@@ -115,7 +115,7 @@ function Home() {
         <h3>Create new dataset</h3>
         <form onSubmit={handleNewDataset} onDragOver={handleDragOver} onDrop={handleDrop}>
           <label htmlFor="upload-button">
-            <span>Import a CSV or Parquet file to create a new dataset</span>
+            <span>Import a CSV/Parquet/JSON/JSONL/XLSX file to create a new dataset</span>
           </label>
           <input
             hidden
