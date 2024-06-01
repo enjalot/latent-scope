@@ -12,7 +12,13 @@ class OpenAIEmbedProvider(EmbedModelProvider):
         if api_key is None:
             print("ERROR: No API key found for OpenAI")
             print("Missing 'OPENAI_API_KEY' variable in:", f"{os.getcwd()}/.env")
-        self.client = OpenAI(api_key=api_key)
+
+        base_url = get_key("OPENAI_BASE_URL")
+        if base_url is not None:
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
+        else:
+            self.client = OpenAI(api_key=api_key)
+
         self.encoder = tiktoken.encoding_for_model(self.name)
 
     def embed(self, inputs, dimensions=None):
