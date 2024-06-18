@@ -6,7 +6,7 @@ import math
 import logging
 import argparse
 import pandas as pd
-import pkg_resources
+from importlib.resources import files
 from dotenv import dotenv_values, set_key
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stderr))
 app.logger.setLevel(logging.INFO)
 
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # DATA_DIR = update_data_dir(args.data_dir)
 DATA_DIR = get_data_dir()
@@ -68,18 +68,17 @@ if(not READ_ONLY):
 # ===========================================================
 @app.route('/api/embedding_models', methods=['GET'])
 def get_embedding_models():
-    embedding_path = pkg_resources.resource_filename('latentscope.models', 'embedding_models.json')
-    with open(embedding_path, 'r', encoding='utf-8') as file:
+    embedding_path = files('latentscope.models').joinpath('embedding_models.json')
+    with embedding_path.open('r', encoding='utf-8') as file:
         models = json.load(file)
     return jsonify(models)
 
 @app.route('/api/chat_models', methods=['GET'])
 def get_chat_models():
-    chat_path = pkg_resources.resource_filename('latentscope.models', 'chat_models.json')
-    with open(chat_path, 'r', encoding='utf-8') as file:
+    chat_path = files('latentscope.models').joinpath('chat_models.json')
+    with chat_path.open('r', encoding='utf-8') as file:
         models = json.load(file)
     return jsonify(models)
-
 
 """
 Allow fetching of dataset files directly from disk
@@ -211,13 +210,13 @@ if not READ_ONLY:
 @app.route('/<path:path>')
 def catch_all(path):
     if path != "":
-        pth = pkg_resources.resource_filename('latentscope', f"web/dist/{path}")
-        directory = os.path.dirname(pth)
-        return send_from_directory(directory, os.path.basename(pth))
+        pth = files('latentscope').joinpath(f"web/dist/{path}")
+        directory = pth.parent
+        return send_from_directory(directory, pth.name)
     else:
-        pth = pkg_resources.resource_filename('latentscope', "web/dist/index.html")
-        directory = os.path.dirname(pth)
-        return send_from_directory(directory, os.path.basename(pth))
+        pth = files('latentscope').joinpath("web/dist/index.html")
+        directory = pth.parent
+        return send_from_directory(directory, pth.name)
 
 def serve(host="0.0.0.0", port=5001, debug=True):
     app.run(host=host, port=port, debug=debug)

@@ -9,8 +9,8 @@ from .providers.nltk import NLTKChatProvider
 
 def get_embedding_model_list():
     """Returns a list of available embedding models."""
-    import pkg_resources
-    embedding_path = pkg_resources.resource_filename('latentscope.models', 'embedding_models.json')
+    from importlib.resources import files
+    embedding_path = files('latentscope.models').joinpath('embedding_models.json')
     with open(embedding_path, "r") as f:
         embed_model_list = json.load(f)
     return embed_model_list
@@ -43,8 +43,8 @@ def get_embedding_model(id):
 
 def get_chat_model_list():
     """Returns a list of available chat models."""
-    import pkg_resources
-    chat_path = pkg_resources.resource_filename('latentscope.models', 'chat_models.json')
+    from importlib.resources import files
+    chat_path = files('latentscope.models').joinpath('chat_models.json')
     with open(chat_path, "r") as f:
         chat_model_list = json.load(f)
     return chat_model_list
