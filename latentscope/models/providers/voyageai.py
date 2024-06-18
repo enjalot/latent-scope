@@ -17,7 +17,7 @@ class VoyageAIEmbedProvider(EmbedModelProvider):
         # It also says that it uses the same tokenizer as Llama 2
         self.encoder = Tokenizer.from_pretrained("TheBloke/Llama-2-70B-fp16")
 
-    def embed(self, inputs):
+    def embed(self, inputs, dimensions=None):
         time.sleep(0.1) # TODO proper rate limiting
         # We truncate the input ourselves, even though the API supports truncation its still possible to send too big a batch
         enc = self.encoder

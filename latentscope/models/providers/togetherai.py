@@ -15,7 +15,7 @@ class TogetherAIEmbedProvider(EmbedModelProvider):
         self.client = together.Together()
         self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
 
-    def embed(self, inputs):
+    def embed(self, inputs, dimensions=None):
         time.sleep(0.2) # TODO proper rate limiting
         enc = self.encoder
         max_tokens = self.params["max_tokens"]

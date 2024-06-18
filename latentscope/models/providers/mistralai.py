@@ -23,7 +23,7 @@ class MistralAIEmbedProvider(EmbedModelProvider):
             print("Missing 'MISTRAL_API_KEY' variable in:", f"{os.getcwd()}/.env")
         self.client = MistralClient(api_key=api_key)
 
-    def embed(self, inputs):
+    def embed(self, inputs, dimensions=None):
         time.sleep(0.1) # TODO proper rate limiting
         response = self.client.embeddings(input=inputs, model=self.name)
         return [e.embedding for e in response.data]

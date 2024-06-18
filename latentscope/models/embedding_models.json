@@ -47,6 +47,18 @@
         "pooling": "average"
     }
 },
+{
+    "provider": "transformers",
+    "name": "Alibaba-NLP/gte-large-en-v1.5",
+    "sanitized_name": "Alibaba-NLP___gte-large-en-v1.5",
+    "id": "transformers-Alibaba-NLP___gte-large-en-v1.5",
+    "modality": "text",
+    "params": {
+        "truncation": true,
+        "padding": true,
+        "pooling": "cls"
+    }
+},
   {
       "provider": "transformers",
       "name": "nomic-ai/nomic-embed-text-v1",
@@ -233,9 +245,18 @@
       "id": "voyageai-voyage-2",
       "params": {
           "truncation": true,
-          "max_tokens": 3000
+          "max_tokens": 4000
       }
   },
+  {
+    "provider": "voyageai",
+    "name": "voyage-large-2-instruct",
+    "id": "voyageai-voyage-large-2-instruct",
+    "params": {
+        "truncation": true,
+        "max_tokens": 16000
+    }
+},
   {
       "provider": "togetherai",
       "name": "togethercomputer/m2-bert-80M-2k-retrieval",

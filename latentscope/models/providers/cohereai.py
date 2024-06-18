@@ -13,7 +13,7 @@ class CohereAIEmbedProvider(EmbedModelProvider):
             print("Missing 'COHERE_API_KEY' variable in:", f"{os.getcwd()}/.env")
         self.client = cohere.Client(api_key)
 
-    def embed(self, inputs):
+    def embed(self, inputs, dimensions=None):
         time.sleep(0.01) # TODO proper rate limiting
         response = self.client.embed(texts=inputs, model=self.name, input_type=self.params["input_type"])
         embeddings = response.embeddings
