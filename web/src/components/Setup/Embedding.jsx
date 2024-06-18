@@ -85,7 +85,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         }
         // onNew(embs, emb)
         onNew(embs)
-        setLocalEmbedding(emb.id)
+        setLocalEmbedding(emb?.id)
       })
     }
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
@@ -118,9 +118,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   useEffect(() => {
     // check that the job is for the importer and if its complete remove the potential embedding
     if(embeddingsJob && embeddingsJob.status === "completed" && embeddingsJob.job_name === "embed-importer") {
-      let pe = embeddingsJob.command.split(" ")[2]
-      console.log("FINISHED JOB", pe)
-      onRemovePotentialEmbedding(pe)
+      // we need to split our command to get the name of the embedding
+      let commandParts = embeddingsJob.command.match(/(?:[^\s"']+|["'][^"']*["'])+/g);
+      console.log("PARTS", commandParts)
+      let pe = commandParts[2].replace(/['"]+/g, '');
+      console.log("FINISHED JOB", pe);
+      onRemovePotentialEmbedding(pe);
     }
 
   }, [embeddingsJob, onRemovePotentialEmbedding])
@@ -219,10 +222,10 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
           <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
 
           <label> Batch Size:
-          <input className={styles["batch-size"]} type="number" min="1" max="100" name="batch_size" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} disabled={!!embeddingsJob} />
+          <input className={styles["batch-size"]} type="number" min="1"name="batch_size" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} disabled={!!embeddingsJob} />
           <span className="tooltip" data-tooltip-id="batchsize">🤔</span>
           <Tooltip id="batchsize" place="top" effect="solid">
-            Reduce this number if you run out of memory. It determines how many items are processed at once. Max 100.
+            Reduce this number if you run out of memory. It determines how many items are processed at once. 
           </Tooltip>
           </label>
 

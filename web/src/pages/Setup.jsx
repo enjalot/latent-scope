@@ -139,7 +139,10 @@ function Setup() {
   }, [datasetId])
   
   const handleRemovePotentialEmbedding = useCallback((pe) => {
+    console.log("removing pe", pe)
+    console.log("current potential embeddings", dataset.potential_embeddings)
     const newPe = dataset.potential_embeddings.filter(d => d !== pe)
+    console.log("setting new pe", newPe)
     fetch(`${apiUrl}/datasets/${datasetId}/meta/update?key=potential_embeddings&value=${JSON.stringify(newPe)}`)
       .then(response => response.json())
       .then(data => {

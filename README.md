@@ -17,7 +17,7 @@ Follow the documentation guides to get started:
 1. [Install and Configure](https://enjalot.github.io/latent-scope/install-and-config)
 2. [Your First Scope](https://enjalot.github.io/latent-scope/your-first-scope)
 3. [Explore and Curate](https://enjalot.github.io/latent-scope/explore-and-curate)
-4. [Exporting Data](https://enjalot.github.io/latent-scope/export-data)
+4. [Exporting Data](https://enjalot.github.io/latent-scope/exporting-data)
 
 ## Example Analysis
 What can you do with Latent Scope? The following examples demonstrate the kinds of perspective and insights you can gain from your unstructured text data.
