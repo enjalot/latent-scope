@@ -26,6 +26,7 @@ comm~=0.2.1
 contourpy
 cycler~=0.12.1
 Cython~=0.29.37
+datamapplot~=0.3.0
 debugpy~=1.8.0
 decorator~=5.1.1
 defusedxml~=0.7.1

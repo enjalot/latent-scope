@@ -90,6 +90,7 @@ setup(
             'ls-cluster=latentscope.scripts.cluster:main',
             'ls-label=latentscope.scripts.label_clusters:main',
             'ls-scope=latentscope.scripts.scope:main',
+            'ls-export-plot=latentscope.scripts.export_plot:main',
         ],
     },
     include_package_data=True,
