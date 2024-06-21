@@ -11,12 +11,13 @@ def main():
     parser = argparse.ArgumentParser(description='Export scope as plot')
     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data folder)')
     parser.add_argument('scope_id', type=str, help='Scope id')
+    parser.add_argument('--plot_config', type=str, default=None, help='Optional plot config')
 
     args = parser.parse_args()
     print("ARGS", args)
     dmp(**vars(args))
 
-def dmp(dataset_id, scope_id):
+def dmp(dataset_id, scope_id, plot_config=None):
     import datamapplot
     # import matplotlib
     # matplotlib.rcParams["figure.dpi"] = 300
@@ -26,19 +27,19 @@ def dmp(dataset_id, scope_id):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    def get_next_plot_number(dataset):
+    def get_next_plot_number():
         # figure out the latest scope number
-        plots_files = [f for f in os.listdir(directory) if re.match(r"plots-\d+\.png", f)]
+        plots_files = [f for f in os.listdir(directory) if re.match(rf"plots-{re.escape(scope_id)}-\d+\.png", f)]
         if len(plots_files) > 0:
             last_plots = sorted(plots_files)[-1]
-            last_plots_number = int(last_plots.split("-")[1].split(".")[0])
+            last_plots_number = int(last_plots.split("-")[3].split(".")[0])
             next_plots_number = last_plots_number + 1
         else:
             next_plots_number = 1
         return next_plots_number
 
-    next_plots_number = get_next_plot_number(dataset_id)
-    id = f"plots-{next_plots_number:03d}"
+    next_plots_number = get_next_plot_number()
+    id = f"plots-{scope_id}-{next_plots_number:03d}"
 
     print("RUNNING:", id)
 
@@ -83,37 +84,70 @@ def dmp(dataset_id, scope_id):
 
     highlight_labels = np.unique(simplified_labels)
 
+    if(plot_config):
+        plot_config = json.loads(plot_config)
+    if plot_config is None:
+        plot_config = {
+          "label_over_points": True,
+          "dynamic_label_size": True,
+          "add_glow": True,
+          "darkmode": False,
+          "dpi": 150,
+          "figsize": [24, 24],
+          "label_wrap_width": 10,
+          "point_size": 7,
+          "max_font_size": 32,
+          "min_font_size": 16,
+          "min_font_weight": 100,
+          "max_font_weight": 1000,
+          "font_family": "Roboto Condensed",
+          "glow_keywords": {
+              "kernel_bandwidth": 0.01,
+              "kernel": "exponential",
+              "n_levels": 128,
+              "max_alpha": 0.75
+          },
+      }
     print("making plot", xy_columns.shape, labels.shape)
+    print("using config", plot_config)
     fig, ax = datamapplot.create_plot(
         xy_columns, 
         simplified_labels, 
-        noise_label="No Topic",
-        label_wrap_width=10,
-        label_over_points=True,
-        dynamic_label_size=True,
         force_matplotlib=True,
-        dpi=150,
-        figsize=(24, 24),
-        point_size=7,
-        max_font_size=40,
-        min_font_size=16,
-        # dynamic_label_size_scaling_factor=0.5,
-        min_font_weight=100,
-        max_font_weight=1000,
-        font_family="Roboto Condensed",
-        # add_glow=False,
-        add_glow=True,
-        glow_keywords={"kernel_bandwidth":0.01, "kernel":"exponential", "n_levels":128, "max_alpha":0.75},
-        highlight_labels=highlight_labels,
-        # highlight_label_keywords={
-        #     "fontweight":1000, "bbox":{"boxstyle":"circle", "pad":1.0, "alpha":0.15}
-        # },
         use_medoids=True,
-        # darkmode=True
+        highlight_labels=highlight_labels,
+        **plot_config,
+        # noise_label="No Topic",
+        # label_wrap_width=10,
+        # label_over_points=True,
+        # dynamic_label_size=True,
+        # dpi=150,
+        # figsize=(24, 24),
+        # point_size=7,
+        # max_font_size=40,
+        # min_font_size=16,
+        # min_font_weight=100,
+        # max_font_weight=1000,
+        # font_family="Roboto Condensed",
+        # add_glow=True,
+        # glow_keywords={
+        #     "kernel_bandwidth":0.01, 
+        #     "kernel":"exponential", 
+        #     "n_levels":128, 
+        #     "max_alpha":0.75
+        # },
+        # highlight_labels=highlight_labels,
+        # darkmode=False
     )
     plot_path = os.path.join(directory, f"{id}.png")
     fig.savefig(plot_path)
     print(f"Plot saved to {plot_path}")
+
+    config_path = os.path.join(directory, f"{id}.json")
+    with open(config_path, 'w', encoding='utf-8') as config_file:
+        json.dump(plot_config, config_file, indent=4)
+
+    print(f"Config saved to {config_path}")
 
 
 

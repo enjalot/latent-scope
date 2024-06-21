@@ -8,6 +8,7 @@ import Setup from './pages/Setup';
 import Jobs from './pages/Jobs';
 import Job from './pages/Job';
 import Export from './pages/Export';
+import DataMapPlot from './pages/DataMapPlot';
 import Nav from './components/Nav';
 import './App.css';
 
@@ -36,6 +37,7 @@ function App() {
           <Route path="/datasets/:dataset/compare/" element={<Compare/>} />
           <Route path="/datasets/:dataset/export" element={<Export />} />
           <Route path="/datasets/:dataset/export/:scope" element={<Export />} />
+          <Route path="/datasets/:dataset/plot/:scope" element={<DataMapPlot />} />
 
           <Route path="/datasets/:dataset/setup" element={<Setup />} />
           <Route path="/datasets/:dataset/setup/:scope" element={<Setup />} />

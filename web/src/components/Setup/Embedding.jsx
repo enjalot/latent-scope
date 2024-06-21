@@ -240,9 +240,11 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
       </form>
       </div>
+
       <JobProgress job={embeddingsJob} clearJob={()=> {
         setEmbeddingsJob(null)
       }} rerunJob={handleRerunEmbedding} />
+
       <div className={styles["embeddings-list"]}>
       {embeddings.map((emb, index) => {
         let umps = umaps.filter(d => d.embedding_id == emb.id)

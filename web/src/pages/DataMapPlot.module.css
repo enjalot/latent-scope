@@ -1,0 +1,116 @@
+.page {
+
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  margin: 12px;
+  padding: 6px;
+}
+.header a {
+  padding: 6px;
+  display: inline-block;
+  width: fit-content
+
+}
+
+.new-export {
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  margin: 12px;
+  padding: 6px;
+}
+
+.plots {
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+  margin: 12px;
+  padding: 6px;
+
+}
+.plot-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.page h3 {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 0;
+  padding: 6px 12px;
+}
+.page ul {
+  list-style: none;
+  margin: 0;
+  padding: 0px 24px;
+  padding-bottom: 12px;
+}
+
+.description {
+  padding: 0 12px;
+}
+
+.path {
+  font-family: 'Courier New', monospace;
+  margin-left: 6px;
+  font-size: 0.7em;
+}
+.size {
+  font-family: 'Courier New', monospace;
+  margin-left: 6px;
+  /* font-size: 0.7em; */
+}
+.config-link {
+  font-family: 'Courier New', monospace;
+  margin-left: 6px;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.label-group {
+  margin: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.config-form label span {
+  display: inline-block;
+  width: 200px;
+  min-width: 200px;
+}
+
+.create-button {
+  display: flex;
+  flex-basis: 100%;
+}
+.create-button button {
+  font-size: 1.4em;
+  padding: 6px;
+  margin: 6px;
+  border: 1px solid #000;
+  border-radius: 4px;
+  color: #000;
+}
+
+.file-link {
+  margin-left: 6px;
+  list-style-type: none;
+  padding: 12px;
+  width: fit-content;
+  border: 1px solid lightgray;
+  border-radius: 4px;
+}
+
+.warning {
+  font-weight: bold;
+  color: salmon;
+}
+
+

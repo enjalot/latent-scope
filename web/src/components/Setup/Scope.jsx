@@ -198,6 +198,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
           <div className="links">
             <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link>
             <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> Export data ({scope.id}) <br/></Link>
+            <Link to={`/datasets/${dataset?.id}/plot/${scope?.id}`}> Export plot ({scope.id}) <br/></Link>
           </div>
           <div className="delete">
             <button onClick={() => startDeleteScopeJob({dataset: dataset.id, scope_id: scope.id})}>Delete scope</button>

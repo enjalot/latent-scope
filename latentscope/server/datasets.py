@@ -275,3 +275,22 @@ def get_dataset_export_list(dataset):
             file_list.append((file_name, directory, relative_path, full_path, size))
 
     return jsonify(file_list)
+
+@datasets_bp.route('/<dataset>/plot/<scope>/list', methods=['GET'])
+def get_dataset_plot_list(dataset, scope):
+    directory_path = os.path.join(DATA_DIR, dataset, "plots")
+    print("dataset", dataset, directory_path)
+    # scan the directory for files and directories
+    # then walk the directories to find all the files
+    # then return the list of files
+    file_list = []
+    files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
+    for file in files:
+        if not (file.endswith(".png") and scope in file):
+            continue
+        full_path = os.path.join(directory_path, file)
+        file_name = os.path.basename(full_path)
+        size = os.path.getsize(full_path)
+        file_list.append((file_name, full_path, size))
+
+    return jsonify(file_list)

@@ -363,3 +363,19 @@ def delete_scope():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
+@jobs_write_bp.route('/plot')
+def run_plot():
+    dataset = request.args.get('dataset')
+    scope_id = request.args.get('scope_id')
+    config = request.args.get('config')
+    print("run plot", dataset, scope_id, config)
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-export-plot "{dataset}" {scope_id}'
+    escaped_config = json.dumps(config)#.replace('"', '\\"')
+    command += f' --plot_config={escaped_config}'
+    print("command", command)
+
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+

@@ -66,6 +66,7 @@ function Export() {
         <h2>Export Data for {dataset?.id} {scopeId}</h2>
         <Link to={`/datasets/${datasetId}/setup/${scopeId}`}>Setup {dataset?.id} {scopeId}</Link>
         {scopeId ? <Link to={`/datasets/${datasetId}/explore/${scopeId}`}>Explore {dataset?.id} {scopeId}</Link> : null }
+        {scopeId ? <Link to={`/datasets/${datasetId}/plot/${scopeId}`}>Export Plot {dataset?.id} {scopeId}</Link> : null }
       </div>
       <div className={styles["scope-files"]}>
         <h3>Scope {scopeId}</h3>

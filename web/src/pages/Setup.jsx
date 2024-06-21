@@ -527,7 +527,10 @@ function Setup() {
                   </select> 
                 : null}
             </div>
-            { scope ? <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> ↗ Export data <br/></Link> 
+            { scope ? <>
+                <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> ↗ Export data <br/></Link> 
+                <Link to={`/datasets/${dataset?.id}/plot/${scope?.id}`}> ↗ Export plot <br/></Link> 
+              </>
             : <Link to={`/datasets/${dataset?.id}/export`}> ↗ Export data <br/></Link> }
             { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> ↗ Explore <br/></Link> : null } 
             
