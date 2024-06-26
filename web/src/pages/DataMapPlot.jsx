@@ -232,7 +232,8 @@ function DataMapPlot() {
               <span>
                 Font Family:
               </span>
-              <select name="font_family" value={config.font_family} onChange={handleChange}>
+              <input type="text" list="fontFamilyOptions" name="font_family" value={config.font_family} onChange={handleChange} />
+              <datalist id="fontFamilyOptions">
                 <option value="Roboto Condensed">Roboto Condensed</option>
                 <option value="Arial">Arial</option>
                 <option value="Helvetica">Helvetica</option>
@@ -248,7 +249,7 @@ function DataMapPlot() {
                 <option value="Arial Black">Arial Black</option>
                 <option value="Impact">Impact</option>
                 <option value="Lucida Sans Unicode">Lucida Sans Unicode</option>
-              </select>
+              </datalist>
             </label>
           </div>
 
@@ -269,7 +270,14 @@ function DataMapPlot() {
               <span>
                 Kernel:
               </span>
-              <input type="text" name="glow_keywords.kernel" value={config.glow_keywords.kernel} onChange={handleChange} />
+              <select name="glow_keywords.kernel" value={config.glow_keywords.kernel} onChange={handleChange}>
+                <option value="gaussian">Gaussian</option>
+                <option value="tophat">Tophat</option>
+                <option value="epanechnikov">Epanechnikov</option>
+                <option value="exponential">Exponential</option>
+                <option value="linear">Linear</option>
+                <option value="cosine">Cosine</option>
+              </select>
             </label>
             <label>
               <span>
