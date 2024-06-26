@@ -38,7 +38,7 @@ def dmp(dataset_id, scope_id, plot_config=None):
         plots_files = [
             f
             for f in os.listdir(directory)
-            if re.match(rf"plots-{re.escape(scope_id)}-\d+\.png", f)
+            if re.match(rf"plots-{re.escape(scope_id)}-\d+\.(png|html)", f)
         ]
         if len(plots_files) > 0:
             last_plots = sorted(plots_files)[-1]
