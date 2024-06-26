@@ -33,6 +33,7 @@ function DataMapPlot() {
     dynamic_label_size: true,
     add_glow: true,
     darkmode: false,
+    interactive: false,
     dpi: 150,
     figsize: [24, 24],
     label_wrap_width: 10,
@@ -158,6 +159,12 @@ function DataMapPlot() {
                 Dark Mode:
               </span>
               <input type="checkbox" name="darkmode" checked={config.darkmode} onChange={handleChange} />
+            </label>
+            <label>
+              <span>
+                Interactive:
+              </span>
+              <input type="checkbox" name="interactive" checked={config.interactive} onChange={handleChange} />
             </label>
             <label>
               <span>
