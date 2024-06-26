@@ -24,10 +24,14 @@ def update_data_dir(directory, env_file=".env"):
             print("No directory specified, current directory is:", directory)
     if "~" in directory:
         directory = os.path.expanduser(directory)
-    # Update the .env file with the new directory
-    set_key(env_file, 'LATENT_SCOPE_DATA', directory)
-    # Update the environment variable for the current process
-    os.environ['LATENT_SCOPE_DATA'] = directory
+
+    # Only update env if it has changed
+    if os.environ['LATENT_SCOPE_DATA'] != directory:
+        # Update the .env file with the new directory
+        set_key(env_file, 'LATENT_SCOPE_DATA', directory)
+        # Update the environment variable for the current process
+        os.environ['LATENT_SCOPE_DATA'] = directory
+
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
