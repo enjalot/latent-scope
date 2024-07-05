@@ -1,5 +1,5 @@
 numpy~=1.26.4
-accelerate
+accelerate~=0.31.0
 aiohttp~=3.9.1
 aiolimiter~=1.1.0
 aiosignal~=1.3.1

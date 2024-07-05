@@ -4,6 +4,7 @@ __pycache__
 venv
 testenv
 testenv-whl
+testenv-prod
 .env
 dist
 build

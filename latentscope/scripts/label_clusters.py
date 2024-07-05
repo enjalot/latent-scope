@@ -92,8 +92,8 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
 The user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. 
 Do not use punctuation, Do not explain yourself, respond with only a few words that summarize the list."""}
 
-    # TODO: why the extra 10 for openai?
-    max_tokens = model.params["max_tokens"] - len(enc.encode(system_prompt["content"])) - 10
+    # TODO: why the extra 50 for openai?
+    max_tokens = model.params["max_tokens"] - len(enc.encode(system_prompt["content"])) - 50
 
     # Create the lists of items we will send for summarization
     # Current looks like:
