@@ -22,9 +22,12 @@ def get_datasets():
         file_path = os.path.join(DATA_DIR, dir, 'meta.json')
         if os.path.isfile(file_path):
             with open(file_path, 'r', encoding='utf-8') as file:
-                jsonData = json.load(file)
-                jsonData['id'] = dir
-                datasets.append(jsonData)
+                try:
+                    jsonData = json.load(file)
+                    jsonData['id'] = dir
+                    datasets.append(jsonData)
+                except:
+                    print("Error reading meta.json", file_path)
 
     datasets.sort(key=lambda x: x.get('length'))
     return jsonify(datasets)
