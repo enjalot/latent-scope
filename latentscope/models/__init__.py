@@ -7,6 +7,13 @@ from .providers.togetherai import TogetherAIEmbedProvider
 from .providers.voyageai import VoyageAIEmbedProvider
 from .providers.nltk import NLTKChatProvider
 
+# We use a universal id system for models where its:
+# <provider>-<model-name> with model-name replacing "/"" with "___"
+# i.e. "nomic-ai/nomic-embed-text-v1.5" becomes: 
+# "transformers-nomic-ai___nomic-embed-text-v1.5"
+# or OpenAI's "text-embedding-3-small" becomes:
+# "openai-text-embedding-3-small"
+
 def get_embedding_model_list():
     """Returns a list of available embedding models."""
     from importlib.resources import files
@@ -25,7 +32,19 @@ def get_embedding_model_dict(id):
 
 def get_embedding_model(id):
     """Returns a ModelProvider instance for the given model id."""
-    model = get_embedding_model_dict(id)
+
+    if id.startswith("transformers-"):
+        # If the model id is a transformers model, we get the model id
+        # by replacing "/" with "___"
+        # Then huggingface will take care of finding the model
+        model_name = id.split("transformers-")[1].replace("___", "/")
+        model = {
+            "provider": "transformers",
+            "name": model_name,
+            "params": {}
+        }
+    else:
+        model = get_embedding_model_dict(id)
       
     if model['provider'] == "transformers":
         return TransformersEmbedProvider(model['name'], model['params'])
