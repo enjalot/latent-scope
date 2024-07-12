@@ -5,6 +5,7 @@ import sys
 import json
 import time
 import argparse
+from datetime import datetime
 
 try:
     # Check if the runtime environment is a Jupyter notebook
@@ -131,6 +132,15 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print("ls-embed-debug", batch_path, model_id)
 
             sys.exit(1)
+
+    # track history of model_id used
+    history_file_path = os.path.join(DATA_DIR, "embedding_model_history.csv")
+    try:
+        with open(history_file_path, 'a') as history_file:
+            history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
+    except FileNotFoundError:
+        with open(history_file_path, 'w') as history_file:
+            history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
 
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
         json.dump({
