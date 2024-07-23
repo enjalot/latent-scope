@@ -116,14 +116,18 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   }, []);
 
   const [recentModels, setRecentModels] = useState([])
-  useEffect(() => {
+  const fetchRecentModels = useCallback(() => {
     fetch(`${apiUrl}/embedding_models/recent`)
       .then(response => response.json())
       .then(data => {
         console.log("RECENT MODELS", data)
         setRecentModels(data)
       })
-  }, [])
+  }, []);
+
+  useEffect(() => {
+    fetchRecentModels();
+  }, [fetchRecentModels]);
 
   const [HFModels, setHFModels] = useState([])
   const searchHFModels = useCallback((query) => {
@@ -257,6 +261,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         // onNew(embs, emb)
         onNew(embs)
         setLocalEmbedding(emb?.id)
+        fetchRecentModels()
       })
     }
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
