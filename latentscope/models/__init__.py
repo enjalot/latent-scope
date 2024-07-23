@@ -33,20 +33,22 @@ def get_embedding_model_dict(id):
 def get_embedding_model(id):
     """Returns a ModelProvider instance for the given model id."""
 
-    if id.startswith("transformers-"):
-        # If the model id is a transformers model, we get the model id
+    print("parsing name")
+    if id.startswith("🤗-"):
+        # If the model id is a HF sentence transformers model, we get the model id
         # by replacing "/" with "___"
         # Then huggingface will take care of finding the model
-        model_name = id.split("transformers-")[1].replace("___", "/")
+        model_name = id.split("🤗-")[1].replace("___", "/")
+        print("SUP?", model_name)
         model = {
-            "provider": "transformers",
+            "provider": "🤗",
             "name": model_name,
             "params": {}
         }
     else:
         model = get_embedding_model_dict(id)
       
-    if model['provider'] == "transformers":
+    if model['provider'] == "🤗":
         return TransformersEmbedProvider(model['name'], model['params'])
     if model['provider'] == "openai":
         return OpenAIEmbedProvider(model['name'], model['params'])

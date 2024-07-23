@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import csv
 import json
 import math
 import logging
@@ -79,6 +80,35 @@ def get_chat_models():
     with chat_path.open('r', encoding='utf-8') as file:
         models = json.load(file)
     return jsonify(models)
+
+@app.route('/api/embedding_models/recent', methods=['GET'])
+def get_recent_embedding_models():
+    recent_models_path = os.path.join(DATA_DIR, "embedding_model_history.csv")
+    if not os.path.exists(recent_models_path):
+        return jsonify([])
+
+    print("EXISTS")
+    with open(recent_models_path, 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        recent_models = []
+        for row in reader:
+            recent_models.append({
+                "timestamp": row[0],
+                "id": row[1],
+                "group": "recent",
+                "provider": row[1].split("-")[0],
+                "name": "-".join(row[1].split("-")[1:]).replace("___", "/")
+            })
+    recent_models.sort(key=lambda x: x["timestamp"], reverse=True)
+    # Deduplicate models with the same id
+    seen_ids = set()
+    unique_recent_models = []
+    for model in recent_models:
+        if model["id"] not in seen_ids:
+            unique_recent_models.append(model)
+            seen_ids.add(model["id"])
+    recent_models = unique_recent_models[:5]
+    return jsonify(recent_models)
 
 """
 Allow fetching of dataset files directly from disk

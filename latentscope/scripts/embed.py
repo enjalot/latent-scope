@@ -89,7 +89,9 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         starting_batch = 0
 
     print("RUNNING:", embedding_id)
+    print("MODEL ID", model_id)
     model = get_embedding_model(model_id)
+    print("MODEL", model)
     print("loading", model.name)
     model.load_model()
 

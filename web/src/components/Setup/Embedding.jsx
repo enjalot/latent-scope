@@ -1,11 +1,68 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { Tooltip } from 'react-tooltip'
+import Select from 'react-select'
+import { groups } from 'd3-array'
+import { format } from 'd3-format'
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
+
+// Debounce function without importing all of lodash
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+};
+
 const apiUrl = import.meta.env.VITE_API_URL
 
+
+function sanitizeModelName(name) {
+  return name.replace("/", '___')
+}
+
 import styles from './Embedding.module.css';
+const intf = format(",d")
+
+const groupStyles = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+const groupBadgeStyles = {
+  backgroundColor: '#EBECF0',
+  borderRadius: '2em',
+  color: '#172B4D',
+  display: 'inline-block',
+  fontSize: 12,
+  fontWeight: 'normal',
+  lineHeight: '1',
+  minWidth: 1,
+  padding: '0.16666666666667em 0.5em',
+  textAlign: 'center',
+};
+const downloadsStyle = {
+  color: '#172B4D',
+  display: 'inline-block',
+  fontSize: 12,
+  fontWeight: 'normal',
+  lineHeight: '1',
+  minWidth: 1,
+  padding: '0.16666666666667em 0.5em',
+  textAlign: 'center',
+};
+const providerStyle = {
+  color: '#ccc',
+  display: 'inline-block',
+  // fontSize: 12,
+  fontWeight: 'normal',
+  lineHeight: '1',
+  minWidth: 1,
+  padding: '0.16666666666667em 0.5em',
+  textAlign: 'center',
+};
 
 import PropTypes from 'prop-types';
 EmbeddingNew.propTypes = {
@@ -22,6 +79,8 @@ EmbeddingNew.propTypes = {
   onTextColumn: PropTypes.func.isRequired,
   onRemovePotentialEmbedding: PropTypes.func.isRequired
 };
+
+
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
@@ -43,18 +102,130 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     }
   }, [embedding, embeddings])
 
-  const [models, setModels] = useState([]);
+
+  const [presetModels, setPresetModels] = useState([]);
   useEffect(() => {
     fetch(`${apiUrl}/embedding_models`)
       .then(response => response.json())
       .then((data) => {
-        setModels(data) 
+        setPresetModels(data) 
         setModel(data[0])
       })
       .catch(console.error);
+    searchHFModels()
   }, []);
 
+  const [recentModels, setRecentModels] = useState([])
+  useEffect(() => {
+    fetch(`${apiUrl}/embedding_models/recent`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("RECENT MODELS", data)
+        setRecentModels(data)
+      })
+  }, [])
+
+  const [HFModels, setHFModels] = useState([])
+  const searchHFModels = useCallback((query) => {
+    let limit = query ? 5 : 5 // TODO: could change this
+    let url = `https://huggingface.co/api/models?filter=sentence-transformers&sort=downloads&limit=${limit}&full=false&config=false`
+    if(query) {
+      url += `&search=${query}`
+    }
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        console.log("HF MODELS", data)
+        // convert the HF data format to ours
+        const hfm = data.map(d => {
+          return {
+            id: "🤗-" + sanitizeModelName(d.id),
+            name: d.id,
+            provider: "🤗",
+            downloads: d.downloads,
+            params: {}
+          }
+        })
+        console.log("HFM", hfm)
+        setHFModels(hfm)
+      })
+  }, [])
+
+  // Add a state to track the input value
+  const [inputValue, setInputValue] = useState('');
+  // Update the input value and trigger the debounced search
+  const handleInputChange = (newValue) => {
+    setInputValue(newValue);
+    debouncedSearchHFModels(newValue);
+    return newValue
+  };
+  const debouncedSearchHFModels = useCallback(debounce(searchHFModels, 300), [searchHFModels]);
+  const customFilterOption = (option, inputValue) => {
+    const { provider, name } = option.data;
+    return (
+      provider.toLowerCase().includes(inputValue.toLowerCase()) ||
+      name.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  };
+  const formatOptionLabel = useCallback((option) => {
+    return (
+      <div>
+        <span style={providerStyle}>{option.provider} </span>
+        <span>{option.name} </span>
+        {option.downloads ? <span style={downloadsStyle}>downloads: {intf(+option.downloads)}</span> : null}
+      </div>
+    );
+  }, []);
+  const formatGroupLabel = useCallback((option) => {
+    return (
+      <div style={groupStyles}>
+        {option.label == "🤗" ? <span>🤗 Sentence Transformers</span> : <span>{option.label}</span>}
+        {option.options.length ? <span style={groupBadgeStyles}>{option.options.length}</span> : null}
+      </div>
+    );
+  }, []);
+
+  // Build up the list of options for the Dropdown
+  /*
+    models is an array of objects with the following properties:
+    - id: a unique identifier for the model
+    - name: the name of the model
+    - provider: the provider of the model
+    and other optional properties like
+    - params: { dimensions: [10, 20, 30] }
+
+    models come from several sources:
+    - recently used
+    - top models from HF
+      - search models from HF
+    - 3rd party models
+    
+    TODO: custom list
+    
+  */
+  const [allModels, setAllModels] = useState([])
+  const [allOptionsGrouped, setAllOptionsGrouped] = useState([])
+  useEffect(() => {
+    const am = recentModels.concat(HFModels).concat(presetModels)
+    let allOptions = am.map(m => {
+      return {
+        ...m,
+        group: m.group || m.provider,
+      }
+    }).filter(f => !!f)
+    
+    const grouped = groups(allOptions, f => f.group)
+      .map(d => ({ label: d[0], options: d[1] }))
+      .filter(d => d.options.length)
+
+    console.log("all options grouped", grouped)
+    setAllOptionsGrouped(grouped)
+    setAllModels(am)
+
+  }, [presetModels, HFModels, recentModels])
+
   const [model, setModel] = useState(null);
+  const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
   const [dimensions, setDimensions] = useState(null)
 
@@ -120,7 +291,6 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     if(embeddingsJob && embeddingsJob.status === "completed" && embeddingsJob.job_name === "embed-importer") {
       // we need to split our command to get the name of the embedding
       let commandParts = embeddingsJob.command.match(/(?:[^\s"']+|["'][^"']*["'])+/g);
-      console.log("PARTS", commandParts)
       let pe = commandParts[2].replace(/['"]+/g, '');
       console.log("FINISHED JOB", pe);
       onRemovePotentialEmbedding(pe);
@@ -138,26 +308,30 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     e.preventDefault();
     const form = e.target;
     const data = new FormData(form);
-    const model = models.find(model => model.id === data.get('modelName'));
+    // const model = allModels.find(model => model.id === data.get('modelName'));
     const prefix = data.get('prefix')
     let job = { 
       text_column: textColumn,
-      model_id: model.id,
+      model_id: modelId,
       prefix,
       batch_size: batchSize
     };
     if(dimensions) job.dimensions = dimensions
     startEmbeddingsJob(job);
-  }, [startEmbeddingsJob, textColumn, models, dimensions, batchSize]);
+  }, [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId]);
 
   const handleRerunEmbedding = (job) => {
     rerunEmbeddingsJob({job_id: job?.id});
   }
 
-  const handleModelChange = (e) => {
-    const model = models.find(model => model.id === e.target.value);
-    setModel(model)
-  }
+  const handleModelSelectChange = (selectedOption) => {
+    console.log("SELECTED OPTION", selectedOption)
+    setModelId(selectedOption.id);
+  };
+  // const handleModelChange = (e) => {
+  //   const model = allModels.find(model => model.id === e.target.value);
+  //   setModel(model)
+  // }
   const handleDimensionsChange = (e) => {
     setDimensions(+e.target.value)
   }
@@ -172,6 +346,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     <div>
       <div className={styles["embeddings-form"]}>
 
+        {/* Render the list of potential embeddings from the dataset columns */}
         {potentialEmbeddings.length ? <div className={styles["potential-embeddings"]}>
           {potentialEmbeddings.map(pe => {
             return <form key={pe} className={styles["potential-embedding"]}>
@@ -187,7 +362,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
               <label htmlFor="model">Embedded with model:
               <select id="model" name="model">
                 <option value="">Not listed</option>
-                {models.map((model, index) => {
+                {allModels.map((model, index) => {
                   return <option key={index} value={model.id}>{model.provider}: {model.name}</option>
                 })}
               </select>
@@ -202,7 +377,6 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
               </div>
             </form>
           })}
-
         </div> : null}
 
         Embedding on column:  
@@ -211,46 +385,70 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
             <option key={index} value={column}>{column}</option>
           ))}
         </select>
-      <form onSubmit={handleNewEmbedding}>
-          <label htmlFor="modelName">Model:
-          <select id="modelName" name="modelName" disabled={!!embeddingsJob} onChange={handleModelChange}>
-            {models.map((model, index) => (
-              <option key={index} value={model.id}>{model.provider}: {model.name}</option>
-            ))}
-          </select></label>
 
-          <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
+        <Select 
+            placeholder="Select model..."
+            options={allOptionsGrouped} 
+            formatOptionLabel={formatOptionLabel} 
+            formatGroupLabel={formatGroupLabel}
+            onInputChange={handleInputChange}
+            inputValue={inputValue} 
+            filterOption={customFilterOption}
+            getOptionValue={(option) => option.id} 
+            onChange={handleModelSelectChange}
+            // menuIsOpen={true}
+          />
 
-          <label> Batch Size:
-          <input className={styles["batch-size"]} type="number" min="1"name="batch_size" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} disabled={!!embeddingsJob} />
-          <span className="tooltip" data-tooltip-id="batchsize">🤔</span>
-          <Tooltip id="batchsize" place="top" effect="solid">
-            Reduce this number if you run out of memory. It determines how many items are processed at once. 
-          </Tooltip>
-          </label>
+        {/* The form for creating a new embedding */}
+        <form onSubmit={handleNewEmbedding}>
+            {/* <label htmlFor="modelName">Model: */}
+            {/* <select id="modelName" name="modelName" disabled={!!embeddingsJob} onChange={handleModelChange}>
+              {allModels.map((model, index) => (
+                <option key={index} value={model.id}>{model.provider}: {model.name}</option>
+              ))}
+            </select></label> */}
 
-          {model && model.params.dimensions ? 
-            <select onChange={handleDimensionsChange}>
-              {model.params.dimensions.map((dim, index) => {
-                return <option key={index} value={dim}>{dim}</option>
-              })}
-            </select> 
-          : null}
+            <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
 
-        <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
-      </form>
+            <label> Batch Size:
+            <input className={styles["batch-size"]} type="number" min="1"name="batch_size" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} disabled={!!embeddingsJob} />
+            <span className="tooltip" data-tooltip-id="batchsize">🤔</span>
+            <Tooltip id="batchsize" place="top" effect="solid">
+              Reduce this number if you run out of memory. It determines how many items are processed at once. 
+            </Tooltip>
+            </label>
+
+            {/* {model && model.params.dimensions ? 
+              <select onChange={handleDimensionsChange}>
+                {model.params.dimensions.map((dim, index) => {
+                  return <option key={index} value={dim}>{dim}</option>
+                })}
+              </select> 
+            : null} */}
+
+          <button type="submit" disabled={!!embeddingsJob}>New Embedding</button>
+        </form>
       </div>
 
+      {/* 
+      Render the progress for the current job 
+      TODO: automatically dismiss if successful
+      */}
       <JobProgress job={embeddingsJob} clearJob={()=> {
         setEmbeddingsJob(null)
       }} rerunJob={handleRerunEmbedding} />
+      {/* 
+      TODO: have a lastEmbeddingsJob with the info from previous run. 
+      if job was successful user can click a button to display the logs. 
+      */}
 
+      {/* Render the list of existing embeddings */}
       <div className={styles["embeddings-list"]}>
       {embeddings.map((emb, index) => {
         let umps = umaps.filter(d => d.embedding_id == emb.id)
         let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0)
-        let m = models.find(d => d.id == emb.model_id)
-        let dims = m ? m.params.dimensions ? m.params.dimensions.filter(d => +d < +emb.dimensions) : [] : []
+        let m = allModels.find(d => d.id == emb.model_id)
+        let dims = m ? m.params?.dimensions ? m.params?.dimensions.filter(d => +d < +emb.dimensions) : [] : []
         return (
         <div className={styles["item"]} key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === localEmbedding?.id} onChange={() => setLocalEmbedding(emb)} />
