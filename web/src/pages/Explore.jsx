@@ -121,7 +121,7 @@ function Explore() {
   }, [datasetId, scopeId, setScope]);
 
   useEffect(() => {
-   fetchScopeMeta() 
+   fetchScopeMeta()
   }, [datasetId, scopeId, fetchScopeMeta]);
 
   const [embedding, setEmbedding] = useState(null);
@@ -147,7 +147,7 @@ function Explore() {
   const [scopeRows, setScopeRows] = useState([])
   const [points, setPoints] = useState([]);
   const [drawPoints, setDrawPoints] = useState([]); // this is the points with the cluster number
-  const [hulls, setHulls] = useState([]); 
+  const [hulls, setHulls] = useState([]);
   const [scopeToInputIndexMap, setScopeToInputIndexMap] = useState({})
   const [inputToScopeIndexMap, setInputToScopeIndexMap] = useState({})
 
@@ -355,8 +355,20 @@ function Explore() {
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
 
+  const { dimensions: embeddingDimensions } = embedding ?? {};
+
   const searchQuery = useCallback((query) => {
-    fetch(`${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&embedding_id=${searchModel}`)
+
+    const searchParams = new URLSearchParams({
+      dataset: datasetId,
+      query,
+      embedding_id: searchModel,
+      ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {} )
+    })
+    const nearestNeigborsUrl = new URL(`${apiUrl}/search/nn`);
+    nearestNeigborsUrl.search = searchParams.toString();
+
+    fetch(nearestNeigborsUrl)
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
@@ -365,7 +377,7 @@ function Explore() {
         setSearchIndices(indices);
         // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
-  }, [searchModel, datasetId, scatter, setDistances, setSearchIndices]);
+  }, [searchModel, datasetId, scatter, setDistances, setSearchIndices, embeddingDimensions]);
 
   const [searchAnnotations, setSearchAnnotations] = useState([]);
   useEffect(() => {
@@ -529,10 +541,10 @@ const handleNewCluster = useCallback((label) => {
     // console.log("tagset", tagset[tag])
     const filteredClusterIndices = scopeRows.filter(d => d.cluster == slide?.cluster).map(d => d.ls_index)
     const filteredTagset = filterInputIndices(tagset[tag] || [])
-    let indices = intersectMultipleArrays(selectedIndices || [], 
-      searchIndices || [], 
-      filteredClusterIndices || [], 
-      filteredTagset || [], 
+    let indices = intersectMultipleArrays(selectedIndices || [],
+      searchIndices || [],
+      filteredClusterIndices || [],
+      filteredTagset || [],
       columnIndices || [])
     if(indices.length == 0 && selectedIndices.length > 0) {
       indices = selectedIndices
@@ -595,7 +607,7 @@ const handleNewCluster = useCallback((label) => {
           <div className="dataset-card">
             <span><b>{datasetId}</b>  {scope?.rows}/{dataset?.length} rows</span>
           </div>
-          
+
         </div>
         <div className="umap-container">
           {/* <div className="umap-container"> */}
@@ -694,12 +706,12 @@ const handleNewCluster = useCallback((label) => {
               }
               return (
               <span key={key}>
-                <span className="key">{key}:</span> 
+                <span className="key">{key}:</span>
                 {value}
               </span>
             )})}
           </div> : null }
-        </div> 
+        </div>
       </div>
 
       <div className="data">
@@ -786,9 +798,9 @@ const handleNewCluster = useCallback((label) => {
                     console.log("new label", newLabel)
                     handleNewCluster(newLabel)
                   }}>
-                    <input type="text" 
-                        id="new-label" name="new-label" className="new-cluster-label" 
-                        value={newClusterLabel} onChange={(e) => setNewClusterLabel(e.target.value)} 
+                    <input type="text"
+                        id="new-label" name="new-label" className="new-cluster-label"
+                        value={newClusterLabel} onChange={(e) => setNewClusterLabel(e.target.value)}
                         placeholder="New Cluster"
                         />
                     <button type="submit">➕️ Cluster</button>
@@ -860,7 +872,7 @@ const handleNewCluster = useCallback((label) => {
             {columnFilters?.length ? <div className={`filter-row column-filter ${columnIndices?.length ? 'active': ''}`}>
               <div className="filter-cell left">
                 {columnFilters.map(column => (
-                  <span key={column.column}>{column.column}: 
+                  <span key={column.column}>{column.column}:
                     <select onChange={(e) => {
                       let active = {...columnFiltersActive}
                       active[column.column] = e.target.value
@@ -911,27 +923,27 @@ const handleNewCluster = useCallback((label) => {
               </div>
               <div className="filter-cell right bulk-actions">
                 <div className="bulk-actions-buttons">
-                  Bulk Actions: 
+                  Bulk Actions:
                   <button className={`bulk ${bulkAction == "tag" ? 'active' : ''}`} onClick={() => bulkAction == "tag" ? setBulkAction(null) : setBulkAction("tag")}>🏷️</button>
                   <button className={`bulk ${bulkAction == "cluster" ? 'active' : ''}`} onClick={() => bulkAction == "cluster" ? setBulkAction(null) : setBulkAction("cluster")}>️📍</button>
                   {/* <button className={`bulk ${bulkAction == "save" ? 'active' : ''}`} onClick={() => bulkAction == "save" ? setBulkAction(null) : setBulkAction("save")}>💾</button> */}
                   <button className={`bulk ${bulkAction == "delete" ? 'active' : ''}`} onClick={() => bulkAction == "delete" ? setBulkAction(null) : setBulkAction("delete")}>🗑️</button>
                 </div>
                 <div className="bulk-actions-action">
-                  {bulkAction == "tag" ? <Tagging dataset={dataset} indices={intersectedIndices} 
+                  {bulkAction == "tag" ? <Tagging dataset={dataset} indices={intersectedIndices}
                     onSuccess={() => {
                       setBulkAction(null)
                       fetchTagSet()
                     }} /> : null}
-                  {bulkAction == "cluster" ? <Clustering dataset={dataset} scope={scope} indices={intersectedIndices} 
+                  {bulkAction == "cluster" ? <Clustering dataset={dataset} scope={scope} indices={intersectedIndices}
                     onSuccess={() => {
                       setBulkAction(null)
                       fetchScopeMeta()
                       fetchScopeRows()
                     }} /> : null}
-                  {/* {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices} 
+                  {/* {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices}
                     onSuccess={() => setBulkAction(null)} /> : null} */}
-                  {bulkAction == "delete" ? <Deleting dataset={dataset} scope={scope} indices={intersectedIndices} 
+                  {bulkAction == "delete" ? <Deleting dataset={dataset} scope={scope} indices={intersectedIndices}
                     onSuccess={() => {
                       setBulkAction(null)
                       clearFilters()
@@ -951,8 +963,8 @@ const handleNewCluster = useCallback((label) => {
                 clusterLabels={clusterLabels}
                 tagset={tagset}
                 onTagset={fetchTagSet}
-                onScope={() => { 
-                  fetchScopeMeta() 
+                onScope={() => {
+                  fetchScopeMeta()
                   fetchScopeRows()
                 }}
                 onHover={(index) => handleHover(inputToScopeIndexMap[index])}
@@ -973,7 +985,7 @@ const handleNewCluster = useCallback((label) => {
                 onClick={handleClicked}
               />
               : null} */}
-        
+
         {/* </div> */}
       </div>
     </div>
