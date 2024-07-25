@@ -76,7 +76,9 @@ def nn():
             embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
             with h5py.File(embedding_path, 'r') as f:
                 sorted_indices = np.argsort(indices)
-                sorted_embeddings = np.array(f["embeddings"][sorted_indices])
+                print("indices", indices)
+                print("sorted indices", sorted_indices)
+                sorted_embeddings = np.array(f["embeddings"][indices[sorted_indices]])
                 filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
         else:
             filtered_embeddings = embeddings[indices]
