@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
 const apiUrl = import.meta.env.VITE_API_URL
@@ -55,6 +55,65 @@ const fuzzySort = (rowA, rowB, columnId) => {
 }
 
 
+const TableHeader = memo(({ table, highlightColumn }) => {
+  return (
+    <thead>
+      {table.getHeaderGroups().map(headerGroup => (
+        <tr key={headerGroup.id} style={{ backgroundColor: '#f9f9f9' }}>
+          {headerGroup.headers.map(header => (
+            <th key={header.id} colSpan={header.colSpan} style={{
+              backgroundColor: header.column.columnDef.accessorKey === highlightColumn ? '#d3d3d3' : '', 
+            }}>
+              {header.isPlaceholder ? null : (
+                <div
+                  className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                  onClick={header.column.getToggleSortingHandler()}
+                >
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {{
+                    asc: ' 🔼',
+                    desc: ' 🔽',
+                  }[header.column.getIsSorted()] ?? null}
+                </div>
+              )}
+            </th>
+          ))}
+        </tr>
+      ))}
+    </thead>
+  );
+});
+TableHeader.displayName = 'TableHeader';
+
+// Memoized TableCell component
+const TableCell = memo(({ cell }) => {
+  return (
+    <td key={cell.id}>
+      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+    </td>
+  );
+});
+TableCell.displayName = 'TableCell';
+
+// Memoized TableRow component
+const TableRow = memo(({ row, onHover, onClick, collapse=false }) => {
+  return (
+    <tr
+      style={{  visibility: collapse ? 'collapse' : '' }}
+      key={row.id}
+      onMouseEnter={() => {
+        onHover && onHover(row.getValue("0"));
+      }}
+      onClick={() => onClick && onClick(row.getValue("0"))}
+    >
+      {row.getVisibleCells().map(cell => (
+        <TableCell key={cell.id} cell={cell} />
+      ))}
+    </tr>
+  );
+});
+TableRow.displayName = 'TableRow';
+
 
 FilterDataTable.propTypes = {
   height: PropTypes.string,
@@ -95,6 +154,8 @@ function FilterDataTable({
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
+
+  const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
 
   const [tags, setTags] = useState([])
   useEffect(() => {
@@ -259,16 +320,13 @@ function FilterDataTable({
             // Default text rendering
             return <div
             style={{
-              // maxWidth: c == dataset.text_column ? '640px' : '200px', 
-              // maxHeight: '64px', 
-              // height: '64px',
-              // overflow: 'hidden',
-              // textOverflow: 'ellipsis',
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 3, // Adjust the number of lines you want to show before truncating
+              WebkitLineClamp: 3,
               overflow: 'hidden',
-              maxWidth: c === dataset.text_column ? '640px' : '200px',
+              maxWidth: c == dataset.text_column ? '480px' : '200px',
+              width: c == dataset.text_column ? '480px' : '',
+              fontWeight: c == dataset.text_column ? '300' : '',
               // maxHeight: '3em',
               textOverflow: 'ellipsis',
               whiteSpace: 'normal',
@@ -401,72 +459,20 @@ function FilterDataTable({
       {/* Fixed Header */}
       <div className="filter-data-table-fixed-header" style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px`}} ref={headerRef}>
         <table>
-        <thead>
-          {table.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id} style={{ 
-              backgroundColor: '#f9f9f9', 
-              }}>
-              {headerGroup.headers.map(header => {
-                return (
-                  <th key={header.id} colSpan={header.colSpan}>
-                    {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          {...{
-                            className: header.column.getCanSort()
-                              ? 'cursor-pointer select-none'
-                              : '',
-                            onClick: header.column.getToggleSortingHandler(),
-                          }}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {{
-                            asc: ' 🔼',
-                            desc: ' 🔽',
-                          }[header.column.getIsSorted()] ?? null}
-                        </div>
-                        {/* {header.column.getCanFilter() ? (
-                          <div>
-                            <Filter column={header.column} table={table} />
-                          </div>
-                        ) : null} */}
-                      </>
-                    )}
-                  </th>
-                )
-              })}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
+        <TableHeader table={table} highlightColumn={highlightColumn}/>
           {/* the hidden table body to make sure header rows are proper size */}
-          {table.getRowModel().rows.map(row => {
-            return (
-              <tr key={row.id} style={{  visibility: 'collapse' }}>
-                {row.getVisibleCells().map(cell => {
-                  return (
-                    <td key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  )
-                })}
-              </tr>
-            )
-          })}
+        <tbody>
+           {table.getRowModel().rows.map(row => (
+            <TableRow key={row.id} row={row} collapse={true} />
+          ))}
         </tbody>
       </table>
       </div>
       {/* Scrollable Table Body */}
       <div className="filter-table-scrollable-body table-body" style={{ flexGrow: 1, overflowY: 'auto' }} ref={bodyRef}>
         <table style={{width: '100%'}}>
+        {/* Invisible header mimicking the real header for column width synchronization */}
         <thead style={{ visibility: 'collapse' }}>
-          {/* Invisible header mimicking the real header for column width synchronization */}
           <tr>
             {columns.map((column, index) => (
               <th key={index} style={{ textAlign: 'left', paddingLeft: '6px' }}>{column.header}</th>
@@ -474,27 +480,9 @@ function FilterDataTable({
           </tr>
         </thead>
         <tbody>
-          {table.getRowModel().rows.map(row => {
-            return (
-              <tr key={row.id}
-                onMouseEnter={() => {
-                  onHover && onHover(row.getValue("0")) 
-                }}
-                onClick={() => onClick && onClick(row.getValue("0"))}
-                >
-                {row.getVisibleCells().map(cell => {
-                  return (
-                    <td key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  )
-                })}
-              </tr>
-            )
-          })}
+          {table.getRowModel().rows.map(row => (
+            <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} />
+          ))}
         </tbody>
       </table>
       </div>

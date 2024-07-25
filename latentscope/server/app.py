@@ -125,7 +125,7 @@ def indexed():
     data = request.get_json()
     dataset = data['dataset']
     indices = data['indices']
-    columns = data['columns']
+    columns = data.get('columns')
     if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
         DATAFRAMES[dataset] = df

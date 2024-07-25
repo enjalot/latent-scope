@@ -42,9 +42,11 @@ function IndexDataTable({
       .then(response => response.json())
       .then(data => {
         let rows = data.map((row, index) => {
-          let idx = indices[index]
+          // The API now returns the index
+          // let idx = indices[index]
+          let idx = row.index
           let ret = {
-            index: idx,
+            // index: idx,
             ...row
           }
           if(distances && distances.length)

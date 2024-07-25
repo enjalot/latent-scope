@@ -64,6 +64,7 @@ function Explore() {
   }
 
   const [filtersHeight, setFiltersHeight] = useState(250);
+  const filtersCSSHeight = useMemo(() => `calc(100% - ${filtersHeight + 62}px)`, [filtersHeight])
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(entries => {
@@ -632,6 +633,7 @@ const handleNewCluster = useCallback((label) => {
               width={scopeWidth}
               height={scopeHeight}
             /> }
+
               {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls && scope.cluster_labels_lookup ? <HullPlot
                 hulls={processHulls([hoveredCluster], points, inputToScopeIndexMap)}
                 fill="lightgray"
@@ -650,6 +652,7 @@ const handleNewCluster = useCallback((label) => {
                 yDomain={yDomain}
                 width={scopeWidth}
                 height={scopeHeight} /> : null}
+
               {hulls.length && !scope.ignore_hulls ? <HullPlot
                 hulls={hulls}
                 stroke="black"
@@ -661,6 +664,7 @@ const handleNewCluster = useCallback((label) => {
                 yDomain={yDomain}
                 width={scopeWidth}
                 height={scopeHeight} /> : null}
+
               <AnnotationPlot
                 points={intersectedAnnotations}
                 stroke="black"
@@ -671,6 +675,7 @@ const handleNewCluster = useCallback((label) => {
                 width={scopeWidth}
                 height={scopeHeight}
               />
+              
               <AnnotationPlot
                 points={hoverAnnotations}
                 stroke="black"
@@ -959,6 +964,7 @@ const handleNewCluster = useCallback((label) => {
                 dataset={dataset}
                 scope={scope}
                 indices={intersectedIndices}
+                distances={distances}
                 clusterMap={clusterMap}
                 clusterLabels={clusterLabels}
                 tagset={tagset}
@@ -969,7 +975,7 @@ const handleNewCluster = useCallback((label) => {
                 }}
                 onHover={(index) => handleHover(inputToScopeIndexMap[index])}
                 onClick={handleClicked}
-                height={`calc(100% - ${filtersHeight + 62}px)`}
+                height={filtersCSSHeight}
             />
 
 {/* {selectedIndices?.length > 0 ?
