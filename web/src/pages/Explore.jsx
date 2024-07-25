@@ -373,9 +373,18 @@ function Explore() {
       .then(response => response.json())
       .then(data => {
         // console.log("search", data)
-        let indices = data.indices.filter(d => inputToScopeIndexMap[d] >= 0)
-        // setDistances(data.distances); // TODO: if we want distances we'd need to filter them at the same time
-        setSearchIndices(indices);
+        let dists = []
+        let inds = data.indices.map((idx,i) => {
+          dists[idx] = data.distances[i]
+          // return {
+          //   index: idx,
+          //   distance: data.distances[i],
+          // }
+          return idx
+        }).filter(idx => inputToScopeIndexMap[idx] >= 0)
+
+        setDistances(dists)
+        setSearchIndices(inds)
         // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
   }, [searchModel, datasetId, scatter, setDistances, setSearchIndices, embeddingDimensions]);

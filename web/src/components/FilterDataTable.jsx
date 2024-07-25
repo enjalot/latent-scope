@@ -55,7 +55,7 @@ const fuzzySort = (rowA, rowB, columnId) => {
 }
 
 
-const TableHeader = memo(({ table, highlightColumn }) => {
+const TableHeader = memo(({ table, highlightColumn, columns }) => {
   return (
     <thead>
       {table.getHeaderGroups().map(headerGroup => (
@@ -82,6 +82,8 @@ const TableHeader = memo(({ table, highlightColumn }) => {
       ))}
     </thead>
   );
+}, (prevProps, nextProps) => {
+  return prevProps.highlightColumn === nextProps.highlightColumn && prevProps.columns === nextProps.columns;
 });
 TableHeader.displayName = 'TableHeader';
 
@@ -118,7 +120,7 @@ TableRow.displayName = 'TableRow';
 FilterDataTable.propTypes = {
   height: PropTypes.string,
   dataset: PropTypes.object.isRequired,
-  scope: PropTypes.object.isRequired,
+  scope: PropTypes.object,
   indices: PropTypes.array.isRequired,
   distances: PropTypes.array,
   clusterMap: PropTypes.object,
@@ -238,6 +240,7 @@ function FilterDataTable({
       // console.log("refetching hydrate", indices, dataset)
       // console.log("Tagset", tagset)
       let columns = ["ls_index"]
+      if(distances && distances.length) columns.push("ls_distance")
       if(scope) columns.push("ls_cluster")
       if(tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
@@ -330,7 +333,7 @@ function FilterDataTable({
               textOverflow: 'ellipsis',
               whiteSpace: 'normal',
             }}
-            title={val.toString()} // Shows the full text on hover
+            title={val?.toString() || ""} // Shows the full text on hover
             onClick={() => navigator.clipboard.writeText(val)} // Copies the text to clipboard on click
           >
             {val}
@@ -346,7 +349,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, tags, scope, tagset, currentPage, clusterLabels])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels])
 
 
   const [columnFilters, setColumnFilters] = useState([])
@@ -458,7 +461,7 @@ function FilterDataTable({
       {/* Fixed Header */}
       <div className="filter-data-table-fixed-header" style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px`}} ref={headerRef}>
         <table>
-        <TableHeader table={table} highlightColumn={highlightColumn}/>
+        <TableHeader table={table} highlightColumn={highlightColumn} columns={columns} />
           {/* the hidden table body to make sure header rows are proper size */}
         <tbody>
            {table.getRowModel().rows.map(row => (
