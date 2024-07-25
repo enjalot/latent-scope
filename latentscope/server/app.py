@@ -87,7 +87,6 @@ def get_recent_embedding_models():
     if not os.path.exists(recent_models_path):
         return jsonify([])
 
-    print("EXISTS")
     with open(recent_models_path, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         recent_models = []
@@ -126,14 +125,20 @@ def indexed():
     data = request.get_json()
     dataset = data['dataset']
     indices = data['indices']
+    columns = data['columns']
     if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
         DATAFRAMES[dataset] = df
     else:
         df = DATAFRAMES[dataset]
+
+    if columns:
+        df = df[columns]
     
-    # get the indexed rows
-    rows = df.iloc[indices]
+    # get the indexed rows, handling missing indices
+    valid_indices = [i for i in indices if i < len(df)]
+    rows = df.iloc[valid_indices]
+    rows['index'] = valid_indices
 
     # send back the rows as json
     return rows.to_json(orient="records")
@@ -239,14 +244,10 @@ if not READ_ONLY:
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
-    if path != "":
-        pth = files('latentscope').joinpath(f"web/dist/{path}")
-        directory = pth.parent
-        return send_from_directory(directory, pth.name)
-    else:
-        pth = files('latentscope').joinpath("web/dist/index.html")
-        directory = pth.parent
-        return send_from_directory(directory, pth.name)
+    # always return index.html and let client-side do the routing
+    pth = files('latentscope').joinpath("web/dist/index.html")
+    directory = pth.parent
+    return send_from_directory(directory, pth.name)
 
 def serve(host="0.0.0.0", port=5001, debug=True):
     app.run(host=host, port=port, debug=debug)
