@@ -26,6 +26,7 @@ def nn():
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
     dimensions = int(dimensions) if dimensions else None
+    return_embeddings = True if request.args.get('return_embeddings') else False
     print("dimensions", dimensions)
 
     num = 150
@@ -69,8 +70,19 @@ def nn():
     filtered_distances = distances[0]
     indices = filtered_indices
     distances = filtered_distances
-        
-    return jsonify(indices=indices.tolist(), distances=distances.tolist())
+    
+    if return_embeddings:
+        if 'embeddings' not in locals():
+            embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
+            with h5py.File(embedding_path, 'r') as f:
+                sorted_indices = np.argsort(indices)
+                sorted_embeddings = np.array(f["embeddings"][sorted_indices])
+                filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
+        else:
+            filtered_embeddings = embeddings[indices]
+        return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding, embeddings=filtered_embeddings.tolist())
+    else:
+        return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding)
 
 
 @search_bp.route('/compare', methods=['GET'])

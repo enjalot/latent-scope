@@ -503,6 +503,9 @@ function Setup() {
   const [defaultIndices, setDefaultIndices] = useState(range(0, 100));
 
 
+  const [distances, setDistances] = useState([])
+  const [clusterMap, setClusterMap] = useState({})
+
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -658,6 +661,8 @@ function Setup() {
                 <FilterDataTable
                 dataset={dataset}
                 indices={selectedClusterLabel.indices} 
+                distances={distances}
+                clusterMap={clusterMap}
                 height={drawPoints.length ? "280px" : "95%"} 
               />
               </div> : <div>
@@ -671,6 +676,8 @@ function Setup() {
               <FilterDataTable
                 dataset={dataset}
                 indices={defaultIndices} 
+                distances={distances}
+                clusterMap={clusterMap}
                 height={drawPoints.length ? "340px" : "95%"}
               />
               </div> }

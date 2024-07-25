@@ -178,14 +178,14 @@ def embed_truncate(dataset_id, embedding_id, dimensions):
     with open(embedding_meta_path, 'r') as f:
         embedding_meta = json.load(f)
     # Load the embedding model
-    model_id = embedding_meta["model_id"]
-    model = get_embedding_model_dict(model_id)
-    print("model params", model["params"])
+    # model_id = embedding_meta["model_id"]
+    # model = get_embedding_model_dict(model_id)
+    # print("model params", model["params"])
     # Check if the model has the attribute 'dimensions'
-    try:
-        dims = model["params"]['dimensions']
-    except KeyError:
-        raise KeyError(f"The model {model_id} does not have the 'dimensions' parameter meaning it cannot be truncated.")
+    # try:
+    #     dims = model["params"]['dimensions']
+    # except KeyError:
+    #     raise KeyError(f"The model {model_id} does not have the 'dimensions' parameter meaning it cannot be truncated.")
 
     # determine the index of the last umap run by looking in the dataset directory
     # for files named umap-<number>.json

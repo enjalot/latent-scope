@@ -454,6 +454,9 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0)
         let m = allModels.find(d => d.id == emb.model_id)
         let dims = m ? m.params?.dimensions ? m.params?.dimensions.filter(d => +d < +emb.dimensions) : [] : []
+        if(emb?.model_id.indexOf("nomic-embed-text-v1.5") >= 0) {
+          dims = [512, 256, 128, 64].filter(d => d < emb.dimensions)
+        }
         return (
         <div className={styles["item"]} key={index}>
           <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === localEmbedding?.id} onChange={() => setLocalEmbedding(emb)} />

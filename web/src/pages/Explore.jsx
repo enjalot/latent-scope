@@ -207,7 +207,7 @@ function Explore() {
       setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
       fetchScopeRows()
     }
-  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding, setSearchModel]);
+  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding]);
 
 
   useEffect(() => {
@@ -356,15 +356,21 @@ function Explore() {
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
 
-  const { dimensions: embeddingDimensions } = embedding ?? {};
+
 
   const searchQuery = useCallback((query) => {
+
+    const emb = embeddings?.find(d => d.id == searchModel)
+    const embeddingDimensions = emb?.dimensions
+    console.log("EMBEDDINGS", embeddings)
+    console.log("DIMESNINS", emb, embeddingDimensions)
 
     const searchParams = new URLSearchParams({
       dataset: datasetId,
       query,
       embedding_id: searchModel,
-      ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {} )
+      ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {} ),
+      return_embeddings: true
     })
     const nearestNeigborsUrl = new URL(`${apiUrl}/search/nn`);
     nearestNeigborsUrl.search = searchParams.toString();
@@ -372,7 +378,7 @@ function Explore() {
     fetch(nearestNeigborsUrl)
       .then(response => response.json())
       .then(data => {
-        // console.log("search", data)
+        console.log("search", data)
         let dists = []
         let inds = data.indices.map((idx,i) => {
           dists[idx] = data.distances[i]
@@ -387,7 +393,7 @@ function Explore() {
         setSearchIndices(inds)
         // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
-  }, [searchModel, datasetId, scatter, setDistances, setSearchIndices, embeddingDimensions]);
+  }, [searchModel, embeddings, datasetId, scatter, setDistances, setSearchIndices]);
 
   const [searchAnnotations, setSearchAnnotations] = useState([]);
   useEffect(() => {
