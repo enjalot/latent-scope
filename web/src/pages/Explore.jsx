@@ -8,6 +8,7 @@ import FilterDataTable from '../components/FilterDataTable';
 import Scatter from '../components/Scatter';
 import AnnotationPlot from '../components/AnnotationPlot';
 import HullPlot from '../components/HullPlot';
+import EmbeddingVis from '../components/EmbeddingVis';
 
 import Tagging from '../components/Bulk/Tagging';
 import Clustering from '../components/Bulk/Clustering';
@@ -220,14 +221,10 @@ function Explore() {
     }
   }, [embedding, embeddings, setSearchModel])
 
-  useEffect(() => {
-    // console.log("search model", searchModel)
-  }, [searchModel])
-
 
   // const [activeUmap, setActiveUmap] = useState(null)
   const handleModelSelect = (model) => {
-    console.log("selected", model)
+    console.log("selected search model", model)
     setSearchModel(model)
   }
 
@@ -355,22 +352,20 @@ function Explore() {
   // the indices returned from similarity search
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
+  const [searchEmbedding, setSearchEmbedding] = useState(null);
 
-
+  const [searchText, setSearchText] = useState("");
 
   const searchQuery = useCallback((query) => {
 
     const emb = embeddings?.find(d => d.id == searchModel)
     const embeddingDimensions = emb?.dimensions
-    console.log("EMBEDDINGS", embeddings)
-    console.log("DIMESNINS", emb, embeddingDimensions)
 
     const searchParams = new URLSearchParams({
       dataset: datasetId,
       query,
       embedding_id: searchModel,
       ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {} ),
-      return_embeddings: true
     })
     const nearestNeigborsUrl = new URL(`${apiUrl}/search/nn`);
     nearestNeigborsUrl.search = searchParams.toString();
@@ -391,9 +386,16 @@ function Explore() {
 
         setDistances(dists)
         setSearchIndices(inds)
+        setSearchEmbedding(data.search_embedding[0])
         // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
-  }, [searchModel, embeddings, datasetId, scatter, setDistances, setSearchIndices]);
+  }, [searchModel, embeddings, datasetId, scatter, setDistances, setSearchIndices, setSearchEmbedding]);
+
+  useEffect(() => {
+    if(searchText) {
+      searchQuery(searchText)
+    }
+  }, [searchText, searchQuery])
 
   const [searchAnnotations, setSearchAnnotations] = useState([]);
   useEffect(() => {
@@ -578,6 +580,34 @@ const handleNewCluster = useCallback((label) => {
 
   const [bulkAction, setBulkAction] = useState(null)
 
+  const [showEmbeddings, setShowEmbeddings] = useState(null)
+  const handleShowEmbeddings = useCallback(() => {
+    setShowEmbeddings(showEmbeddings ? null : searchModel)
+  }, [searchModel, showEmbeddings])
+
+
+  useEffect(() => {
+    // console.log("search model", searchModel)
+    if(showEmbeddings) {
+      setShowEmbeddings(searchModel)
+    }
+  }, [searchModel, showEmbeddings])
+
+  const [embeddingMinValues, setEmbeddingMinValues] = useState([])
+  const [embeddingMaxValues, setEmbeddingMaxValues] = useState([])
+  // get the min and max values for the embedding
+  useEffect(() => {
+    if(searchModel) {
+      fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${searchModel}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("embedding stats", data)
+          setEmbeddingMinValues(data.min_values)
+          setEmbeddingMaxValues(data.max_values)
+        })
+    }
+  }, [datasetId, searchModel])
+
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -740,7 +770,8 @@ const handleNewCluster = useCallback((label) => {
               <div className="filter-cell left">
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  searchQuery(e.target.elements.searchBox.value);
+                  setSearchText(e.target.elements.searchBox.value);
+                  // searchQuery(e.target.elements.searchBox.value);
                 }}>
                   <input type="text" id="searchBox" placeholder="Nearest Neighbor Search..." />
                   {/* <button type="submit">Similarity Search</button> */}
@@ -754,6 +785,7 @@ const handleNewCluster = useCallback((label) => {
                     <button className="deselect" onClick={() => {
                       setSearchIndices([])
                       document.getElementById("searchBox").value = "";
+                      setSearchText("")
                     }
                     }>X</button>
                     : null}
@@ -973,6 +1005,12 @@ const handleNewCluster = useCallback((label) => {
                 </div>
               </div>
             </div>
+
+            <div className="filter-row embeddings-controls">
+              <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
+              {showEmbeddings && searchEmbedding ? <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} /> : null}
+              {showEmbeddings ? <span> {showEmbeddings} - {embeddings.find(e => e.id == showEmbeddings)?.model_id}</span> : null}
+            </div>
           </div>
 
             <FilterDataTable
@@ -983,6 +1021,7 @@ const handleNewCluster = useCallback((label) => {
                 clusterMap={clusterMap}
                 clusterLabels={clusterLabels}
                 tagset={tagset}
+                showEmbeddings={showEmbeddings}
                 onTagset={fetchTagSet}
                 onScope={() => {
                   fetchScopeMeta()

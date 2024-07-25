@@ -91,6 +91,7 @@ setup(
             'ls-label=latentscope.scripts.label_clusters:main',
             'ls-scope=latentscope.scripts.scope:main',
             'ls-export-plot=latentscope.scripts.export_plot:main',
+            'ls-update-embedding-stats=latentscope.scripts.embed:update_embedding_stats',
         ],
     },
     include_package_data=True,

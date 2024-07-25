@@ -144,6 +144,10 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         with open(history_file_path, 'w') as history_file:
             history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
 
+
+    # Calculate min and max values for each index
+    min_values = np.min(embeddings, axis=0)
+    max_values = np.max(embeddings, axis=0)
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
         json.dump({
             "id": embedding_id,
@@ -153,6 +157,8 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             # "dimensions": np_embeds.shape[1],
             "dimensions": embeddings.shape[1],
             "prefix": prefix,
+            "min_values": min_values.tolist(),
+            "max_values": max_values.tolist(),
             }, f, indent=2)
 
 
@@ -212,6 +218,11 @@ def embed_truncate(dataset_id, embedding_id, dimensions):
     # Normalize the truncated embeddings
     matroyshka = matroyshka / np.linalg.norm(matroyshka, axis=0, keepdims=True)
     append_to_hdf5(os.path.join(embedding_dir, f"{new_embedding_id}.h5"), matroyshka)
+
+
+    # Calculate min and max values for each index
+    min_values = np.min(matroyshka, axis=0)
+    max_values = np.max(matroyshka, axis=0)
     
     with open(os.path.join(embedding_dir, f"{new_embedding_id}.json"), 'w') as f:
         json.dump({
@@ -221,10 +232,54 @@ def embed_truncate(dataset_id, embedding_id, dimensions):
             "text_column": embedding_meta["text_column"],
             "dimensions": matroyshka.shape[1],
             "prefix": embedding_meta["prefix"],
+            "min_values": min_values.tolist(),
+            "max_values": max_values.tolist(),
             }, f, indent=2)
 
     print("wrote", os.path.join(embedding_dir, f"{new_embedding_id}.h5"))
     print("done")
+
+
+def update_embedding_stats():
+    parser = argparse.ArgumentParser(description='Update embedding stats') 
+    parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
+    parser.add_argument('embedding_id', type=str, help='ID of embedding to use') 
+    args = parser.parse_args()
+    embedding_stats(args.dataset_id, args.embedding_id)
+
+def embedding_stats(dataset_id, embedding_id):
+    import os
+    import h5py
+    import numpy as np
+    # from latentscope.utils import get_data_dir
+
+    DATA_DIR = get_data_dir()
+    embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
+    embedding_path = os.path.join(embedding_dir, f"{embedding_id}.h5")
+
+    # Read the embeddings
+    with h5py.File(embedding_path, 'r') as f:
+        embeddings = np.array(f["embeddings"])
+
+    # Calculate min and max values for each index
+    min_values = np.min(embeddings, axis=0)
+    max_values = np.max(embeddings, axis=0)
+
+    metadata_path = os.path.join(embedding_dir, f"{embedding_id}.json")
+    # Read existing metadata
+    with open(metadata_path, 'r') as f:
+        metadata = json.load(f)
+
+    # Add min and max values to metadata
+    metadata['min_values'] = min_values.tolist()
+    metadata['max_values'] = max_values.tolist()
+
+    # Write updated metadata back to file
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"Updated metadata for {embedding_id} with min and max values")
+
 
 def debug():
     parser = argparse.ArgumentParser(description='Debug embedding a batch')
@@ -277,6 +332,7 @@ def importer():
     import_embeddings(args.dataset_id, embeddings, args.model_id, args.text_column)
 
 def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefix=""):
+    import numpy as np
     DATA_DIR = get_data_dir()
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
     # determine the index of the last umap run by looking in the dataset directory
@@ -293,6 +349,11 @@ def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefi
 
     print("importing embeddings with shape", embeddings.shape, "to", os.path.join(embedding_dir, f"{embedding_id}.h5"))
     append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
+
+    # Calculate min and max values for each index
+    min_values = np.min(embeddings, axis=0)
+    max_values = np.max(embeddings, axis=0)
+
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
         json.dump({
             "id": embedding_id,
@@ -300,7 +361,9 @@ def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefi
             "dataset_id": dataset_id,
             "dimensions": embeddings.shape[1],
             "text_column": text_column,
-            "prefix": prefix
+            "prefix": prefix,
+            "min_values": min_values.tolist(),
+            "max_values": max_values.tolist(),
         }, f, indent=2)
     print("done with", embedding_id)
 

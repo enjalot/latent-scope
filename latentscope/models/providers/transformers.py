@@ -6,6 +6,7 @@ class TransformersEmbedProvider(EmbedModelProvider):
         import torch
         self.torch = torch
         self.device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+        # self.device = "cpu"
 
     # def cls_pooling(self, model_output):
     #     return model_output[0][:, 0]
@@ -23,7 +24,7 @@ class TransformersEmbedProvider(EmbedModelProvider):
         # from transformers import AutoTokenizer, AutoModel
         from sentence_transformers import SentenceTransformer
 
-        self.model = SentenceTransformer(self.name, trust_remote_code=True)
+        self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)
         self.tokenizer = self.model.tokenizer
 
         # if "rps" in self.params and self.params["rps"]:
@@ -38,8 +39,8 @@ class TransformersEmbedProvider(EmbedModelProvider):
         # else:
         #     self.tokenizer = AutoTokenizer.from_pretrained(self.name)
 
-        self.model.to(self.device)
-        self.model.eval()
+        # self.model.to(self.device)
+        # self.model.eval()
 
     def embed(self, inputs, dimensions=None):
         # encoded_input = self.tokenizer(inputs, padding=self.params["padding"], truncation=self.params["truncation"], return_tensors='pt')

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
+import EmbeddingVis from './EmbeddingVis';
+
 const apiUrl = import.meta.env.VITE_API_URL
 
 import './FilterDataTable.css'
@@ -142,6 +144,7 @@ function FilterDataTable({
   // clusterIndices = [], 
   clusterLabels, 
   tagset,
+  showEmbeddings = null,
   onTagset,
   onScope,
   onHover, 
@@ -164,6 +167,20 @@ function FilterDataTable({
       setTags(Object.keys(tagset))
     }
   }, [tagset])
+
+  const [embeddingMinValues, setEmbeddingMinValues] = useState([])
+  const [embeddingMaxValues, setEmbeddingMaxValues] = useState([])
+  useEffect(() => {
+    if(dataset && showEmbeddings) {
+      fetch(`${apiUrl}/datasets/${dataset.id}/embeddings/${showEmbeddings}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log("embedding stats", data)
+          setEmbeddingMinValues(data.min_values)
+          setEmbeddingMaxValues(data.max_values)
+        });
+    }
+  }, [dataset, showEmbeddings])
 
   function handleTagClick(tag, index) {
     // console.log("tag", tag)
@@ -201,13 +218,14 @@ function FilterDataTable({
         body: JSON.stringify({ 
           dataset: dataset.id, 
           indices: indices, 
+          embedding_id: showEmbeddings,
           page: currentPage 
         }),
       })
       .then(response => response.json())
       .then(data => {
         let { rows, totalPages, total } = data;
-        // console.log("rows", rows)
+        console.log("rows", rows)
         // console.log("pages", totalPages, total)
         setPageCount(totalPages)
 
@@ -224,7 +242,7 @@ function FilterDataTable({
         if(distances && distances.length) {
           rows.forEach(r => {
             let ri = r["ls_index"]
-            r["ls_distance"] = distances[ri]
+            r["ls_similarity"] = distances[ri]
           })
         }
 
@@ -233,14 +251,15 @@ function FilterDataTable({
     } else {
       setRows([])
     }
-  }, [dataset, distances, clusterMap, currentPage])
+  }, [dataset, distances, clusterMap, currentPage, showEmbeddings])
 
   useEffect(() => {
     if(dataset) {
       // console.log("refetching hydrate", indices, dataset)
       // console.log("Tagset", tagset)
       let columns = ["ls_index"]
-      if(distances && distances.length) columns.push("ls_distance")
+      if(distances && distances.length) columns.push("ls_similarity")
+      if(showEmbeddings) columns.push("ls_embedding")
       if(scope) columns.push("ls_cluster")
       if(tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
@@ -269,6 +288,8 @@ function FilterDataTable({
             } 
             else if (typeof value === "object") {
               val = JSON.stringify(value)
+            } else if (c === "ls_similarity" && val) {
+              val = parseFloat(val).toFixed(4);
             }
             if(c === "tags") {
               
@@ -318,6 +339,8 @@ function FilterDataTable({
                 </select>
               </div>
               // return <span>{value.cluster}: {value.label}</span>
+            } if(c === "ls_embedding") {
+              return <div><EmbeddingVis embedding={value} minValues={embeddingMinValues} maxValues={embeddingMaxValues} /></div>
             }
             // Default text rendering
             return <div
@@ -349,7 +372,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues])
 
 
   const [columnFilters, setColumnFilters] = useState([])

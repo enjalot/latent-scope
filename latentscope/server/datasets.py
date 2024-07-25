@@ -87,6 +87,13 @@ def get_dataset_embeddings(dataset):
     # directory_path = os.path.join(DATA_DIR, dataset, "umaps")
     return scan_for_json_files(directory_path)
 
+@datasets_bp.route('/<dataset>/embeddings/<embedding>', methods=['GET'])
+def get_dataset_embedding(dataset, embedding):
+    file_path = os.path.join(DATA_DIR, dataset, "embeddings", embedding + ".json")
+    with open(file_path, 'r', encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    return jsonify(json_contents)
+
 @datasets_bp.route('/<dataset>/umaps', methods=['GET'])
 def get_dataset_umaps(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "umaps")

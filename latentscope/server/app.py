@@ -4,8 +4,10 @@ import sys
 import csv
 import json
 import math
+import h5py
 import logging
 import argparse
+import numpy as np
 import pandas as pd
 from importlib.resources import files
 from dotenv import dotenv_values, set_key
@@ -126,6 +128,8 @@ def indexed():
     dataset = data['dataset']
     indices = data['indices']
     columns = data.get('columns')
+    embedding_id = data.get('embedding_id')
+
     if dataset not in DATAFRAMES:
         df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
         DATAFRAMES[dataset] = df
@@ -139,6 +143,15 @@ def indexed():
     valid_indices = [i for i in indices if i < len(df)]
     rows = df.iloc[valid_indices]
     rows['index'] = valid_indices
+
+    if embedding_id:
+        embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
+        with h5py.File(embedding_path, 'r') as f:
+            npvi = np.array(valid_indices)
+            sorted_indices = np.argsort(npvi)
+            sorted_embeddings = np.array(f["embeddings"][npvi[sorted_indices]])
+            filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
+        rows['ls_embedding'] = filtered_embeddings
 
     # send back the rows as json
     return rows.to_json(orient="records")
@@ -185,6 +198,7 @@ def query():
     dataset = data['dataset']
     page = data['page'] if 'page' in data else 0
     indices = data['indices'] if 'indices' in data else []
+    embedding_id = data['embedding_id'] if 'embedding_id' in data else None
     # filters = data['filters'] if 'filters' in data else None
     sort = data['sort'] if 'sort' in data else None
     if dataset not in DATAFRAMES:
@@ -199,11 +213,21 @@ def query():
     
 
     # get the indexed rows
-    print("INDICES", indices)
+    # print("INDICES", indices)
     if len(indices):
         rows = rows.loc[indices]
 
-    print("ROWS", rows.head())
+    if embedding_id:
+        embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
+        with h5py.File(embedding_path, 'r') as f:
+            npvi = np.array(rows.index)
+            sorted_indices = np.argsort(npvi)
+            sorted_embeddings = np.array(f["embeddings"][npvi[sorted_indices]])
+            filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
+        # Add the filtered embeddings as a new column to the rows DataFrame
+        rows['ls_embedding'] = filtered_embeddings.tolist()
+
+    # print("ROWS", rows.head())
     # apply sort
     if sort:
         rows = rows.sort_values(by=sort['column'], ascending=sort['ascending'])
