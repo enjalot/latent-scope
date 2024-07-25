@@ -145,17 +145,16 @@ function FilterDataTable({
   onHover, 
   onClick, 
 }) {
-
-
-  
-  const [columns, setColumns] = useState([
-
-  ])
+  const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
 
-  const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
+  // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
+  const [highlightColumn, setHighlightColumn] = useState(null)
+  useEffect(() => {
+    setHighlightColumn(dataset?.text_column || null)
+  }, [dataset])
 
   const [tags, setTags] = useState([])
   useEffect(() => {
@@ -331,7 +330,7 @@ function FilterDataTable({
               textOverflow: 'ellipsis',
               whiteSpace: 'normal',
             }}
-            title={val} // Shows the full text on hover
+            title={val.toString()} // Shows the full text on hover
             onClick={() => navigator.clipboard.writeText(val)} // Copies the text to clipboard on click
           >
             {val}
