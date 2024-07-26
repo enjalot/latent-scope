@@ -1008,7 +1008,7 @@ const handleNewCluster = useCallback((label) => {
 
             <div className="filter-row embeddings-controls">
               <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
-              {showEmbeddings && searchEmbedding ? <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} /> : null}
+              {showEmbeddings && searchEmbedding ? <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} /> : null}
               {showEmbeddings ? <span> {showEmbeddings} - {embeddings.find(e => e.id == showEmbeddings)?.model_id}</span> : null}
             </div>
           </div>

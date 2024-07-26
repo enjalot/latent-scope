@@ -340,7 +340,13 @@ function FilterDataTable({
               </div>
               // return <span>{value.cluster}: {value.label}</span>
             } if(c === "ls_embedding") {
-              return <div><EmbeddingVis embedding={value} minValues={embeddingMinValues} maxValues={embeddingMaxValues} /></div>
+              return <div><EmbeddingVis 
+                embedding={value} 
+                minValues={embeddingMinValues} 
+                maxValues={embeddingMaxValues} 
+                height={64}
+                spacing={0}
+                /></div>
             }
             // Default text rendering
             return <div

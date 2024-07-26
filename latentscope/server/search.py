@@ -60,31 +60,13 @@ def nn():
     # embed the query string and find the nearest neighbor
     query = request.args.get('query')
     print("query", query)
-    embedding = model.embed([query], dimensions=dimensions)
+    embedding = np.array(model.embed([query], dimensions=dimensions))
     distances, indices = nne.kneighbors(embedding)
-    # print("distances", distances)
-    # Filter distances and indices to only elements where distance is less than .4
-    # filtered_indices = indices[0][distances[0] < 0.4]
-    # filtered_distances = distances[0][distances[0] < 0.4]
     filtered_indices = indices[0]
     filtered_distances = distances[0]
     indices = filtered_indices
     distances = filtered_distances
-    
-    # if return_embeddings:
-    #     if 'embeddings' not in locals():
-    #         embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
-    #         with h5py.File(embedding_path, 'r') as f:
-    #             sorted_indices = np.argsort(indices)
-    #             print("indices", indices)
-    #             print("sorted indices", sorted_indices)
-    #             sorted_embeddings = np.array(f["embeddings"][indices[sorted_indices]])
-    #             filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
-    #     else:
-    #         filtered_embeddings = embeddings[indices]
-    #     return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding, embeddings=filtered_embeddings.tolist())
-    # else:
-    return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding)
+    return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding.tolist())
 
 
 @search_bp.route('/compare', methods=['GET'])

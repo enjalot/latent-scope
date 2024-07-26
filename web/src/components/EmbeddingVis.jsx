@@ -6,10 +6,10 @@ import { interpolateRdBu } from 'd3-scale-chromatic';
 
 const EmbeddingVis = ({ 
   embedding, 
-  rows = 16,
+  rows = embedding && embedding.length < 256 ? Math.floor(Math.sqrt(embedding.length)) : 16,
   spacing = 0.5,
-  height = 16*4,
-  width = embedding ? Math.ceil(embedding.length / 16) * 4 : 0,
+  height = rows*4,
+  width = embedding ? Math.ceil(embedding.length / rows) * height/rows : 0,
   minValues = [],
   maxValues = [],
 }) => {
