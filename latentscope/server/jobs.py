@@ -155,11 +155,14 @@ def run_embed():
     prefix = request.args.get('prefix')
     dimensions = request.args.get('dimensions')
     batch_size = request.args.get('batch_size')
+    max_seq_length = request.args.get('max_seq_length')
 
     job_id = str(uuid.uuid4())
     command = f'ls-embed "{dataset}" "{text_column}" "{model_id}" --prefix="{prefix}" --batch_size={batch_size}'
     if dimensions is not None:
         command += f" --dimensions={dimensions}"
+    if max_seq_length is not None:
+        command += f" --max_seq_length={max_seq_length}"
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

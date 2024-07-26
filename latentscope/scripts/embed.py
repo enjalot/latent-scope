@@ -56,12 +56,13 @@ def main():
     parser.add_argument('--dimensions', type=int, help='Truncate embeddings to dimensions a la Matroyshka embeddings')
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
     parser.add_argument('--batch_size', type=int, help='Set the batch size (number of sentences to embed in one call)', default=100)
+    parser.add_argument('--max_seq_length', type=int, help='Set the max sequence length for the model', default=None)
 
     # Parse arguments
     args = parser.parse_args()
-    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size)
+    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length)
 
-def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100):
+def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None):
     import pandas as pd
     import numpy as np
     DATA_DIR = get_data_dir()
@@ -94,6 +95,10 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     print("MODEL", model)
     print("loading", model.name)
     model.load_model()
+
+    if max_seq_length is not None:
+        print("setting max seq length", max_seq_length)
+        model.model.max_seq_length = max_seq_length
 
     print("Checking for empty inputs")
     sentences = df[text_column].tolist()

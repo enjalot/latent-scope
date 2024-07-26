@@ -267,6 +267,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   }, [embeddingsJob, dataset, setEmbeddings, onNew])
 
   const [batchSize, setBatchSize] = useState(100)
+  const [maxSeqLength, setMaxSeqLength] = useState(512)
 
   const [potentialEmbeddings, setPotentialEmbeddings] = useState([])
   useEffect(() => {
@@ -319,11 +320,12 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
       text_column: textColumn,
       model_id: modelId,
       prefix,
-      batch_size: batchSize
+      batch_size: batchSize,
+      max_seq_length: maxSeqLength
     };
     if(dimensions) job.dimensions = dimensions
     startEmbeddingsJob(job);
-  }, [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId]);
+  }, [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId, maxSeqLength]);
 
   const handleRerunEmbedding = (job) => {
     rerunEmbeddingsJob({job_id: job?.id});
@@ -419,9 +421,21 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
             <input className={styles["batch-size"]} type="number" min="1"name="batch_size" value={batchSize} onChange={(e) => setBatchSize(e.target.value)} disabled={!!embeddingsJob} />
             <span className="tooltip" data-tooltip-id="batchsize">🤔</span>
             <Tooltip id="batchsize" place="top" effect="solid">
-              Reduce this number if you run out of memory. It determines how many items are processed at once. 
+              Reduce this number if you run out of memory. <br></br>
+              It determines how many items are processed at once. 
             </Tooltip>
             </label>
+
+            <label> Max Sequence Length:
+            <input className={styles["max-seq-length"]} type="number" min="1"name="max_seq_length" value={maxSeqLength} onChange={(e) => setMaxSeqLength(e.target.value)} disabled={!!embeddingsJob} />
+            <span className="tooltip" data-tooltip-id="maxseqlength">🤔</span>
+            <Tooltip id="maxseqlength" place="top" effect="solid">
+              This controls the maximum number of tokens to embed for each item. <br></br>
+              You can increase this number to the model's context length, and reduce it to save memory. <br></br>
+              If an item is too long, it will be truncated.
+            </Tooltip>
+            </label>
+
 
             {/* {model && model.params.dimensions ? 
               <select onChange={handleDimensionsChange}>
@@ -455,7 +469,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
         let m = allModels.find(d => d.id == emb.model_id)
         let dims = m ? m.params?.dimensions ? m.params?.dimensions.filter(d => +d < +emb.dimensions) : [] : []
         if(emb?.model_id.indexOf("nomic-embed-text-v1.5") >= 0) {
-          dims = [512, 256, 128, 64].filter(d => d < emb.dimensions)
+          dims = [512, 256, 128, 64, 16].filter(d => d < emb.dimensions)
         }
         return (
         <div className={styles["item"]} key={index}>
@@ -476,7 +490,8 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
                   <span className={`button ${styles["button"]}`} onClick={() => handleTruncate(emb.id)}>Truncate</span>
                   <span className="tooltip" data-tooltip-id="truncate">🤔</span>
                   <Tooltip id="truncate" place="top" effect="solid">
-                    This model supports Matroyshka embeddings. You can make a truncated copy of this embedding with fewer dimensions.
+                    This model supports Matroyshka embeddings. <br></br>
+                    You can make a truncated copy of this embedding with fewer dimensions.
                   </Tooltip>
               </div> : <br/> }
             </span>

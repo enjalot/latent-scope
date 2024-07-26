@@ -24,6 +24,9 @@
 .batch-size {
   width: 45px;
 }
+.max-seq-length {
+  width: 55px;
+}
 
 .delete {
   max-height: 33px;
