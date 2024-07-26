@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { scaleDiverging } from 'd3-scale';
-import { interpolateRdBu } from 'd3-scale-chromatic';
+import { scaleDiverging, scaleSequential } from 'd3-scale';
+import { interpolateRdBu, interpolateCool } from 'd3-scale-chromatic';
 
 // import "./EmbeddingVis.css"
 
@@ -12,6 +12,7 @@ const EmbeddingVis = ({
   width = embedding ? Math.ceil(embedding.length / rows) * height/rows : 0,
   minValues = [],
   maxValues = [],
+  difference = [],
 }) => {
   const container = useRef();
   
@@ -31,12 +32,17 @@ const EmbeddingVis = ({
       const x = (i % cols) * (rw + spacing)
       const y = Math.floor(i / cols) * (rh + spacing)
       let c = colorScale(d)
-      if(minValues.length && maxValues.length)
-        c = scaleDiverging([minValues[i], 0, maxValues[i]], interpolateRdBu)(d)
+      if(minValues.length && maxValues.length) {
+        if(difference.length) {
+          c = scaleSequential([maxValues[i] - minValues[i], 0], interpolateCool)(Math.abs(difference[i] - d))
+        } else {
+          c = scaleDiverging([minValues[i], 0, maxValues[i]], interpolateRdBu)(d)
+        }
+      }
       ctx.fillStyle = c
       ctx.fillRect(x, y, rw, rh)
     })
-  }, [embedding, rows, width, height, spacing, minValues, maxValues])
+  }, [embedding, rows, width, height, spacing, minValues, maxValues, difference])
 
   return <canvas 
     className="embedding-vis"

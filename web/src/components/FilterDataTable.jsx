@@ -145,15 +145,23 @@ function FilterDataTable({
   clusterLabels, 
   tagset,
   showEmbeddings = null,
+  showDifference = null,
   onTagset,
   onScope,
   onHover, 
   onClick, 
+  onRows,
 }) {
   const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
+
+  useEffect(() =>{
+    if(onRows) {
+      onRows(rows)
+    }
+  }, [rows])
 
   // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
   const [highlightColumn, setHighlightColumn] = useState(null)
@@ -340,13 +348,26 @@ function FilterDataTable({
               </div>
               // return <span>{value.cluster}: {value.label}</span>
             } if(c === "ls_embedding") {
-              return <div><EmbeddingVis 
-                embedding={value} 
-                minValues={embeddingMinValues} 
-                maxValues={embeddingMaxValues} 
-                height={64}
-                spacing={0}
-                /></div>
+              return <div>
+                {showDifference ? 
+                  <EmbeddingVis 
+                    embedding={value} 
+                    minValues={embeddingMinValues} 
+                    maxValues={embeddingMaxValues} 
+                    height={64}
+                    spacing={0}
+                    difference={showDifference}
+                    />
+                  :
+                  <EmbeddingVis 
+                    embedding={value} 
+                    minValues={embeddingMinValues} 
+                    maxValues={embeddingMaxValues} 
+                    height={64}
+                    spacing={0}
+                    />
+                }
+              </div>
             }
             // Default text rendering
             return <div
@@ -378,7 +399,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
 
 
   const [columnFilters, setColumnFilters] = useState([])

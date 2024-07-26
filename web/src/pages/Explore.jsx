@@ -585,6 +585,10 @@ const handleNewCluster = useCallback((label) => {
     setShowEmbeddings(showEmbeddings ? null : searchModel)
   }, [searchModel, showEmbeddings])
 
+  const [showDifference, setShowDifference] = useState(false)
+  const handleShowDifference = useCallback(() => {
+    setShowDifference(!showDifference)
+  }, [showDifference])
 
   useEffect(() => {
     // console.log("search model", searchModel)
@@ -607,6 +611,23 @@ const handleNewCluster = useCallback((label) => {
         })
     }
   }, [datasetId, searchModel])
+
+  const [rows, setRows] = useState([])
+  const [averageEmbedding, setAverageEmbedding] = useState([])
+  useEffect(() => {
+    if(rows.length > 0) {
+      // Calculate column-wise average of all embeddings in rows
+      const avg = rows.reduce((acc, row) => {
+        if (row.ls_embedding && Array.isArray(row.ls_embedding)) {
+          return acc.map((sum, i) => sum + (row.ls_embedding[i] || 0));
+        }
+        return acc;
+      }, new Array(rows[0]?.ls_embedding?.length || 0).fill(0));
+      // Divide the sum by the number of rows to get the average
+      const avgEmbedding = avg.map(sum => sum / rows.length);
+      setAverageEmbedding(avgEmbedding);
+    }
+  }, [rows])
 
 
   if (!dataset) return <div>Loading...</div>;
@@ -1007,9 +1028,29 @@ const handleNewCluster = useCallback((label) => {
             </div>
 
             <div className="filter-row embeddings-controls">
-              <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
-              {showEmbeddings && searchEmbedding ? <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} /> : null}
-              {showEmbeddings ? <span> {showEmbeddings} - {embeddings.find(e => e.id == showEmbeddings)?.model_id}</span> : null}
+              <div>
+                <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
+                <br></br>
+                {showEmbeddings ? <button onClick={handleShowDifference}>{showDifference ? "Show Absolute" : "Show Difference"}</button> : null}
+              </div>
+              {showEmbeddings && searchEmbedding?.length ? 
+                <div>
+                  <span>Search embedding</span><br></br>
+                  <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
+                </div> : null}
+              {showEmbeddings && averageEmbedding.length ? 
+                <div>
+                  <span>Average embedding (over {rows.length} rows)</span><br></br>
+                  {showDifference && searchEmbedding?.length ? 
+                    <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} difference={searchEmbedding} />
+                  : 
+                    <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
+                  }
+                </div> : null}
+              {showEmbeddings ? <div>
+                <span> {showEmbeddings}</span> 
+                <span>{embeddings.find(e => e.id == showEmbeddings)?.model_id}</span>
+                <span>{embeddings.find(e => e.id == showEmbeddings)?.dimensions}</span></div> : null}
             </div>
           </div>
 
@@ -1029,6 +1070,8 @@ const handleNewCluster = useCallback((label) => {
                 }}
                 onHover={(index) => handleHover(inputToScopeIndexMap[index])}
                 onClick={handleClicked}
+                onRows={setRows}
+                showDifference={showDifference ? searchEmbedding : null}
                 height={filtersCSSHeight}
             />
 

@@ -247,7 +247,9 @@
   border: 1px solid black;
 }
 
-
+.filters-container .embeddings-controls {
+  gap: 12px;
+}
 
 
 
