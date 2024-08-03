@@ -17,7 +17,7 @@ except ImportError as e:
     # Fallback to the standard console version if import fails
     from tqdm import tqdm
 
-from latentscope.models import get_embedding_model, get_embedding_model_dict
+from latentscope.models import get_embedding_model, TransformersEmbedProvider
 from latentscope.util import get_data_dir
 
 def chunked_iterable(iterable, size):
@@ -96,7 +96,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     print("loading", model.name)
     model.load_model()
 
-    if max_seq_length is not None:
+    if max_seq_length is not None and isinstance(model, TransformersEmbedProvider):
         print("setting max seq length", max_seq_length)
         model.model.max_seq_length = max_seq_length
 
