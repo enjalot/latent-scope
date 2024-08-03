@@ -41,7 +41,7 @@ def run_job(dataset, job_id, command):
         json.dump(job, f)
 
     # TODO: need to watch for exploits in command if using shell=True for security reasons
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True, encoding="utf-8")
     PROCESSES[job_id] = process
 
     last_output_time = time.time()  # Initialize with the current time
