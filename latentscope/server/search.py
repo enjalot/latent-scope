@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from sklearn.neighbors import NearestNeighbors
 
 from latentscope.models import get_embedding_model
+from latentsae.sae import Sae
 
 # Create a Blueprint
 search_bp = Blueprint('search_bp', __name__)
@@ -15,6 +16,8 @@ DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 # in memory cache of dataset metadata, embeddings, models and tokenizers
 DATASETS = {}
 EMBEDDINGS = {}
+FEATURES = {}
+DATAFRAMES = {}
 
 """
 Returns nearest neighbors for a given query string
@@ -22,6 +25,105 @@ Hard coded to 150 results currently
 """
 @search_bp.route('/nn', methods=['GET'])
 def nn():
+    dataset = request.args.get('dataset')
+    embedding_id = request.args.get('embedding_id')
+    dimensions = request.args.get('dimensions')
+    dimensions = int(dimensions) if dimensions else None
+    # return_embeddings = True if request.args.get('return_embeddings') else False
+    print("dimensions", dimensions)
+
+    num = 150
+    if embedding_id not in EMBEDDINGS:
+        print("loading model", embedding_id)
+        with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json"), 'r') as f:
+            metadata = json.load(f)
+        model_id = metadata.get('model_id')
+        print("Model ID:", model_id)
+        model = get_embedding_model(model_id)
+        model.load_model()
+        EMBEDDINGS[embedding_id] = model
+    else:
+        model = EMBEDDINGS[embedding_id]
+
+    if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
+        # load the dataset embeddings
+        # embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".npy"))
+        embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
+        with h5py.File(embedding_path, 'r') as f:
+            embeddings = np.array(f["embeddings"])
+        print("fitting embeddings")
+        nne = NearestNeighbors(n_neighbors=num, metric="cosine")
+        nne.fit(embeddings)
+        if dataset not in DATASETS:
+          DATASETS[dataset] = {}
+        DATASETS[dataset][embedding_id] = nne
+    else:
+        nne = DATASETS[dataset][embedding_id]
+    
+    # embed the query string and find the nearest neighbor
+    query = request.args.get('query')
+    print("query", query)
+    embedding = np.array(model.embed([query], dimensions=dimensions))
+    distances, indices = nne.kneighbors(embedding)
+    filtered_indices = indices[0]
+    filtered_distances = distances[0]
+    indices = filtered_indices
+    distances = filtered_distances
+    return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding.tolist())
+
+
+"""
+Summarize features for a given set of dataset indices.
+Summary includes
+- top mean: average the features for all the indices and return the top N
+- get the top feature for each index, count the number of times each feature is the top feature
+input: [index1, index2, ...]
+
+output: {
+
+}
+"""
+@search_bp.route('/feature_summary', methods=['POST'])
+def feature_summary():
+    dataset = request.args.get('dataset')
+    feature_id = request.args.get('feature_id')
+
+"""
+Get top row indices for a given feature
+"""
+@search_bp.route('/feature', methods=['GET'])
+def feature():
+    data = request.get_json()
+    dataset = data['dataset']
+    sae_id = data.get('sae_id') # the id of the model / saved features
+    feature_id = data.get('feature_id') # the particular feature we want rows for (an index)
+    columns = data.get('columns')
+    top_n = data.get('top_n')
+    if top_n is None:
+        top_n = 100
+
+    # load the saved features
+    sae_path = os.path.join(DATA_DIR, dataset, "sae", f"{sae_id}.h5")
+    with h5py.File(sae_path, 'r') as f:
+        all_top_indices = np.array(f["top_indices"])
+        all_top_acts = np.array(f["top_acts"])
+
+    # Find the rows where the feature_index appears in top_indices
+    feature_mask = all_top_indices == feature_id
+    # Get the corresponding activations
+    feature_activations = np.where(feature_mask, all_top_acts, np.zeros_like(all_top_acts))
+    # Get the top_n row indices with highest activations
+    top_row_indices = np.argsort(feature_activations.max(dim=1)[0])[:top_n]
+    # Get the activation values for these top rows
+    top_activations = feature_activations[top_row_indices, :]
+    return jsonify(top_row_indices=top_row_indices.tolist(), top_activations=top_activations.tolist())
+
+"""
+Returns features for a given query string.
+This will first embed the string and then use the SAE to get the topk features of the embedding.
+"""
+@search_bp.route('/features', methods=['GET'])
+def features():
     dataset = request.args.get('dataset')
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')

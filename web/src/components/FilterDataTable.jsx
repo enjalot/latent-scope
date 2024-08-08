@@ -146,6 +146,7 @@ function FilterDataTable({
   tagset,
   showEmbeddings = null,
   showDifference = null,
+  saeFeature = null, // this will be a { sae_id: string, feature_id: number }
   onTagset,
   onScope,
   onHover, 
@@ -227,7 +228,8 @@ function FilterDataTable({
           dataset: dataset.id, 
           indices: indices, 
           embedding_id: showEmbeddings,
-          page: currentPage 
+          page: currentPage,
+          sae_id: saeFeature?.sae_id,
         }),
       })
       .then(response => response.json())
@@ -259,7 +261,7 @@ function FilterDataTable({
     } else {
       setRows([])
     }
-  }, [dataset, distances, clusterMap, currentPage, showEmbeddings])
+  }, [dataset, distances, clusterMap, currentPage, showEmbeddings, saeFeature])
 
   useEffect(() => {
     if(dataset) {
@@ -268,6 +270,7 @@ function FilterDataTable({
       let columns = ["ls_index"]
       if(distances && distances.length) columns.push("ls_similarity")
       if(showEmbeddings) columns.push("ls_embedding")
+      if(saeFeature) columns.push("ls_features")
       if(scope) columns.push("ls_cluster")
       if(tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
@@ -347,7 +350,8 @@ function FilterDataTable({
                 </select>
               </div>
               // return <span>{value.cluster}: {value.label}</span>
-            } if(c === "ls_embedding") {
+            } 
+            if(c === "ls_embedding") {
               return <div>
                 {showDifference ? 
                   <EmbeddingVis 
@@ -369,6 +373,16 @@ function FilterDataTable({
                 }
               </div>
             }
+           if(c === "ls_features") {
+              let featIdx = 0;
+              if(saeFeature.feature_id >= 0) {
+                featIdx = value.top_indices.findIndex(i => i === saeFeature.feature_id)
+              }
+              return <div>
+                {value.top_acts[featIdx]?.toFixed(3)} ({value.top_indices[featIdx]})
+              </div>
+            }
+
             // Default text rendering
             return <div
             style={{

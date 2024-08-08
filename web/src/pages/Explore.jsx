@@ -629,6 +629,10 @@ const handleNewCluster = useCallback((label) => {
     }
   }, [rows])
 
+  const [saeFeature, setSaeFeature] = useState({
+    sae_id: "sae-001",
+    feature_id: -1
+  })
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -1063,6 +1067,7 @@ const handleNewCluster = useCallback((label) => {
                 clusterLabels={clusterLabels}
                 tagset={tagset}
                 showEmbeddings={showEmbeddings}
+                saeFeature={saeFeature}
                 onTagset={fetchTagSet}
                 onScope={() => {
                   fetchScopeMeta()
