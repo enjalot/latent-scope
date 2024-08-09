@@ -228,6 +228,11 @@ function Explore() {
     setSearchModel(model)
   }
 
+  const [saeFeature, setSaeFeature] = useState({
+    sae_id: "sae-001",
+    feature_id: -1
+  })
+
 
   const hydrateIndices = useCallback((indices, setter, distances = []) => {
     fetch(`${apiUrl}/indexed`, {
@@ -235,7 +240,7 @@ function Explore() {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ dataset: datasetId, indices: indices }),
+      body: JSON.stringify({ dataset: datasetId, indices: indices, sae_id: saeFeature?.sae_id }),
     })
       .then(response => response.json())
       .then(data => {
@@ -248,7 +253,7 @@ function Explore() {
         })
         setter(rows)
       })
-  }, [dataset, datasetId])
+  }, [dataset, datasetId, saeFeature])
 
 
 
@@ -629,10 +634,6 @@ const handleNewCluster = useCallback((label) => {
     }
   }, [rows])
 
-  const [saeFeature, setSaeFeature] = useState({
-    sae_id: "sae-001",
-    feature_id: -1
-  })
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -765,6 +766,10 @@ const handleNewCluster = useCallback((label) => {
             {hoveredCluster ? <span><span className="key">Cluster {hoveredCluster.cluster}:</span><span className="value">{hoveredCluster.label}</span></span> : null}
             {hovered && Object.keys(hovered).map((key,idx) => {
               let d = hovered[key]
+              if(key == "ls_features") {
+                console.log("hovered", hovered, d)
+                d = d.top_indices?.slice(0,5).join(", ")
+              }
               if(typeof d === 'object' && !Array.isArray(d)) {
                 d = JSON.stringify(d)
               }

@@ -379,7 +379,7 @@ function FilterDataTable({
                 featIdx = value.top_indices.findIndex(i => i === saeFeature.feature_id)
               }
               return <div>
-                {value.top_acts[featIdx]?.toFixed(3)} ({value.top_indices[featIdx]})
+                {value.top_acts?.[featIdx]?.toFixed(3)} ({value.top_indices?.[featIdx]})
               </div>
             }
 

@@ -150,6 +150,7 @@ def ingest(dataset_id, df, text_column = None):
 
     # create all the directories we will use
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "embeddings"), exist_ok=True)
+    os.makedirs(os.path.join(DATA_DIR, dataset_id, "saes"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "umaps"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "clusters"), exist_ok=True)
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "scopes"), exist_ok=True)

@@ -15,6 +15,7 @@ Umap.propTypes = {
   }).isRequired,
   umap: PropTypes.object,
   embedding: PropTypes.object,
+  sae: PropTypes.object,
   embeddings: PropTypes.array.isRequired,
   clusters: PropTypes.array.isRequired,
   onNew: PropTypes.func.isRequired,
@@ -23,7 +24,7 @@ Umap.propTypes = {
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}) {
+function Umap({ dataset, umap, embedding, sae, embeddings, clusters, onNew, onChange}) {
   const [umapJob, setUmapJob] = useState(null);
   const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/umap`);
   const { startJob: deleteUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/delete/umap`);
@@ -39,9 +40,9 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
     } else {
       setLocalUmap(umaps[0])
     }
-  }, [umap, umaps])
+  }, [umap, umaps, embedding, sae])
 
-  function fetchUmaps(datasetId, callback) {
+  const fetchUmaps = useCallback((datasetId, callback) => {
     fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
       .then(response => response.json())
       .then(data => {
@@ -51,15 +52,22 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
             url: `${apiUrl}/files/${datasetId}/umaps/${d.id}.png`,
           }
         })
-        callback(array)
+        let umps = []
+        if(sae) {
+          umps = array.filter(d => d.sae_id == sae.id)
+        } else if(embedding) {
+          umps = array.filter(d => d.embedding_id == embedding.id)
+        }
+        callback(umps)
       });
-  }
+  }, [sae, embedding])
+
   useEffect(() => {
     fetchUmaps(dataset.id, (umps) => {
       setUmaps(umps)
       onNew(umps)
     })
-  }, [dataset, onNew]);
+  }, [dataset, onNew, sae, embedding, fetchUmaps]);
 
   useEffect(() => {
     if(umapJob?.status == "completed") {
@@ -76,7 +84,7 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
         onNew(umps)
       })
     }
-  }, [umapJob, dataset, setUmaps, onNew]);
+  }, [umapJob, dataset, setUmaps, onNew, fetchUmaps]);
 
 
   const handleChangeInit = useCallback((e) => {
@@ -89,12 +97,25 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
     const data = new FormData(form)
     const neighbors = data.get('neighbors')
     const min_dist = data.get('min_dist')
+    const seed = data.get('seed')
     const align = Array.from(document.querySelectorAll('input[name="umapAlign"]:checked'))
       .map(input => input.value)
       .sort((a,b) => a.localeCompare(b))
       .join(",")
-    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist, init, align})
-  }, [startUmapJob, embedding, init])
+
+    let job = {
+      embedding_id: embedding?.id, 
+      neighbors, 
+      min_dist, 
+      init, 
+      align,
+      seed
+    }
+    if(sae) {
+      job.sae_id = sae.id
+    }
+    startUmapJob(job)
+  }, [startUmapJob, embedding, sae, init])
 
   const [showAlign, setShowAlign] = useState(false);
 
@@ -125,6 +146,16 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
               A smaller value will result in a more clustered UMAP, while a larger value will result in a more spread out UMAP.
             </Tooltip>
           </label>
+          <label>
+            Seed:
+            <input type="number" name="seed" defaultValue="-1" disabled={!!umapJob} />
+            <span className="tooltip" data-tooltip-id="seed">🤔</span>
+            <Tooltip id="seed" place="top" effect="solid">
+              Setting a seed will create deterministic UMAPs.
+              This is useful if you want to create the same UMAP multiple times and get the same result.
+              If you don't set a seed (-1), the UMAP will be created with a random seed, but will be able to run in parallel.
+            </Tooltip>
+          </label>
           {/* TODO: hiding initializing UMAP in favor of aligning */}
           {/* <label>
             Initialize from UMAP:
@@ -139,8 +170,8 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
               )})}
             </select>
           </label> */}
-          <span className="button" onClick={toggleShowAlign}>{showAlign ? 'x Align UMAPs' : '+ Align UMAPs'}</span>
-          {showAlign && <div className={styles["umaps-align"]}>
+          {!sae && <span className="button" onClick={toggleShowAlign}>{showAlign ? 'x Align UMAPs' : '+ Align UMAPs'}</span>}
+          {showAlign && !sae && <div className={styles["umaps-align"]}>
             <span className={styles["umaps-align-info"]}>
               Choose 1 or more embeddings to align alongside {embedding?.id}. 
               An <a href="https://umap-learn.readthedocs.io/en/latest/aligned_umap_basic_usage.html">Aligned UMAP</a> will be generated for each embedding selected.
@@ -154,7 +185,7 @@ function Umap({ dataset, umap, embedding, embeddings, clusters, onNew, onChange}
             )}
             )} 
           </div>}
-          <button type="submit" disabled={!!umapJob}>New UMAP</button>
+          <button type="submit" disabled={!!umapJob}>New UMAP {sae ? sae.id : embedding?.id}</button>
         </form>
         <JobProgress job={umapJob} clearJob={()=> setUmapJob(null)}/>
         {/* The list of available UMAPS */}

@@ -15,13 +15,14 @@ Scope.propTypes = {
   scope: PropTypes.object,
   umap: PropTypes.object,
   embedding: PropTypes.object,
+  sae: PropTypes.object,
   cluster: PropTypes.object,
   clusterLabelId: PropTypes.string,
   onNew: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
 };
 
-function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew, onChange}) {
+function Scope({ dataset, scope, umap, embedding, sae, cluster, clusterLabelId, onNew, onChange}) {
   const navigate = useNavigate();
 
   const [scopeJob, setScopeJob] = useState(null);
@@ -97,6 +98,9 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
       label: data.get('label'),
       description: data.get('description')
     };
+    if(sae) {
+      payload.sae_id = sae.id
+    }
 
     console.log("action", action)
     if(action == "save") {
@@ -104,7 +108,7 @@ function Scope({ dataset, scope, umap, embedding, cluster, clusterLabelId, onNew
     }
     startScopeJob(payload)
 
-  }, [dataset, scope, cluster, clusterLabelId, umap, embedding]);
+  }, [dataset, scope, cluster, clusterLabelId, umap, embedding, sae]);
 
   const [isDifferent, setIsDifferent] = useState(false);
   const descriptionIsDifferent = label !== scope?.label || description !== scope?.description;

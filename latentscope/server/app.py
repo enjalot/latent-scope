@@ -170,7 +170,7 @@ def indexed():
         # rows['ls_acts'] = filtered_acts
         # rows['ls_top_indices'] = filtered_top_inds
         rows['ls_features'] = [
-            {'activation': act, 'index': idx} for act, idx in zip(filtered_acts, filtered_top_inds)
+            {'top_acts': act, 'top_indices': idx} for act, idx in zip(filtered_acts, filtered_top_inds)
         ]
 
     # send back the rows as json

@@ -392,9 +392,9 @@ function Compare() {
                 width={scopeWidth}
                 height={scopeHeight}
                 colorScaleType="continuous"
-                colorInterpolator={interpolateMagma}
+                // colorInterpolator={interpolateMagma}
+                colorInterpolator={interpolateReds}
                 opacityBy="valueA"
-                // colorInterpolator={interpolateReds}
                 onScatter={setScatter}
                 onView={handleView}
                 onSelect={handleSelected}

@@ -5,6 +5,7 @@ import { range } from 'd3-array';
 
 import './Setup.css';
 import Embedding from '../components/Setup/Embedding';
+import Sae from '../components/Setup/Sae';
 import Umap from '../components/Setup/Umap';
 import Cluster from '../components/Setup/Cluster';
 import ClusterLabels from '../components/Setup/ClusterLabels';
@@ -34,6 +35,8 @@ const initialState = {
   cluster: null,
   clusterLabelSets: [],
   clusterLabelSet: null,
+  saes: [],
+  sae: null,
   scopes: [],
   scope: null,
 
@@ -54,6 +57,10 @@ function reducer(state, action) {
       return { ...state, embeddings: action.payload }
     case 'SET_EMBEDDING':
       return { ...state, embedding: action.payload }
+    case 'SET_SAES':
+      return { ...state, saes: action.payload }
+    case 'SET_SAE':
+      return { ...state, sae: action.payload }
     case 'SET_UMAPS':
       return { ...state, umaps: action.payload }
     case 'SET_UMAP':
@@ -103,6 +110,9 @@ function Setup() {
     cluster,
     clusterLabelSets,
     clusterLabelSet,
+
+    sae,
+    saes,
 
     scopes,
     scope,
@@ -171,6 +181,32 @@ function Setup() {
     const emb = deriveEmbedding(embeddings, selectedEmbeddingId)
     dispatch({ type: "SET_EMBEDDING", payload: emb })
   }, [embeddings, selectedEmbeddingId])
+
+  // ====================================================================================================
+  // saes
+  // ====================================================================================================
+
+  // the id of the umap selected by the user
+  const [selectedSaeId, setSelectedSaeId] = useState(null);
+
+  function deriveSae(saes, embedding, selectedSaeId) {
+    if(saes.length && embedding) {
+      const embeddingSaes = saes.filter(d => d.embedding_id == embedding.id)
+      const found = embeddingSaes.find(d => d.id == selectedSaeId)
+      if(selectedSaeId && found) {
+        return found
+      } else {
+        // return embeddingUmaps[0] 
+      }
+    } else {
+      return null
+    }
+  }
+  useEffect(() => {
+    const sae = deriveSae(saes, embedding, selectedSaeId)
+    dispatch({ type: "SET_SAE", payload: sae })
+  }, [selectedSaeId, saes, embedding])  
+
 
   // ====================================================================================================
   // umaps
@@ -271,6 +307,7 @@ function Setup() {
       setSelectedUmapId(scope.umap_id)
       setSelectedClusterId(scope.cluster_id)
       setSelectedClusterLabelSetId(scope.cluster_labels_id)
+      setSelectedSaeId(scope.sae_id)
     } else {
       console.log("setting everything to null")
       if(scopeId) dispatch({ type: "SET_SCOPE", payload: null })
@@ -278,6 +315,7 @@ function Setup() {
       setSelectedUmapId(null)
       setSelectedClusterId(null)
       setSelectedClusterLabelSetId(null)
+      setSelectedSaeId(null)
     } 
   }, [scopeId, scopes])
 
@@ -318,7 +356,7 @@ function Setup() {
       })
       setter(rows)
     })
-  }, [dataset, datasetId])
+  }, [dataset])
 
   // Hover via scatterplot or tables
   // index of item being hovered over
@@ -459,11 +497,32 @@ function Setup() {
     }
   }, [embedding, umap, cluster, clusterLabelSet, scope])
 
+  const [saeStage, setSaeStage] = useState(false)
+  const [skipSae, setSkipSae] = useState(false)
+  useEffect(() => {
+    if(embedding && embedding.model_id == "🤗-nomic-ai___nomic-embed-text-v1.5" && !sae && !skipSae) {
+      setSaeStage(true)
+    } else {
+      setSaeStage(false)
+    }
+  }, [embedding, sae, skipSae])
+
 
   const handleNewEmbeddings = useCallback((embs, emb) => {
     dispatch({type: "SET_EMBEDDINGS", payload: embs })
     if(emb) dispatch({ type: "SET_EMBEDDING", payload: emb })
   }, [])
+
+  const handleNewSaes = useCallback((saes, sae) => {
+    dispatch({ type: "SET_SAES", payload: saes })
+    if(sae) dispatch({type: "SET_SAE", payload: sae })
+    // if no umaps for the current embedding, unset the umap
+    console.log("NEW SAES", saes, sae)
+    if(!saes.filter(d => d.embedding_id == embedding?.id).length) {
+      console.log("handling new sae setting null")
+      dispatch({type: "SET_SAE", payload: null })
+    }
+  }, [embedding])
 
   const handleNewUmaps = useCallback((umaps, ump) => {
     dispatch({ type: "SET_UMAPS", payload: umaps })
@@ -591,11 +650,34 @@ function Setup() {
               onRemovePotentialEmbedding={handleRemovePotentialEmbedding}
               />
           </Stage>
-          <Stage active={stage == 2} complete={stage > 2} title={`2. Project`} subtitle={umap?.id}>
+          <Stage active={!!saeStage} complete={stage > 1 && (sae || skipSae)} title={`1b. SAE`} subtitle={sae?.id}>
+            <Sae
+              dataset={dataset} 
+              embedding={embedding}
+              sae={sae} 
+              umaps={umaps} 
+              clusters={clusters} 
+              onNew={handleNewSaes} 
+              onChange={(s) => {
+                if(!s) {
+                  // the user is skipping the SAE
+                  setSelectedSaeId(null)
+                  dispatch({type:"SET_SAE", payload: null})
+                  setSkipSae(true)
+                } else {
+                  setSelectedSaeId(s?.id)
+                  dispatch({type:"SET_SAE", payload: s})
+                  setSkipSae(false)
+                }
+              }} 
+              />
+          </Stage>
+          <Stage active={stage == 2 && !saeStage} complete={stage > 2} title={`2. Project`} subtitle={umap?.id}>
             <Umap 
               dataset={dataset} 
               umap={umap} 
               embedding={embedding} 
+              sae={sae}
               embeddings={embeddings}
               clusters={clusters} 
               onNew={handleNewUmaps} 
@@ -636,6 +718,7 @@ function Setup() {
               dataset={dataset} 
               scope={scope} 
               embedding={embedding} 
+              sae={sae}
               umap={umap} 
               cluster={cluster} 
               clusterLabelId={clusterLabelSet?.id} 
