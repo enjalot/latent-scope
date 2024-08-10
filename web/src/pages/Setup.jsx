@@ -500,7 +500,7 @@ function Setup() {
   const [saeStage, setSaeStage] = useState(false)
   const [skipSae, setSkipSae] = useState(false)
   useEffect(() => {
-    if(embedding && embedding.model_id == "🤗-nomic-ai___nomic-embed-text-v1.5" && !sae && !skipSae) {
+    if(embedding && embedding.model_id.indexOf("nomic-ai___nomic-embed-text-v1.5") != -1 && !sae && !skipSae) {
       setSaeStage(true)
     } else {
       setSaeStage(false)
