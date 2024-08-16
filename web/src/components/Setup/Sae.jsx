@@ -70,8 +70,16 @@ function Sae({ dataset, sae, embedding, umaps, clusters, onNew, onChange}) {
     },
     {
       "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
-      "k_expansion": "64_128"
+      "k_expansion": "128_32"
     },
+    {
+      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
+      "k_expansion": "128_64"
+    },
+    // {
+    //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
+    //   "k_expansion": "64_128"
+    // },
   ]);
   
   // Add a state to track the input value
