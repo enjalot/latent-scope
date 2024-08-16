@@ -306,6 +306,10 @@ if not READ_ONLY:
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):
+    if path.endswith('.js') or path.endswith('.css'):
+        pth = files('latentscope').joinpath(f"web/dist/{path}")
+        directory = pth.parent
+        return send_from_directory(directory, pth.name)
     # always return index.html and let client-side do the routing
     pth = files('latentscope').joinpath("web/dist/index.html")
     directory = pth.parent
