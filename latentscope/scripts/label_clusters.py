@@ -24,7 +24,7 @@ def chunked_iterable(iterable, size):
     for i in range(0, len(iterable), size):
         yield iterable[i:i + size]
 
-def too_many_duplicates(line, threshold=10):
+def too_many_duplicates(line, threshold=100):
     word_count = {}
     if not line:
         return False
@@ -89,7 +89,12 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
 
     system_prompt = {"role":"system", "content": f"""You're job is to summarize lists of items with a short label of no more than 4 words. The items are part of a cluster and the label will be used to distinguish this cluster from others, so pay attention to what makes this group of similar items distinct.
 {context}
-The user will submit a bulleted list of items and you should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. 
+The user will submit a list of items in the format:
+<ListItem>...</ListItem>
+<ListItem>...</ListItem>
+...
+
+You should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. 
 Do not use punctuation, Do not explain yourself, respond with only a few words that summarize the list."""}
 
     # TODO: why the extra 50 for openai?
@@ -102,16 +107,17 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
     # ...
     # we truncate the list based on tokens and we also remove items that have too many duplicate words
     extracts = []
-    for _, row in clusters.iterrows():
+    for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
         indices = row['indices']
         items = df.loc[list(indices), text_column]
         items = items.drop_duplicates()
-        text = '\n'.join([f"{i+1}. {t}" for i, t in enumerate(items) if not too_many_duplicates(t)])
+        # text = '\n'.join([f"{i+1}. {t}" for i, t in enumerate(items) if not too_many_duplicates(t)])
+        text = '\n'.join([f"<ListItem>{t}</ListItem>" for i, t in enumerate(items) if not too_many_duplicates(t)])
         encoded_text = enc.encode(text)
         if len(encoded_text) > max_tokens:
             encoded_text = encoded_text[:max_tokens]
-        extracts.append(enc.decode(encoded_text))
-
+        extract = enc.decode(encoded_text)
+        extracts.append(extract)
     # TODO we arent really batching these
     batch_size = 1
     labels = []
@@ -133,7 +139,7 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
             ]
             label = model.chat(messages)
             labels.append(label)
-            # tqdm.write("label:\n", label)
+            
             # do some cleanup of the labels when the model doesn't follow instructions
             clean_label = label.replace("\n", " ")
             clean_label = clean_label.replace('"', '')
@@ -142,6 +148,10 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
             clean_label = ' '.join(clean_label.split())
             clean_label = " ".join(clean_label.split(" ")[0:5])
             clean_labels.append(clean_label)
+            if re.search(r"please provide", label, re.IGNORECASE):
+                tqdm.write(f"cluster {i} label: {clean_label}")
+                tqdm.write(f"batch: {batch[0]}")
+                tqdm.write(f"label: {label}")
             
             tqdm.write(f"cluster {i} label: {clean_label}")
             clusters.loc[i, 'label'] = clean_label
