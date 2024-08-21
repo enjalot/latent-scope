@@ -45,6 +45,36 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
     else:
         return min(min_size + min_size * np.log(num_points / base_num_points), max_size)
 
+def load_embeddings(dataset_id, embedding_id):
+    import h5py
+    import numpy as np
+    DATA_DIR = get_data_dir()
+
+    if embedding_id[0:3] == "sae":
+        sae_path = os.path.join(DATA_DIR, dataset_id, "saes", f"{embedding_id}.h5")
+        with h5py.File(sae_path, 'r') as f:
+            all_acts = f.get("top_acts")[:]
+            all_indices = f.get("top_indices")[:]
+
+        # read the meta json for sae
+        with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{embedding_id}.json"), 'r') as f:
+            meta = json.load(f)
+        # print("SAE META", meta["id"], meta["num_features"], "features", meta["model_id"], meta["k_expansion"])
+        
+        import scipy
+        # print("ALL ACTS SHAPE", all_acts.shape)
+        # print("ALL INDS SHAPE", all_indices.shape)
+        matrix = scipy.sparse.lil_matrix((all_acts.shape[0], meta["num_features"]), dtype=np.float32)
+        for i in range(all_acts.shape[0]):
+            matrix.rows[i] = all_indices[i].tolist()
+            matrix.data[i] = all_acts[i].tolist()
+        return matrix
+    else:
+        emb_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
+        with h5py.File(emb_path, 'r') as f:
+            dataset = f["embeddings"]
+            embeddings = np.array(dataset)
+            return embeddings
 
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None, seed=None):
     DATA_DIR = get_data_dir()
@@ -76,10 +106,11 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     import matplotlib.pyplot as plt
 
     print("loading embeddings")
-    embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
-    with h5py.File(embedding_path, 'r') as f:
-        dataset = f["embeddings"]
-        embeddings = np.array(dataset)
+    # embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
+    # with h5py.File(embedding_path, 'r') as f:
+    #     dataset = f["embeddings"]
+    #     embeddings = np.array(dataset)
+    embeddings = load_embeddings(dataset_id, embedding_id)
 
     def process_umap_embeddings(umap_id, umap_embeddings, emb_id, align_id=None):
         min_values = np.min(umap_embeddings, axis=0)
@@ -133,10 +164,11 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         a_embeddings = [embeddings]
         for emb in embs:
             print("loading", emb)
-            emb_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{emb}.h5")
-            with h5py.File(emb_path, 'r') as f:
-                dataset = f["embeddings"]
-                a_emb = np.array(dataset)
+            # emb_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{emb}.h5")
+            # with h5py.File(emb_path, 'r') as f:
+            #     dataset = f["embeddings"]
+            #     a_emb = np.array(dataset)
+            a_emb = load_embeddings(dataset_id, emb)
             print("loaded", emb, "shape", a_emb.shape)
             a_embeddings.append(a_emb)
             a_embedding_ids.append(emb)
@@ -149,8 +181,8 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             n_components=2,
             verbose=True,
         )
-        print("a_embeddings", len(a_embeddings), len(a_embeddings[0]))
-        relations = [{j: j for j in range(len(a_embeddings[i]))} for i in range(len(a_embeddings)-1)]
+        print("a_embeddings", len(a_embeddings), a_embeddings[0].shape[0])
+        relations = [{j: j for j in range(a_embeddings[i].shape[0])} for i in range(len(a_embeddings)-1)]
         print("relations", len(relations))
         aligned = reducer.fit_transform(a_embeddings, relations=relations)
         print("ALIGNED", aligned)
@@ -228,25 +260,26 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
     import matplotlib.pyplot as plt
 
     print("loading sparse embeddings")
-    sae_path = os.path.join(DATA_DIR, dataset_id, "saes", f"{sae_id}.h5")
-    with h5py.File(sae_path, 'r') as f:
-        all_acts = f.get("top_acts")[:]
-        all_indices = f.get("top_indices")[:]
+    matrix = load_embeddings(dataset_id, sae_id)
+    # sae_path = os.path.join(DATA_DIR, dataset_id, "saes", f"{sae_id}.h5")
+    # with h5py.File(sae_path, 'r') as f:
+    #     all_acts = f.get("top_acts")[:]
+    #     all_indices = f.get("top_indices")[:]
 
-    # read the meta json for sae
-    with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{sae_id}.json"), 'r') as f:
-        meta = json.load(f)
-    print("SAE META", meta["id"], meta["num_features"], "features", meta["model_id"], meta["k_expansion"])
+    # # read the meta json for sae
+    # with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{sae_id}.json"), 'r') as f:
+    #     meta = json.load(f)
+    # print("SAE META", meta["id"], meta["num_features"], "features", meta["model_id"], meta["k_expansion"])
     
-    import scipy
-    print("ALL ACTS SHAPE", all_acts.shape)
-    print("ALL INDS SHAPE", all_indices.shape)
-    matrix = scipy.sparse.lil_matrix((all_acts.shape[0], meta["num_features"]), dtype=np.float32)
-    # matrix.rows = all_indices.tolist()
-    # matrix.data = all_acts.tolist()
-    for i in range(all_acts.shape[0]):
-        matrix.rows[i] = all_indices[i].tolist()
-        matrix.data[i] = all_acts[i].tolist()
+    # import scipy
+    # print("ALL ACTS SHAPE", all_acts.shape)
+    # print("ALL INDS SHAPE", all_indices.shape)
+    # matrix = scipy.sparse.lil_matrix((all_acts.shape[0], meta["num_features"]), dtype=np.float32)
+    # # matrix.rows = all_indices.tolist()
+    # # matrix.data = all_acts.tolist()
+    # for i in range(all_acts.shape[0]):
+    #     matrix.rows[i] = all_indices[i].tolist()
+    #     matrix.data[i] = all_acts[i].tolist()
     
     def process_umap_embeddings(umap_id, umap_embeddings, emb_id, sae_id, align_id=None):
         min_values = np.min(umap_embeddings, axis=0)

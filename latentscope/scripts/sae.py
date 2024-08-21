@@ -64,11 +64,29 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
 
     all_embeddings = torch.from_numpy(embeddings).float().to(device)
     model = Sae.load_from_hub(model_id, k_expansion, device)
+
     print("Encoding embeddings with SAE")
-    all_features = model.encode(all_embeddings)
+    batch_size = 128  # Define your batch size
+    # all_features = []
+    all_acts = []
+    all_indices = []
+
+    from tqdm import tqdm  # Make sure to import tqdm at the top of your file
+
+    for i in tqdm(range(0, len(all_embeddings), batch_size), desc="Encoding batches"):
+        batch = all_embeddings[i:i + batch_size]
+        features = model.encode(batch)
+        all_acts.append(features.top_acts)
+        all_indices.append(features.top_indices)
+
+    all_acts = torch.cat(all_acts, dim=0).detach().cpu().numpy()
+    all_indices = torch.cat(all_indices, dim=0).detach().cpu().numpy()
+
+    # all_features = model.encode(all_embeddings)
+
     print("encoding completed")
-    all_acts = all_features.top_acts.detach().cpu().numpy()
-    all_indices = all_features.top_indices.detach().cpu().numpy()
+    # all_acts = all_features.top_acts.detach().cpu().numpy()
+    # all_indices = all_features.top_indices.detach().cpu().numpy()
 
     print("saving to disk")
     # save the acts and indices to the sae directory
