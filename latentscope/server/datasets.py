@@ -29,7 +29,7 @@ def get_datasets():
                 except:
                     print("Error reading meta.json", file_path)
 
-    datasets.sort(key=lambda x: x.get('length'))
+    datasets.sort(key=lambda x: x.get('id'))
     return jsonify(datasets)
 
 """

@@ -61,20 +61,20 @@ function Sae({ dataset, sae, embedding, umaps, clusters, onNew, onChange}) {
 
   const [presetModels, setPresetModels] = useState([
     {
-      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
+      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
       "k_expansion": "64_32"
     },
     {
-      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
-      "k_expansion": "64_64"
+      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
+      "k_expansion": "64_128"
     },
     {
-      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
+      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
       "k_expansion": "128_32"
     },
     {
-      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
-      "k_expansion": "128_64"
+      "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
+      "k_expansion": "128_128"
     },
     // {
     //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
