@@ -2,6 +2,8 @@
 [![](https://dcbadge.vercel.app/api/server/x7NvpnM4pY?style=flat)](https://discord.gg/x7NvpnM4pY)
 [![PyPI version](https://img.shields.io/pypi/v/latentscope.svg)](https://pypi.org/project/latentscope/)
 
+[Docs](https://enjalot.github.io/latent-scope/)
+
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/end.png?raw=true" width="45%"  alt="Setup your scope"><img src="https://github.com/enjalot/latent-scope/blob/main/documentation/curate-combined-cluster.png?raw=true" width="45%"  alt="Explore and Curate your data">
