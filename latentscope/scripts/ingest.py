@@ -66,10 +66,7 @@ def ingest(dataset_id, df, text_column = None):
     print(df.tail())
     print(df.columns)
 
-    output_file = f"{directory}/input.parquet"
-    df.to_parquet(output_file)
-    print("wrote", output_file)
-
+    print("checking column types")
     import pandas as pd
     import numpy as np
     # determine the types of the values in columns, especially string, number or array of numbers
@@ -93,6 +90,13 @@ def ingest(dataset_id, df, text_column = None):
             column_type = "array"
         else:
             column_type = "unknown"
+
+        if column_type == "unknown":
+            print("unknown column type", column, "converting to string")
+            df[column] = df[column].astype(str)
+            column_type = "string"
+        
+        print("COLUMN", column, "TYPE", column_type)
 
         # Count unique values, excluding NaN
         try:
@@ -129,6 +133,9 @@ def ingest(dataset_id, df, text_column = None):
             extent = df[column].agg(['min', 'max'])
             column_metadata[column]["extent"] = extent.tolist()
 
+    output_file = f"{directory}/input.parquet"
+    df.to_parquet(output_file)
+    print("wrote", output_file)
 
     # write out a json file with the model name and shape of the embeddings
     if text_column is None:
