@@ -47,7 +47,7 @@ h5py
 hdbscan
 httpcore~=1.0.2
 httpx~=0.25.2
-huggingface-hub~=0.20.2
+huggingface-hub~=0.21.2
 idna~=3.6
 importlib-metadata~=6.11.0
 ipykernel~=6.29.0
@@ -108,7 +108,7 @@ prompt-toolkit~=3.0.43
 psutil~=5.9.7
 ptyprocess~=0.7.0
 pure-eval~=0.2.2
-pyarrow~=14.0.2
+pyarrow~=17.0.0
 pycparser~=2.21
 pydantic~=2.5.3
 pydantic_core~=2.14.6
@@ -125,7 +125,7 @@ qtconsole~=5.5.1
 QtPy~=2.4.1
 referencing~=0.33.0
 regex~=2023.12.25
-requests~=2.31.0
+requests~=2.32.0
 rfc3339-validator~=0.1.4
 rfc3986-validator~=0.1.1
 rpds-py~=0.17.1
