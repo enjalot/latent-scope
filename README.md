@@ -35,7 +35,7 @@ To get started, install the [latent-scope module](https://pypi.org/project/laten
 python -m venv venv
 source venv/bin/activate
 pip install latentscope
-ls-init ~/local-scope-data --openai_key=XXX --mistral_key=YYY # optional api keys to enable API models 
+ls-init ~/latent-scope-data --openai_key=XXX --mistral_key=YYY # optional api keys to enable API models 
 ls-serve 
 ```
 
