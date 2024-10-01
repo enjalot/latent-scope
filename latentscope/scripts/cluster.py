@@ -38,12 +38,13 @@ def main():
     parser.add_argument('samples', type=int, help='Minimum cluster size')
     parser.add_argument('min_samples', type=int, help='Minimum samples for HDBSCAN')
     parser.add_argument('cluster_selection_epsilon', type=float, help='Cluster selection Epsilon', default=0)
+    parser.add_argument('column', type=str, nargs='?', help='Use column as cluster labels', default=None)
     
     args = parser.parse_args()
-    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples, args.cluster_selection_epsilon)
+    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples, args.cluster_selection_epsilon, args.column)
 
 
-def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon):
+def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon, column):
     DATA_DIR = get_data_dir()
     cluster_dir = os.path.join(DATA_DIR, dataset_id, "clusters")
     # Check if clusters directory exists, if not, create it
@@ -73,11 +74,15 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
     umap_embeddings = umap_embeddings_df.to_numpy()
 
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean', cluster_selection_epsilon=cluster_selection_epsilon)
-    clusterer.fit(umap_embeddings)
-
-    # Get the cluster labels
-    cluster_labels = clusterer.labels_
+    if column is not None:
+        input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, f"input.parquet"))
+        # use the column as the cluster labels
+        cluster_labels = input_df[column].to_numpy()
+    else:
+        clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean', cluster_selection_epsilon=cluster_selection_epsilon)
+        clusterer.fit(umap_embeddings)
+        # Get the cluster labels
+        cluster_labels = clusterer.labels_
     # copy cluster labels to another array
     raw_cluster_labels = cluster_labels.copy()
 

@@ -136,6 +136,16 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
     rerunClusterLabelsJob({job_id: job?.id});
   }
 
+  const handleKill = useCallback((job) => {
+    fetch(`${apiUrl}/jobs/kill?dataset=${dataset.id}&job_id=${job.id}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log("killed job", data);
+        setClusterLabelsJob(data)
+      })
+      .catch(console.error);
+  }, [dataset.id])
+
   return (
     <div className="dataset--setup-cluster-labels-content">
       <div className="dataset--slides-new">
@@ -154,7 +164,7 @@ function ClusterLabels({ dataset, cluster, embedding, selectedLabelId, onChange,
           <button type="submit" disabled={!!clusterLabelsJob || !cluster}>Auto Label</button>
         </form>
 
-        <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} killJob={setClusterLabelsJob} rerunJob={handleRerun} />
+        <JobProgress job={clusterLabelsJob} clearJob={()=>setClusterLabelsJob(null)} killJob={handleKill} rerunJob={handleRerun} />
 
       </div>
       {cluster ? <div className="dataset--setup-cluster-labels-list">

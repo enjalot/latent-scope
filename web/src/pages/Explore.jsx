@@ -355,6 +355,7 @@ function Explore() {
   const [searchEmbedding, setSearchEmbedding] = useState(null);
 
   const [searchText, setSearchText] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const searchQuery = useCallback((query) => {
 
@@ -367,9 +368,10 @@ function Explore() {
       embedding_id: searchModel,
       ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {} ),
     })
-    const nearestNeigborsUrl = new URL(`${apiUrl}/search/nn`);
-    nearestNeigborsUrl.search = searchParams.toString();
+    const nearestNeigborsUrl = `${apiUrl}/search/nn?${searchParams.toString()}`;
 
+
+    setSearchLoading(true)
     fetch(nearestNeigborsUrl)
       .then(response => response.json())
       .then(data => {
@@ -387,9 +389,10 @@ function Explore() {
         setDistances(dists)
         setSearchIndices(inds)
         setSearchEmbedding(data.search_embedding[0])
+        setSearchLoading(false)
         // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
       });
-  }, [searchModel, embeddings, datasetId, scatter, setDistances, setSearchIndices, setSearchEmbedding]);
+  }, [searchModel, embeddings, datasetId, scatter, setDistances, setSearchIndices, setSearchEmbedding, setSearchLoading]);
 
   useEffect(() => {
     if(searchText) {
@@ -796,7 +799,7 @@ const handleNewCluster = useCallback((label) => {
                 }}>
                   <input type="text" id="searchBox" placeholder="Nearest Neighbor Search..." />
                   {/* <button type="submit">Similarity Search</button> */}
-                  <button type="submit">🔍</button>
+                  {searchLoading ? "Querying..." : <button type="submit">🔍</button>}
                 </form>
               </div>
               <div className="filter-cell middle">

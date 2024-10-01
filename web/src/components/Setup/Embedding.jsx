@@ -209,6 +209,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
   */
   const [allModels, setAllModels] = useState([])
   const [allOptionsGrouped, setAllOptionsGrouped] = useState([])
+  const [defaultModel, setDefaultModel] = useState(null);
   useEffect(() => {
     const am = recentModels.concat(HFModels).concat(presetModels)
     let allOptions = am.map(m => {
@@ -226,7 +227,13 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
     setAllOptionsGrouped(grouped)
     setAllModels(am)
 
-  }, [presetModels, HFModels, recentModels])
+    const defaultOption = allOptions.find(option => option.name.indexOf("all-MiniLM-L6-v2") > -1);
+    if (defaultOption && !defaultModel) {
+      setDefaultModel(defaultOption);
+      setModelId(defaultOption.id);
+    }
+
+  }, [presetModels, HFModels, recentModels, defaultModel])
 
   const [model, setModel] = useState(null);
   const [modelId, setModelId] = useState(null);
@@ -333,6 +340,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
 
   const handleModelSelectChange = (selectedOption) => {
     console.log("SELECTED OPTION", selectedOption)
+    setDefaultModel(selectedOption)
     setModelId(selectedOption.id);
   };
   // const handleModelChange = (e) => {
@@ -403,6 +411,7 @@ function EmbeddingNew({ dataset, textColumn, embedding, umaps, clusters, onNew, 
             filterOption={customFilterOption}
             getOptionValue={(option) => option.id} 
             onChange={handleModelSelectChange}
+            value={defaultModel}
             // menuIsOpen={true}
           />
 
