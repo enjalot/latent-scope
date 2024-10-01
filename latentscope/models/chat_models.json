@@ -26,14 +26,6 @@
     },
     {
         "provider": "openai",
-        "name": "gpt-4-turbo-preview",
-        "id": "openai-gpt-4-turbo-preview",
-        "params": {
-            "max_tokens": 128000
-        }
-    },
-    {
-        "provider": "openai",
         "name": "gpt-4-turbo",
         "id": "openai-gpt-4-turbo",
         "params": {
@@ -47,38 +39,14 @@
         "params": {
             "max_tokens": 8192
         }
-    },
-    {
-      "provider": "mistralai",
-      "name": "mistral-tiny",
-      "id": "mistralai-mistral-tiny",
-      "params": {
-          "max_tokens": 8192
-      }
-    },
-    {
-      "provider": "mistralai",
-      "name": "mistral-small",
-      "id": "mistralai-mistral-small",
-      "params": {
-          "max_tokens": 8192
-      }
-    },
-    {
-      "provider": "mistralai",
-      "name": "mistral-medium",
-      "id": "mistralai-mistral-medium",
-      "params": {
-          "max_tokens": 8192
-      }
-    },
+    },    
     {
         "provider": "transformers",
-        "name": "meta-llama/Meta-Llama-3-8B-Instruct",
-        "sanitized_name": "meta-llama___Meta-Llama-3-8B-Instruct",
-        "id": "transformers-meta-llama___Meta-Llama-3-8B-Instruct",
+        "name": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        "sanitized_name": "meta-llama___Meta-Llama-3.1-8B-Instruct",
+        "id": "transformers-meta-llama___Meta-Llama-3.1-8B-Instruct",
         "params": {
-            "max_tokens": 8192
+            "max_tokens": 128000
         }
     }
 ]
