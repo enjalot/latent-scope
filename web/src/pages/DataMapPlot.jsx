@@ -35,6 +35,7 @@ function DataMapPlot() {
     darkmode: false,
     interactive: false,
     dpi: 150,
+    threshold: -1,
     figsize: [24, 24],
     label_wrap_width: 10,
     point_size: 7,
@@ -165,6 +166,12 @@ function DataMapPlot() {
                 Interactive:
               </span>
               <input type="checkbox" name="interactive" checked={config.interactive} onChange={handleChange} />
+            </label>
+            <label>
+              <span>
+                Threshold:
+              </span>
+              <input type="number" name="threshold" value={config.threshold} onChange={handleChange} />
             </label>
             <label>
               <span>
