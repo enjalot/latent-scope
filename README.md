@@ -4,7 +4,7 @@
 
 [Docs](https://enjalot.github.io/latent-scope/)
 
-Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
+Quickly embed, project, cluster, label and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/end.png?raw=true" width="45%"  alt="Setup your scope"><img src="https://github.com/enjalot/latent-scope/blob/main/documentation/curate-combined-cluster.png?raw=true" width="45%"  alt="Explore and Curate your data">
 
@@ -70,7 +70,7 @@ When latent-scope is installed, it creates a suite of command line scripts that 
 # like above, we make sure to install latent-scope
 python -m venv venv
 source venv/bin/activate
-pip install latent-scope
+pip install latentscope
 
 # prepare some data
 wget "https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/datavis-misunderstood.csv" > ~/Downloads/datavis-misunderstood.csv

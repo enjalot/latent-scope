@@ -57,6 +57,30 @@
         "truncation": true,
         "max_tokens": 16000
     }
-}
+  },
+  {
+      "provider": "ollama",
+      "name": "mxbai-embed-large",
+      "id": "mxbai-embed-large",
+      "params": {
+          "num_ctx": 512
+      }
+  },
+  {
+      "provider": "ollama",
+      "name": "nomic-embed-text",
+      "id": "nomic-embed-text",
+      "params": {
+          "num_ctx": 8192
+      }
+  },
+  {
+      "provider": "ollama",
+      "name": "all-minilm",
+      "id": "all-minilm",
+      "params": {
+          "num_ctx": 256
+      }
+  }
 
 ]
