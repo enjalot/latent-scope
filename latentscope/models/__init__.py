@@ -5,6 +5,7 @@ from .providers.mistralai import MistralAIEmbedProvider, MistralAIChatProvider
 from .providers.cohereai import CohereAIEmbedProvider
 from .providers.togetherai import TogetherAIEmbedProvider
 from .providers.voyageai import VoyageAIEmbedProvider
+from .providers.ollama import OllamaEmbedProvider, OllamaChatProvider
 from .providers.nltk import NLTKChatProvider
 
 # We use a universal id system for models where its:
@@ -62,6 +63,8 @@ def get_embedding_model(id):
         return TogetherAIEmbedProvider(model['name'], model['params'])
     if model['provider'] == "voyageai":
         return VoyageAIEmbedProvider(model['name'], model['params'])
+    if model['provider'] == "ollama":
+        return OllamaEmbedProvider(model['name'], model['params'])
 
 
 def get_chat_model_list():
@@ -92,4 +95,7 @@ def get_chat_model(id):
         return MistralAIChatProvider(model['name'], model['params'])
     if model['provider'] == "nltk":
         return NLTKChatProvider(model['name'], model['params'])
+    if model['provider'] == "ollama":
+        return OllamaChatProvider(model['name'], model['params'])
+    
 

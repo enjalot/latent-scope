@@ -85,6 +85,8 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
 
     model = get_chat_model(model_id)
     model.load_model()
+    # Set max_tokens to either model.params["max_tokens"] or model.params["num_ctx"] depending on which is defined
+    max_tokens = model.params.get("max_tokens", model.params.get("num_ctx", 512))
     enc = model.encoder
 
     system_prompt = {"role":"system", "content": f"""You're job is to summarize lists of items with a short label of no more than 4 words. The items are part of a cluster and the label will be used to distinguish this cluster from others, so pay attention to what makes this group of similar items distinct.
@@ -98,7 +100,7 @@ You should choose a label that best summarizes the theme of the list so that som
 Do not use punctuation, Do not explain yourself, respond with only a few words that summarize the list."""}
 
     # TODO: why the extra 50 for openai?
-    max_tokens = model.params["max_tokens"] - len(enc.encode(system_prompt["content"])) - 50
+    max_tokens = max_tokens - len(enc.encode(system_prompt["content"])) - 50
 
     # Create the lists of items we will send for summarization
     # Current looks like:
@@ -114,6 +116,8 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
         # text = '\n'.join([f"{i+1}. {t}" for i, t in enumerate(items) if not too_many_duplicates(t)])
         text = '\n'.join([f"<ListItem>{t}</ListItem>" for i, t in enumerate(items) if not too_many_duplicates(t)])
         encoded_text = enc.encode(text)
+        print(encoded_text)
+        print(enc.decode(encoded_text))
         if len(encoded_text) > max_tokens:
             encoded_text = encoded_text[:max_tokens]
         extract = enc.decode(encoded_text)
