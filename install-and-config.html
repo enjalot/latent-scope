@@ -92,7 +92,7 @@ This is also a convenient place to make a virtual environment.</p>
 <span class="hljs-built_in">cd</span> ~/latent-scope-data
 
 <span class="hljs-comment"># create &amp; activate virtual environment</span>
-python3 -m venv lsenv
+python -m venv lsenv
 <span class="hljs-built_in">source</span> lsenv/bin/activate
 
 <span class="hljs-comment"># install the module</span>
@@ -101,6 +101,7 @@ pip install latentscope
 ls-serve ~/latent-scope-data --port 5001
 </code></pre>
 <p>This will start a local webserver from which you can access the tool at <a href="http://localhost:5001" target="_blank" rel="noopener noreferrer">http://localhost:5001</a></p>
+<p>Latent Scope is developed with python 3.12, so it is the recommended python version. YMMV with earlier versions.</p>
 <p>The next time you want to run Latent Scope you can simply do:</p>
 <pre data-language="bash"><code class="language-bash"><span class="hljs-built_in">cd</span> ~/latent-scope-data
 ls-serve
@@ -123,6 +124,6 @@ COHERE_API_KEY=XXX
 </main>
 <footer id="observablehq-footer">
 <nav><a rel="prev" href="./"><span>Latent Scope</span></a><a rel="next" href="./your-first-scope"><span>Your First Scope</span></a></nav>
-<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-05-13T09:35:53">May 13, 2024</a>.</div>
+<div>Built with <a href="https://observablehq.com/" target="_blank" rel="noopener noreferrer">Observable</a> on <a title="2024-10-03T10:06:14">Oct 3, 2024</a>.</div>
 </footer>
 </div>
