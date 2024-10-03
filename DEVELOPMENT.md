@@ -3,7 +3,7 @@
 If you are interested in customizing or contributing to latent-scope this document explains the ways to develop it.
 
 ## Python module
-The `latentscope` directory contains the python source code for the [latent scope pip module](). There are three primary parts to the module:
+The `latentscope` directory contains the python source code for the [latent scope pip module](https://pypi.org/project/latentscope/). There are three primary parts to the module:
 
 1. server - contains the flask app and API routes
 2. scripts - 
@@ -15,11 +15,12 @@ If you modify the python code and want to try out your changes, you can run loca
 
 ```
 python -m venv testenv
-source venv/bin/activate
+source testenv/bin/activate
 pip install -e .
 ls-serve ~/latent-scope-data
 ```
 
+We recommend python 3.12 as that's what the project is developed with.
 
 ## Web client
 The `web` directory contains the JavaScript React source code for the web interface. Node.js is required to be installed on your system to run the development server or build a new version of the module.
@@ -36,17 +37,11 @@ This will call the local API at http://localhost:5001 as set in `web/.env.develo
 ## Building for distribution
 You can build a new version of the module, this will package the latest version of the web interface as well.
 
-```
-python setup.py sdist bdist_wheel
-```
-This builds the package, including the React app, and bundles it all up. 
-
-```
-deactivate
-python setup.py sdist bdist_wheel
-source testenv/bin/activate
-pip install dist/latentscope-0.1.0-py3-none-any.whl
-
+You can use the included `build.sh` script to build and install the wheel in a test environment:
+```bash
+./build.sh 0.4.4
+source testenv-whl/bin/activate
+ls-serve
 ```
 
 
@@ -78,7 +73,7 @@ There is a `get_embedding_model(id)` function which will load the appropriate cl
 
 ### Chat models
 Chat models for summarization of clusters are prepared in [latentscope/models/chat_models.json](latentscope/models/chat_models.json). 
-There is a `get_chat_model(id)` function which will load the appropriate class based on the model provider. Each provider can support a chat model if the interface is implemented. Adding more chat providers should be relatively straightforward and is still a TODO item.
+There is a `get_chat_model(id)` function which will load the appropriate class based on the model provider. Each provider can support a chat model if the interface is implemented. Adding more chat models is captured in [this issue](https://github.com/enjalot/latent-scope/issues/2).
 
 ## Scripts
 The scripts are outlined in the [README.md](README.md). Each one provides a python interface as well as a command line interface for running its part of the process. They all use ids to read relevant data from disk and then output any relevant information to disk.

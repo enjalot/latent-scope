@@ -41,6 +41,8 @@ ls-serve
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!  
 
+We recommend python 3.12 as that's what the project is developed with.
+
 See the [Your First Scope](https://enjalot.github.io/latent-scope/your-first-scope) guide for a detailed walk-through of the process.
 
 ### Python interface
@@ -94,7 +96,7 @@ ls-serve
 ### Repository overview
 This repository is currently meant to run locally, with a React frontend that communicates with a python server backend. We support several popular open source embedding models that can run locally as well as proprietary API embedding services. Adding new models and services should be quick and easy.
 
-To learn more about customizing, extending and contributing see [DEVELOPMENT.md](documentation/DEVELOPMENT.md)
+To learn more about contributing and the project roadmap see [CONTRIBUTION.md](CONTRIBUTION.md), for technical details see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 
 ### Design principles
