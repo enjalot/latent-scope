@@ -29,7 +29,9 @@ What can you do with Latent Scope? The following examples demonstrate the kinds 
 
 
 ### Quick Start
-To get started, install the [latent-scope module](https://pypi.org/project/latentscope/) and run the server via the Command Line:
+Latent Scope works on Mac, Linux and Windows. Python 3.12 is the recommended python version.
+
+To get started, install the [latent-scope python module](https://pypi.org/project/latentscope/) and run the server via the Command Line:
 
 ```bash
 python -m venv venv
@@ -41,7 +43,6 @@ ls-serve
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!  
 
-We recommend python 3.12 as that's what the project is developed with.
 
 See the [Your First Scope](https://enjalot.github.io/latent-scope/your-first-scope) guide for a detailed walk-through of the process.
 
