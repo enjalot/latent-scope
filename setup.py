@@ -63,7 +63,7 @@ print("building version", version)
 setup(
     name='latentscope',
     version=version,
-    description='Quickly embed, project, cluster and explore a dataset.',
+    description='Quickly embed, project, cluster, label and explore a dataset.',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/enjalot/latent-scope',
