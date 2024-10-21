@@ -174,7 +174,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             n_components=2,
             verbose=True,
         )
-    print("reducing", embeddings.shape[0], "embeddings to 2 dimensions")
+    print("reducing", embeddings.shape[1], "embeddings to 2 dimensions")
     umap_embeddings = reducer.fit_transform(embeddings)
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id)
 

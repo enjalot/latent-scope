@@ -24,7 +24,7 @@ class TransformersEmbedProvider(EmbedModelProvider):
         # from transformers import AutoTokenizer, AutoModel
         from sentence_transformers import SentenceTransformer
 
-        self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)
+        self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)#, backend="onnx")
         self.tokenizer = self.model.tokenizer
 
         # if "rps" in self.params and self.params["rps"]:
