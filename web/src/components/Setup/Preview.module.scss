@@ -1,7 +1,11 @@
-@import "../../latentscope--brand-theme.scss";
 
 .preview {
-  padding: 12px;
+  padding: 0;
+  position: relative;
+}
+.preview-header {
+  position: absolute;
+  top: -70px;
 }
 
 .search-box {
@@ -14,4 +18,7 @@
 }
 .search-button {
   flex-grow: 0;
+}
+.search-button-container {
+  padding-top: 6px;
 }

@@ -36,7 +36,7 @@ const StepProgress = () => {
       </div>
 
       <div className={styles.previewHeader}>
-        <h3>Preview</h3>
+        {/* <h3>Preview</h3> */}
       </div>
     </div>
   );

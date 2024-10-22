@@ -1,4 +1,3 @@
-@import '../../latentscope--brand-theme.scss';
 
 .stepProgressContainer {
   display: flex;
@@ -15,15 +14,15 @@
 
 .step {
   padding: 6px 12px;
-  background-color: $neutrals-color-neutral-0;
-  border: 1px solid $borders-color-border-1;
-  color: $text-color-text-neutral;
+  background-color: var(--neutrals-color-neutral-0);
+  border: 1px solid var(--borders-color-border-1);
+  color: var(--text-color-text-neutral);
 }
 
 .active {
-  background-color: $neutrals-color-neutral-1;
-  border-color: $borders-color-border-2;
-  color: $text-color-text-main;
+  background-color: var(--neutrals-color-neutral-1);
+  border-color: var(--borders-color-border-2);
+  color: var(--text-color-text-main);
   &::before {
     content: '👉';
     margin-right: 5px;
@@ -31,9 +30,9 @@
 }
 
 .completed {
-  background-color: $semantic-color-semantic-neutral;
-  border-color: $semantic-color-semantic-neutral;
-  color: $neutrals-color-neutral-0;
+  background-color: var(--semantic-color-semantic-neutral);
+  border-color: var(--semantic-color-semantic-neutral);
+  color: var(--neutrals-color-neutral-0);
   cursor: pointer;
   &::before {
     content: '✅';
@@ -45,9 +44,9 @@
   width: 48%;
   h3 {
     padding: 6px 12px;
-    background-color: $neutrals-color-neutral-0;
+    background-color: var(--neutrals-color-neutral-0);
     // border: 1px solid $borders-color-border-1;
-    color: $text-color-text-main;
+    color: var(--text-color-text-main);
 
   }
 }

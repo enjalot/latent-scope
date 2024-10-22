@@ -151,6 +151,7 @@ function Embedding() {
           } else if(embeddingsJob.job_name == "rm") {
             emb = embs[embs.length - 1]
           }
+          console.log("new embedding", emb)
           setEmbedding(emb)
           fetchRecentModels()
         })
@@ -325,7 +326,7 @@ function Embedding() {
                 </select> 
               : null} */}
 
-            <Button type="submit" disabled={!!embeddingsJob}
+            <Button type="submit" color={embedding ? "secondary" : "primary"} disabled={!!embeddingsJob}
               text="New Embedding"
             />
           </form>
@@ -363,10 +364,10 @@ function Embedding() {
                   </span>
                   <span>{emb.model_id?.replace("___", "/")}</span>
                   <span>{emb.dimensions} dimensions</span>
-                  <span className={styles["item-deps"]}>
+                  {umps.length || cls.length ? <div className={styles["item-deps"]}>
                     {umps.length ? <span>{umps.length} umaps</span> : null}
                     {cls.length ? <span>{cls.length} clusters</span> : null}
-                  </span>
+                  </div> : null}
                   <span>text column: {emb.text_column}</span>
                   { emb.prefix ? <span>Prefix: "<code>{emb.prefix}</code>"<br/></span> : null }
                     {dims.length ? <div className={styles["truncate"]}>

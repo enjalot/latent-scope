@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { range } from "d3-array";
 
 import { Input, Button } from "react-element-forge"
@@ -9,9 +9,11 @@ import FilterDataTable from '../FilterDataTable';
 import styles from "./Preview.module.scss";
 
 function Preview({
-  embedding
+  embedding,
+  umap,
+  cluster,
 } = {}) {
-  const { datasetId, dataset, scope } = useSetup();
+  const { datasetId, dataset, scope, currentStep, stepIds } = useSetup();
 
   const [dataIndices, setDataIndices] = useState(range(0, 100));
   const [distances, setDistances] = useState([])
@@ -33,6 +35,10 @@ function Preview({
         })
     }
   }, [searchText, embedding, datasetId])
+
+  useEffect(() => {
+    searchQuery()
+  }, [embedding]) // don't want this to update on searchText change
 
   useEffect(() => {
     const updateHeight = () => {
@@ -59,7 +65,23 @@ function Preview({
     console.log("SCOPE", scope)
   }, [scope])
 
+  const stepTitle = useMemo(() => {
+    if(currentStep == 1) {
+      return embedding?.id
+    }
+    if(currentStep == 2) {
+      return umap?.id
+    }
+    if(currentStep == 3) {
+      return cluster?.id
+    }
+    return stepIds[currentStep - 1]
+  }, [currentStep, stepIds, embedding, umap, cluster])
+
   return <div className={styles["preview"]}>
+    <div className={styles["preview-header"]}>
+      <h3>Preview: {stepTitle}</h3>
+    </div>
     <div className={styles["search-box"]}>
       <Input 
         className={styles["search-input"]}
@@ -67,18 +89,20 @@ function Preview({
         onChange={e => setSearchText(e.target.value)}
         onKeyDown={e => {
           if(e.key == "Enter" && !searchLoading) {
-            searchQuery(searchText)
+            searchQuery()
           }
         }}
       ></Input>
-      <Button disabled={searchLoading || !searchText} className={styles["search-button"]}
-        onClick={() => {
-          searchQuery(searchText)
-        }}
-        icon={searchLoading ? "pie-chart" : "search"}
-        // text={searchLoading ? "Searching..." : "Search"}
-      >
-      </Button>
+      <div className={styles["search-button-container"]}>
+        <Button color="secondary"disabled={searchLoading || !searchText} className={styles["search-button"]}
+          onClick={() => {
+            searchQuery()
+          }}
+          icon={searchLoading ? "pie-chart" : "search"}
+          // text={searchLoading ? "Searching..." : "Search"}
+        >
+        </Button>
+      </div>
     </div>
 
     <FilterDataTable

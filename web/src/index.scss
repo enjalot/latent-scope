@@ -1,0 +1,334 @@
+@import "./latentscope--brand-theme.scss";
+
+:root {
+
+   /**
+  FONTS
+  **/
+  --font-primary: 'Roboto';
+  --font-secondary: 'Inter';
+  --font-backup: 'system-ui';
+  /**
+  TYPOGRPAPHY
+  **/
+  --font-primary-weight: 500;
+  --font-secondary-weight: 700;
+  // sizes
+  --font-body-xs: 12;
+  --font-body-sm: 14;
+  --font-body-md: 16;
+  --font-body-lg: 18;
+  // mobile sizes
+  --font-body-mobile-md: 14;
+  --font-body-mobile-lg: 16;
+  // weights
+  --font-body-thin-weight: 300;
+  --font-body-regular-weight: 500;
+  --font-body-semibold-weight: 600;
+  --font-body-bold-weight: 700;
+  /**
+  AVATAR
+  **/
+  --color-avatar-bg: #E8EFFD;
+  /**
+  BUTTON
+  **/
+  --button-font-size: 1rem;
+  --button-font-weight: 500;
+  --button-border-radius: 12px;
+  --button-border-stroke: 2px;
+  --button-padding-large: 12px 18px;
+  --button-padding-large-round: 18px;
+  --button-padding-medium: 4px 8px;
+  --button-padding-medium-round: 8px;
+  --button-padding-small: 3px 6px;
+  --button-padding-small-round: 6px;
+  --button-box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  /**
+  COPY BUTTON
+  **/
+  --copy-button-font-size: 0.875rem;
+  --copy-button-font-weight: 500;
+  /**
+  CHECKBOX
+  **/
+  --checkbox-label-font-size: 0.875rem;
+  --checkbox-label-font-weight: 500;
+  /**
+  INPUTS
+  **/
+  --input-label-font-size: 0.875rem;
+  --input-label-font-weight: 600;
+  --input-font-size: 0.875rem;
+  --input-info-font-size: 0.875rem;
+  --input-border-radius: 12px;
+  --input-padding: 12px;
+  /**
+  DROPDOWN
+  **/
+  --dropdown-margin-top: 12px;
+  --dropdown-border-radius: 4px;
+  /**
+  BADGE
+  **/
+  --badge-font-size: 0.875rem;
+  --badge-font-weight: 500;
+  --badge-padding: 5px 12px;
+  --badge-border-radius: 56px;
+  /**
+  RADIO
+  **/
+  --radio-label-font-size: 0.875rem;
+  --radio-label-font-weight: 500;
+  /**
+  SWITCH
+  **/
+  --switch-font-weight: 500;
+  /**
+  TOOLTIP
+  **/
+  --tooltip-font-size: 0.875rem;
+  --tooltip-font-weight: 500;
+  --tooltip-width: 250px;
+  /**
+  PRIMARY INTERACTION
+  **/
+
+  --color-interaction-primary: var(--interactions---primary-color-interaction-primary);
+  --color-interaction-primary-hover: var(--interactions---primary-color-interaction-primary-hover);
+  --color-interaction-primary-active: var(--interactions---primary-color-interaction-primary-active);
+  --color-interaction-primary-disabled: var(--interactions---primary-color-interaction-primary-disabled);
+  --color-interaction-primary-alt: var(--interactions---secondary-color-interaction-secondary);
+  --color-interaction-primary-alt-hover: var(--interactions---secondary-color-interaction-secondary-hover);
+  --color-interaction-primary-alt-active: var(--interactions---secondary-color-interaction-secondary-active);
+  --color-interaction-primary-alt-disabled: var(--interactions---secondary-color-interaction-secondary-disabled);
+  /**
+  SECONDARY INTERACTION
+  **/
+  --color-interaction-secondary: var(--interactions---secondary-color-interaction-secondary);
+  --color-interaction-secondary-hover: var(--interactions---secondary-color-interaction-secondary-hover);
+  --color-interaction-secondary-active: var(--interactions---secondary-color-interaction-secondary-active);
+  --color-interaction-secondary-disabled: var(--interactions---secondary-color-interaction-secondary-disabled);
+  --color-interaction-secondary-alt: var(--interactions---secondary-color-interaction-secondary);
+  --color-interaction-secondary-alt-hover: var(--interactions---secondary-color-interaction-secondary-hover);
+  --color-interaction-secondary-alt-active: var(--interactions---secondary-color-interaction-secondary-active);
+  --color-interaction-secondary-alt-disabled: var(--interactions---secondary-color-interaction-secondary-disabled);
+  /**
+  DELETE INTERACTION
+  **/
+  --color-interaction-delete: var(--semantic-color-semantic-critical);
+  --color-interaction-delete-alt: var(--color-semantic-critical-bg-alt);
+  --color-interaction-delete-hover: var(--color-semantic-critical-hover);
+  --color-interaction-delete-active: var(--color-semantic-critical-active);
+  --color-interaction-delete-disabled: var(--color-semantic-critical-disabled);
+  --color-interaction-delete-alt-disabled: var(--color-semantic-critical-disabled);
+  /**
+  ALT INTERACTION
+  **/
+  --color-interaction-pos: var(--color-semantic-success);
+  --color-interaction-pos-hover: var(--color-semantic-success-hover);
+  --color-interaction-pos-active: var(--color-semantic-success-active);
+  --color-interaction-pos-disabled: var(--color-semantic-success-disabled);
+  --color-interaction-pos-alt: var(--color-text-reverse);
+  --color-interaction-pos-alt-hover: var(--color-semantic-success-hover);
+  --color-interaction-pos-alt-active: var(--color-semantic-success-disabled);
+  --color-interaction-pos-alt-disabled: var(--color-semantic-success-disabled);
+  /**
+  SEMANTIC
+  **/
+
+  --color-semantic-info: var(--semantic-color-semantic-info);
+  --color-semantic-info-hover: var(--semantic-color-semantic-info-hover);
+  --color-semantic-info-active: var(--semantic-color-semantic-info-active);
+  --color-semantic-disabled: var(--semantic-color-semantic-neutral-disabled);
+  --color-semantic-success: var(--semantic-color-semantic-success);
+  --color-semantic-success-hover: var(--semantic-color-semantic-success-hover);
+  --color-semantic-success-active: var(--semantic-color-semantic-success-active);
+  --color-semantic-success-disabled: var(--semantic-color-semantic-neutral-disabled);
+  --color-semantic-warning: var(--semantic-color-semantic-warning);
+  --color-semantic-warning-hover: var(--semantic-color-semantic-warning-hover);
+  --color-semantic-warning-active: var(--semantic-color-semantic-warning-active);
+  --color-semantic-warning-disabled: var(--semantic-color-semantic-neutral-disabled);
+  --color-semantic-critical: var(--semantic-color-semantic-critical);
+  --color-semantic-critical-hover: var(--semantic-color-semantic-critical-hover);
+  --color-semantic-critical-active: var(--semantic-color-semantic-critical-active);
+  --color-semantic-critical-disabled: var(--semantic-color-semantic-neutral-disabled);
+  --color-semantic-critical-bg-alt: var(--semantic-color-semantic-critical-bg-alt);
+  --color-semantic-neutral: var(--semantic-color-semantic-neutral);
+  --color-semantic-neutral-hover: var(--semantic-color-semantic-neutral-hover);
+  --color-semantic-neutral-active: var(--semantic-color-semantic-neutral-active);
+  --color-semantic-neutral-inactive: var(--semantic-color-semantic-neutral-inactive);
+  /**
+  TEXT
+  **/
+  --color-text-main: var(--text-color-text-main);
+  --color-text-subtle: var(--text-color-text-subtle);
+  --color-text-reverse: var(--text-color-text-reverse);
+  --color-text-reverse-subtle: var(--text-color-text-reverse-subtle);
+  --color-text-disabled: var(--text-color-text-disabled);
+  --color-text-info: var(--text-color-text-info);
+  --color-text-success: var(--text-color-text-success);
+  --color-text-warning: var(--text-color-text-warning);
+  --color-text-critical: var(--text-color-text-critical);
+  /**
+  BORDER
+  **/
+  --color-border-1: var(--borders-color-border-1);
+  --color-border-2: var(--borders-color-border-2);
+  --color-border-3: var(--borders-color-border-3);
+  /**
+  NEUTRALS
+  **/
+  --color-neutral-0: var(--neutrals-color-neutral-0);
+  --color-neutral-0-reverse: var(--neutrals-color-neutral-0-reverse);
+  --color-neutral-1: var(--neutrals-color-neutral-1);
+  --color-neutral-2: var(--neutrals-color-neutral-2);
+  --color-neutral-3: var(--neutrals-color-neutral-3);
+  /**
+  STATUS
+  **/
+  --color-status-ready: #7ED320;
+  --color-status-offline: #ADA7A8;
+  --color-status-busy: #F19B53;
+  /**
+  BACKGROUNDS
+  **/
+  --color-background-overlay: rgba(23, 10, 122, 0.4);
+  --color-background-subtle-callout: #E8EFFD;
+  --color-background-modal-overlay: rgba(0, 0, 0, 0.3);
+  --color-background-critical: #F9E1E5;
+  --color-background-neutral-0: #FFFFFF;
+  /**
+  MENU
+  **/
+  --color-interactions-menu: #000000;
+  --color-interactions-menu-hover: #2F2F2F;
+  --color-interactions-menu-inactive: #757575;
+  /**
+  Badge
+  **/
+  --color-badge-primary-bg: #000000;
+  --color-badge-primary-text: #FFFFFF;
+  --color-badge-secondary-bg: #FFFFFF;
+  --color-badge-secondary-text: #000000;
+  /**
+  BUTTON
+  **/
+  --copy-button-text-color: #757575;
+
+
+  font-family: Roboto, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  /* display: flex; */
+  /* place-items: center; */
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-y: scroll;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+  
+  &::-webkit-scrollbar {
+    display: none; /* For Chrome, Safari, and Opera */
+  }
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  /* padding: 0.6em 1.2em; */
+  padding: 0.3em 0.6em;
+  font-size: 1em;
+  font-weight: 500;
+  /* font-family: inherit; */
+  font-family: 'Orbitron', sans-serif;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.button {
+  display: inline-block;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  /* padding: 0.6em 1.2em; */
+  padding: 0.3em 0.6em;
+  font-size: 1em;
+  font-weight: 500;
+  /* font-family: inherit; */
+  font-family: 'Orbitron', sans-serif;
+  /* background-color: #1a1a1a; */
+  cursor: pointer;
+  transition: border-color 0.25s;
+  width: fit-content;
+}
+.button:hover {
+  border-color: #646cff;
+}
+.button:focus,
+.button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.tooltip {
+  filter: grayscale(100%);
+  padding: 0.5em 0.5em;
+}
+.tooltip:hover {
+  filter: grayscale(0%)
+
+}
+
+select {
+  font-weight: 500;
+  margin: 0 6px;
+  padding: 3px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
