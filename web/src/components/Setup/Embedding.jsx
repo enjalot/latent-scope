@@ -354,7 +354,7 @@ function Embedding() {
               dims = [512, 256, 128, 64, 16].filter(d => d < emb.dimensions)
             }
             return (
-            <div className={styles["item"]} key={index}>
+            <div className={styles["item"] + (emb.id === embedding?.id ? " " + styles["selected"] : "")} key={index}>
               <label htmlFor={`embedding${index}`}>
                 <span className={styles["item-info"]}>
                   <span>

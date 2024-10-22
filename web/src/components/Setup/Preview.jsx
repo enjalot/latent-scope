@@ -27,7 +27,7 @@ function Preview({
       apiService.searchNearestNeighbors(datasetId, embedding, searchText)
         .then(data => {
           console.log("search", data)
-          setDataIndices(data.indices)
+          setDataIndices(data.indices.slice(0,100))
           setDistances(data.distances)
           setSearchLoading(false)
         })
@@ -87,6 +87,7 @@ function Preview({
       distances={distances}
       clusterMap={clusterMap}
       height={height}
+      showNavigation={false}
     />
   </div>
 }

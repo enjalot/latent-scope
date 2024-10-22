@@ -97,6 +97,9 @@
   height: fit-content;
   // height: 140px;
 }
+.item.selected {
+  background-color: $neutrals-color-neutral-2;
+}
 .item-info {
   display: flex;
   flex-direction: column;

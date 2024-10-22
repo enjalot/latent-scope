@@ -146,6 +146,7 @@ function FilterDataTable({
   tagset,
   showEmbeddings = null,
   showDifference = null,
+  showNavigation = true,
   onTagset,
   onScope,
   onHover, 
@@ -539,7 +540,7 @@ function FilterDataTable({
         </tbody>
       </table>
       </div>
-      <div className="filter-data-table-page-controls">
+      {showNavigation && <div className="filter-data-table-page-controls">
         <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
           First
         </button>
@@ -555,7 +556,7 @@ function FilterDataTable({
         <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
           Last
         </button>
-      </div>
+      </div>}
     </div>
   )
 }
