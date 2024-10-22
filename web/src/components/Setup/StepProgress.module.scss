@@ -34,6 +34,7 @@
   background-color: $semantic-color-semantic-neutral;
   border-color: $semantic-color-semantic-neutral;
   color: $neutrals-color-neutral-0;
+  cursor: pointer;
   &::before {
     content: '✅';
     margin-right: 5px;

@@ -105,6 +105,11 @@
   flex-direction: column;
   gap: 4px;
 }
+.item-deps {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
 @media (prefers-color-scheme: dark) {
   .item {
     background-color: #333;

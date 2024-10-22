@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../lib/apiService';
 
 const steps = ['Embed', 'UMAP', 'Cluster', 'Label Clusters', 'Scope'];
+const stepIds = ['embedding_id', 'umap_id', 'cluster_id', 'cluster_labels_id', 'scope_id'];
 
 const SetupContext = createContext();
 
@@ -31,9 +32,11 @@ export const SetupProvider = ({ children }) => {
       apiService.getScope(datasetId, scopeId)
         .then(data => {
           setScope(data)
+          setCurrentStep(5)
         });
     } else {
       setScope(null)
+      setCurrentStep(1)
     }
   }, [datasetId, scopeId]);
 
@@ -57,7 +60,9 @@ export const SetupProvider = ({ children }) => {
     scopes,
     updateScope,
     steps,
+    stepIds,
     currentStep,
+    setCurrentStep,
     goToNextStep,
     goToPreviousStep,
     navigate

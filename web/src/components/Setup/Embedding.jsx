@@ -26,7 +26,7 @@ const debounce = (func, wait) => {
 
 
 function Embedding() {
-  const { datasetId, dataset, scope, setDataset, updateScope } = useSetup();
+  const { datasetId, dataset, scope, setDataset, updateScope, goToNextStep } = useSetup();
 
   const [textColumn, setTextColumn] = useState(null);
   const [embedding, setEmbedding] = useState(null);
@@ -363,9 +363,12 @@ function Embedding() {
                   </span>
                   <span>{emb.model_id?.replace("___", "/")}</span>
                   <span>{emb.dimensions} dimensions</span>
-                  <span>{umps.length} umaps, {cls.length} clusters</span>
+                  <span className={styles["item-deps"]}>
+                    {umps.length ? <span>{umps.length} umaps</span> : null}
+                    {cls.length ? <span>{cls.length} clusters</span> : null}
+                  </span>
                   <span>text column: {emb.text_column}</span>
-                  { emb.prefix ? <span>Prefix: {emb.prefix}<br/></span> : null }
+                  { emb.prefix ? <span>Prefix: "<code>{emb.prefix}</code>"<br/></span> : null }
                     {dims.length ? <div className={styles["truncate"]}>
                       <select id={"truncate-"+emb.id}>
                         {dims.map((d,i) => {
@@ -395,6 +398,7 @@ function Embedding() {
           <Button disabled={!embedding}
             onClick={() => {
               updateScope({embedding_id: embedding?.id})
+              goToNextStep()
             }}
             text={embedding ? `Proceed with ${embedding?.id}` : "Select an embedding"}
             >
