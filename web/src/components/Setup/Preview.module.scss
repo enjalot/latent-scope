@@ -1,0 +1,17 @@
+@import "../../latentscope--brand-theme.scss";
+
+.preview {
+  padding: 12px;
+}
+
+.search-box {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+.search-input {
+  flex-grow: 1;
+}
+.search-button {
+  flex-grow: 0;
+}

@@ -1,0 +1,52 @@
+@import '../../latentscope--brand-theme.scss';
+
+.stepProgressContainer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+.stepProgress {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  width: 45%;
+}
+
+.step {
+  padding: 6px 12px;
+  background-color: $neutrals-color-neutral-0;
+  border: 1px solid $borders-color-border-1;
+  color: $text-color-text-neutral;
+}
+
+.active {
+  background-color: $neutrals-color-neutral-1;
+  border-color: $borders-color-border-2;
+  color: $text-color-text-main;
+  &::before {
+    content: '👉';
+    margin-right: 5px;
+  }
+}
+
+.completed {
+  background-color: $semantic-color-semantic-neutral;
+  border-color: $semantic-color-semantic-neutral;
+  color: $neutrals-color-neutral-0;
+  &::before {
+    content: '✅';
+    margin-right: 5px;
+  }
+}
+
+.previewHeader {
+  width: 48%;
+  h3 {
+    padding: 6px 12px;
+    background-color: $neutrals-color-neutral-0;
+    // border: 1px solid $borders-color-border-1;
+    color: $text-color-text-main;
+
+  }
+}

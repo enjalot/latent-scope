@@ -166,6 +166,7 @@ function FilterDataTable({
   // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
   const [highlightColumn, setHighlightColumn] = useState(null)
   useEffect(() => {
+    console.log("changed?", dataset)
     setHighlightColumn(dataset?.text_column || null)
   }, [dataset])
 

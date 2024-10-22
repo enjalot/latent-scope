@@ -42,7 +42,7 @@ function jobPolling(dataset, setJob, jobId, intervalms = 500) {
 }
 
 function useStartJobPolling(dataset, setJob, url, intervalms = 500) {
-  // const [cleanup, setCleanup] = useState(() => {})
+  // const [job, setJob] = useState(null);
   const startJob = useCallback((params) => {
     fetch(`${url}?dataset=${dataset.id}&${new URLSearchParams(params)}`)
       .then(response => response.json())
@@ -53,13 +53,7 @@ function useStartJobPolling(dataset, setJob, url, intervalms = 500) {
         // setCleanup(cleanup)
       });
   }, [dataset, setJob, url]);
-  // useEffect(() => {
-  //   return () => {
-  //     if(cleanup)
-  //       cleanup()
-  //   };
-  // }, [cleanup])
-  return { startJob };
+  return { startJob }//, job, setJob };
 }
 
 export { 

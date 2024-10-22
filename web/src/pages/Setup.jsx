@@ -499,13 +499,9 @@ function Setup() {
     }
   }, [setClusterLabels, setSelectedClusterLabelSetId, cluster])
 
-
   const [defaultIndices, setDefaultIndices] = useState(range(0, 100));
-
-
   const [distances, setDistances] = useState([])
   const [clusterMap, setClusterMap] = useState({})
-
 
   if (!dataset) return <div>Loading...</div>;
 

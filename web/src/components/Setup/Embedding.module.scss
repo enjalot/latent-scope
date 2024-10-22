@@ -1,0 +1,142 @@
+@import '../../latentscope--brand-theme.scss';
+
+.embeddings {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  height: 100%;
+}
+
+.embeddings-setup {
+  display: flex;
+  flex-direction: column;
+  width: 48%;
+  overflow-y: auto;
+}
+
+.embeddings-preview {
+  width: 48%;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview {
+  flex-grow: 1;
+  min-height: 0;
+}
+.navigate {
+  padding: 12px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.embeddings-form {
+  margin: 6px;
+  padding: 12px;
+  border: 1px solid $borders-color-border-1;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.embeddings-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.embeddings-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  flex-grow: 1;
+  min-height: 0;
+}
+.embeddings-list input, .embeddings-list label {
+  cursor: pointer;
+}
+
+.truncate {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.options {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: space-between;
+}
+.batch-size {
+  width: 45px;
+}
+.max-seq-length {
+  width: 55px;
+}
+
+.delete {
+  max-height: 33px;
+  margin-left: auto;
+  
+}
+
+.item {
+  background-color: $neutrals-color-neutral-1;
+  border-radius: 5px;
+  margin: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  width: 100%;
+  // max-width: 300px;
+  height: fit-content;
+  // height: 140px;
+}
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+@media (prefers-color-scheme: dark) {
+  .item {
+    background-color: #333;
+  }
+}
+
+.button {
+  font-size: 0.85em !important;
+  height: 1.25em !important;
+  line-height: 1.25em !important;
+  background-color: #fefefe;
+}
+.item span {
+  line-height: 1em;
+}
+.item select {
+  height: 2em;
+}
+
+.potential-embeddings {
+
+}
+.potential-embedding {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #efefef;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 6px;
+}
+
+.pe-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
