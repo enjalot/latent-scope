@@ -85,7 +85,7 @@ function Preview({
     <div className={styles["search-box"]}>
       <Input 
         className={styles["search-input"]}
-        placeholder={`Search${embedding ? " with " + embedding.id : ""}`} disabled={!embedding}
+        placeholder={`Search${embedding ? " with " + embedding.id + ` (${embedding.model_id?.replace("___", "/")})` : ""}`} disabled={!embedding}
         onChange={e => setSearchText(e.target.value)}
         onKeyDown={e => {
           if(e.key == "Enter" && !searchLoading) {

@@ -36,6 +36,15 @@ export const apiService = {
   fetchUmaps: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
       .then(response => response.json())
+      .then(data => {
+        const array = data.map(d=> {
+          return {
+            ...d,
+            url: `${apiUrl}/files/${datasetId}/umaps/${d.id}.png`,
+          }
+        })
+        return array
+      })
   },
   fetchClusters: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/clusters`)

@@ -132,6 +132,7 @@ function Embedding() {
     setAllOptionsGrouped(grouped)
     setAllModels(am)
 
+    // we don't set a default option, so it's a more explicit choice of model
     // const defaultOption = allOptions.find(option => option.name.indexOf("all-MiniLM-L6-v2") > -1);
     // if (defaultOption && !defaultModel) {
     //   setDefaultModel(defaultOption);
@@ -279,23 +280,28 @@ function Embedding() {
             })}
           </div> : null}
 
+          <div className={styles.step}>
           1. Embed on column:  
           {dataset?.columns.length ? <Select 
             value={textColumn} 
             options={dataset?.columns.map((column) => ({label: column, value: column}))}
             onChange={handleTextColumnChange}
           /> : null}
+          </div>
 
+          <div className={styles.step}>
           2. Select embedding model:
           <ModelSelect 
             options={allOptionsGrouped} 
             defaultValue={defaultModel} 
             onChange={handleModelSelectChange} 
             onInputChange={searchHFModels} />
+          </div>
 
           {/* The form for creating a new embedding */}
           <form onSubmit={handleNewEmbedding}>
-              <textarea name="prefix" placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
+            <div className={styles.step}>
+              <textarea name="prefix" className={styles.prefix} placeholder={`Optional prefix to prepend to each ${textColumn}`} disabled={!!embeddingsJob}></textarea>
 
               <span className={styles["options"]}>
               <label> Batch Size:
@@ -317,6 +323,7 @@ function Embedding() {
               </Tooltip>
               </label>
               </span>
+            </div>
 
               {/* {model && model.params.dimensions ? 
                 <select onChange={handleDimensionsChange}>
@@ -386,7 +393,11 @@ function Embedding() {
                   </div> : <br/> }
                 </span>
               </label>
-              <button className={styles["delete"]} onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } disabled={embeddingsJob && embeddingsJob.status !== "completed"}>🗑️</button>
+              <Button className={styles["delete"]} 
+                onClick={() => deleteEmbeddingsJob({embedding_id: emb.id}) } 
+                color="secondary"
+                disabled={embeddingsJob && embeddingsJob.status !== "completed"}
+                text="🗑️"/>
             </div>
           )}
         )}
