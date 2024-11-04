@@ -85,7 +85,7 @@ function Embedding() {
   const fetchRecentModels = useCallback(() => {
     apiService.getRecentModels()
       .then(data => {
-        setRecentModels(data)
+        setRecentModels(data?.slice(0,3) || [])
       })
   }, []);
 
@@ -132,11 +132,11 @@ function Embedding() {
     setAllOptionsGrouped(grouped)
     setAllModels(am)
 
-    const defaultOption = allOptions.find(option => option.name.indexOf("all-MiniLM-L6-v2") > -1);
-    if (defaultOption && !defaultModel) {
-      setDefaultModel(defaultOption);
-      setModelId(defaultOption.id);
-    }
+    // const defaultOption = allOptions.find(option => option.name.indexOf("all-MiniLM-L6-v2") > -1);
+    // if (defaultOption && !defaultModel) {
+    //   setDefaultModel(defaultOption);
+    //   setModelId(defaultOption.id);
+    // }
 
   }, [presetModels, HFModels, recentModels, defaultModel]) 
   
@@ -326,23 +326,24 @@ function Embedding() {
                 </select> 
               : null} */}
 
-            <Button type="submit" color={embedding ? "secondary" : "primary"} disabled={!!embeddingsJob}
+            <Button type="submit" color={embedding ? "secondary" : "primary"} disabled={!!embeddingsJob || !modelId}
               text="New Embedding"
             />
+            {/* 
+            Render the progress for the current job 
+            TODO: automatically dismiss if successful
+            */}
+            <JobProgress job={embeddingsJob} clearJob={()=> {
+              setEmbeddingsJob(null)
+            }} rerunJob={handleRerunEmbedding} />
+            {/* 
+            TODO: have a lastEmbeddingsJob with the info from previous run. 
+            if job was successful user can click a button to display the logs. 
+            */}
           </form>
         </div>
 
-        {/* 
-        Render the progress for the current job 
-        TODO: automatically dismiss if successful
-        */}
-        <JobProgress job={embeddingsJob} clearJob={()=> {
-          setEmbeddingsJob(null)
-        }} rerunJob={handleRerunEmbedding} />
-        {/* 
-        TODO: have a lastEmbeddingsJob with the info from previous run. 
-        if job was successful user can click a button to display the logs. 
-        */}
+        
 
         {/* Render the list of existing embeddings */}
         <div className={styles["embeddings-list"]}>

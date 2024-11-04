@@ -86,7 +86,7 @@ function ModelSelect({
 
   return (
     <Select 
-      placeholder="Select model..."
+      placeholder="Select or search for model..."
       options={options} 
       formatOptionLabel={formatOptionLabel} 
       formatGroupLabel={formatGroupLabel}
