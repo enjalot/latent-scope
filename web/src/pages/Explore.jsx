@@ -15,6 +15,7 @@ import Clustering from '../components/Bulk/Clustering';
 // import Saving from '../components/Bulk/Saving';
 import Deleting from '../components/Bulk/Deleting';
 
+import DatasetHeader from '../components/Explore/DatasetHeader';
 
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
@@ -203,12 +204,7 @@ function Explore() {
       }).catch(error => console.error("Fetching data failed", error));
   }, [datasetId, scope, setHulls, setClusterMap, setClusterLabels, setClusterIndices, setPoints]);
 
-  useEffect(() => {
-    if (scope) {
-      setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
-      fetchScopeRows()
-    }
-  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding]);
+  
 
 
   useEffect(() => {
@@ -412,6 +408,18 @@ function Explore() {
   // indices of items in a chosen slide
   const [slide, setSlide] = useState(null);
   const [slideAnnotations, setSlideAnnotations] = useState([]);
+
+  useEffect(() => {
+    if (scope) {
+      setEmbedding(embeddings.find(e => e.id == scope.embedding_id))
+      fetchScopeRows()
+      // Automatically select the first cluster if available and no cluster is currently selected
+      // if (clusterLabels?.length > 0 && !slide) {
+      //   setSlide(clusterLabels[0])
+      // }
+    }
+  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding, clusterLabels, slide]);
+
   useEffect(() => {
     if (slide) {
       // const annots = slide.indices.map(index => points[index])
@@ -632,53 +640,25 @@ const handleNewCluster = useCallback((label) => {
     }
   }, [rows])
 
+  const handleScopeChange = useCallback((scopeId) => {
+    clearScope();
+    setDelay(2000);
+    navigate(`/datasets/${dataset?.id}/explore/${scopeId}`);
+  }, [dataset, clearScope, navigate]);
 
   if (!dataset) return <div>Loading...</div>;
 
   return (
     <div ref={containerRef} className="container">
       <div className="left-column">
-        <div className="summary">
-          <div className="scope-card">
-            {/* <h3> */}
-            { isMobileDevice() ? <i>Use a desktop browser for full interactivity!</i> : null}
-            <div className='heading'>
-              {/* {scope?.label || scope?.id} */}
-
-
-              <select className="scope-selector" onChange={(e) => {
-                clearScope()
-                setDelay(2000)
-                navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`)
-              }}
-                value={scope?.id}
-              >
-                {scopes.map((scopeOption, index) => (
-                  <option key={index} value={scopeOption.id}>
-                    {scopeOption.label} ({scopeOption.id})
-                  </option>
-                ))}
-              </select>
-              {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>}
-              {readonly ? null : <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>}
-            </div>
-            {/* </h3> */}
-            {scope?.ls_version && <span>
-              <span>{scope?.description}</span>
-              <br />
-              <span>{embedding?.model_id}</span><br/>
-              <span>{clusterLabels?.length} clusters</span>
-            </span>}
-            {!scope?.ls_version && <div className="scope-version-warning">
-            <span className="warning-header">Outdated Scope!</span>
-            <span> please "Overwrite" the scope in the last step on the <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to update.</span>
-          </div>}
-          </div>
-          <div className="dataset-card">
-            <span><b>{datasetId}</b>  {scope?.rows}/{dataset?.length} rows</span>
-          </div>
-
-        </div>
+        <DatasetHeader 
+          dataset={dataset}
+          scope={scope}
+          scopes={scopes}
+          onScopeChange={handleScopeChange}
+          isMobileDevice={isMobileDevice()}
+        />
+        
         <div className="umap-container">
           {/* <div className="umap-container"> */}
           <div className="scatters" style={{ width: scopeWidth, height: scopeHeight }}>
