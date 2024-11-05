@@ -220,7 +220,6 @@ VisualizationPane.propTypes = {
     scope: PropTypes.object,
     inputToScopeIndexMap: PropTypes.object.isRequired,
     onScatter: PropTypes.func.isRequired,
-    onView: PropTypes.func.isRequired,
     onSelect: PropTypes.func.isRequired,
     onHover: PropTypes.func.isRequired,
     hovered: PropTypes.object,

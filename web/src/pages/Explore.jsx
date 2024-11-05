@@ -5,7 +5,7 @@ import './Explore.css';
 // import DataTable from '../components/DataTable';
 // import IndexDataTable from '../components/IndexDataTable';
 import FilterDataTable from '../components/FilterDataTable';
-import EmbeddingVis from '../components/EmbeddingVis';
+import EmbeddingControls from '../components/Explore/EmbeddingControl';
 import { processHulls, isMobileDevice } from '../utils';
 
 import Tagging from '../components/Bulk/Tagging';
@@ -101,7 +101,6 @@ function Explore() {
   // we want to enable searching with any embedding set
   const [searchModel, setSearchModel] = useState(embedding?.id)
 
-
   const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
@@ -169,8 +168,6 @@ function Explore() {
 
       }).catch(error => console.error("Fetching data failed", error));
   }, [datasetId, scope, setHulls, setClusterMap, setClusterLabels, setClusterIndices, setPoints]);
-
-
 
 
   useEffect(() => {
@@ -552,6 +549,9 @@ function Explore() {
 
   const [bulkAction, setBulkAction] = useState(null)
 
+  // ====================================================================================================
+  // Embeddings
+  // ====================================================================================================
   const [showEmbeddings, setShowEmbeddings] = useState(null)
   const handleShowEmbeddings = useCallback(() => {
     setShowEmbeddings(showEmbeddings ? null : searchModel)
@@ -585,22 +585,6 @@ function Explore() {
   }, [datasetId, searchModel])
 
   const [rows, setRows] = useState([])
-  const [averageEmbedding, setAverageEmbedding] = useState([])
-  useEffect(() => {
-    if (rows.length > 0) {
-      // Calculate column-wise average of all embeddings in rows
-      const avg = rows.reduce((acc, row) => {
-        if (row.ls_embedding && Array.isArray(row.ls_embedding)) {
-          return acc.map((sum, i) => sum + (row.ls_embedding[i] || 0));
-        }
-        return acc;
-      }, new Array(rows[0]?.ls_embedding?.length || 0).fill(0));
-      // Divide the sum by the number of rows to get the average
-      const avgEmbedding = avg.map(sum => sum / rows.length);
-      setAverageEmbedding(avgEmbedding);
-    }
-  }, [rows])
-
   const handleScopeChange = useCallback((scopeId) => {
     clearScope();
     setDelay(2000);
@@ -634,7 +618,6 @@ function Explore() {
           containerRef={containerRef}
           inputToScopeIndexMap={inputToScopeIndexMap}
           onScatter={setScatter}
-          onView={handleView}
           onSelect={handleSelected}
           onHover={handleHover}
           hovered={hovered}
@@ -885,29 +868,17 @@ function Explore() {
           </div>
 
           <div className="filter-row embeddings-controls">
-            <div>
-              <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
-              <br></br>
-              {showEmbeddings ? <button onClick={handleShowDifference}>{showDifference ? "Show Absolute" : "Show Difference"}</button> : null}
-            </div>
-            {showEmbeddings && searchEmbedding?.length ?
-              <div>
-                <span>Search embedding</span><br></br>
-                <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
-              </div> : null}
-            {showEmbeddings && averageEmbedding.length ?
-              <div>
-                <span>Average embedding (over {rows.length} rows)</span><br></br>
-                {showDifference && searchEmbedding?.length ?
-                  <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} difference={searchEmbedding} />
-                  :
-                  <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
-                }
-              </div> : null}
-            {showEmbeddings ? <div>
-              <span> {showEmbeddings}</span>
-              <span>{embeddings.find(e => e.id == showEmbeddings)?.model_id}</span>
-              <span>{embeddings.find(e => e.id == showEmbeddings)?.dimensions}</span></div> : null}
+            <EmbeddingControls
+              showEmbeddings={showEmbeddings}
+              handleShowEmbeddings={handleShowEmbeddings}
+              showDifference={showDifference}
+              handleShowDifference={handleShowDifference}
+              searchEmbedding={searchEmbedding}
+              rows={rows}
+              embeddingMinValues={embeddingMinValues}
+              embeddingMaxValues={embeddingMaxValues}
+              embeddings={embeddings}
+            />
           </div>
         </div>
 
