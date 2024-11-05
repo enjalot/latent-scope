@@ -1,16 +1,24 @@
 @import "./_shared";
 
-.cluster {
+.cluster-labels {
   @include setup-container;
 }
-.cluster-setup {
+.cluster-labels-setup {
   @include setup-left;
 }
-.cluster-preview {
+.cluster-labels-preview {
   @include setup-right;
 }
 .preview {
   @include setup-preview;
+  position: relative;
+
+  .preview-header {
+    position: absolute;
+    top: -70px;
+    left: 0;
+    right: 0;
+  }
 }
 .navigate {
   @include setup-navigate;
@@ -36,15 +44,19 @@
 .delete {
   @include setup-delete;
 }
-.cluster-form-label {
+.cluster-labels-form-label {
   width: 125px;
   display: inline-block;
 }
-.cluster-form input {
+.cluster-labels-form input {
   width: 84px;
 }
-
-
+.cluster-labels-table {
+  height: 98%;
+  overflow: scroll;
+  flex-grow: 1;
+  padding: 6px;
+}
 .item img {
   width: 120px;
   height: 120px;

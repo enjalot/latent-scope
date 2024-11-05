@@ -9,14 +9,22 @@ import { useSetup } from "../../contexts/SetupContext";
 import { apiService } from "../../lib/apiService";
 import FilterDataTable from '../FilterDataTable';
 import Scatter from "../Scatter";
+import HullPlot from "../HullPlot";
 import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey } from "../../lib/colors";
 
 import styles from "./Preview.module.scss";
+
+function processHulls(labels, points) {
+  return labels.map(d => {
+    return d.hull.map(i => points[i])
+  })
+}
 
 function Preview({
   embedding,
   umap,
   cluster,
+  labelId,
 } = {}) {
   const { datasetId, dataset, scope, currentStep, stepIds } = useSetup();
 
@@ -213,6 +221,37 @@ function Preview({
     }
   }, [datasetId, hoveredIndex, setHovered, drawPoints, xDomain, yDomain, width, umapHeight, dataIndices, distances]);
 
+
+  // Cluster related state
+  // ------------------------------------------------------------
+  const [clusterLabelData, setClusterLabelData] = useState([])
+  const [clusterLabels, setClusterLabels] = useState([])
+  const [clusterIndices, setClusterIndices] = useState([])
+  const [hulls, setHulls] = useState([])
+  useEffect(() => {
+    if(cluster && drawPoints.length) {
+      apiService.fetchClusterLabels(datasetId, cluster.id, labelId)
+        .then(data => {
+          console.log("cluster labels", data)
+          setClusterLabelData(data)
+          setHulls(processHulls(data, drawPoints))
+          let ci = []
+          let cl = []
+          let cm = {}
+          data.forEach(d => {
+            d.indices.forEach(i => {
+              ci[i] = d.index
+              cl[i] = d.label
+              cm[i] = d.index
+            })
+          })
+          setClusterIndices(ci)
+          setClusterLabels(cl)
+          setClusterMap(cm)
+        })
+    }
+  }, [datasetId, cluster, drawPoints, labelId])
+
   return <div className={styles["preview"]}>
     <div className={styles["preview-header"]}>
       <h3>Preview: {stepTitle}</h3>
@@ -245,20 +284,34 @@ function Preview({
       </div>
     </div>
 
-    {drawPoints.length ? <div className={styles["scatter-container"]} style={{width: width, height: umapHeight}}>
-    <Scatter 
-      points={drawPoints} 
-      width={width} 
-      height={umapHeight}
-      duration={1000}
-      colorScaleType="categorical"
-      colorRange={mapSelectionColorsLight}
-      colorDomain={mapSelectionDomain}
-      onScatter={setScatter}
-      onView={handleView} 
-      onSelect={handleSelected}
-      onHover={handleHovered}
-      />
+    {drawPoints.length ? 
+    <div className={styles["scatter-container"]} style={{width: width, height: umapHeight}}>
+      <Scatter 
+        points={drawPoints} 
+        width={width} 
+        height={umapHeight}
+        duration={1000}
+        colorScaleType="categorical"
+        colorRange={mapSelectionColorsLight}
+        colorDomain={mapSelectionDomain}
+        onScatter={setScatter}
+        onView={handleView} 
+        onSelect={handleSelected}
+        onHover={handleHovered}
+        />
+      {hulls.length && !scope.ignore_hulls ? 
+        <HullPlot
+          hulls={hulls}
+          stroke="black"
+          fill="none"
+          delay={0}
+          duration={200}
+          strokeWidth={1}
+          xDomain={xDomain}
+          yDomain={yDomain}
+          width={width}
+          height={umapHeight} /> 
+      : null}
     </div> : null }
 
     <div className={styles["row-information"]}>
@@ -307,6 +360,7 @@ function Preview({
     >
       {hovered && embedding && <div className={styles["tooltip-content"]}>
         {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null}
+        {clusterMap[hoveredIndex] >= 0 ? <span>{clusterLabels[hoveredIndex]}<br/></span> : null}
         <span>{hoveredIndex}: {hovered[embedding.text_column]}</span>
       </div>}
     </Tooltip>

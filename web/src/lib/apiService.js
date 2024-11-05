@@ -136,6 +136,31 @@ export const apiService = {
         })
         return rows
       })
+  },
+  fetchClusterLabelsAvailable: async (datasetId, clusterId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels_available`)
+      .then(response => response.json())
+  },
+  fetchClusterLabels: async (datasetId, clusterId, labelId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels/${labelId}`)
+      .then(response => response.json())
+  },
+  fetchClusterIndices: async (datasetId, clusterId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/indices`)
+      .then(response => response.json())
+      .then(data => {
+        data.cluster_id = clusterId
+        return data
+      })
+  },
+  fetchChatModels: async () => {
+    return fetch(`${apiUrl}/chat_models`)
+      .then(response => response.json())
+  },
+  killJob: async (datasetId, jobId) => {
+    return fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${jobId}`)
+      .then(response => response.json())
   }
+
 }
 

@@ -19,8 +19,8 @@ const stepComponents = {
   1: Embedding,
   2: Umap,
   3: Cluster,
-  // 4: ClusterLabels,
-  // 5: Scope,
+  4: ClusterLabels,
+  5: Scope,
 };
 
 function StepRenderer() {

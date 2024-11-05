@@ -235,7 +235,7 @@ function FilterDataTable({
       .then(response => response.json())
       .then(data => {
         let { rows, totalPages, total } = data;
-        console.log("rows", rows)
+        // console.log("rows", rows)
         // console.log("pages", totalPages, total)
         setPageCount(totalPages)
 
@@ -270,7 +270,7 @@ function FilterDataTable({
       let columns = ["ls_index"]
       if(distances && distances.length) columns.push("ls_similarity")
       if(showEmbeddings) columns.push("ls_embedding")
-      if(scope) columns.push("ls_cluster")
+      if(clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
       if(tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
@@ -321,7 +321,7 @@ function FilterDataTable({
                 e.preventDefault()
                 
               }}>
-                <select value={value?.cluster} onChange={(e) => {
+                {scope ? <select value={value?.cluster} onChange={(e) => {
                   e.stopPropagation()
                   e.preventDefault()
                   console.log("was cluster", value)
@@ -346,7 +346,7 @@ function FilterDataTable({
                   {clusterLabels.map((c,i) => {
                     return <option key={i} value={c.cluster}>{c.cluster}: {c.label}</option>
                   })}
-                </select>
+                </select> : <span>{value}</span>}
               </div>
               // return <span>{value.cluster}: {value.label}</span>
             } if(c === "ls_embedding") {
@@ -401,7 +401,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
 
 
   const [columnFilters, setColumnFilters] = useState([])

@@ -13,7 +13,7 @@ const StepProgress = () => {
   const isCompleted = useCallback((index) => {
     console.log("scope", scope, stepIds[index])
     return scope?.[stepIds[index]]
-  }, [scope, stepIds,currentStep])
+  }, [scope, stepIds])
 
   return (
     <div className={styles.stepProgressContainer}>

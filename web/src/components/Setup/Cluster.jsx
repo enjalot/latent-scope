@@ -6,13 +6,11 @@ import { Button } from 'react-element-forge';
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
-import { apiService } from '../../lib/apiService';
+import { apiService, apiUrl } from '../../lib/apiService';
 
 import Preview from './Preview';
 
 import styles from './Cluster.module.scss';
-
-const apiUrl = import.meta.env.VITE_API_URL
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
@@ -33,10 +31,8 @@ function Cluster() {
 
   // Update local state when scope changes
   useEffect(() => {
-    console.log("scope changed", scope)
     if(scope?.embedding_id) {
       const emb = embeddings.find(e => e.id == scope.embedding_id)
-      console.log("EMB", emb)
       setEmbedding(emb)
     } else {
       setEmbedding(embeddings?.[0])
@@ -95,10 +91,11 @@ function Cluster() {
     <div className={styles["cluster"]}>
       <div className={styles["cluster-setup"]}>
         <div className={styles["cluster-form"]}>
-          <div>Cluster using <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a></div>
+          <div>Cluster the 2D points using <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a>.
+          </div>
           <form onSubmit={handleNewCluster}>
             <label>
-              Min Cluster Size:
+              <span className={styles["cluster-form-label"]}>Min Cluster Size:</span>
               <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : dataset.length < 10000 ? 15 : 25} disabled={!!clusterJob || !umap}/>
               <span className="tooltip" data-tooltip-id="samples">🤔</span>
               <Tooltip id="samples" place="top" effect="solid">
@@ -106,7 +103,7 @@ function Cluster() {
               </Tooltip>
             </label>
             <label>
-              Min Samples:
+              <span className={styles["cluster-form-label"]}>Min Samples:</span>
               <input type="number" name="min_samples" defaultValue={dataset.length < 1000 ? 2 : 5} disabled={!!clusterJob || !umap} />
               <span className="tooltip" data-tooltip-id="min_samples">🤔</span>
               <Tooltip id="min_samples" place="top" effect="solid">
@@ -114,11 +111,11 @@ function Cluster() {
               </Tooltip>
             </label>
             <label>
-              Cluster Selection Epsilon:
+              <span className={styles["cluster-form-label"]}>Epsilon:</span>
               <input type="number" name="cluster_selection_epsilon" defaultValue={dataset.length < 1000 ? 0.05 : 0.005} step="0.0001" disabled={!!clusterJob || !umap} />
               <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">🤔</span>
               <Tooltip id="cluster_selection_epsilon" place="top" effect="solid">
-                This parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
+                The cluster selection epsilon parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
               </Tooltip>
             </label>
             <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={!!clusterJob || !cluster} text="New Clusters" />
@@ -139,8 +136,6 @@ function Cluster() {
                   onChange={() => setCluster(cl)} />
                 <span>{cl.id}</span>
                 <div className={styles["item-info"]}>
-                  <span>Clusters: {cl.n_clusters}</span>
-                  <span>Noise points: {cl.n_noise}</span>
                   <span>Samples: {cl.samples}</span>
                   <span>Min Samples: {cl.min_samples}</span>
                   {cl.cluster_selection_epsilon && <span>Epsilon: {cl.cluster_selection_epsilon}</span>}
@@ -148,6 +143,11 @@ function Cluster() {
               </label>
 
               <img src={cl.url} alt={cl.id} />
+
+              <div className={styles["item-info"]}>
+                <span>Clusters: {cl.n_clusters}</span>
+                <span>Noise points: {cl.n_noise}</span>
+              </div>
 
               <Button className={styles["delete"]} color="secondary" onClick={() => deleteClusterJob({cluster_id: cl.id})} text="🗑️" />
             </div>
@@ -157,7 +157,7 @@ function Cluster() {
 
       <div className={styles["cluster-preview"]}>
         <div className={styles["preview"]}>
-          <Preview embedding={embedding} umap={umap} cluster={cluster} />
+          <Preview embedding={embedding} umap={umap} cluster={cluster} labelId={"default"} />
         </div>
         <div className={styles["navigate"]}>
           <Button 
