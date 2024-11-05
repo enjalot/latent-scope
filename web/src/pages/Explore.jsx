@@ -1,207 +1,58 @@
 import {
-  useReducer,
   useEffect,
   useState,
   useMemo,
   useCallback,
   useRef,
 } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import "./Explore.css";
-// import DataTable from '../components/DataTable';
-// import IndexDataTable from '../components/IndexDataTable';
-import FilterDataTable from "../components/FilterDataTable";
-import EmbeddingControls from "../components/Explore/EmbeddingControl";
-import { processHulls, isMobileDevice } from "../utils";
+import useCurrentScope from "../hooks/useCurrentScope";
+import useNearestNeighborsSearch from '../hooks/useNearestNeighborsSearch';
+import useScopeData from "../hooks/useScopeData";
 
+import FilterDataTable from "../components/FilterDataTable";
 import Tagging from "../components/Bulk/Tagging";
 import Clustering from "../components/Bulk/Clustering";
-// import Saving from '../components/Bulk/Saving';
 import Deleting from "../components/Bulk/Deleting";
 
 import DatasetHeader from "../components/Explore/DatasetHeader";
 import VisualizationPane from "../components/Explore/VisualizationPane";
 
+
 const apiUrl = import.meta.env.VITE_API_URL;
 const readonly = import.meta.env.MODE == "read_only";
 
 function Explore() {
-  const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
-
   const navigate = useNavigate();
 
-  const containerRef = useRef(null);
-  const filtersContainerRef = useRef(null);
-
-  const [filtersHeight, setFiltersHeight] = useState(250);
-  const FILTERS_PADDING = 62;
-  const filtersCSSHeight = useMemo(
-    () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
-    [filtersHeight],
+  // fetch dataset and current scope metadata
+  // - scopes: all scopes available for this dataset
+  // - embeddings: embeddings available for this dataset
+  const { embeddings, dataset, scope, fetchScopeMeta, scopes } = useCurrentScope(
+    datasetId,
+    scopeId,
+    apiUrl,
   );
 
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const { height } = entry.contentRect;
-        setFiltersHeight(height);
-      }
-    });
-
-    let node = filtersContainerRef.current;
-    if (node) {
-      resizeObserver.observe(node);
-    } else {
-      setTimeout(() => {
-        node = filtersContainerRef.current;
-        if (node) {
-          resizeObserver.observe(node);
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (node) {
-        resizeObserver.unobserve(node);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("dataset", data);
-        setDataset(data);
-      });
-  }, [datasetId, setDataset]);
-
-  const [scopes, setScopes] = useState([]);
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
-      .then((response) => response.json())
-      .then((data) => {
-        setScopes(data);
-      });
-  }, [datasetId, setScopes]);
-
-  const [delay, setDelay] = useState(200);
-  const [scope, setScope] = useState(null);
-  const fetchScopeMeta = useCallback(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("scope", data);
-        setScope(data);
-      });
-  }, [datasetId, scopeId, setScope]);
-
-  useEffect(() => {
-    fetchScopeMeta();
-  }, [datasetId, scopeId, fetchScopeMeta]);
-
-  const [clusterMap, setClusterMap] = useState({});
-  const [clusterIndices, setClusterIndices] = useState([]); // the cluster number for each point
-  const [clusterLabels, setClusterLabels] = useState([]);
-
-
-
-  const [embeddings, setEmbeddings] = useState([]);
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
-      .then((response) => response.json())
-      .then((data) => {
-        // console.log("embeddings", data)
-        setEmbeddings(data);
-      });
-  }, [datasetId, setEmbeddings]);
-
-  const [scopeRows, setScopeRows] = useState([]);
-  const [points, setPoints] = useState([]);
-  const [drawPoints, setDrawPoints] = useState([]); // this is the points with the cluster number
-  const [hulls, setHulls] = useState([]);
-  const [scopeToInputIndexMap, setScopeToInputIndexMap] = useState({});
-  const [inputToScopeIndexMap, setInputToScopeIndexMap] = useState({});
-
-  const fetchScopeRows = useCallback(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
-      .then((response) => response.json())
-      .then((scopeRows) => {
-        // console.log("scope rows", scopeRows)
-        setScopeRows(scopeRows);
-
-        // calculate scopeIndexMap
-        let sim = {};
-        let ism = {};
-        scopeRows.forEach((d, i) => {
-          ism[d.ls_index] = i;
-          sim[i] = d.ls_index;
-        });
-        setScopeToInputIndexMap(sim);
-        setInputToScopeIndexMap(ism);
-
-        // console.log("set points")
-        // const pts = pointsData.map(d => [d.x, d.y])
-        const pts = scopeRows.map((d) => [d.x, d.y]);
-        setPoints(pts);
-
-        // const dpts = pointsData.map((d, i) => [d.x, d.y, clusterIndicesData[i].cluster])
-        const dpts = scopeRows.map((d, i) => [d.x, d.y, d.cluster]);
-        setDrawPoints(dpts);
-        setHulls([]);
-
-        // console.log("SCOPE", scope)
-        const labelsData = scope.cluster_labels_lookup || [];
-        // console.log("labels", labelsData);
-        setClusterLabels(labelsData);
-
-        // console.log("cluster indices", clusterIndicesData);
-        // setClusterIndices(clusterIndicesData);
-        setClusterIndices(scopeRows.map((d) => d.cluster));
-
-        let clusterMap = {};
-        scopeRows.forEach((d) => {
-          clusterMap[d.ls_index] = scope.cluster_labels_lookup?.[d.cluster];
-        });
-        setClusterMap(clusterMap);
-
-        setTimeout(() => {
-          if (labelsData) setHulls(processHulls(labelsData, pts, ism));
-        }, 100);
-      })
-      .catch((error) => console.error("Fetching data failed", error));
-  }, [
-    datasetId,
-    scope,
-    setHulls,
-    setClusterMap,
+  // fetch data for the current scope and populate data structures for scatterplot and clustering
+  const {
+    fetchScopeRows,
     setClusterLabels,
-    setClusterIndices,
-    setPoints,
-  ]);
+    clusterMap,
+    clusterLabels,
+    scopeRows,
+    points,
+    drawPoints,
+    hulls,
+    scopeToInputIndexMap,
+    inputToScopeIndexMap,
+  } = useScopeData(apiUrl, datasetId, scope);
 
-  // The search model is the embeddings model that we pass to the nearest neighbor query
-  // we want to enable searching with any embedding set
-  // const [embedding, setEmbedding] = useState(null);
-  // const [searchModel, setSearchModel] = useState(embedding?.id);
 
-  // useEffect(() => {
-  //   if (embedding && embedding.model_id) {
-  //     setSearchModel(embedding.id);
-  //   } else if (embeddings.length) {
-  //     const emb = embeddings.find((d) => !!d.model_id);
-  //     if (emb) setSearchModel(emb.id);
-  //   }
-  // }, [embedding, embeddings, setSearchModel]);
-
-  // const [activeUmap, setActiveUmap] = useState(null)
-  // const handleModelSelect = (model) => {
-  //   console.log("selected search model", model);
-  //   setSearchModel(model);
-  // };
-
+  // TODO: what does this do?
   const hydrateIndices = useCallback(
     (indices, setter, distances = []) => {
       fetch(`${apiUrl}/indexed`, {
@@ -239,8 +90,8 @@ function Explore() {
 
   const handleSelected = useCallback(
     (indices) => {
-  // console.log("handle selected", indices)
-  // we have to map from the scatterplot indices to the ls_index of the original input data (in case any has been deleted)
+      // console.log("handle selected", indices)
+      // we have to map from the scatterplot indices to the ls_index of the original input data (in case any has been deleted)
       let idxs = indices.map((i) => scopeToInputIndexMap[i]);
       setSelectedIndices(idxs);
       // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
@@ -325,75 +176,20 @@ function Explore() {
   // ====================================================================================================
   // indices of items in a chosen slide
   // the indices returned from similarity search
-  const [searchIndices, setSearchIndices] = useState([]);
-  const [distances, setDistances] = useState([]);
-  const [searchEmbedding, setSearchEmbedding] = useState(null);
-
-  const [searchText, setSearchText] = useState("");
-  const [searchLoading, setSearchLoading] = useState(false);
-
-  const searchQuery = useCallback(
-    (query) => {
-      const emb = embeddings?.find((d) => d.id == scope.embedding_id);
-      const embeddingDimensions = emb?.dimensions;
-
-      const searchParams = new URLSearchParams({
-        dataset: datasetId,
-        query,
-        embedding_id: scope.embedding_id,
-        ...(embeddingDimensions !== undefined
-          ? { dimensions: embeddingDimensions }
-          : {}),
-      });
-      const nearestNeigborsUrl = `${apiUrl}/search/nn?${searchParams.toString()}`;
-
-      setSearchLoading(true);
-      fetch(nearestNeigborsUrl)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("search", data);
-          let dists = [];
-          let inds = data.indices
-            .map((idx, i) => {
-              dists[idx] = data.distances[i];
-        // return {
-        //   index: idx,
-        //   distance: data.distances[i],
-        // }
-              return idx;
-            })
-            .filter((idx) => inputToScopeIndexMap[idx] >= 0);
-
-          setDistances(dists);
-          setSearchIndices(inds);
-          setSearchEmbedding(data.search_embedding[0]);
-          setSearchLoading(false);
-          // scatter?.zoomToPoints(data.indices, { transition: true, padding: 0.2, transitionDuration: 1500 })
-        });
-    },
-    [
-      // searchModel,
-      embeddings,
-      datasetId,
-      scatter,
-      setDistances,
-      setSearchIndices,
-      setSearchEmbedding,
-      setSearchLoading,
-    ],
-  );
-
-  useEffect(() => {
-    if (searchText) {
-      searchQuery(searchText);
-    }
-  }, [searchText, searchQuery]);
-
-  const [searchAnnotations, setSearchAnnotations] = useState([]);
-  useEffect(() => {
-    const annots = searchIndices.map((index) => points[index]);
-    setSearchAnnotations(annots);
-  }, [searchIndices, points]);
+  const {
+    setSearchText,
+    searchIndices,
+    setSearchIndices,
+    distances,
+    isLoading: searchLoading,
+    clearSearch
+  } = useNearestNeighborsSearch({
+    apiUrl,
+    datasetId,
+    scope,
+    embeddings,
+    inputToScopeIndexMap,
+  });
 
   // ====================================================================================================
   // Clusters
@@ -653,6 +449,7 @@ function Explore() {
   //   }
   // }, [datasetId, searchModel]);
 
+  const [delay, setDelay] = useState(200);
   const [rows, setRows] = useState([]);
   const handleScopeChange = useCallback(
     (scopeId) => {
@@ -662,6 +459,9 @@ function Explore() {
     },
     [dataset, clearScope, navigate],
   );
+
+  const containerRef = useRef(null);
+  const filtersContainerRef = useRef(null);
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -673,7 +473,6 @@ function Explore() {
           scope={scope}
           scopes={scopes}
           onScopeChange={handleScopeChange}
-          isMobileDevice={isMobileDevice()}
         />
 
         {points.length ? (
@@ -710,7 +509,6 @@ function Explore() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   setSearchText(e.target.elements.searchBox.value);
-              // searchQuery(e.target.elements.searchBox.value);
                 }}
               >
                 <input
@@ -718,7 +516,6 @@ function Explore() {
                   id="searchBox"
                   placeholder="Nearest Neighbor Search..."
                 />
-                {/* <button type="submit">Similarity Search</button> */}
                 {searchLoading ? (
                   "Querying..."
                 ) : (
@@ -735,9 +532,8 @@ function Explore() {
                   <button
                     className="deselect"
                     onClick={() => {
-                      setSearchIndices([]);
+                      clearSearch();
                       document.getElementById("searchBox").value = "";
-                      setSearchText("");
                     }}
                   >
                     X
@@ -745,23 +541,6 @@ function Explore() {
                 ) : null}
               </span>
             </div>
-            {/* <div className="filter-cell right">
-              <label htmlFor="embeddingModel"></label>
-              <select
-                id="embeddingModel"
-                onChange={(e) => handleModelSelect(e.target.value)}
-                value={searchModel}
-              >
-                {embeddings
-                  .filter((d) => d.model_id)
-                  .map((emb, index) => (
-                    <option key={index} value={emb.id}>
-                      {emb.id} - {emb.model_id} - {emb.dimensions}
-                    </option>
-                  ))}
-              </select>
-              TODO: tooltip 
-          </div> */}
           </div>
 
           <div
@@ -822,7 +601,6 @@ function Explore() {
                     onChange={(e) => setClusterLabel(e.target.value)}
                   />
                   <button type="submit">✍️</button>
-                  {/* TODO: tooltip */}
                 </form>
               ) : (
                 <form
@@ -854,18 +632,6 @@ function Explore() {
               }`}
           >
             <div className="filter-cell left tags-select">
-              {/* <select onChange={(e) => {
-                  if(e.target.value == "-1") {
-                    setTag(null)
-                    return
-                  }
-                  setTag(e.target.value)
-                }} value={tag ? tag : "-1"}>
-                  <option value="-1">Select a tag</option>
-                  {tags.map((t, index) => (
-                    <option key={index} value={t}>{t} ({filterInputIndices(tagset[t] || []).length})</option>
-                  ))}
-                </select> */}
               {tags.map((t, index) => (
                 <button
                   key={index}
@@ -995,7 +761,7 @@ function Explore() {
                   onClick={() => {
                     setSelectedIndices([]);
                     scatter?.select([]);
-              // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                    // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
                   }}
                 >
                   X
@@ -1037,7 +803,6 @@ function Explore() {
                 >
                   ️📍
                 </button>
-                {/* <button className={`bulk ${bulkAction == "save" ? 'active' : ''}`} onClick={() => bulkAction == "save" ? setBulkAction(null) : setBulkAction("save")}>💾</button> */}
                 <button
                   className={`bulk ${bulkAction == "delete" ? "active" : ""}`}
                   onClick={() =>
@@ -1072,8 +837,6 @@ function Explore() {
                     }}
                   />
                 ) : null}
-                {/* {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices}
-                    onSuccess={() => setBulkAction(null)} /> : null} */}
                 {bulkAction == "delete" ? (
                   <Deleting
                     dataset={dataset}
@@ -1090,7 +853,6 @@ function Explore() {
               </div>
             </div>
           </div>
-
 
           {/* <div className="filter-row embeddings-controls">
             <EmbeddingControls
@@ -1123,8 +885,8 @@ function Explore() {
           onHover={(index) => handleHover(inputToScopeIndexMap[index])}
           onClick={handleClicked}
           onRows={setRows}
-          height={filtersCSSHeight}
           showDifference={null}
+          filtersContainerRef={filtersContainerRef}
           // showDifference={showDifference ? searchEmbedding : null}
           // showEmbeddings={showEmbeddings}
         />

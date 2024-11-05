@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
+import { isMobileDevice } from '../../utils';
+
 const readonly = import.meta.env.MODE == "read_only"
 
 function DatasetHeader({ 
@@ -8,7 +10,6 @@ function DatasetHeader({
   scope, 
   scopes, 
   onScopeChange,
-  isMobileDevice 
 }) {
   if (!dataset) return null;
 
@@ -36,7 +37,7 @@ function DatasetHeader({
           )}
         </div>
 
-        {isMobileDevice && <i>Use a desktop browser for full interactivity!</i>}
+        {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
         
         {scope?.ls_version ? (
           <span>
@@ -44,7 +45,7 @@ function DatasetHeader({
             <br />
             <span>{scope?.embedding?.model_id}</span>
             <br/>
-            <span>{scope?.clusterLabels?.length} clusters</span>
+            <span>{scope?.cluster_labels_lookup?.length} clusters</span>
           </span>
         ) : (
           <div className="scope-version-warning">
