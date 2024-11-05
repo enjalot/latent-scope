@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import Scatter from '../Scatter';
-import AnnotationPlot from '../AnnotationPlot';
-import HullPlot from '../HullPlot';
-import { processHulls, isMobileDevice } from '../../utils';
+import { useState, useEffect, useCallback } from "react";
+import PropTypes from "prop-types";
+import Scatter from "../Scatter";
+import AnnotationPlot from "../AnnotationPlot";
+import HullPlot from "../HullPlot";
+import { processHulls, isMobileDevice } from "../../utils";
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
     return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
+};
 
 function VisualizationPane({
     points,
@@ -19,18 +19,23 @@ function VisualizationPane({
     hoveredCluster,
     slide,
     scope,
-    xDomain = [-1, 1],
-    yDomain = [-1, 1],
     inputToScopeIndexMap,
     onScatter,
-    onView,
     onSelect,
     onHover,
     hovered,
     dataset,
-    containerRef
+    containerRef,
 }) {
-
+    const [xDomain, setXDomain] = useState([-1, 1]);
+    const [yDomain, setYDomain] = useState([-1, 1]);
+    const handleView = useCallback(
+        (xDomain, yDomain) => {
+            setXDomain(xDomain);
+            setYDomain(yDomain);
+      },
+      [setXDomain, setYDomain],
+  );
 
     const [size, setSize] = useState([500, 500]);
 
@@ -42,10 +47,10 @@ function VisualizationPane({
             let swidth = width > 500 ? 500 : width - 50;
             setSize([swidth, swidth]);
         }
-        window.addEventListener('resize', updateSize);
-        updateSize();
-        return () => window.removeEventListener('resize', updateSize);
-    }, []);
+      window.addEventListener("resize", updateSize);
+      updateSize();
+      return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
     const [width, height] = size;
 
@@ -60,7 +65,7 @@ function VisualizationPane({
                         height={height}
                         colorScaleType="categorical"
                         onScatter={onScatter}
-                        onView={onView}
+                        onView={handleView}
                         onSelect={onSelect}
                         onHover={onHover}
                     />
@@ -68,111 +73,140 @@ function VisualizationPane({
                     <AnnotationPlot
                         points={points}
                         fill="gray"
-                        size="8"
-                        xDomain={xDomain}
-                        yDomain={yDomain}
-                            width={width}
-                            height={height}
-                    />
-                )}
+                          height={height}
+                          width={width}
+                          size="8"
+                          xDomain={xDomain}
+                          yDomain={yDomain}
+                  />
+              )}
 
-                {hoveredCluster && hoveredCluster.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
-                    <HullPlot
-                        hulls={processHulls([hoveredCluster], points, inputToScopeIndexMap)}
-                        fill="lightgray"
-                        duration={0}
-                        xDomain={xDomain}
-                        yDomain={yDomain}
-                        width={width}
-                        height={height}
-                    />
-                )}
+              {hoveredCluster &&
+                  hoveredCluster.hull &&
+                  !scope.ignore_hulls &&
+                  scope.cluster_labels_lookup && (
+                      <HullPlot
+                          hulls={processHulls(
+                              [hoveredCluster],
+                              points,
+                              inputToScopeIndexMap,
+                          )}
+                          fill="lightgray"
+                          duration={0}
+                          xDomain={xDomain}
+                          yDomain={yDomain}
+                          width={width}
+                          height={height}
+                      />
+                  )}
 
-                {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
-                    <HullPlot
-                        hulls={processHulls([slide], points, inputToScopeIndexMap)}
-                        fill="darkgray"
-                        strokeWidth={2}
-                        duration={0}
-                        xDomain={xDomain}
-                        yDomain={yDomain}
-                        width={width}
-                        height={height}
-                    />
-                )}
+              {slide &&
+                  slide.hull &&
+                  !scope.ignore_hulls &&
+                  scope.cluster_labels_lookup && (
+                      <HullPlot
+                          hulls={processHulls([slide], points, inputToScopeIndexMap)}
+                          fill="darkgray"
+                          strokeWidth={2}
+                          duration={0}
+                          xDomain={xDomain}
+                          yDomain={yDomain}
+                          width={width}
+                          height={height}
+                      />
+                  )}
 
-                {hulls.length && !scope.ignore_hulls && (
-                    <HullPlot
-                        hulls={hulls}
-                        stroke="black"
-                        fill="none"
-                        duration={200}
-                        strokeWidth={1}
-                        xDomain={xDomain}
-                        yDomain={yDomain}
-                        width={width}
-                        height={height}
-                    />
-                )}
+              {hulls.length && !scope.ignore_hulls && (
+                  <HullPlot
+                      hulls={hulls}
+                      stroke="black"
+                      fill="none"
+                      duration={200}
+                      strokeWidth={1}
+                      xDomain={xDomain}
+                      yDomain={yDomain}
+                      width={width}
+                      height={height}
+                  />
+              )}
 
-                <AnnotationPlot
-                    points={intersectedAnnotations}
-                    stroke="black"
-                    fill="steelblue"
-                    size="8"
-                    xDomain={xDomain}
-                    yDomain={yDomain}
-                    width={width}
-                    height={height}
-                />
+              <AnnotationPlot
+                  points={intersectedAnnotations}
+                  stroke="black"
+                  fill="steelblue"
+                  size="8"
+                  xDomain={xDomain}
+                  yDomain={yDomain}
+                  width={width}
+                  height={height}
+              />
 
-                <AnnotationPlot
-                    points={hoverAnnotations}
-                    stroke="black"
-                    fill="orange"
-                    size="16"
-                    xDomain={xDomain}
-                    yDomain={yDomain}
-                    width={width}
-                    height={height}
-                />
-            </div>
+              <AnnotationPlot
+                  points={hoverAnnotations}
+                  stroke="black"
+                  fill="orange"
+                  size="16"
+                  xDomain={xDomain}
+                  yDomain={yDomain}
+                  width={width}
+                  height={height}
+              />
+          </div>
 
-            {/* Hover information display */}
-            {!isMobileDevice() && (
-                <div className="hovered-point">
-                    {hoveredCluster && (
-                        <span>
-                            <span className="key">Cluster {hoveredCluster.cluster}:</span>
-                            <span className="value">{hoveredCluster.label}</span>
+          {/* Hover information display */}
+          {!isMobileDevice() && (
+              <div className="hovered-point">
+                  {hoveredCluster && (
+                      <span>
+                          <span className="key">Cluster {hoveredCluster.cluster}:</span>
+                          <span className="value">{hoveredCluster.label}</span>
+                      </span>
+                  )}
+                  {hovered &&
+                      Object.keys(hovered).map((key, idx) => {
+                          let d = hovered[key];
+                if (typeof d === "object" && !Array.isArray(d)) {
+                    d = JSON.stringify(d);
+                }
+                let meta =
+                    dataset.column_metadata && dataset.column_metadata[key];
+                let value;
+                if (meta && meta.image) {
+                  value = (
+                      <span className="value" key={idx}>
+                          <img src={d} alt={key} height={64} />
+                      </span>
+                  );
+              } else if (meta && meta.url) {
+                  value = (
+                      <span className="value" key={idx}>
+                          <a href={d}>url</a>
+                      </span>
+                  );
+              } else if (meta && meta.type == "array") {
+                  value = (
+                      <span className="value" key={idx}>
+                          [{d.length}]
+                      </span>
+                  );
+              } else {
+                    value = (
+                        <span className="value" key={idx}>
+                            {d}
                         </span>
-                    )}
-                    {hovered && Object.keys(hovered).map((key, idx) => {
-                        let d = hovered[key];
-                        if (typeof d === 'object' && !Array.isArray(d)) {
-                            d = JSON.stringify(d);
-                        }
-                        let meta = dataset.column_metadata && dataset.column_metadata[key];
-                        let value;
-                        if (meta && meta.image) {
-                            value = <span className="value" key={idx}><img src={d} alt={key} height={64} /></span>;
-                        } else if (meta && meta.url) {
-                            value = <span className="value" key={idx}><a href={d}>url</a></span>;
-                        } else if (meta && meta.type == "array") {
-                            value = <span className="value" key={idx}>[{d.length}]</span>;
-                        } else {
-                            value = <span className="value" key={idx}>{d}</span>;
-                        }
-                        return (
-                            <span key={key}>
-                                <span className="key">{key}:</span>
-                                {value}
-                            </span>
-                        );
-                    })}
-                </div>)}
-        </div>
-    );
+                    );
+                }
+                return (
+                    <span key={key}>
+                        <span className="key">{key}:</span>
+                        {value}
+                    </span>
+                );
+            })}
+              </div>
+          )}
+      </div>
+  );
 }
 
 VisualizationPane.propTypes = {
@@ -184,8 +218,6 @@ VisualizationPane.propTypes = {
     hoveredCluster: PropTypes.object,
     slide: PropTypes.object,
     scope: PropTypes.object,
-    xDomain: PropTypes.arrayOf(PropTypes.number),
-    yDomain: PropTypes.arrayOf(PropTypes.number),
     inputToScopeIndexMap: PropTypes.object.isRequired,
     onScatter: PropTypes.func.isRequired,
     onView: PropTypes.func.isRequired,
@@ -193,7 +225,7 @@ VisualizationPane.propTypes = {
     onHover: PropTypes.func.isRequired,
     hovered: PropTypes.object,
     dataset: PropTypes.object.isRequired,
-    containerRef: PropTypes.object.isRequired
+    containerRef: PropTypes.object.isRequired,
 };
 
 export default VisualizationPane;

@@ -220,12 +220,7 @@ function Explore() {
   // this is a reference to the regl scatterplot instance
   // so we can do stuff like clear selections without re-rendering
   const [scatter, setScatter] = useState({})
-  const [xDomain, setXDomain] = useState([-1, 1]);
-  const [yDomain, setYDomain] = useState([-1, 1]);
-  const handleView = useCallback((xDomain, yDomain) => {
-    setXDomain(xDomain);
-    setYDomain(yDomain);
-  }, [setXDomain, setYDomain])
+
   // Selection via Scatterplot
   // indices of items selected by the scatter plot
   const [selectedIndices, setSelectedIndices] = useState([]);
@@ -384,7 +379,7 @@ function Explore() {
       //   setSlide(clusterLabels[0])
       // }
     }
-  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding, clusterLabels, slide]);
+  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding]);
 
   useEffect(() => {
     if (slide) {
@@ -637,8 +632,6 @@ function Explore() {
           slide={slide}
           scope={scope}
           containerRef={containerRef}
-          xDomain={xDomain}
-          yDomain={yDomain}
           inputToScopeIndexMap={inputToScopeIndexMap}
           onScatter={setScatter}
           onView={handleView}
