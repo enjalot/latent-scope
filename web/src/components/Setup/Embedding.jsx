@@ -410,7 +410,7 @@ function Embedding() {
         <div className={styles["navigate"]}>
           <Button disabled={!embedding}
             onClick={() => {
-              updateScope({embedding_id: embedding?.id})
+              updateScope({embedding_id: embedding?.id, umap_id: null, cluster_id: null})
               goToNextStep()
             }}
             text={embedding ? `Proceed with ${embedding?.id}` : "Select an embedding"}

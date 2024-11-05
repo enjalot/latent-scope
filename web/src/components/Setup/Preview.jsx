@@ -201,7 +201,7 @@ function Preview({
         if(py < yDomain[0]) py = yDomain[0]
         if(py > yDomain[1]) py = yDomain[1]
         const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 6.5;
-        let umapHeightOffset = (heightOffset / 2) - 25 // remove the row info height from the calculation and some padding
+        let umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
         const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (umapHeight) + umapHeightOffset
         setTooltipPosition({ 
           x: xPos,

@@ -169,7 +169,7 @@ function Umap({}) {
           </div>}
 
 
-          <Button type="submit" color={embedding ? "secondary" : "primary"} disabled={!!umapJob} text="New UMAP"></Button>
+          <Button type="submit" color={umap? "secondary" : "primary"} disabled={!!umapJob} text="New UMAP"></Button>
 
           <JobProgress job={umapJob} clearJob={()=> setUmapJob(null)}/>
         </form>
@@ -186,9 +186,9 @@ function Umap({}) {
                 onChange={() => setUmap(um)} />
               <span>{um.id}</span>
               <div className={styles["item-info"]}>
-              <span>Neighbors: {um.neighbors}</span>
-              <span>Min Dist: {um.min_dist}</span>
-              {clusters.filter(d => d.umap_id == um.id).length > 0 ? <span>Clusters: {clusters.filter(d => d.umap_id == um.id).length}</span> : null}
+                <span>Neighbors: {um.neighbors}</span>
+                <span>Min Dist: {um.min_dist}</span>
+                {clusters.filter(d => d.umap_id == um.id).length > 0 ? <span>Clusters: {clusters.filter(d => d.umap_id == um.id).length}</span> : null}
               </div>
               </label>
 
@@ -222,7 +222,7 @@ function Umap({}) {
         <div className={styles["navigate"]}>
           <Button disabled={!umap}
             onClick={() => {
-              updateScope({umap_id: umap?.id})
+              updateScope({umap_id: umap?.id, cluster_id: null})
               goToNextStep()
             }}
             text={umap ? `Proceed with ${umap?.id}` : "Select a UMAP"}

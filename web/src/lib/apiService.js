@@ -49,6 +49,15 @@ export const apiService = {
   fetchClusters: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
       .then(response => response.json())
+      .then(data => {
+        const array = data.map(d=> {
+          return {
+            ...d,
+            url: `${apiUrl}/files/${datasetId}/clusters/${d.id}.png`,
+          }
+        })
+        return array
+      })
   },
   getEmbeddingModels: async () => {
     return fetch(`${apiUrl}/embedding_models`)

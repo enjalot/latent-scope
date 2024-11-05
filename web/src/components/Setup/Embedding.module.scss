@@ -1,64 +1,30 @@
+@import "./_shared";
+
 .embeddings {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  height: 100%;
+  @include setup-container;
 }
-
 .embeddings-setup {
-  display: flex;
-  flex-direction: column;
-  width: 48%;
-  overflow-y: auto;
+  @include setup-left;
 }
-
 .embeddings-preview {
-  width: 48%;
-  display: flex;
-  flex-direction: column;
+  @include setup-right;
 }
-
 .preview {
-  flex-grow: 1;
-  min-height: 0;
+  @include setup-preview;
 }
 .navigate {
-  padding: 12px;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
+  @include setup-navigate;
 }
-
 .step {
-  margin: 6px 0;
+  @include setup-step;
 }
-
 .embeddings-form {
-  margin: 6px;
-  padding: 6px 12px;
-  padding-bottom: 12px;
-  border: 1px solid var(--borders-color-border-1);
-  border-radius: 5px;
-  flex-shrink: 0;
+  @include setup-form;
 }
 
-.embeddings-form form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
-}
 
 .embeddings-list {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  overflow-y: auto;
-  flex-grow: 1;
-  min-height: 0;
-}
-.embeddings-list input, .embeddings-list label {
-  cursor: pointer;
+  @include item-list;
 }
 
 .truncate {
@@ -67,7 +33,6 @@
   gap: 4px;
   margin: 6px 0;
 }
-
 .options {
   display: flex;
   flex-direction: row;
@@ -85,50 +50,18 @@
 }
 
 
-
 .item {
-  background-color: var(--neutrals-color-neutral-1);
-  border-radius: 5px;
-  margin: 6px;
-  padding: 6px;
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
-  width: 100%;
-  // max-width: 300px;
-  height: fit-content;
-  // height: 140px;
-}
-.item.selected {
-  background-color: var(--neutrals-color-neutral-2);
+  @include setup-item;
 }
 .item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  span {
-    line-height: 1.25em;
-  }
+  @include setup-item-info;
 }
 .item-deps {
-  display: flex;
-  flex-direction: row;
-  gap: 4px;
-}
-.item select {
-  height: 2em;
-}
-@media (prefers-color-scheme: dark) {
-  .item {
-    background-color: #333;
-  }
+  @include setup-item-deps;
 }
 .delete {
-  max-height: 33px;
-  margin-left: auto;
+  @include setup-delete;
 }
-
-
 
 .potential-embedding {
   display: flex;

@@ -1,0 +1,110 @@
+@mixin setup-container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  height: 100%;
+}
+
+@mixin setup-left {
+  display: flex;
+  flex-direction: column;
+  width: 48%;
+  overflow-y: auto;
+}
+
+@mixin setup-right {
+  width: 48%;
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin setup-preview {
+  flex-grow: 1;
+  min-height: 0;
+}
+
+@mixin setup-navigate {
+  padding: 12px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@mixin setup-step {
+  margin: 6px 0;
+}
+
+@mixin setup-form {
+  margin: 6px;
+  padding: 6px 12px;
+  padding-bottom: 12px;
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: 5px;
+  flex-shrink: 0;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+  }
+}
+
+@mixin setup-tooltip {
+  max-width: 340px;
+}
+
+@mixin item-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  // flex-grow: 1;
+  min-height: 0;
+  input {
+    cursor: pointer;
+  }
+  label {
+    cursor: pointer;
+  }
+}
+
+@mixin setup-item {
+  background-color: var(--neutrals-color-neutral-1);
+  border-radius: 5px;
+  margin: 6px;
+  padding: 6px;
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 100%;
+  height: fit-content;
+  justify-content: space-between;
+
+  select {
+    height: 2em;
+  }
+  .selected {
+    background-color: var(--neutrals-color-neutral-2);
+  }
+}
+
+@mixin setup-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  span {
+    line-height: 1.25em;
+  }
+}
+
+@mixin setup-item-deps {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+@mixin setup-delete {
+  max-height: 33px;
+  margin-left: auto;
+}

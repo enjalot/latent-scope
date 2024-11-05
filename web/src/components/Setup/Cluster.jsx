@@ -1,148 +1,175 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback} from 'react';
 import { Tooltip } from 'react-tooltip';
+import { Button } from 'react-element-forge';
+
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
+import { useSetup } from '../../contexts/SetupContext';
+import { apiService } from '../../lib/apiService';
+
+import Preview from './Preview';
+
+import styles from './Cluster.module.scss';
+
 const apiUrl = import.meta.env.VITE_API_URL
-
-// import styles from './Cluster.module.css';
-
-import PropTypes from 'prop-types';
-Cluster.propTypes = {
-  dataset: PropTypes.shape({
-    id: PropTypes.string.isRequired
-  }).isRequired,
-  cluster: PropTypes.object,
-  umap: PropTypes.object,
-  clusters: PropTypes.array,
-  onNew: PropTypes.func.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
-function Cluster({ dataset, cluster, umap, onNew, onChange}) {
+function Cluster() {
+  const { dataset, scope, updateScope, goToNextStep } = useSetup();
+
   const [clusterJob, setClusterJob] = useState(null);
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/cluster`);
   const { startJob: deleteClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/delete/cluster`);
 
+  const [embeddings, setEmbeddings] = useState([]);
+  const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
-  const [localCluster, setLocalCluster] = useState(cluster)
+
+  const [embedding, setEmbedding] = useState(null);
+  const [umap, setUmap] = useState(null);
+  const [cluster, setCluster] = useState(null);
+
+  // Update local state when scope changes
   useEffect(() => {
-    if(cluster) {
-      setLocalCluster(cluster)
+    console.log("scope changed", scope)
+    if(scope?.embedding_id) {
+      const emb = embeddings.find(e => e.id == scope.embedding_id)
+      console.log("EMB", emb)
+      setEmbedding(emb)
     } else {
-      setLocalCluster(clusters[0])
+      setEmbedding(embeddings?.[0])
     }
-  }, [cluster, clusters])
+    if(scope?.umap_id) {
+      const um = umaps.find(u => u.id == scope.umap_id)
+      setUmap(um)
+    }
+    if(scope?.cluster_id) {
+      const cl = clusters?.find(c => c.id == scope.cluster_id)
+      setCluster(cl)
+    } else if(clusters) {
+      setCluster(clusters.filter(c => c.umap_id == scope?.umap_id)[0])
+    }
+  }, [scope, clusters, umaps, embeddings])
 
-
-  function fetchClusters(datasetId, callback) {
-    fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
-      .then(response => response.json())
-      .then(data => {
-        const array = data.map(d => {
-          return {
-            ...d,
-            url: `${apiUrl}/files/${datasetId}/clusters/${d.id}.png`,
-          }
-        })
-        // console.log("clusters", clusters)
-        callback(array)
-      });
-  }
-  
+  // Fetch initial data
   useEffect(() => {
-    fetchClusters(dataset.id, (clstrs) => {
-      setClusters(clstrs)
-      onNew(clstrs)
-    })
-  }, [dataset, onNew]);
+    if(dataset) {
+      apiService.fetchEmbeddings(dataset?.id).then(embs => setEmbeddings(embs))
+      apiService.fetchUmaps(dataset?.id).then(ums => setUmaps(ums))
+      apiService.fetchClusters(dataset?.id).then(cls => setClusters(cls))
+    }
+  }, [dataset])
 
+  // Update clusters after job completion
   useEffect(() => {
     if(clusterJob?.status == "completed") {
-      fetchClusters(dataset.id, (clstrs) => {
-        let cls;
-        if(clusterJob.job_name == "cluster"){
-          cls = clstrs.find(d => d.id == clusterJob.run_id)
-        } else if(clusterJob.job_name == "rm") {
-          cls = clstrs[0]
-        }
-        setLocalCluster(cls)
-        setClusters(clstrs)
-        onNew(clstrs)
-      })
+      apiService.fetchClusters(dataset.id)
+        .then(clstrs => {
+          let cls;
+          if(clusterJob.job_name == "cluster"){
+            cls = clstrs.find(d => d.id == clusterJob.run_id)
+          } else if(clusterJob.job_name == "rm") {
+            cls = clstrs[0]
+          }
+          setCluster(cls)
+          setClusters(clstrs)
+        })
     }
-  }, [clusterJob, dataset, setClusters, onNew]);
+  }, [clusterJob, dataset]);
 
   const handleNewCluster = useCallback((e) => {
     e.preventDefault()
     const form = e.target
     const data = new FormData(form)
-    const samples = data.get('samples')
-    const min_samples = data.get('min_samples')
-    const cluster_selection_epsilon = data.get('cluster_selection_epsilon')
-    startClusterJob({umap_id: umap.id, samples, min_samples, cluster_selection_epsilon})
+    startClusterJob({
+      umap_id: umap.id, 
+      samples: data.get('samples'),
+      min_samples: data.get('min_samples'),
+      cluster_selection_epsilon: data.get('cluster_selection_epsilon')
+    })
   }, [startClusterJob, umap])
 
-
   return (
-    <div className="dataset--clusters-new">
-      <div>Cluster using <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a></div>
-      <form onSubmit={(e) => handleNewCluster(e, umap)}>
-        <label>
-          Min Cluster Size:
-          <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : dataset.length < 10000 ? 15 : 25} disabled={!!clusterJob || !umap}/>
-          <span className="tooltip" data-tooltip-id="samples">🤔</span>
-          <Tooltip id="samples" place="top" effect="solid">
-            This parameter determines the minimum number of data points you need to make a cluster. lower values mean more clusters.
-          </Tooltip>
-        </label>
-        <label>
-          Min Samples:
-          <input type="number" name="min_samples" defaultValue={dataset.length < 1000 ? 2 : 5} disabled={!!clusterJob || !umap} />
-          <span className="tooltip" data-tooltip-id="min_samples">🤔</span>
-          <Tooltip id="min_samples" place="top" effect="solid">
-            The number of samples in a neighbourhoodfor a point to be considered a core point. lower values mean more clusters.
-          </Tooltip>
-        </label>
-        <label>
-          Cluster Selection Epsilon:
-          <input type="number" name="cluster_selection_epsilon" defaultValue={dataset.length < 1000 ? 0.05 : 0.005} step="0.0001" disabled={!!clusterJob || !umap} />
-          <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">🤔</span>
-          <Tooltip id="cluster_selection_epsilon" place="top" effect="solid">
-            This parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
-          </Tooltip>
-        </label>
-        <button type="submit" disabled={!!clusterJob || !umap}>New Clusters</button>
-      </form> 
-
-      <JobProgress job={clusterJob} clearJob={()=>setClusterJob(null)} />
-
-      <div className="dataset--setup-clusters-list">
-        {umap && clusters.filter(d => d.umap_id == umap.id).map((cl, index) => (
-          <div className="item dataset--setup-clusters-item" key={index}>
-            <input type="radio" 
-              id={`cluster${index}`} 
-              name="cluster" 
-              value={cluster || ""} 
-              checked={cl.id === localCluster?.id} 
-              onChange={() => setLocalCluster(cl)} />
-            <label htmlFor={`cluster${index}`}>{cl.id}
-            <br></br>
-              Clusters: {cl.n_clusters}<br/>
-              Noise points: {cl.n_noise}<br/>
-              Samples: {cl.samples}<br/>
-              Min Samples: {cl.min_samples}<br/>
-              { cl.cluster_selection_epsilon ? <>Cluster Selection Epsilon: {cl.cluster_selection_epsilon} <br/></>: null }
-            <img src={cl.url} alt={cl.id} /><br/>
-            <button onClick={() => deleteClusterJob({cluster_id: cl.id}) }>🗑️</button>
+    <div className={styles["cluster"]}>
+      <div className={styles["cluster-setup"]}>
+        <div className={styles["cluster-form"]}>
+          <div>Cluster using <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a></div>
+          <form onSubmit={handleNewCluster}>
+            <label>
+              Min Cluster Size:
+              <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : dataset.length < 10000 ? 15 : 25} disabled={!!clusterJob || !umap}/>
+              <span className="tooltip" data-tooltip-id="samples">🤔</span>
+              <Tooltip id="samples" place="top" effect="solid">
+                This parameter determines the minimum number of data points you need to make a cluster. lower values mean more clusters.
+              </Tooltip>
             </label>
-          </div>
-        ))}
+            <label>
+              Min Samples:
+              <input type="number" name="min_samples" defaultValue={dataset.length < 1000 ? 2 : 5} disabled={!!clusterJob || !umap} />
+              <span className="tooltip" data-tooltip-id="min_samples">🤔</span>
+              <Tooltip id="min_samples" place="top" effect="solid">
+                The number of samples in a neighbourhoodfor a point to be considered a core point. lower values mean more clusters.
+              </Tooltip>
+            </label>
+            <label>
+              Cluster Selection Epsilon:
+              <input type="number" name="cluster_selection_epsilon" defaultValue={dataset.length < 1000 ? 0.05 : 0.005} step="0.0001" disabled={!!clusterJob || !umap} />
+              <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">🤔</span>
+              <Tooltip id="cluster_selection_epsilon" place="top" effect="solid">
+                This parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
+              </Tooltip>
+            </label>
+            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={!!clusterJob || !cluster} text="New Clusters" />
+          </form>
+
+          <JobProgress job={clusterJob} clearJob={() => setClusterJob(null)} />
+        </div>
+
+        <div className={styles["cluster-list"]}>
+          {umap && clusters.filter(d => d.umap_id == umap.id).map((cl, index) => (
+            <div className={styles["item"]} key={index}>
+              <label htmlFor={`cluster${index}`}>
+                <input type="radio" 
+                  id={`cluster${index}`} 
+                  name="cluster" 
+                  value={cl} 
+                  checked={cl.id === cluster?.id} 
+                  onChange={() => setCluster(cl)} />
+                <span>{cl.id}</span>
+                <div className={styles["item-info"]}>
+                  <span>Clusters: {cl.n_clusters}</span>
+                  <span>Noise points: {cl.n_noise}</span>
+                  <span>Samples: {cl.samples}</span>
+                  <span>Min Samples: {cl.min_samples}</span>
+                  {cl.cluster_selection_epsilon && <span>Epsilon: {cl.cluster_selection_epsilon}</span>}
+                </div>
+              </label>
+
+              <img src={cl.url} alt={cl.id} />
+
+              <Button className={styles["delete"]} color="secondary" onClick={() => deleteClusterJob({cluster_id: cl.id})} text="🗑️" />
+            </div>
+          ))}
+        </div>
       </div>
-      <br></br>
-        {localCluster && <button type="submit" onClick={() => onChange(localCluster)}>👉 Use {localCluster?.id}</button>}
+
+      <div className={styles["cluster-preview"]}>
+        <div className={styles["preview"]}>
+          <Preview embedding={embedding} umap={umap} cluster={cluster} />
+        </div>
+        <div className={styles["navigate"]}>
+          <Button 
+            disabled={!cluster}
+            onClick={() => {
+              updateScope({cluster_id: cluster?.id})
+              goToNextStep()
+            }}
+            text={cluster ? `Proceed with ${cluster?.id}` : "Select a Cluster"}
+          />
+        </div>
+      </div>
     </div>
   );
 }

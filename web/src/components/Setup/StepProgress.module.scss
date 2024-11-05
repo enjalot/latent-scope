@@ -20,9 +20,11 @@
 }
 
 .active {
-  background-color: var(--neutrals-color-neutral-1);
+  // background-color: var(--neutrals-color-neutral-1);
+  background-color: var(--semantic-color-semantic-neutral);
   border-color: var(--borders-color-border-2);
-  color: var(--text-color-text-main);
+  // color: var(--text-color-text-main);
+  color: var(--neutrals-color-neutral-0);
   &::before {
     content: '👉';
     margin-right: 5px;
@@ -30,9 +32,11 @@
 }
 
 .completed {
-  background-color: var(--semantic-color-semantic-neutral);
+  // background-color: var(--semantic-color-semantic-neutral);
+  background-color: var(--neutrals-color-neutral-1);
   border-color: var(--semantic-color-semantic-neutral);
-  color: var(--neutrals-color-neutral-0);
+  // color: var(--neutrals-color-neutral-0);
+  color: var(--text-color-text-main);
   cursor: pointer;
   &::before {
     content: '✅';
