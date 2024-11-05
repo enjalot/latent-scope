@@ -5,10 +5,8 @@ import './Explore.css';
 // import DataTable from '../components/DataTable';
 // import IndexDataTable from '../components/IndexDataTable';
 import FilterDataTable from '../components/FilterDataTable';
-import Scatter from '../components/Scatter';
-import AnnotationPlot from '../components/AnnotationPlot';
-import HullPlot from '../components/HullPlot';
 import EmbeddingVis from '../components/EmbeddingVis';
+import { processHulls, isMobileDevice } from '../utils';
 
 import Tagging from '../components/Bulk/Tagging';
 import Clustering from '../components/Bulk/Clustering';
@@ -21,22 +19,6 @@ import VisualizationPane from '../components/Explore/VisualizationPane';
 const apiUrl = import.meta.env.VITE_API_URL
 const readonly = import.meta.env.MODE == "read_only"
 
-// unfortunately regl-scatter doesn't even render in iOS
-const isIOS = () => {
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-// let's warn mobile users (on demo in read-only) that desktop is better experience
-const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
-function processHulls(labels, points, indexMap) {
-  if(!labels) return []
-  return labels.map(d => {
-    return d.hull.map(i => points[indexMap[i]])
-  })
-}
-
 function Explore() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -46,33 +28,14 @@ function Explore() {
   const containerRef = useRef(null);
   const filtersContainerRef = useRef(null);
 
-  // let's fill the container and update the width and height if window resizes
-  const [scopeWidth, scopeHeight] = useWindowSize();
-  function useWindowSize() {
-    const [size, setSize] = useState([500,500]);
-    useEffect(() => {
-      function updateSize() {
-        if(!containerRef.current) return
-        const { height, width } = containerRef.current.getBoundingClientRect()
-        // console.log("width x height", width, height)
-        let swidth = width > 500 ? 500 : width - 50
-        setSize([swidth, swidth]);
-      }
-      window.addEventListener('resize', updateSize);
-      updateSize();
-      setTimeout(updateSize, 100)
-      return () => window.removeEventListener('resize', updateSize);
-    }, []);
-    return size;
-  }
-
   const [filtersHeight, setFiltersHeight] = useState(250);
-  const filtersCSSHeight = useMemo(() => `calc(100% - ${filtersHeight + 62}px)`, [filtersHeight])
+  const FILTERS_PADDING = 62;
+  const filtersCSSHeight = useMemo(() => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`, [filtersHeight])
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
-        const {height} = entry.contentRect;
+        const { height } = entry.contentRect;
         setFiltersHeight(height);
       }
     });
@@ -83,7 +46,9 @@ function Explore() {
     } else {
       setTimeout(() => {
         node = filtersContainerRef.current
-        resizeObserver.observe(node)
+        if (node) {
+          resizeObserver.observe(node)
+        }
       }, 100)
     }
 
@@ -125,7 +90,7 @@ function Explore() {
   }, [datasetId, scopeId, setScope]);
 
   useEffect(() => {
-   fetchScopeMeta()
+    fetchScopeMeta()
   }, [datasetId, scopeId, fetchScopeMeta]);
 
   const [embedding, setEmbedding] = useState(null);
@@ -165,7 +130,7 @@ function Explore() {
         // calculate scopeIndexMap
         let sim = {}
         let ism = {}
-        scopeRows.forEach((d,i) => {
+        scopeRows.forEach((d, i) => {
           ism[d.ls_index] = i
           sim[i] = d.ls_index
         })
@@ -198,22 +163,22 @@ function Explore() {
         setClusterMap(clusterMap)
 
         setTimeout(() => {
-          if(labelsData)
+          if (labelsData)
             setHulls(processHulls(labelsData, pts, ism))
         }, 100)
 
       }).catch(error => console.error("Fetching data failed", error));
   }, [datasetId, scope, setHulls, setClusterMap, setClusterLabels, setClusterIndices, setPoints]);
 
-  
+
 
 
   useEffect(() => {
     if (embedding && embedding.model_id) {
       setSearchModel(embedding.id)
-    } else if(embeddings.length) {
+    } else if (embeddings.length) {
       const emb = embeddings.find(d => !!d.model_id)
-      if(emb)
+      if (emb)
         setSearchModel(emb.id)
     }
   }, [embedding, embeddings, setSearchModel])
@@ -363,7 +328,7 @@ function Explore() {
       dataset: datasetId,
       query,
       embedding_id: searchModel,
-      ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {} ),
+      ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {}),
     })
     const nearestNeigborsUrl = `${apiUrl}/search/nn?${searchParams.toString()}`;
 
@@ -374,7 +339,7 @@ function Explore() {
       .then(data => {
         console.log("search", data)
         let dists = []
-        let inds = data.indices.map((idx,i) => {
+        let inds = data.indices.map((idx, i) => {
           dists[idx] = data.distances[i]
           // return {
           //   index: idx,
@@ -392,7 +357,7 @@ function Explore() {
   }, [searchModel, embeddings, datasetId, scatter, setDistances, setSearchIndices, setSearchEmbedding, setSearchLoading]);
 
   useEffect(() => {
-    if(searchText) {
+    if (searchText) {
       searchQuery(searchText)
     }
   }, [searchText, searchQuery])
@@ -440,7 +405,7 @@ function Explore() {
     setNewClusterLabel('')
   }, [slide])
 
-const handleNewCluster = useCallback((label) => {
+  const handleNewCluster = useCallback((label) => {
     console.log("new cluster", label)
     fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/new-cluster?label=${label}`)
       .then(response => response.json())
@@ -486,7 +451,7 @@ const handleNewCluster = useCallback((label) => {
 
 
   const columnFilters = useMemo(() => {
-    if(!dataset?.column_metadata) return []
+    if (!dataset?.column_metadata) return []
     return Object.keys(dataset.column_metadata).map(column => ({
       column: column,
       categories: dataset.column_metadata[column].categories,
@@ -504,7 +469,7 @@ const handleNewCluster = useCallback((label) => {
     let query = []
     Object.keys(filters).forEach(c => {
       let f = filters[c]
-      if(f) {
+      if (f) {
         query.push({
           column: c,
           type: "eq",
@@ -520,18 +485,18 @@ const handleNewCluster = useCallback((label) => {
       },
       body: JSON.stringify({ dataset: datasetId, filters: query }),
     })
-    .then(response => response.json())
-    .then(data => {
-      let indices = data.indices.filter(d => inputToScopeIndexMap[d] >= 0)
-      setColumnIndices(indices)
-    })
+      .then(response => response.json())
+      .then(data => {
+        let indices = data.indices.filter(d => inputToScopeIndexMap[d] >= 0)
+        setColumnIndices(indices)
+      })
 
   }, [datasetId, inputToScopeIndexMap, setColumnIndices]);
 
   useEffect(() => {
     let active = Object.values(columnFiltersActive).filter(d => !!d).length
     // console.log("active filters", active, columnFiltersActive)
-    if(active > 0) {
+    if (active > 0) {
       columnQuery(columnFiltersActive)
     }
   }, [columnFiltersActive, columnQuery])
@@ -551,13 +516,13 @@ const handleNewCluster = useCallback((label) => {
   function intersectMultipleArrays(...arrays) {
     arrays = arrays.filter(d => d.length > 0)
     if (arrays.length === 0) return [];
-    if(arrays.length == 1) return arrays[0]
+    if (arrays.length == 1) return arrays[0]
     // Use reduce to accumulate intersections
     return arrays.reduce((acc, curr) => {
-        // Convert current array to a Set for fast lookup
-        const currSet = new Set(curr);
-        // Filter the accumulated results to keep only elements also in the current array
-        return acc.filter(x => currSet.has(x));
+      // Convert current array to a Set for fast lookup
+      const currSet = new Set(curr);
+      // Filter the accumulated results to keep only elements also in the current array
+      return acc.filter(x => currSet.has(x));
     });
   }
 
@@ -576,7 +541,7 @@ const handleNewCluster = useCallback((label) => {
       filteredClusterIndices || [],
       filteredTagset || [],
       columnIndices || [])
-    if(indices.length == 0 && selectedIndices.length > 0) {
+    if (indices.length == 0 && selectedIndices.length > 0) {
       indices = selectedIndices
     }
     // console.log("indices!", indices)
@@ -604,7 +569,7 @@ const handleNewCluster = useCallback((label) => {
 
   useEffect(() => {
     // console.log("search model", searchModel)
-    if(showEmbeddings) {
+    if (showEmbeddings) {
       setShowEmbeddings(searchModel)
     }
   }, [searchModel, showEmbeddings])
@@ -613,7 +578,7 @@ const handleNewCluster = useCallback((label) => {
   const [embeddingMaxValues, setEmbeddingMaxValues] = useState([])
   // get the min and max values for the embedding
   useEffect(() => {
-    if(searchModel) {
+    if (searchModel) {
       fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${searchModel}`)
         .then(response => response.json())
         .then(data => {
@@ -627,7 +592,7 @@ const handleNewCluster = useCallback((label) => {
   const [rows, setRows] = useState([])
   const [averageEmbedding, setAverageEmbedding] = useState([])
   useEffect(() => {
-    if(rows.length > 0) {
+    if (rows.length > 0) {
       // Calculate column-wise average of all embeddings in rows
       const avg = rows.reduce((acc, row) => {
         if (row.ls_embedding && Array.isArray(row.ls_embedding)) {
@@ -652,15 +617,15 @@ const handleNewCluster = useCallback((label) => {
   return (
     <div ref={containerRef} className="container">
       <div className="left-column">
-        <DatasetHeader 
+        <DatasetHeader
           dataset={dataset}
           scope={scope}
           scopes={scopes}
           onScopeChange={handleScopeChange}
           isMobileDevice={isMobileDevice()}
         />
-        
-        <VisualizationPane
+
+        {points.length ? <VisualizationPane
           points={points}
           drawPoints={drawPoints}
           hulls={hulls}
@@ -671,10 +636,9 @@ const handleNewCluster = useCallback((label) => {
           hoveredCluster={hoveredCluster}
           slide={slide}
           scope={scope}
+          containerRef={containerRef}
           xDomain={xDomain}
           yDomain={yDomain}
-          width={scopeWidth}
-          height={scopeHeight}
           inputToScopeIndexMap={inputToScopeIndexMap}
           onScatter={setScatter}
           onView={handleView}
@@ -682,108 +646,108 @@ const handleNewCluster = useCallback((label) => {
           onHover={handleHover}
           hovered={hovered}
           dataset={dataset}
-        />
+        /> : null}
       </div>
 
       <div className="data">
-          <div className="filters-container" ref={filtersContainerRef}>
-          <div className={`filter-row search-box ${searchIndices.length ? 'active': ''}`}>
-              <div className="filter-cell left">
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  setSearchText(e.target.elements.searchBox.value);
-                  // searchQuery(e.target.elements.searchBox.value);
-                }}>
-                  <input type="text" id="searchBox" placeholder="Nearest Neighbor Search..." />
-                  {/* <button type="submit">Similarity Search</button> */}
-                  {searchLoading ? "Querying..." : <button type="submit">🔍</button>}
-                </form>
-              </div>
-              <div className="filter-cell middle">
-                <span>
-                  {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
-                  {searchIndices.length > 0 ?
-                    <button className="deselect" onClick={() => {
-                      setSearchIndices([])
-                      document.getElementById("searchBox").value = "";
-                      setSearchText("")
-                    }
-                    }>X</button>
-                    : null}
-                </span>
-              </div>
-              <div className="filter-cell right">
-                <label htmlFor="embeddingModel"></label>
-                <select id="embeddingModel"
-                  onChange={(e) => handleModelSelect(e.target.value)}
-                  value={searchModel}>
-                  {embeddings.filter(d => d.model_id).map((emb, index) => (
-                    <option key={index} value={emb.id}>{emb.id} - {emb.model_id} - {emb.dimensions}</option>
-                  ))}
-                </select>
-                {/* TODO: tooltip */}
-              </div>
+        <div className="filters-container" ref={filtersContainerRef}>
+          <div className={`filter-row search-box ${searchIndices.length ? 'active' : ''}`}>
+            <div className="filter-cell left">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                setSearchText(e.target.elements.searchBox.value);
+                // searchQuery(e.target.elements.searchBox.value);
+              }}>
+                <input type="text" id="searchBox" placeholder="Nearest Neighbor Search..." />
+                {/* <button type="submit">Similarity Search</button> */}
+                {searchLoading ? "Querying..." : <button type="submit">🔍</button>}
+              </form>
             </div>
-
-            <div className={`clusters-select filter-row  ${slideAnnotations.length ? 'active': ''}`}>
-              <div className="filter-cell left">
-                <select onChange={(e) => {
-                  if(e.target.value == -1) {
-                    setSlide(null)
-                    return
-                  }
-                  const cl = clusterLabels.find(cluster => cluster.cluster === +e.target.value)
-                  if(cl) setSlide(cl)
-                }} value={slide?.cluster >= 0 ? slide.cluster : -1}>
-                  <option value="-1">Filter by cluster</option>
-                  {clusterLabels?.map((cluster, index) => (
-                    <option key={index} value={cluster.cluster}>{cluster.cluster}: {cluster.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="filter-cell middle">
-                {slideAnnotations.length ? <span> {slideAnnotations.length} rows
+            <div className="filter-cell middle">
+              <span>
+                {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
+                {searchIndices.length > 0 ?
                   <button className="deselect" onClick={() => {
-                    setSlide(null)
+                    setSearchIndices([])
+                    document.getElementById("searchBox").value = "";
+                    setSearchText("")
                   }
                   }>X</button>
-                </span> : null}
-              </div>
-              <div className="filter-cell right">
-                {slide ?
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleLabelUpdate(slide.cluster, clusterLabel);
-                  }}>
-                    <input
-                      className="update-cluster-label"
-                      type="text"
-                      id="update-label"
-                      value={clusterLabel}
-                      onChange={(e) => setClusterLabel(e.target.value)} />
-                    <button type="submit">✍️</button>
-                    {/* TODO: tooltip */}
-                  </form>
-                  : <form onSubmit={(e) => {
-                    e.preventDefault();
-                    const formData = new FormData(e.target);
-                    const newLabel = formData.get("new-label")
-                    console.log("new label", newLabel)
-                    handleNewCluster(newLabel)
-                  }}>
-                    <input type="text"
-                        id="new-label" name="new-label" className="new-cluster-label"
-                        value={newClusterLabel} onChange={(e) => setNewClusterLabel(e.target.value)}
-                        placeholder="New Cluster"
-                        />
-                    <button type="submit">➕️ Cluster</button>
-                  </form>}
-              </div>
+                  : null}
+              </span>
             </div>
+            <div className="filter-cell right">
+              <label htmlFor="embeddingModel"></label>
+              <select id="embeddingModel"
+                onChange={(e) => handleModelSelect(e.target.value)}
+                value={searchModel}>
+                {embeddings.filter(d => d.model_id).map((emb, index) => (
+                  <option key={index} value={emb.id}>{emb.id} - {emb.model_id} - {emb.dimensions}</option>
+                ))}
+              </select>
+              {/* TODO: tooltip */}
+            </div>
+          </div>
 
-            <div className={`filter-row tags-box ${filterInputIndices(tagset[tag] || [])?.length ? 'active': ''}`}>
-              <div className="filter-cell left tags-select">
-                {/* <select onChange={(e) => {
+          <div className={`clusters-select filter-row  ${slideAnnotations.length ? 'active' : ''}`}>
+            <div className="filter-cell left">
+              <select onChange={(e) => {
+                if (e.target.value == -1) {
+                  setSlide(null)
+                  return
+                }
+                const cl = clusterLabels.find(cluster => cluster.cluster === +e.target.value)
+                if (cl) setSlide(cl)
+              }} value={slide?.cluster >= 0 ? slide.cluster : -1}>
+                <option value="-1">Filter by cluster</option>
+                {clusterLabels?.map((cluster, index) => (
+                  <option key={index} value={cluster.cluster}>{cluster.cluster}: {cluster.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-cell middle">
+              {slideAnnotations.length ? <span> {slideAnnotations.length} rows
+                <button className="deselect" onClick={() => {
+                  setSlide(null)
+                }
+                }>X</button>
+              </span> : null}
+            </div>
+            <div className="filter-cell right">
+              {slide ?
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleLabelUpdate(slide.cluster, clusterLabel);
+                }}>
+                  <input
+                    className="update-cluster-label"
+                    type="text"
+                    id="update-label"
+                    value={clusterLabel}
+                    onChange={(e) => setClusterLabel(e.target.value)} />
+                  <button type="submit">✍️</button>
+                  {/* TODO: tooltip */}
+                </form>
+                : <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target);
+                  const newLabel = formData.get("new-label")
+                  console.log("new label", newLabel)
+                  handleNewCluster(newLabel)
+                }}>
+                  <input type="text"
+                    id="new-label" name="new-label" className="new-cluster-label"
+                    value={newClusterLabel} onChange={(e) => setNewClusterLabel(e.target.value)}
+                    placeholder="New Cluster"
+                  />
+                  <button type="submit">➕️ Cluster</button>
+                </form>}
+            </div>
+          </div>
+
+          <div className={`filter-row tags-box ${filterInputIndices(tagset[tag] || [])?.length ? 'active' : ''}`}>
+            <div className="filter-cell left tags-select">
+              {/* <select onChange={(e) => {
                   if(e.target.value == "-1") {
                     setTag(null)
                     return
@@ -804,178 +768,178 @@ const handleNewCluster = useCallback((label) => {
                   {t} ({filterInputIndices(tagset[t] || []).length})
                 </button>
               ))}
-              </div>
-              <div className="filter-cell middle">
-                {tag && filterInputIndices(tagset[tag] || []).length ? <span>{filterInputIndices(tagset[tag] || []).length} rows
-                  <button className="deselect" onClick={() => {
+            </div>
+            <div className="filter-cell middle">
+              {tag && filterInputIndices(tagset[tag] || []).length ? <span>{filterInputIndices(tagset[tag] || []).length} rows
+                <button className="deselect" onClick={() => {
+                  setTag(null)
+                }
+                }>X</button>
+              </span> : null}
+            </div>
+            <div className="filter-cell right new-tag">
+              {!tag ? <form onSubmit={(e) => {
+                e.preventDefault();
+                const newTag = e.target.elements.newTag.value;
+                fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
+                  .then(response => response.json())
+                  .then(data => {
+                    console.log("new tag", data)
+                    e.target.elements.newTag.value = ""
+                    fetchTagSet()
+                  });
+              }}>
+                <input type="text" id="newTag" placeholder="New Tag" />
+                <button type="submit">➕ Tag</button>
+              </form> : <form onSubmit={(e) => {
+                e.preventDefault();
+                fetch(`${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`)
+                  .then(response => response.json())
+                  .then(data => {
+                    console.log("deleted tag", data)
                     setTag(null)
-                  }
-                  }>X</button>
-                </span> : null}
-              </div>
-              <div className="filter-cell right new-tag">
-                {!tag ? <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const newTag = e.target.elements.newTag.value;
-                  fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
-                    .then(response => response.json())
-                    .then(data => {
-                      console.log("new tag", data)
-                      e.target.elements.newTag.value = ""
-                      fetchTagSet()
-                    });
-                }}>
-                  <input type="text" id="newTag" placeholder="New Tag" />
-                  <button type="submit">➕ Tag</button>
-                </form> : <form onSubmit={(e) => {
-                  e.preventDefault();
-                  fetch(`${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`)
-                    .then(response => response.json())
-                    .then(data => {
-                      console.log("deleted tag", data)
-                      setTag(null)
-                      fetchTagSet()
-                    })
-                  }}>
-                  <button type="submit">➖ {tag}</button>
-                </form>}
-              </div>
-            </div>
-
-            {columnFilters?.length ? <div className={`filter-row column-filter ${columnIndices?.length ? 'active': ''}`}>
-              <div className="filter-cell left">
-                {columnFilters.map(column => (
-                  <span key={column.column}>{column.column}:
-                    <select onChange={(e) => {
-                      let active = {...columnFiltersActive}
-                      active[column.column] = e.target.value
-                      setColumnFiltersActive(active)
-                    }} value={columnFiltersActive[column.column] || ""}>
-                      <option value="">Select a value</option>
-                      {column.categories.map(c => (
-                        <option key={c} value={c}>{c} ({column.counts[c]})</option>
-                      ))}
-                    </select>
-                  </span>
-                ))}
-              </div>
-              <div className="filter-cell middle">
-                {columnIndices?.length ? <span>{columnIndices?.length} rows</span> : null}
-                {columnIndices?.length ? <button className="deselect" onClick={() => {
-                    setColumnFiltersActive({})
-                    setColumnIndices([])
-                  }}>X</button> : null}
-              </div>
-              <div className="filter-cell right">
-              </div>
-            </div> : null}
-
-            <div className={`filter-row ${selectedIndices?.length ? 'active': ''}`}>
-              <div className="filter-cell left">
-                Shift+Drag on the map to filter by points.
-              </div>
-              <div className="filter-cell middle">
-                  {selectedIndices?.length > 0 ?<span>{selectedIndices?.length} rows</span> : null}
-                  {selectedIndices?.length > 0 ?<button className="deselect" onClick={() => {
-                      setSelectedIndices([])
-                      scatter?.select([])
-                      // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                    }
-                    }>X</button>
-                    : null}
-              </div>
-              <div className="filter-cell right"></div>
-            </div>
-
-            <div className="filter-row">
-              <div className="filter-cell left">
-                {intersectedIndices.length > 0 ? "Intersection of filtered rows:" : "No rows filtered"}
-              </div>
-              <div className="filter-cell middle intersected-count">
-                <span>{intersectedIndices.length} rows</span>
-              </div>
-              <div className="filter-cell right bulk-actions">
-                <div className="bulk-actions-buttons">
-                  Bulk Actions:
-                  <button className={`bulk ${bulkAction == "tag" ? 'active' : ''}`} onClick={() => bulkAction == "tag" ? setBulkAction(null) : setBulkAction("tag")}>🏷️</button>
-                  <button className={`bulk ${bulkAction == "cluster" ? 'active' : ''}`} onClick={() => bulkAction == "cluster" ? setBulkAction(null) : setBulkAction("cluster")}>️📍</button>
-                  {/* <button className={`bulk ${bulkAction == "save" ? 'active' : ''}`} onClick={() => bulkAction == "save" ? setBulkAction(null) : setBulkAction("save")}>💾</button> */}
-                  <button className={`bulk ${bulkAction == "delete" ? 'active' : ''}`} onClick={() => bulkAction == "delete" ? setBulkAction(null) : setBulkAction("delete")}>🗑️</button>
-                </div>
-                <div className="bulk-actions-action">
-                  {bulkAction == "tag" ? <Tagging dataset={dataset} indices={intersectedIndices}
-                    onSuccess={() => {
-                      setBulkAction(null)
-                      fetchTagSet()
-                    }} /> : null}
-                  {bulkAction == "cluster" ? <Clustering dataset={dataset} scope={scope} indices={intersectedIndices}
-                    onSuccess={() => {
-                      setBulkAction(null)
-                      fetchScopeMeta()
-                      fetchScopeRows()
-                    }} /> : null}
-                  {/* {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices}
-                    onSuccess={() => setBulkAction(null)} /> : null} */}
-                  {bulkAction == "delete" ? <Deleting dataset={dataset} scope={scope} indices={intersectedIndices}
-                    onSuccess={() => {
-                      setBulkAction(null)
-                      clearFilters()
-                      fetchScopeMeta()
-                      fetchScopeRows()
-                    }} /> : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="filter-row embeddings-controls">
-              <div>
-                <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
-                <br></br>
-                {showEmbeddings ? <button onClick={handleShowDifference}>{showDifference ? "Show Absolute" : "Show Difference"}</button> : null}
-              </div>
-              {showEmbeddings && searchEmbedding?.length ? 
-                <div>
-                  <span>Search embedding</span><br></br>
-                  <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
-                </div> : null}
-              {showEmbeddings && averageEmbedding.length ? 
-                <div>
-                  <span>Average embedding (over {rows.length} rows)</span><br></br>
-                  {showDifference && searchEmbedding?.length ? 
-                    <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} difference={searchEmbedding} />
-                  : 
-                    <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
-                  }
-                </div> : null}
-              {showEmbeddings ? <div>
-                <span> {showEmbeddings}</span> 
-                <span>{embeddings.find(e => e.id == showEmbeddings)?.model_id}</span>
-                <span>{embeddings.find(e => e.id == showEmbeddings)?.dimensions}</span></div> : null}
+                    fetchTagSet()
+                  })
+              }}>
+                <button type="submit">➖ {tag}</button>
+              </form>}
             </div>
           </div>
 
-            <FilterDataTable
-                dataset={dataset}
-                scope={scope}
-                indices={intersectedIndices}
-                distances={distances}
-                clusterMap={clusterMap}
-                clusterLabels={clusterLabels}
-                tagset={tagset}
-                showEmbeddings={showEmbeddings}
-                onTagset={fetchTagSet}
-                onScope={() => {
-                  fetchScopeMeta()
-                  fetchScopeRows()
-                }}
-                onHover={(index) => handleHover(inputToScopeIndexMap[index])}
-                onClick={handleClicked}
-                onRows={setRows}
-                showDifference={showDifference ? searchEmbedding : null}
-                height={filtersCSSHeight}
-            />
+          {columnFilters?.length ? <div className={`filter-row column-filter ${columnIndices?.length ? 'active' : ''}`}>
+            <div className="filter-cell left">
+              {columnFilters.map(column => (
+                <span key={column.column}>{column.column}:
+                  <select onChange={(e) => {
+                    let active = { ...columnFiltersActive }
+                    active[column.column] = e.target.value
+                    setColumnFiltersActive(active)
+                  }} value={columnFiltersActive[column.column] || ""}>
+                    <option value="">Select a value</option>
+                    {column.categories.map(c => (
+                      <option key={c} value={c}>{c} ({column.counts[c]})</option>
+                    ))}
+                  </select>
+                </span>
+              ))}
+            </div>
+            <div className="filter-cell middle">
+              {columnIndices?.length ? <span>{columnIndices?.length} rows</span> : null}
+              {columnIndices?.length ? <button className="deselect" onClick={() => {
+                setColumnFiltersActive({})
+                setColumnIndices([])
+              }}>X</button> : null}
+            </div>
+            <div className="filter-cell right">
+            </div>
+          </div> : null}
 
-{/* {selectedIndices?.length > 0 ?
+          <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
+            <div className="filter-cell left">
+              Shift+Drag on the map to filter by points.
+            </div>
+            <div className="filter-cell middle">
+              {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
+              {selectedIndices?.length > 0 ? <button className="deselect" onClick={() => {
+                setSelectedIndices([])
+                scatter?.select([])
+                // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+              }
+              }>X</button>
+                : null}
+            </div>
+            <div className="filter-cell right"></div>
+          </div>
+
+          <div className="filter-row">
+            <div className="filter-cell left">
+              {intersectedIndices.length > 0 ? "Intersection of filtered rows:" : "No rows filtered"}
+            </div>
+            <div className="filter-cell middle intersected-count">
+              <span>{intersectedIndices.length} rows</span>
+            </div>
+            <div className="filter-cell right bulk-actions">
+              <div className="bulk-actions-buttons">
+                Bulk Actions:
+                <button className={`bulk ${bulkAction == "tag" ? 'active' : ''}`} onClick={() => bulkAction == "tag" ? setBulkAction(null) : setBulkAction("tag")}>🏷️</button>
+                <button className={`bulk ${bulkAction == "cluster" ? 'active' : ''}`} onClick={() => bulkAction == "cluster" ? setBulkAction(null) : setBulkAction("cluster")}>️📍</button>
+                {/* <button className={`bulk ${bulkAction == "save" ? 'active' : ''}`} onClick={() => bulkAction == "save" ? setBulkAction(null) : setBulkAction("save")}>💾</button> */}
+                <button className={`bulk ${bulkAction == "delete" ? 'active' : ''}`} onClick={() => bulkAction == "delete" ? setBulkAction(null) : setBulkAction("delete")}>🗑️</button>
+              </div>
+              <div className="bulk-actions-action">
+                {bulkAction == "tag" ? <Tagging dataset={dataset} indices={intersectedIndices}
+                  onSuccess={() => {
+                    setBulkAction(null)
+                    fetchTagSet()
+                  }} /> : null}
+                {bulkAction == "cluster" ? <Clustering dataset={dataset} scope={scope} indices={intersectedIndices}
+                  onSuccess={() => {
+                    setBulkAction(null)
+                    fetchScopeMeta()
+                    fetchScopeRows()
+                  }} /> : null}
+                {/* {bulkAction == "save" ? <Saving dataset={dataset} scope={scope} indices={intersectedIndices}
+                    onSuccess={() => setBulkAction(null)} /> : null} */}
+                {bulkAction == "delete" ? <Deleting dataset={dataset} scope={scope} indices={intersectedIndices}
+                  onSuccess={() => {
+                    setBulkAction(null)
+                    clearFilters()
+                    fetchScopeMeta()
+                    fetchScopeRows()
+                  }} /> : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="filter-row embeddings-controls">
+            <div>
+              <button onClick={handleShowEmbeddings}>{showEmbeddings ? "Hide" : "Show"} Embeddings</button>
+              <br></br>
+              {showEmbeddings ? <button onClick={handleShowDifference}>{showDifference ? "Show Absolute" : "Show Difference"}</button> : null}
+            </div>
+            {showEmbeddings && searchEmbedding?.length ?
+              <div>
+                <span>Search embedding</span><br></br>
+                <EmbeddingVis embedding={searchEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
+              </div> : null}
+            {showEmbeddings && averageEmbedding.length ?
+              <div>
+                <span>Average embedding (over {rows.length} rows)</span><br></br>
+                {showDifference && searchEmbedding?.length ?
+                  <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} difference={searchEmbedding} />
+                  :
+                  <EmbeddingVis embedding={averageEmbedding} minValues={embeddingMinValues} maxValues={embeddingMaxValues} height={64} spacing={0} />
+                }
+              </div> : null}
+            {showEmbeddings ? <div>
+              <span> {showEmbeddings}</span>
+              <span>{embeddings.find(e => e.id == showEmbeddings)?.model_id}</span>
+              <span>{embeddings.find(e => e.id == showEmbeddings)?.dimensions}</span></div> : null}
+          </div>
+        </div>
+
+        <FilterDataTable
+          dataset={dataset}
+          scope={scope}
+          indices={intersectedIndices}
+          distances={distances}
+          clusterMap={clusterMap}
+          clusterLabels={clusterLabels}
+          tagset={tagset}
+          showEmbeddings={showEmbeddings}
+          onTagset={fetchTagSet}
+          onScope={() => {
+            fetchScopeMeta()
+            fetchScopeRows()
+          }}
+          onHover={(index) => handleHover(inputToScopeIndexMap[index])}
+          onClick={handleClicked}
+          onRows={setRows}
+          showDifference={showDifference ? searchEmbedding : null}
+          height={filtersCSSHeight}
+        />
+
+        {/* {selectedIndices?.length > 0 ?
               <IndexDataTable
                 indices={selectedIndices}
                 clusterIndices={clusterIndices}

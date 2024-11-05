@@ -64,6 +64,8 @@ function ScatterPlot ({
   onHover,
 }) {
 
+  console.log("scatterplot", points, width, height);
+
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -131,7 +133,7 @@ function ScatterPlot ({
     const scatterplot = scatterplotRef.current;
     const prevPoints = prevPointsRef.current;
     if(scatterplot && points && points.length){
-    
+
       const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
       // console.log("point size", pointSize, opacity)
@@ -167,8 +169,7 @@ function ScatterPlot ({
           pointSize: pointSize,
         })
       }
-      if(prevPoints && prevPoints.length === points.length) {
-        // console.log("transitioning scatterplot" )
+      if (prevPoints && prevPoints.length === points.length) {
         scatterplot.draw(points, { transition: true, transitionDuration: duration}).then(() => {
           // don't color till after
           scatterplot.set({
