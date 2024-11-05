@@ -102,13 +102,11 @@ function Explore() {
     fetchScopeMeta();
   }, [datasetId, scopeId, fetchScopeMeta]);
 
-  const [embedding, setEmbedding] = useState(null);
   const [clusterMap, setClusterMap] = useState({});
   const [clusterIndices, setClusterIndices] = useState([]); // the cluster number for each point
   const [clusterLabels, setClusterLabels] = useState([]);
-  // The search model is the embeddings model that we pass to the nearest neighbor query
-  // we want to enable searching with any embedding set
-  const [searchModel, setSearchModel] = useState(embedding?.id);
+
+
 
   const [embeddings, setEmbeddings] = useState([]);
   useEffect(() => {
@@ -184,20 +182,25 @@ function Explore() {
     setPoints,
   ]);
 
-  useEffect(() => {
-    if (embedding && embedding.model_id) {
-      setSearchModel(embedding.id);
-    } else if (embeddings.length) {
-      const emb = embeddings.find((d) => !!d.model_id);
-      if (emb) setSearchModel(emb.id);
-    }
-  }, [embedding, embeddings, setSearchModel]);
+  // The search model is the embeddings model that we pass to the nearest neighbor query
+  // we want to enable searching with any embedding set
+  // const [embedding, setEmbedding] = useState(null);
+  // const [searchModel, setSearchModel] = useState(embedding?.id);
+
+  // useEffect(() => {
+  //   if (embedding && embedding.model_id) {
+  //     setSearchModel(embedding.id);
+  //   } else if (embeddings.length) {
+  //     const emb = embeddings.find((d) => !!d.model_id);
+  //     if (emb) setSearchModel(emb.id);
+  //   }
+  // }, [embedding, embeddings, setSearchModel]);
 
   // const [activeUmap, setActiveUmap] = useState(null)
-  const handleModelSelect = (model) => {
-    console.log("selected search model", model);
-    setSearchModel(model);
-  };
+  // const handleModelSelect = (model) => {
+  //   console.log("selected search model", model);
+  //   setSearchModel(model);
+  // };
 
   const hydrateIndices = useCallback(
     (indices, setter, distances = []) => {
@@ -317,7 +320,10 @@ function Explore() {
     }
   }, [tagset, tag, points, scatter, setTagAnnotations]);
 
-  // Search
+  // ====================================================================================================
+  // NN Search
+  // ====================================================================================================
+  // indices of items in a chosen slide
   // the indices returned from similarity search
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
@@ -328,13 +334,13 @@ function Explore() {
 
   const searchQuery = useCallback(
     (query) => {
-      const emb = embeddings?.find((d) => d.id == searchModel);
+      const emb = embeddings?.find((d) => d.id == scope.embedding_id);
       const embeddingDimensions = emb?.dimensions;
 
       const searchParams = new URLSearchParams({
         dataset: datasetId,
         query,
-        embedding_id: searchModel,
+        embedding_id: scope.embedding_id,
         ...(embeddingDimensions !== undefined
           ? { dimensions: embeddingDimensions }
           : {}),
@@ -366,7 +372,7 @@ function Explore() {
         });
     },
     [
-      searchModel,
+      // searchModel,
       embeddings,
       datasetId,
       scatter,
@@ -398,14 +404,9 @@ function Explore() {
 
   useEffect(() => {
     if (scope) {
-      setEmbedding(embeddings.find((e) => e.id == scope.embedding_id));
       fetchScopeRows();
-      // Automatically select the first cluster if available and no cluster is currently selected
-      // if (clusterLabels?.length > 0 && !slide) {
-      //   setSlide(clusterLabels[0])
-      // }
     }
-  }, [fetchScopeRows, scope, embeddings, setClusterLabels, setEmbedding]);
+  }, [fetchScopeRows, scope, embeddings, setClusterLabels]);
 
   useEffect(() => {
     if (slide) {
@@ -744,7 +745,7 @@ function Explore() {
                 ) : null}
               </span>
             </div>
-            <div className="filter-cell right">
+            {/* <div className="filter-cell right">
               <label htmlFor="embeddingModel"></label>
               <select
                 id="embeddingModel"
@@ -759,8 +760,8 @@ function Explore() {
                     </option>
                   ))}
               </select>
-              {/* TODO: tooltip */}
-            </div>
+              TODO: tooltip 
+          </div> */}
           </div>
 
           <div
