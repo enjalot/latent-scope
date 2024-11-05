@@ -620,37 +620,37 @@ function Explore() {
   // ====================================================================================================
   // Embeddings
   // ====================================================================================================
-  const [showEmbeddings, setShowEmbeddings] = useState(null);
-  const handleShowEmbeddings = useCallback(() => {
-    setShowEmbeddings(showEmbeddings ? null : searchModel);
-  }, [searchModel, showEmbeddings]);
+  // const [showEmbeddings, setShowEmbeddings] = useState(null);
+  // const handleShowEmbeddings = useCallback(() => {
+  //   setShowEmbeddings(showEmbeddings ? null : searchModel);
+  // }, [searchModel, showEmbeddings]);
 
-  const [showDifference, setShowDifference] = useState(false);
-  const handleShowDifference = useCallback(() => {
-    setShowDifference(!showDifference);
-  }, [showDifference]);
+  // const [showDifference, setShowDifference] = useState(false);
+  // const handleShowDifference = useCallback(() => {
+  //   setShowDifference(!showDifference);
+  // }, [showDifference]);
 
-  useEffect(() => {
-    // console.log("search model", searchModel)
-    if (showEmbeddings) {
-      setShowEmbeddings(searchModel);
-    }
-  }, [searchModel, showEmbeddings]);
+  // useEffect(() => {
+  //   // console.log("search model", searchModel)
+  //   if (showEmbeddings) {
+  //     setShowEmbeddings(searchModel);
+  //   }
+  // }, [searchModel, showEmbeddings]);
 
-  const [embeddingMinValues, setEmbeddingMinValues] = useState([]);
-  const [embeddingMaxValues, setEmbeddingMaxValues] = useState([]);
-  // get the min and max values for the embedding
-  useEffect(() => {
-    if (searchModel) {
-      fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${searchModel}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("embedding stats", data);
-          setEmbeddingMinValues(data.min_values);
-          setEmbeddingMaxValues(data.max_values);
-        });
-    }
-  }, [datasetId, searchModel]);
+  // const [embeddingMinValues, setEmbeddingMinValues] = useState([]);
+  // const [embeddingMaxValues, setEmbeddingMaxValues] = useState([]);
+  // // get the min and max values for the embedding
+  // useEffect(() => {
+  //   if (searchModel) {
+  //     fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${searchModel}`)
+  //       .then((response) => response.json())
+  //       .then((data) => {
+  //         console.log("embedding stats", data);
+  //         setEmbeddingMinValues(data.min_values);
+  //         setEmbeddingMaxValues(data.max_values);
+  //       });
+  //   }
+  // }, [datasetId, searchModel]);
 
   const [rows, setRows] = useState([]);
   const handleScopeChange = useCallback(
@@ -1090,7 +1090,8 @@ function Explore() {
             </div>
           </div>
 
-          <div className="filter-row embeddings-controls">
+
+          {/* <div className="filter-row embeddings-controls">
             <EmbeddingControls
               showEmbeddings={showEmbeddings}
               handleShowEmbeddings={handleShowEmbeddings}
@@ -1102,7 +1103,7 @@ function Explore() {
               embeddingMaxValues={embeddingMaxValues}
               embeddings={embeddings}
             />
-          </div>
+          </div> */}
         </div>
 
         <FilterDataTable
@@ -1113,7 +1114,6 @@ function Explore() {
           clusterMap={clusterMap}
           clusterLabels={clusterLabels}
           tagset={tagset}
-          showEmbeddings={showEmbeddings}
           onTagset={fetchTagSet}
           onScope={() => {
             fetchScopeMeta();
@@ -1122,8 +1122,10 @@ function Explore() {
           onHover={(index) => handleHover(inputToScopeIndexMap[index])}
           onClick={handleClicked}
           onRows={setRows}
-          showDifference={showDifference ? searchEmbedding : null}
           height={filtersCSSHeight}
+          showDifference={null}
+          // showDifference={showDifference ? searchEmbedding : null}
+          // showEmbeddings={showEmbeddings}
         />
 
         {/* {selectedIndices?.length > 0 ?
