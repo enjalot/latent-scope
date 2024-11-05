@@ -23,6 +23,23 @@
   padding-top: 6px;
 }
 
+.row-information {
+  margin-top: 6px;
+  padding-top: 0px;
+  padding: 6px;
+  div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  span {
+    display: flex;
+    align-items: center;
+    min-height: 42px; // Match button height
+  }
+}
+
 .scatter-container {
   margin-top: 6px;
   border: 1px solid var(--borders-color-border-1);

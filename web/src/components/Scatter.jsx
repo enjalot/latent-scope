@@ -11,12 +11,12 @@ import styles from  "./Scatter.module.css"
 import PropTypes from 'prop-types';
 ScatterPlot.propTypes = {
   points: PropTypes.array.isRequired,   // an array of [x,y] points
-  colors: PropTypes.array,              // an array of integer values
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
   colorScaleType: PropTypes.oneOf(["categorical", "continuous"]),
   colorDomain: PropTypes.array,
+  colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
   opacityBy: PropTypes.string,
   duration: PropTypes.number,
@@ -59,6 +59,7 @@ function ScatterPlot ({
   colorScaleType = null,
   colorInterpolator = interpolateCool,
   colorDomain = null,
+  colorRange = null,
   opacityBy,
   onScatter,
   onView,
@@ -142,17 +143,18 @@ function ScatterPlot ({
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
       if(colorScaleType === "categorical") {
-        let domain = colorDomain
-        // if(!domain){
-          const uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
-          domain = extent(uniques).reverse()
-          console.log("DOMAIN", domain, uniques)
-        // }
-        const colorScale = scaleSequential(colorInterpolator)
-          .domain(domain);
-        // TODO: why does this range not work? we need to figure out how to get the right color mapping in
-        pointColor = range(domain[0], domain[1]).map(u => rgb(colorScale(u)).hex())
-        console.log("POINT COLOR", pointColor)
+        let uniques = colorDomain
+        if(!uniques){
+          uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
+        }
+        let domain = extent(uniques).reverse()
+        if(!colorRange) {
+          const colorScale = scaleSequential(colorInterpolator)
+            .domain(domain);
+          pointColor = range(uniques).map(u => rgb(colorScale(u)).hex())
+        } else {
+          pointColor = colorRange
+        }
       } else if(colorScaleType === "continuous") {
         let r = range(0, 100)
         const colorScale = scaleSequential(colorInterpolator)

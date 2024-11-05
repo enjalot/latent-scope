@@ -9,6 +9,7 @@ import { useSetup } from "../../contexts/SetupContext";
 import { apiService } from "../../lib/apiService";
 import FilterDataTable from '../FilterDataTable';
 import Scatter from "../Scatter";
+import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey } from "../../lib/colors";
 
 import styles from "./Preview.module.scss";
 
@@ -26,25 +27,28 @@ function Preview({
   const [clusterMap, setClusterMap] = useState({})
 
   const [searchText, setSearchText] = useState("")
+  const [lastSearchText, setLastSearchText] = useState("")
   const [searchLoading, setSearchLoading] = useState(false)
   const [drawPoints, setDrawPoints] = useState([])
 
   const searchQuery = useCallback(() => {
     if(searchText) {
+      setLastSearchText(searchText)
+      clearSelection()
       setSearchLoading(true)
       apiService.searchNearestNeighbors(datasetId, embedding, searchText)
         .then(data => {
           console.log("search", data)
-          setDataIndices(data.indices.slice(0,100))
+          setDataIndices(data.indices.slice(0,10))
           setDistances(data.distances)
           setSearchLoading(false)
           if(drawPoints.length){
             let dp = drawPoints.map(d => {
-              return [d[0], d[1], 4]
+              return [d[0], d[1], mapSelectionKey.notSelected]
             })
-            data.indices.slice(0,100).forEach((index,i) => {
-              // set the color to progressively less emphasized based on search index
-              dp[index][2] = i < 5 ? 1 : ( i < 10 ? 2 : 3)
+            data.indices.slice(0,10).forEach((index,i) => {
+              dp[index][2] = mapSelectionKey.selected
+              console.log("dp", dp[index])
             })
             setDrawPoints(dp)
           }
@@ -55,12 +59,21 @@ function Preview({
   useEffect(() => {
     searchQuery()
   }, [embedding]) // don't want this to update on searchText change
+
+  const clearSearch = useCallback((clearDrawPoints = true) => {
+    setSearchText("")
+    setDataIndices(range(0, 100))
+    setDistances([])
+    if(clearDrawPoints) {
+      setDrawPoints(drawPoints.map(d => [d[0], d[1], mapSelectionKey.normal]))
+    }
+  }, [setDataIndices, setDistances, setDrawPoints, drawPoints])
   
   // Calculate the width and height based on window size (within the frame)
   // ------------------------------------------------------------
   const [height, setHeight] = useState(300);
   const [width, setWidth] = useState(300);
-  const heightOffset = 140; // 140px for the header and search box
+  const heightOffset = 200; // 90px for the header, 50px for search 42px for the row info
   const umapHeight = useMemo(() => height > 700 ? height / 2 : height, [height])
   const tableHeight = useMemo(() => !umap ? height : (height > 700 ? height / 2 - 6 : 0), [umap, height])
   // const heightPx = useMemo(() => `${height}px`, [height])
@@ -112,30 +125,48 @@ function Preview({
   // Scatter plot related state
   // ------------------------------------------------------------
   const [scatter, setScatter] = useState(null)
+  // We keep track of the x and y domain from the scatter plot so we can overlay stuff on top of it
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
 
+  // grab the x,y coordinates from the umap
   useEffect(() => {
-    console.log("umap", umap?.id, umap)
     if(umap) {
       apiService.fetchUmapPoints(datasetId, umap.id)
       .then(data => {
-        let pts = data.map((d) => [d.x, d.y, 4])
-        console.log("drawPoints", pts[0])
+        let pts = data.map((d) => [d.x, d.y, mapSelectionKey.normal])
         setDrawPoints(pts)
       })
     }
   }, [datasetId, umap])
 
+  // Update the x and y domain when the view changes
   const handleView = useCallback((xDomain, yDomain) => {
-    console.log("handleView", xDomain, yDomain)
     setXDomain(xDomain);
     setYDomain(yDomain);
   }, [setXDomain, setYDomain])
 
+  const [selectedIndices, setSelectedIndices] = useState([])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIndices([])
+    setDataIndices(range(0, 100))
+    setDrawPoints(drawPoints.map(d => [d[0], d[1], mapSelectionKey.normal]))
+  }, [setSelectedIndices, setDataIndices, setDrawPoints, drawPoints])
+
+  // Update the selected points when the user clicks on them
   const handleSelected = useCallback((selected) => {
-    console.log("selected", selected)
-  }, [])
+    setSelectedIndices(selected)
+    // TODO: figure out how to reset the color without clearing the selected points
+    // the problem is, we use regl-scatter internal state to vis the selected points
+    // but if we update the drawPoints it will clear state
+    clearSearch(false) // don't clear the draw points to avoid rerender
+    if(selected.length) {
+      setDataIndices(selected)
+    } else {
+      clearSelection()
+    }
+  }, [setSelectedIndices, clearSearch, setDataIndices, clearSelection])
 
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [hovered, setHovered] = useState(null);
@@ -145,28 +176,36 @@ function Preview({
     setHoveredIndex(index);
   }, [setHoveredIndex])
 
+  // Get the data associated with the hovered point
+  // Also calculate the position of the tooltip on the map
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined) {
       apiService.fetchDataFromIndices(datasetId, [hoveredIndex])
         .then(results => {
           let h = results[0]
-          if(dataIndices && distances) {
+          if(dataIndices?.length && distances?.length) {
             let searchIndex = dataIndices.indexOf(hoveredIndex)
             if(searchIndex >= 0) {
               h.ls_search_index = searchIndex
-              h.ls_distance = distances[searchIndex]
+              h.ls_distance = distances[hoveredIndex]
             }
           }
           setHovered(h)
         })
       const point = drawPoints[hoveredIndex];
       if (point && xDomain && yDomain) {
-        const xPos = ((point[0] - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 6;
-        const yPos = ((point[1] - yDomain[1]) / (yDomain[0] - yDomain[1])) * (umapHeight) + heightOffset / 2 - 6;
-        console.log(xPos, yPos)
+        let px = point[0]
+        if(px < xDomain[0]) px = xDomain[0]
+        if(px > xDomain[1]) px = xDomain[1]
+        let py = point[1]
+        if(py < yDomain[0]) py = yDomain[0]
+        if(py > yDomain[1]) py = yDomain[1]
+        const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 6.5;
+        let umapHeightOffset = (heightOffset / 2) - 25 // remove the row info height from the calculation and some padding
+        const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (umapHeight) + umapHeightOffset
         setTooltipPosition({ 
-          x: xPos,// - .5*16, 
-          y: yPos// - .67*16 
+          x: xPos,
+          y: yPos
         });
       }
     } else {
@@ -181,6 +220,7 @@ function Preview({
     <div className={styles["search-box"]}>
       <Input 
         className={styles["search-input"]}
+        value={searchText}
         placeholder={`Search${embedding ? " with " + embedding.id + ` (${embedding.model_id?.replace("___", "/")})` : ""}`} disabled={!embedding}
         onChange={e => setSearchText(e.target.value)}
         onKeyDown={e => {
@@ -192,9 +232,13 @@ function Preview({
       <div className={styles["search-button-container"]}>
         <Button color="secondary"disabled={searchLoading || !searchText} className={styles["search-button"]}
           onClick={() => {
-            searchQuery()
+            if(searchText && searchText == lastSearchText) {
+              clearSearch() 
+            } else {
+              searchQuery()
+            }
           }}
-          icon={searchLoading ? "pie-chart" : "search"}
+          icon={searchLoading ? "pie-chart" : (searchText && (searchText == lastSearchText) ? "x" : "search")}
           // text={searchLoading ? "Searching..." : "Search"}
         >
         </Button>
@@ -208,22 +252,33 @@ function Preview({
       height={umapHeight}
       duration={1000}
       colorScaleType="categorical"
-      colorInterpolator={interpolatePurples}
-      colorDomain={[1,2,3,4,5].reverse()}
+      colorRange={mapSelectionColorsLight}
+      colorDomain={mapSelectionDomain}
       onScatter={setScatter}
       onView={handleView} 
       onSelect={handleSelected}
       onHover={handleHovered}
       />
     </div> : null }
+
+    <div className={styles["row-information"]}>
+      {selectedIndices.length ? <div>
+        <span>Selected {selectedIndices?.length} of {dataset?.length} rows</span>
+        <Button color="secondary" icon="x" onClick={() => clearSelection()}></Button>
+        <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button>
+      </div> : 
+      <span>Showing {dataIndices?.length} of {dataset?.length} rows</span>}
+    </div>
     <div className={styles["table-container"]}>
-      {tableHeight > 0 ? <FilterDataTable
+      {tableHeight > 0 ? 
+      <FilterDataTable
         dataset={dataset}
         indices={dataIndices} 
         distances={distances}
         clusterMap={clusterMap}
         height={tableHeight}
         showNavigation={false}
+        onHover={(index) => handleHovered(index)}
         /> : null }
     </div>
 
@@ -247,10 +302,11 @@ function Preview({
         top: tooltipPosition.y,
         pointerEvents: 'none',
         maxWidth: "400px",
+        backgroundColor: hovered?.ls_search_index >= 0 ? "#111" : "#666"
       }}
     >
       {hovered && embedding && <div className={styles["tooltip-content"]}>
-        {hovered.ls_search_index ? <span>Search: #{hovered.ls_search_index}<br/></span> : null}
+        {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null}
         <span>{hoveredIndex}: {hovered[embedding.text_column]}</span>
       </div>}
     </Tooltip>

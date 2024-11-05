@@ -30,7 +30,7 @@ const StepProgress = () => {
               isCompleted(index) && !isActive(index) ? styles.completed : ''
             }`}
           >
-            {!isCompleted(index) && !isActive(index) ? index + 1 + ". " : ""} {step}
+            {index + 1 + ". "} {step}
           </h3>
         ))}
       </div>
