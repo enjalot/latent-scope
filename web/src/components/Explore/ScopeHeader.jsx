@@ -5,10 +5,10 @@ import { isMobileDevice } from '../../utils';
 
 const readonly = import.meta.env.MODE == "read_only"
 
-function DatasetHeader({ 
-  dataset, 
-  scope, 
-  scopes, 
+function DatasetHeader({
+  dataset,
+  scope,
+  scopes,
   onScopeChange,
 }) {
   if (!dataset) return null;
@@ -17,8 +17,8 @@ function DatasetHeader({
     <div className="summary">
       <div className="scope-card">
         <div className='heading'>
-          <select 
-            className="scope-selector" 
+          <select
+            className="scope-selector"
             onChange={(e) => onScopeChange(e.target.value)}
             value={scope?.id}
           >
@@ -28,7 +28,7 @@ function DatasetHeader({
               </option>
             ))}
           </select>
-          
+
           {!readonly && (
             <>
               <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>
@@ -38,13 +38,13 @@ function DatasetHeader({
         </div>
 
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
-        
+
         {scope?.ls_version ? (
           <span>
             <span>{scope?.description}</span>
             <br />
             <span>{scope?.embedding?.model_id}</span>
-            <br/>
+            <br />
             <span>{scope?.cluster_labels_lookup?.length} clusters</span>
           </span>
         ) : (

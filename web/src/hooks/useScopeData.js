@@ -16,7 +16,6 @@ const useScopeData = (apiUrl, datasetId, scope) => {
         fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
             .then((response) => response.json())
             .then((scopeRows) => {
-                console.log("scope rows", scopeRows);
                 setScopeRows(scopeRows);
 
                 // Calculate scopeIndexMap

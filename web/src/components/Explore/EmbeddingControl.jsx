@@ -15,6 +15,41 @@ const EmbeddingControls = ({
     const height = 64;
     const spacing = 0;
 
+    // ====================================================================================================
+    // Embeddings
+    // ====================================================================================================
+    // const [showEmbeddings, setShowEmbeddings] = useState(null);
+    // const handleShowEmbeddings = useCallback(() => {
+    //   setShowEmbeddings(showEmbeddings ? null : searchModel);
+    // }, [searchModel, showEmbeddings]);
+
+    // const [showDifference, setShowDifference] = useState(false);
+    // const handleShowDifference = useCallback(() => {
+    //   setShowDifference(!showDifference);
+    // }, [showDifference]);
+
+    // useEffect(() => {
+    //   // console.log("search model", searchModel)
+    //   if (showEmbeddings) {
+    //     setShowEmbeddings(searchModel);
+    //   }
+    // }, [searchModel, showEmbeddings]);
+
+    // const [embeddingMinValues, setEmbeddingMinValues] = useState([]);
+    // const [embeddingMaxValues, setEmbeddingMaxValues] = useState([]);
+    // // get the min and max values for the embedding
+    // useEffect(() => {
+    //   if (searchModel) {
+    //     fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${searchModel}`)
+    //       .then((response) => response.json())
+    //       .then((data) => {
+    //         console.log("embedding stats", data);
+    //         setEmbeddingMinValues(data.min_values);
+    //         setEmbeddingMaxValues(data.max_values);
+    //       });
+    //   }
+    // }, [datasetId, searchModel]);
+
     const [averageEmbedding, setAverageEmbedding] = useState([])
     useEffect(() => {
         if (rows.length > 0) {
