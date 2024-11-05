@@ -40,7 +40,7 @@ function Umap({}) {
       const um = umaps.find(u => u.id == scope.umap_id)
       setUmap(um)
     } else {
-      setUmap(umaps?.[0])
+      setUmap(umaps.filter(d => d.embedding_id == scope?.embedding_id)[0])
     }
     console.log("umaps", umaps)
   }, [scope, embeddings, umaps])
@@ -63,13 +63,13 @@ function Umap({}) {
         if(umapJob.job_name == "umap"){
           ump = umps.find(d => d.id == umapJob.run_id)
         } else if(umapJob.job_name == "rm") {
-          ump = umps[0]
+          ump = umps.filter(d => d.embedding_id == embedding?.id)[0]
         }
         // onNew(umps, ump)
         setUmap(ump)
       })
     }
-  }, [umapJob, dataset, setUmaps]);
+  }, [umapJob, dataset, embedding, setUmaps]);
 
 
   const handleChangeInit = useCallback((e) => {
@@ -90,7 +90,7 @@ function Umap({}) {
       .join(",")
 
     // can't save an aligned umap for now
-    let s = save;
+    let s = save ? "True" : "";
     if(align.length > 0) {
       s = "";
     }
@@ -191,20 +191,28 @@ function Umap({}) {
               {clusters.filter(d => d.umap_id == um.id).length > 0 ? <span>Clusters: {clusters.filter(d => d.umap_id == um.id).length}</span> : null}
               </div>
               </label>
+
               <img src={um.url} alt={um.id} />
+
+              { um.align ? <div>
+                <Link to={`/datasets/${dataset?.id}/compare`}>↗ Compare Aligned UMAPs </Link> 
+                <span className="tooltip" data-tooltip-id="compare-umaps">🤔</span>
+                <div className={styles["umap-align-list"]}>
+                  {umaps.filter(d => d.align_id == um.id && d.id != um.id).map(d => {
+                    return <img key={d.id} src={d.url} alt={d.id} />
+                  })}
+                </div>
+                <Tooltip id="compare-umaps" place="top" effect="solid">
+                  An interface for comparing Aligned UMAPS.
+                </Tooltip>
+              </div> : null }
+
               <Button className={styles["delete"]} color="secondary" onClick={() => deleteUmapJob({umap_id: um.id}) } disabled={umapJob && umapJob.status !== "completed"} text="🗑️"/>
             </div>
           ))}
         </div>
 
-        { umaps && umaps.length > 1 ? <div>
-          <br/>
-          <Link to={`/datasets/${dataset?.id}/compare`}>↗ Compare UMAPs </Link> 
-          <span className="tooltip" data-tooltip-id="compare-umaps">🤔</span>
-          <Tooltip id="compare-umaps" place="top" effect="solid">
-            An interface for comparing any two UMAPS in the same dataset. Direct comparisons are most useful between 2 aligned UMAPS
-          </Tooltip>
-        </div> : null }
+        
         <br></br>
       </div>
       <div className={styles["umap-preview"]}>

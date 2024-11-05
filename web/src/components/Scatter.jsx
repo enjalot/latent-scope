@@ -16,6 +16,7 @@ ScatterPlot.propTypes = {
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
   colorScaleType: PropTypes.oneOf(["categorical", "continuous"]),
+  colorDomain: PropTypes.array,
   colorInterpolator: PropTypes.func,
   opacityBy: PropTypes.string,
   duration: PropTypes.number,
@@ -57,6 +58,7 @@ function ScatterPlot ({
   pointScale = 1,
   colorScaleType = null,
   colorInterpolator = interpolateCool,
+  colorDomain = null,
   opacityBy,
   onScatter,
   onView,
@@ -96,7 +98,7 @@ function ScatterPlot ({
       height: yDomain.current[1] - yDomain.current[0],
     })
 
-    onView && onView(xScale, yScale)
+    onView && onView(xDomain.current, yDomain.current)
     scatterplot.subscribe(
       "view",
       ({ camera, view, xScale: xs, yScale: ys }) => {
@@ -140,10 +142,17 @@ function ScatterPlot ({
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
       if(colorScaleType === "categorical") {
-        const uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
+        let domain = colorDomain
+        // if(!domain){
+          const uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
+          domain = extent(uniques).reverse()
+          console.log("DOMAIN", domain, uniques)
+        // }
         const colorScale = scaleSequential(colorInterpolator)
-          .domain(extent(uniques).reverse());
-        pointColor = uniques.map(u => rgb(colorScale(u)).hex())
+          .domain(domain);
+        // TODO: why does this range not work? we need to figure out how to get the right color mapping in
+        pointColor = range(domain[0], domain[1]).map(u => rgb(colorScale(u)).hex())
+        console.log("POINT COLOR", pointColor)
       } else if(colorScaleType === "continuous") {
         let r = range(0, 100)
         const colorScale = scaleSequential(colorInterpolator)

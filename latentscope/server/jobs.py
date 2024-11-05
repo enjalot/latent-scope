@@ -267,7 +267,7 @@ def run_umap():
     if align:
         command += f' --align={align}'
     if save:
-        command += f' --save={save}'
+        command += f' --save'
 
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})

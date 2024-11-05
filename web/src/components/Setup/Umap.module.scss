@@ -102,6 +102,7 @@
   // flex-grow: 1;
   min-height: 0;
 }
+
 .umap-list input, .embeddings-list label {
   cursor: pointer;
 }
@@ -154,4 +155,15 @@
   height: 120px;
   user-select: none;
 }
+.umap-align-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
 
+.umap-align-list img {
+  width: 64px;
+  height: 64px;
+}

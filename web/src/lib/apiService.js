@@ -104,6 +104,29 @@ export const apiService = {
           searchEmbedding: data.search_embedding[0]
         }
       })
+  },
+  fetchUmapPoints: async (datasetId, umapId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/umaps/${umapId}/points`)
+      .then(response => response.json())
+  },
+  fetchDataFromIndices: async (datasetId, indices) => {
+    return fetch(`${apiUrl}/indexed`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dataset: datasetId, indices: indices }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        let rows = data.map((row, index) => {
+          return {
+            index: indices[index],
+            ...row
+          }
+        })
+        return rows
+      })
   }
 }
 
