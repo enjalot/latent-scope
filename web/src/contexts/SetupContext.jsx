@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../lib/apiService';
 
 const steps = ['Embed', 'UMAP', 'Cluster', 'Label Clusters', 'Scope'];
-const stepIds = ['embedding_id', 'umap_id', 'cluster_id', 'cluster_labels_id', 'scope_id'];
+const stepIds = ['embedding_id', 'umap_id', 'cluster_id', 'cluster_labels_id', 'id'];
 
 const SetupContext = createContext();
 
@@ -12,16 +12,18 @@ export const SetupProvider = ({ children }) => {
 
   const [dataset, setDataset] = useState(null);
   const [scope, setScope] = useState({});
+  const [savedScope, setSavedScope] = useState(null);
   const [scopes, setScopes] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [previewLabel, setPreviewLabel] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    apiService.getDataset(datasetId)
+    apiService.fetchDataset(datasetId)
       .then(data => {
         setDataset(data)
       });
-    apiService.getScopes(datasetId)
+    apiService.fetchScopes(datasetId)
       .then(data => {
         setScopes(data)
       });
@@ -29,13 +31,17 @@ export const SetupProvider = ({ children }) => {
 
   useEffect(() => {
     if(scopeId) {
-      apiService.getScope(datasetId, scopeId)
+      apiService.fetchScope(datasetId, scopeId)
         .then(data => {
           setScope(data)
+          setSavedScope(data)
+          console.log("setting saved scope", data)
           setCurrentStep(5)
         });
     } else {
+      console.log("setting scope to null")
       setScope(null)
+      setSavedScope(null)
       setCurrentStep(1)
     }
   }, [datasetId, scopeId]);
@@ -57,6 +63,7 @@ export const SetupProvider = ({ children }) => {
     dataset,
     setDataset,
     scope,
+    savedScope,
     scopes,
     updateScope,
     steps,
@@ -65,7 +72,9 @@ export const SetupProvider = ({ children }) => {
     setCurrentStep,
     goToNextStep,
     goToPreviousStep,
-    navigate
+    navigate,
+    previewLabel,
+    setPreviewLabel
   };
 
   return <SetupContext.Provider value={value}>{children}</SetupContext.Provider>;

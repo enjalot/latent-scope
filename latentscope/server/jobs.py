@@ -331,11 +331,14 @@ def run_cluster_label():
     text_column = request.args.get('text_column')
     cluster_id = request.args.get('cluster_id')
     context = request.args.get('context')
-    print("run cluster label", dataset, chat_id, text_column, cluster_id)
+    samples = request.args.get('samples')
+    print("run cluster label", dataset, chat_id, text_column, cluster_id, samples)
+    if context:
+        context = context.replace('"', '\\"')
     print("context", context)
 
     job_id = str(uuid.uuid4())
-    command = f'ls-label "{dataset}" "{text_column}" "{cluster_id}" "{chat_id}" "{context}"'
+    command = f'ls-label "{dataset}" "{text_column}" "{cluster_id}" "{chat_id}" {samples} "{context}"'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

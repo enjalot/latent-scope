@@ -1,19 +1,23 @@
 import { useCallback } from 'react';
 import { useSetup } from '../../contexts/SetupContext';
+import { Tooltip } from 'react-tooltip';
 
 import styles from './StepProgress.module.scss';
 
 const StepProgress = () => {
-  const { scope, currentStep, steps, stepIds, setCurrentStep } = useSetup();
+  const { scope, currentStep, steps, stepIds, setCurrentStep, previewLabel } = useSetup();
 
   const isActive = useCallback((index) => {
     return index + 1 === currentStep
   }, [currentStep])
-  // TODO: this needs to depend on the scope
-  const isCompleted = useCallback((index) => {
-    console.log("scope", scope, stepIds[index])
+
+  const currentStepId = useCallback((index) => {
     return scope?.[stepIds[index]]
   }, [scope, stepIds])
+
+  const isCompleted = useCallback((index) => {
+    return currentStepId(index) != null
+  }, [currentStepId])
 
   return (
     <div className={styles.stepProgressContainer}>
@@ -36,8 +40,12 @@ const StepProgress = () => {
       </div>
 
       <div className={styles.previewHeader}>
-        {/* <h3>Preview</h3> */}
+        <h3>Preview: {previewLabel}</h3>
       </div>
+
+      <Tooltip id="saved" place="top" effect="solid">
+        This selection is saved in the scope being configured.
+      </Tooltip>
     </div>
   );
 };

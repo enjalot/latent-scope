@@ -15,7 +15,7 @@ import styles from './Cluster.module.scss';
 // This component is responsible for the embeddings state
 // New embeddings update the list
 function Cluster() {
-  const { dataset, scope, updateScope, goToNextStep } = useSetup();
+  const { dataset, scope, savedScope, updateScope, goToNextStep, setPreviewLabel } = useSetup();
 
   const [clusterJob, setClusterJob] = useState(null);
   const { startJob: startClusterJob } = useStartJobPolling(dataset, setClusterJob, `${apiUrl}/jobs/cluster`);
@@ -28,6 +28,10 @@ function Cluster() {
   const [embedding, setEmbedding] = useState(null);
   const [umap, setUmap] = useState(null);
   const [cluster, setCluster] = useState(null);
+
+  useEffect(() => {
+    setPreviewLabel(cluster?.id)
+  }, [cluster, setPreviewLabel])
 
   // Update local state when scope changes
   useEffect(() => {
@@ -87,6 +91,15 @@ function Cluster() {
     })
   }, [startClusterJob, umap])
 
+  const handleNextStep = useCallback(() => {
+    if(savedScope?.cluster_id == cluster?.id) {
+      updateScope({...savedScope})
+    } else {
+      updateScope({cluster_id: cluster?.id, cluster_labels_id: null, id: null})
+    }
+    goToNextStep()
+  }, [updateScope, goToNextStep, cluster, savedScope])
+
   return (
     <div className={styles["cluster"]}>
       <div className={styles["cluster-setup"]}>
@@ -126,7 +139,7 @@ function Cluster() {
 
         <div className={styles["cluster-list"]}>
           {umap && clusters.filter(d => d.umap_id == umap.id).map((cl, index) => (
-            <div className={styles["item"]} key={index}>
+            <div className={styles["item"] + (cl.id === cluster?.id ? " " + styles["selected"] : "")} key={index}>
               <label htmlFor={`cluster${index}`}>
                 <input type="radio" 
                   id={`cluster${index}`} 
@@ -134,7 +147,7 @@ function Cluster() {
                   value={cl} 
                   checked={cl.id === cluster?.id} 
                   onChange={() => setCluster(cl)} />
-                <span>{cl.id}</span>
+                <span>{cl.id} {savedScope?.cluster_id == cl.id ? <span className="tooltip" data-tooltip-id="saved">💾</span> : null}</span>
                 <div className={styles["item-info"]}>
                   <span>Samples: {cl.samples}</span>
                   <span>Min Samples: {cl.min_samples}</span>
@@ -162,10 +175,7 @@ function Cluster() {
         <div className={styles["navigate"]}>
           <Button 
             disabled={!cluster}
-            onClick={() => {
-              updateScope({cluster_id: cluster?.id})
-              goToNextStep()
-            }}
+            onClick={handleNextStep}
             text={cluster ? `Proceed with ${cluster?.id}` : "Select a Cluster"}
           />
         </div>

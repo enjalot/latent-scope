@@ -53,6 +53,9 @@
 .item {
   @include setup-item;
 }
+.selected {
+  @include selected;
+}
 .item-info {
   @include setup-item-info;
 }

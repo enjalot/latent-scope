@@ -1,7 +1,7 @@
 export const apiUrl = import.meta.env.VITE_API_URL;
 
 export const apiService = {
-  getDataset: async (datasetId) => {
+  fetchDataset: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/meta`)
       .then(response => response.json())
       .then(data => {
@@ -17,11 +17,11 @@ export const apiService = {
     return fetch(`${apiUrl}/datasets/${datasetId}/meta/update?key=${key}&value=${value}`)
       .then(response => response.json())
   },
-  getScope: async (datasetId, scopeId) => {
+  fetchScope: async (datasetId, scopeId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`)
       .then(response => response.json())
   },
-  getScopes: async (datasetId) => {
+  fetchScopes: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
       .then(response => response.json())
       .then(data => {

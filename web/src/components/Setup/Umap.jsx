@@ -14,7 +14,7 @@ import Preview from './Preview';
 import styles from './Umap.module.scss';
 
 function Umap({}) {
-  const { dataset, scope, setDataset, updateScope, goToNextStep } = useSetup();
+  const { dataset, scope, savedScope, updateScope, goToNextStep, setPreviewLabel } = useSetup();
 
   const [umapJob, setUmapJob] = useState(null);
   const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/umap`);
@@ -27,6 +27,10 @@ function Umap({}) {
   const [embeddings, setEmbeddings] = useState([]);
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
+
+  useEffect(() => {
+    setPreviewLabel(umap?.id)
+  }, [umap, setPreviewLabel])
 
   useEffect(() => {
     if(scope?.embedding_id) {
@@ -107,7 +111,14 @@ function Umap({}) {
     setSave(!save);
   }, [save, setSave]);
 
-
+  const handleNextStep = useCallback(() => {
+    if(savedScope?.umap_id == umap?.id) {
+      updateScope({...savedScope})
+    } else {
+      updateScope({umap_id: umap?.id, cluster_id: null, cluster_labels_id: null, id: null})
+    }
+    goToNextStep()
+  }, [updateScope, goToNextStep, umap, savedScope])
 
   return (
       <div className={styles["umap"]}>
@@ -177,14 +188,14 @@ function Umap({}) {
         {/* The list of available UMAPS */}
         <div className={styles["umap-list"]}>
           {umaps.filter(d => d.embedding_id == embedding?.id).map((um, index) => (
-            <div className={`${styles["item"]}`} key={index}>
+            <div className={`${styles["item"]}` + (um.id === umap?.id ? " " + styles["selected"] : "")} key={index}>
               <label htmlFor={`umap${index}`}>
               <input type="radio" 
                 id={`umap${index}`} 
                 name="umap" 
                 value={um} checked={um.id === umap?.id} 
                 onChange={() => setUmap(um)} />
-              <span>{um.id}</span>
+              <span>{um.id} {savedScope?.umap_id == um.id ? <span className="tooltip" data-tooltip-id="saved">💾</span> : null}</span>
               <div className={styles["item-info"]}>
                 <span>Neighbors: {um.neighbors}</span>
                 <span>Min Dist: {um.min_dist}</span>
@@ -221,10 +232,7 @@ function Umap({}) {
         </div>
         <div className={styles["navigate"]}>
           <Button disabled={!umap}
-            onClick={() => {
-              updateScope({umap_id: umap?.id, cluster_id: null})
-              goToNextStep()
-            }}
+            onClick={handleNextStep}
             text={umap ? `Proceed with ${umap?.id}` : "Select a UMAP"}
             >
           </Button>

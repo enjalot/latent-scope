@@ -253,9 +253,9 @@ function Preview({
   }, [datasetId, cluster, drawPoints, labelId])
 
   return <div className={styles["preview"]}>
-    <div className={styles["preview-header"]}>
+    {/* <div className={styles["preview-header"]}>
       <h3>Preview: {stepTitle}</h3>
-    </div>
+    </div> */}
     <div className={styles["search-box"]}>
       <Input 
         className={styles["search-input"]}
@@ -335,7 +335,7 @@ function Preview({
         /> : null }
     </div>
 
-    <div
+    {umap && <div
       data-tooltip-id="featureTooltip"
       style={{
         position: 'absolute',
@@ -343,8 +343,8 @@ function Preview({
         top: tooltipPosition.y,
         pointerEvents: 'none',
       }}
-    ></div>
-    <Tooltip id="featureTooltip" 
+    ></div> }
+    {umap && <Tooltip id="featureTooltip" 
       isOpen={hoveredIndex !== null}
       delayShow={0}
       delayHide={0}
@@ -363,7 +363,7 @@ function Preview({
         {clusterMap[hoveredIndex] >= 0 ? <span>{clusterLabels[hoveredIndex]}<br/></span> : null}
         <span>{hoveredIndex}: {hovered[embedding.text_column]}</span>
       </div>}
-    </Tooltip>
+    </Tooltip> }
 
   </div>
 }

@@ -26,7 +26,7 @@ const debounce = (func, wait) => {
 
 
 function Embedding() {
-  const { datasetId, dataset, scope, setDataset, updateScope, goToNextStep } = useSetup();
+  const { datasetId, dataset, scope, savedScope, setDataset, updateScope, goToNextStep, setPreviewLabel } = useSetup();
 
   const [textColumn, setTextColumn] = useState(null);
   const [embedding, setEmbedding] = useState(null);
@@ -46,6 +46,10 @@ function Embedding() {
   const { startJob: startEmbeddingsImporterJob } = useStartJobPolling(dataset, setEmbeddingsJob, `${apiUrl}/jobs/embed_importer`);
 
   useEffect(() => {
+    setPreviewLabel(embedding?.id)
+  }, [embedding, setPreviewLabel])
+
+  useEffect(() => {
     if(scope?.embedding_id) {
       console.log("scope changed", scope)
       const emb = embeddings.find(e => e.id == scope.embedding_id)
@@ -54,6 +58,9 @@ function Embedding() {
       setEmbedding(embeddings?.[0])
     }
   }, [scope, embeddings])
+  useEffect(() => {
+    console.log("saved scope changed", savedScope)
+  }, [savedScope])
 
   useEffect(() => {
     if(dataset){
@@ -243,6 +250,15 @@ function Embedding() {
     startEmbeddingsTruncateJob({embedding_id: embeddingId, dimensions: selectedDimension })
   }, [startEmbeddingsTruncateJob])
 
+  const handleNextStep = useCallback(() => {
+    if(savedScope?.embedding_id == embedding?.id) {
+      updateScope({...savedScope})
+    } else {
+      updateScope({embedding_id: embedding?.id, umap_id: null, cluster_id: null, cluster_labels_id: null, id: null})
+    }
+    goToNextStep()
+  }, [updateScope, goToNextStep, embedding, savedScope])
+
   return (
     <div className={styles["embeddings"]}>
       <div className={styles["embeddings-setup"]}>
@@ -368,7 +384,7 @@ function Embedding() {
                 <span className={styles["item-info"]}>
                   <span>
                     <input type="radio" id={`embedding${index}`} name="embedding" value={emb.id} checked={emb.id === embedding?.id} onChange={() => setEmbedding(emb)} />
-                    {emb.id}
+                    {emb.id} {savedScope?.embedding_id == emb.id ? <span className="tooltip" data-tooltip-id="saved">💾</span> : null}
                   </span>
                   <span>{emb.model_id?.replace("___", "/")}</span>
                   <span>{emb.dimensions} dimensions</span>
@@ -409,10 +425,7 @@ function Embedding() {
         </div>
         <div className={styles["navigate"]}>
           <Button disabled={!embedding}
-            onClick={() => {
-              updateScope({embedding_id: embedding?.id, umap_id: null, cluster_id: null})
-              goToNextStep()
-            }}
+            onClick={handleNextStep}
             text={embedding ? `Proceed with ${embedding?.id}` : "Select an embedding"}
             >
           </Button>

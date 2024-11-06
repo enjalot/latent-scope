@@ -84,9 +84,10 @@
   select {
     height: 2em;
   }
-  .selected {
-    background-color: var(--neutrals-color-neutral-2);
-  }
+
+}
+@mixin selected {
+  background-color: var(--neutrals-color-neutral-2);
 }
 
 @mixin setup-item-info {
