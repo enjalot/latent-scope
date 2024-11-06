@@ -1,0 +1,102 @@
+@import "./_shared";
+
+.umap {
+  @include setup-container;
+}
+.umap-setup {
+  @include setup-left;
+}
+.umap-preview {
+  @include setup-right;
+}
+.preview {
+  @include setup-preview;
+}
+.navigate {
+  @include setup-navigate;
+}
+.step {
+  @include setup-step;
+}
+.umap-form {
+  @include setup-form;
+}
+
+.tooltip {
+  @include setup-tooltip;
+}
+
+.umap-form-label {
+  width: 90px;
+  display: inline-block;
+}
+.umap-form input {
+  width: 84px;
+}
+.umap-form-align {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.umaps-align {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.umaps-align-info {
+  font-style: italic;
+  margin: 6px;
+}
+.umaps-align label {
+  cursor: pointer;
+  padding: 4px;
+  border: 1px solid #f1f1f1;
+  background-color: #f1f1f1;
+  border-radius: 5px;
+}
+.umap-form-save {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+
+.umap-list {
+  @include item-list;
+}
+
+.item {
+  @include setup-item;
+}
+.selected {
+  @include selected;
+}
+.item-info {
+  @include setup-item-info;
+}
+.item-deps {
+  @include setup-item-deps;
+}
+.delete {
+  @include setup-delete;
+}
+
+.item img {
+  width: 120px;
+  height: 120px;
+  user-select: none;
+}
+.umap-align-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.umap-align-list img {
+  width: 64px;
+  height: 64px;
+}

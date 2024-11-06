@@ -11,13 +11,16 @@ import styles from  "./Scatter.module.css"
 import PropTypes from 'prop-types';
 ScatterPlot.propTypes = {
   points: PropTypes.array.isRequired,   // an array of [x,y] points
-  colors: PropTypes.array,              // an array of integer values
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
   colorScaleType: PropTypes.oneOf(["categorical", "continuous"]),
+  colorDomain: PropTypes.array,
+  colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
   opacityBy: PropTypes.string,
+  opacityRange: PropTypes.array,
+  pointSizeRange: PropTypes.array,
   duration: PropTypes.number,
   onScatter: PropTypes.func,
   onView: PropTypes.func,
@@ -57,13 +60,16 @@ function ScatterPlot ({
   pointScale = 1,
   colorScaleType = null,
   colorInterpolator = interpolateCool,
+  colorDomain = null,
+  colorRange = null,
   opacityBy,
+  opacityRange = null,
+  pointSizeRange = null,
   onScatter,
   onView,
   onSelect,
   onHover,
 }) {
-
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -96,7 +102,7 @@ function ScatterPlot ({
       height: yDomain.current[1] - yDomain.current[0],
     })
 
-    onView && onView(xScale, yScale)
+    onView && onView(xDomain.current, yDomain.current)
     scatterplot.subscribe(
       "view",
       ({ camera, view, xScale: xs, yScale: ys }) => {
@@ -131,7 +137,7 @@ function ScatterPlot ({
     const scatterplot = scatterplotRef.current;
     const prevPoints = prevPointsRef.current;
     if(scatterplot && points && points.length){
-    
+
       const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
       // console.log("point size", pointSize, opacity)
@@ -140,10 +146,18 @@ function ScatterPlot ({
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
       if(colorScaleType === "categorical") {
-        const uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
-        const colorScale = scaleSequential(colorInterpolator)
-          .domain(extent(uniques).reverse());
-        pointColor = uniques.map(u => rgb(colorScale(u)).hex())
+        let uniques = colorDomain
+        if(!uniques){
+          uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
+        }
+        let domain = extent(uniques).reverse()
+        if(!colorRange) {
+          const colorScale = scaleSequential(colorInterpolator)
+            .domain(domain);
+          pointColor = range(uniques).map(u => rgb(colorScale(u)).hex())
+        } else {
+          pointColor = colorRange
+        }
       } else if(colorScaleType === "continuous") {
         let r = range(0, 100)
         const colorScale = scaleSequential(colorInterpolator)
@@ -158,8 +172,8 @@ function ScatterPlot ({
         scatterplot.set({
           opacityBy,
           sizeBy: opacityBy,
-          opacity: [0.1, .2, .3, .4, .5,  1],
-          pointSize: [2, 4, 5, 6,  pointSize]
+          opacity: opacityRange || [0.1, .2, .3, .4, .5,  1],
+          pointSize: pointSizeRange || [2, 4, 5, 6,  pointSize]
         })
       } else {
         scatterplot.set({
@@ -167,8 +181,7 @@ function ScatterPlot ({
           pointSize: pointSize,
         })
       }
-      if(prevPoints && prevPoints.length === points.length) {
-        // console.log("transitioning scatterplot" )
+      if (prevPoints && prevPoints.length === points.length) {
         scatterplot.draw(points, { transition: true, transitionDuration: duration}).then(() => {
           // don't color till after
           scatterplot.set({

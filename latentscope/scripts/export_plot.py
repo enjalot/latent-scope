@@ -90,15 +90,19 @@ def dmp(dataset_id, scope_id, plot_config=None):
     label_sizes.reset_index()
     print(label_sizes)
 
-    simplified_labels = scope_parquet["label"].copy()
-    # TODO: optional cut clusters with less than threshold
-    threshold = 100
-    # simplified_labels[np.in1d(simplified_labels, label_sizes[label_sizes < threshold].index)] = "No Topic"
-
-    highlight_labels = np.unique(simplified_labels)
-
+    
+    threshold = -1
     if plot_config:
         plot_config = json.loads(plot_config)
+        threshold = plot_config.get("threshold", -1)
+        del plot_config["threshold"]
+        plot_config["noise_label"] = "No Topic"
+
+    simplified_labels = scope_parquet["label"].copy()
+    if threshold >= 0:
+        simplified_labels[np.in1d(simplified_labels, label_sizes[label_sizes < threshold].index)] = "No Topic"
+
+    highlight_labels = np.unique(simplified_labels)
     if plot_config is None:
         plot_config = {
             "label_over_points": True,

@@ -39,16 +39,17 @@ def main():
     parser.add_argument('text_column', type=str, help='Output file', default='text')
     parser.add_argument('cluster_id', type=str, help='ID of cluster set', default='cluster-001')
     parser.add_argument('model_id', type=str, help='ID of model to use', default="openai-gpt-3.5-turbo")
+    parser.add_argument('samples', type=int, help='Number to sample from each cluster (default: 0 for all)', default=0)
     parser.add_argument('context', type=str, help='Additional context for labeling model', default="")
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
 
     # Parse arguments
     args = parser.parse_args()
 
-    labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.context, args.rerun)
+    labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.samples, args.context, args.rerun)
 
 
-def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", context="", rerun=""):
+def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", samples=0, context="", rerun=""):
     import numpy as np
     import pandas as pd
     DATA_DIR = get_data_dir()
@@ -87,6 +88,9 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     model.load_model()
     enc = model.encoder
 
+    # unescape the context
+    context = context.replace('\\"', '"')
+
     system_prompt = {"role":"system", "content": f"""You're job is to summarize lists of items with a short label of no more than 4 words. The items are part of a cluster and the label will be used to distinguish this cluster from others, so pay attention to what makes this group of similar items distinct.
 {context}
 The user will submit a list of items in the format:
@@ -110,6 +114,8 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
     for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
         indices = row['indices']
         items = df.loc[list(indices), text_column]
+        if samples > 0 and samples < len(items):
+            items = items.sample(samples)
         items = items.drop_duplicates()
         # text = '\n'.join([f"{i+1}. {t}" for i, t in enumerate(items) if not too_many_duplicates(t)])
         text = '\n'.join([f"<ListItem>{t}</ListItem>" for i, t in enumerate(items) if not too_many_duplicates(t)])
@@ -180,6 +186,7 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
             "cluster_id": cluster_id,
             "model_id": model_id, 
             "text_column": text_column,
+            "samples": samples,
             "context": context,
             "system_prompt": system_prompt,
             "max_tokens": max_tokens,

@@ -32,10 +32,9 @@ const HullPlot = ({
     if (!xDomain || !yDomain || !hulls.length) return;
 
     // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
-    const hullsChanged = !prevHulls.current || (JSON.stringify(hulls[0]) !== JSON.stringify(prevHulls.current[0]))
+    const hullsChanged = !prevHulls.current || (JSON.stringify(hulls.slice(0, 10)) !== JSON.stringify(prevHulls.current.slice(0, 10)))
     // const pointsChanged = !prevPoints.current || (JSON.stringify(points[0]) !== JSON.stringify(prevPoints.current[0]))
 
-    // console.log("HULLS CHANGED", hullsChanged)
     if(!hullsChanged) return;
     // if(!hullsChanged || !pointsChanged) {
     //   return
@@ -53,7 +52,7 @@ const HullPlot = ({
     const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0]) / 2);
 
     // Calculate a scaled stroke width
-    const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor) / 2;
+    const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
     const g = svg.select("g.hull-container");
     g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
@@ -68,11 +67,11 @@ const HullPlot = ({
       .data(hulls)
     
     const exit = sel.exit()
-      .transition()
-      .duration(duration)
-      .delay(delay)
-      .ease(easeExpOut)
-      .style("opacity", 0)
+      // .transition()
+      // .duration(duration)
+      // .delay(delay)
+      // .ease(easeExpOut)
+      // .style("opacity", 0)
         .remove()
 
     const enter = sel.enter()
@@ -83,17 +82,17 @@ const HullPlot = ({
         .style("stroke", stroke)
         .style("stroke-width", scaledStrokeWidth)
         .style("opacity", 0.)
-        .transition()
-          .delay(delay + 100)
-          .duration(duration - 100)
-          .ease(easeExpOut)
+        // .transition()
+        //   .delay(delay + 100)
+        //   .duration(duration - 100)
+        //   .ease(easeExpOut)
           .style("opacity", 0.75)
 
     const update = sel
-      .transition() 
-      .duration(duration)
-      .delay(delay)
-      .ease(easeCubicInOut)
+      // .transition() 
+      // .duration(duration)
+      // .delay(delay)
+      // .ease(easeCubicInOut)
       .style("opacity", 0.75)
       .attr("d", draw)
       // .attrTween("d", function(d,i) {
@@ -162,6 +161,10 @@ const HullPlot = ({
     sel.exit().remove()
 
     sel.attr("d", draw)
+      .style("fill", fill)
+      .style("stroke", stroke)
+      .attr("stroke-width", scaledStrokeWidth)
+      .style("opacity", 0.75)
 
   }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height])
 

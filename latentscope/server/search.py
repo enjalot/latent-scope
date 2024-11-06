@@ -41,9 +41,9 @@ def nn():
         print("Model ID:", model_id)
         model = get_embedding_model(model_id)
         model.load_model()
-        EMBEDDINGS[embedding_id] = model
+        EMBEDDINGS[dataset + "-" + embedding_id] = model
     else:
-        model = EMBEDDINGS[embedding_id]
+        model = EMBEDDINGS[dataset + "-" + embedding_id]
 
     if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
         # load the dataset embeddings

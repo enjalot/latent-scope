@@ -1,0 +1,84 @@
+@import "./_shared";
+
+.embeddings {
+  @include setup-container;
+}
+.embeddings-setup {
+  @include setup-left;
+}
+.embeddings-preview {
+  @include setup-right;
+}
+.preview {
+  @include setup-preview;
+}
+.navigate {
+  @include setup-navigate;
+}
+.step {
+  @include setup-step;
+}
+.embeddings-form {
+  @include setup-form;
+}
+
+
+.embeddings-list {
+  @include item-list;
+}
+
+.truncate {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin: 6px 0;
+}
+.options {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: space-between;
+}
+.batch-size {
+  width: 45px;
+}
+.max-seq-length {
+  width: 55px;
+}
+.prefix {
+  width: 100%;
+}
+
+
+.item {
+  @include setup-item;
+}
+.selected {
+  @include selected;
+}
+.item-info {
+  @include setup-item-info;
+}
+.item-deps {
+  @include setup-item-deps;
+}
+.delete {
+  @include setup-delete;
+}
+
+.potential-embedding {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: #efefef;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 6px;
+}
+
+.pe-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+

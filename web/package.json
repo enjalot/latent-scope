@@ -21,11 +21,13 @@
     "flubber": "^0.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-element-forge": "^0.0.11",
     "react-router-dom": "^6.20.1",
     "react-select": "^5.8.0",
     "react-tooltip": "^5.26.3",
     "regl-scatterplot": "^1.8.5",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "sass": "^1.80.3"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

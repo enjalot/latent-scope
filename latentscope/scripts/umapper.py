@@ -145,6 +145,8 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
                 "embedding_id": emb_id,
                 "neighbors": neighbors, 
                 "min_dist": min_dist,
+                "min_values": min_values.tolist(),
+                "max_values": max_values.tolist(),
             }
             if init is not None and init != "":
                 meta["init"] = init,
@@ -216,7 +218,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             n_components=2,
             verbose=True,
         )
-    print("reducing", embeddings.shape[0], "embeddings to 2 dimensions")
+    print("reducing", embeddings.shape[1], "embeddings to 2 dimensions")
 
     import sys
     sys.stdout.flush()
@@ -228,6 +230,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         # save a pickle of the umap
         with open(os.path.join(umap_dir, f'{umap_id}.pkl'), 'wb') as f:
             pickle.dump(reducer, f)
+
     print("done with", umap_id)
 
 def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False, init=None, seed=None):

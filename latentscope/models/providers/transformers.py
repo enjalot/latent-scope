@@ -24,7 +24,7 @@ class TransformersEmbedProvider(EmbedModelProvider):
         # from transformers import AutoTokenizer, AutoModel
         from sentence_transformers import SentenceTransformer
 
-        self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)
+        self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)#, backend="onnx")
         self.tokenizer = self.model.tokenizer
 
         # if "rps" in self.params and self.params["rps"]:
@@ -74,12 +74,11 @@ class TransformersChatProvider(ChatModelProvider):
         from transformers import pipeline
         self.torch = torch
         self.pipeline = pipeline
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def load_model(self):
-        # self.pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0", torch_dtype=torch.bfloat16, device_map="auto")
-        # self.pipe = pipeline("text-generation", model="TinyLlama/TinyLlama-1.1B-Chat-v1.0", torch_dtype=torch.bfloat16, device_map="cpu")
         # TODO: support bfloat16 for non mac environmentss
-        self.pipe = self.pipeline("text-generation", model=self.name, torch_dtype=self.torch.float16, device_map="auto")
+        self.pipe = self.pipeline("text-generation", model=self.name, torch_dtype=self.torch.float16, device=self.device, trust_remote_code=True)
         self.encoder = self.pipe.tokenizer
 
     def chat(self, messages, max_new_tokens=24):

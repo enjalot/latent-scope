@@ -2,6 +2,8 @@
 [![](https://dcbadge.vercel.app/api/server/x7NvpnM4pY?style=flat)](https://discord.gg/x7NvpnM4pY)
 [![PyPI version](https://img.shields.io/pypi/v/latentscope.svg)](https://pypi.org/project/latentscope/)
 
+[Docs](https://enjalot.github.io/latent-scope/)
+
 Quickly embed, project, cluster and explore a dataset. This project is a new kind of workflow + tool for visualizing and exploring datasets through the lens of latent spaces. 
 
 <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/end.png?raw=true" width="45%"  alt="Setup your scope"><img src="https://github.com/enjalot/latent-scope/blob/main/documentation/curate-combined-cluster.png?raw=true" width="45%"  alt="Explore and Curate your data">
@@ -27,17 +29,20 @@ What can you do with Latent Scope? The following examples demonstrate the kinds 
 
 
 ### Quick Start
-To get started, install the [latent-scope module](https://pypi.org/project/latentscope/) and run the server via the Command Line:
+Latent Scope works on Mac, Linux and Windows. Python 3.12 is the recommended python version.
+
+To get started, install the [latent-scope python module](https://pypi.org/project/latentscope/) and run the server via the Command Line:
 
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install latentscope
-ls-init ~/local-scope-data --openai_key=XXX --mistral_key=YYY # optional api keys to enable API models 
+ls-init ~/latent-scope-data --openai_key=XXX --mistral_key=YYY # optional api keys to enable API models 
 ls-serve 
 ```
 
 Then open your browser to http://localhost:5001 and start processing your first dataset!  
+
 
 See the [Your First Scope](https://enjalot.github.io/latent-scope/your-first-scope) guide for a detailed walk-through of the process.
 
@@ -92,7 +97,7 @@ ls-serve
 ### Repository overview
 This repository is currently meant to run locally, with a React frontend that communicates with a python server backend. We support several popular open source embedding models that can run locally as well as proprietary API embedding services. Adding new models and services should be quick and easy.
 
-To learn more about customizing, extending and contributing see [DEVELOPMENT.md](documentation/DEVELOPMENT.md)
+To learn more about contributing and the project roadmap see [CONTRIBUTION.md](CONTRIBUTION.md), for technical details see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 
 ### Design principles

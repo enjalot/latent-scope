@@ -135,24 +135,28 @@ FilterDataTable.propTypes = {
 };
 
 function FilterDataTable({
-  height="calc(100% - 40px)",
+  height,
   dataset,
   scope,
   indices = [], 
   distances = [], 
   clusterMap = {},
-  // clusterIndices = [], 
   clusterLabels, 
   tagset,
   showEmbeddings = null,
   showDifference = null,
-  saeFeature = null, // this will be a { sae_id: string, feature_id: number }
+  showNavigation = true,
+  sae_id = null, 
+  feature = -1,
   onTagset,
   onScope,
   onHover, 
   onClick, 
   onRows,
+  filtersContainerRef,
 }) {
+  
+
   const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0)
@@ -167,6 +171,7 @@ function FilterDataTable({
   // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
   const [highlightColumn, setHighlightColumn] = useState(null)
   useEffect(() => {
+    console.log("changed?", dataset)
     setHighlightColumn(dataset?.text_column || null)
   }, [dataset])
 
@@ -229,13 +234,13 @@ function FilterDataTable({
           indices: indices, 
           embedding_id: showEmbeddings,
           page: currentPage,
-          sae_id: saeFeature?.sae_id,
+          sae_id: sae_id,
         }),
       })
       .then(response => response.json())
       .then(data => {
         let { rows, totalPages, total } = data;
-        console.log("rows", rows)
+        // console.log("rows", rows)
         // console.log("pages", totalPages, total)
         setPageCount(totalPages)
 
@@ -261,7 +266,7 @@ function FilterDataTable({
     } else {
       setRows([])
     }
-  }, [dataset, distances, clusterMap, currentPage, showEmbeddings, saeFeature])
+  }, [dataset, distances, clusterMap, currentPage, showEmbeddings, sae_id])
 
   useEffect(() => {
     if(dataset) {
@@ -270,8 +275,8 @@ function FilterDataTable({
       let columns = ["ls_index"]
       if(distances && distances.length) columns.push("ls_similarity")
       if(showEmbeddings) columns.push("ls_embedding")
-      if(saeFeature) columns.push("ls_features")
-      if(scope) columns.push("ls_cluster")
+      if(sae_id) columns.push("ls_features")
+      if(clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
       if(tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
@@ -322,7 +327,7 @@ function FilterDataTable({
                 e.preventDefault()
                 
               }}>
-                <select value={value?.cluster} onChange={(e) => {
+                {scope ? <select value={value?.cluster} onChange={(e) => {
                   e.stopPropagation()
                   e.preventDefault()
                   console.log("was cluster", value)
@@ -347,7 +352,7 @@ function FilterDataTable({
                   {clusterLabels.map((c,i) => {
                     return <option key={i} value={c.cluster}>{c.cluster}: {c.label}</option>
                   })}
-                </select>
+                </select> : <span>{value}</span>}
               </div>
               // return <span>{value.cluster}: {value.label}</span>
             } 
@@ -375,8 +380,8 @@ function FilterDataTable({
             }
            if(c === "ls_features") {
               let featIdx = 0;
-              if(saeFeature.feature_id >= 0) {
-                featIdx = value.top_indices.findIndex(i => i === saeFeature.feature_id)
+              if(feature >= 0) {
+                featIdx = value.top_indices.findIndex(i => i === feature)
               }
               return <div>
                 {value.top_acts?.[featIdx]?.toFixed(3)} ({value.top_indices?.[featIdx]})
@@ -413,7 +418,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference ])
 
 
   const [columnFilters, setColumnFilters] = useState([])
@@ -552,7 +557,7 @@ function FilterDataTable({
         </tbody>
       </table>
       </div>
-      <div className="filter-data-table-page-controls">
+      {showNavigation && <div className="filter-data-table-page-controls">
         <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
           First
         </button>
@@ -568,7 +573,7 @@ function FilterDataTable({
         <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
           Last
         </button>
-      </div>
+      </div>}
     </div>
   )
 }

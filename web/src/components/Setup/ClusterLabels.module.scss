@@ -1,0 +1,67 @@
+@import "./_shared";
+
+.cluster-labels {
+  @include setup-container;
+}
+.cluster-labels-setup {
+  @include setup-left;
+}
+.cluster-labels-preview {
+  @include setup-right;
+}
+.preview {
+  @include setup-preview;
+  position: relative;
+
+  .preview-header {
+    position: absolute;
+    top: -70px;
+    left: 0;
+    right: 0;
+  }
+}
+.navigate {
+  @include setup-navigate;
+}
+.step {
+  @include setup-step;
+}
+.cluster-form {
+  @include setup-form;
+}
+.cluster-list {
+  @include item-list;
+}
+.item {
+  @include setup-item;
+}
+.selected {
+  @include selected;
+}
+.item-info {
+  @include setup-item-info;
+}
+.item-deps {
+  @include setup-item-deps;
+}
+.delete {
+  @include setup-delete;
+}
+.cluster-labels-form-label {
+  width: 100px;
+  display: inline-block;
+}
+.cluster-labels-form input {
+  width: 84px;
+}
+.cluster-labels-table {
+  height: 98%;
+  overflow: scroll;
+  flex-grow: 1;
+  padding: 6px;
+}
+.item img {
+  width: 120px;
+  height: 120px;
+  user-select: none;
+}
