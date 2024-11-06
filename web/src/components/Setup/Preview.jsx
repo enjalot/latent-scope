@@ -299,7 +299,7 @@ function Preview({
         onSelect={handleSelected}
         onHover={handleHovered}
         />
-      {hulls.length && !scope.ignore_hulls ? 
+      {hulls.length ? 
         <HullPlot
           hulls={hulls}
           stroke="black"
