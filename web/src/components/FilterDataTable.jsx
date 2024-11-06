@@ -135,13 +135,11 @@ FilterDataTable.propTypes = {
 };
 
 function FilterDataTable({
-  height="calc(100% - 40px)",
   dataset,
   scope,
   indices = [], 
   distances = [], 
   clusterMap = {},
-  // clusterIndices = [], 
   clusterLabels, 
   tagset,
   showEmbeddings = null,
@@ -152,7 +150,42 @@ function FilterDataTable({
   onHover, 
   onClick, 
   onRows,
+  filtersContainerRef,
 }) {
+  const [filtersHeight, setFiltersHeight] = useState(250);
+  const FILTERS_PADDING = 62;
+  const height = useMemo(
+    () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
+    [filtersHeight],
+  );
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { height } = entry.contentRect;
+        setFiltersHeight(height);
+      }
+    });
+
+    let node = filtersContainerRef.current;
+    if (node) {
+      resizeObserver.observe(node);
+    } else {
+      setTimeout(() => {
+        node = filtersContainerRef.current;
+        if (node) {
+          resizeObserver.observe(node);
+        }
+      }, 100);
+    }
+
+    return () => {
+      if (node) {
+        resizeObserver.unobserve(node);
+      }
+    };
+  }, []);
+
   const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0)
