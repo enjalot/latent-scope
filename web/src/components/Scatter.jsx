@@ -19,6 +19,8 @@ ScatterPlot.propTypes = {
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
   opacityBy: PropTypes.string,
+  opacityRange: PropTypes.array,
+  pointSizeRange: PropTypes.array,
   duration: PropTypes.number,
   onScatter: PropTypes.func,
   onView: PropTypes.func,
@@ -61,6 +63,8 @@ function ScatterPlot ({
   colorDomain = null,
   colorRange = null,
   opacityBy,
+  opacityRange = null,
+  pointSizeRange = null,
   onScatter,
   onView,
   onSelect,
@@ -168,8 +172,8 @@ function ScatterPlot ({
         scatterplot.set({
           opacityBy,
           sizeBy: opacityBy,
-          opacity: [0.1, .2, .3, .4, .5,  1],
-          pointSize: [2, 4, 5, 6,  pointSize]
+          opacity: opacityRange || [0.1, .2, .3, .4, .5,  1],
+          pointSize: pointSizeRange || [2, 4, 5, 6,  pointSize]
         })
       } else {
         scatterplot.set({

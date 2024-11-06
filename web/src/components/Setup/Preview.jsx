@@ -10,7 +10,7 @@ import { apiService } from "../../lib/apiService";
 import FilterDataTable from '../FilterDataTable';
 import Scatter from "../Scatter";
 import HullPlot from "../HullPlot";
-import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey } from "../../lib/colors";
+import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey, mapSelectionOpacity, mapPointSizeRange } from "../../lib/colors";
 
 import styles from "./Preview.module.scss";
 
@@ -294,6 +294,9 @@ function Preview({
         colorScaleType="categorical"
         colorRange={mapSelectionColorsLight}
         colorDomain={mapSelectionDomain}
+        opacityRange={mapSelectionOpacity}
+        pointSizeRange={mapPointSizeRange}
+        opacityBy="valueA"
         onScatter={setScatter}
         onView={handleView} 
         onSelect={handleSelected}
@@ -318,7 +321,7 @@ function Preview({
       {selectedIndices.length ? <div>
         <span>Selected {selectedIndices?.length} of {dataset?.length} rows</span>
         <Button color="secondary" icon="x" onClick={() => clearSelection()}></Button>
-        <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button>
+        {/* <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button> */}
       </div> : 
       <span>Showing {dataIndices?.length} of {dataset?.length} rows</span>}
     </div>

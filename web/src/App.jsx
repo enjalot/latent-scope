@@ -4,7 +4,6 @@ import Settings from './pages/Settings';
 import Explore from './pages/Explore';
 import Compare from './pages/Compare';
 import Setup from './pages/Setup';
-import Setup2 from './pages/Setup2';
 import Jobs from './pages/Jobs';
 import Job from './pages/Job';
 import Export from './pages/Export';
@@ -43,9 +42,7 @@ function App() {
           <Route path="/datasets/:dataset/plot/:scope" element={<DataMapPlot />} />
 
           <Route path="/datasets/:dataset/setup" element={<Setup />} />
-          <Route path="/datasets/:dataset/setup2" element={<Setup2 />} />
           <Route path="/datasets/:dataset/setup/:scope" element={<Setup />} />
-          <Route path="/datasets/:dataset/setup2/:scope" element={<Setup2 />} />
           <Route path="/datasets/:dataset/jobs" element={<Jobs />} />
           <Route path="/datasets/:dataset/jobs/:job" element={<Job />} />
         </Routes>
