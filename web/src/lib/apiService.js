@@ -160,7 +160,10 @@ export const apiService = {
   killJob: async (datasetId, jobId) => {
     return fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${jobId}`)
       .then(response => response.json())
+  },
+  updateScopeLabelDescription: async (datasetId, scopeId, label, description) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/description?label=${label}&description=${description}`)
+      .then(response => response.json())
   }
-
 }
 

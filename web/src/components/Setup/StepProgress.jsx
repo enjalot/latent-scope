@@ -40,7 +40,7 @@ const StepProgress = () => {
       </div>
 
       <div className={styles.previewHeader}>
-        <h3>Preview: {previewLabel}</h3>
+        {previewLabel && <h3>Preview: {previewLabel}</h3>}  
       </div>
 
       <Tooltip id="saved" place="top" effect="solid">

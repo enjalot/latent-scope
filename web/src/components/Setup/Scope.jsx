@@ -1,14 +1,18 @@
 // NewEmbedding.jsx
-import { useState, useEffect, useCallback} from 'react';
+import { useState, useEffect, useCallback, useMemo} from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStartJobPolling } from '../Job/Run';
 import JobProgress from '../Job/Progress';
+import { Button } from 'react-element-forge';
+
 import { apiService, apiUrl } from '../../lib/apiService';
 import { useSetup } from '../../contexts/SetupContext';
 
+import styles from './Scope.module.scss';
+
 
 function Scope() {
-  const { dataset, scope, updateScope, goToNextStep } = useSetup();
+  const { dataset, scope, savedScope, setPreviewLabel } = useSetup();
 
   const navigate = useNavigate();
 
@@ -28,6 +32,14 @@ function Scope() {
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
   const [scopes, setScopes] = useState([]);
+
+  useEffect(() => {
+    if(scope && scope.id) {
+      setPreviewLabel(scope.id)
+    } else {
+      setPreviewLabel(null)
+    }
+  }, [scope])
 
   // Fetch initial data
   useEffect(() => {
@@ -59,7 +71,7 @@ function Scope() {
         setClusterLabelId(scope.cluster_labels_id)
       }
     }
-  }, [scope]);
+  }, [scope, embeddings, umaps, clusters]);
 
   useEffect(() => {
     if(dataset) {
@@ -95,11 +107,11 @@ function Scope() {
 
     if(action == "description") {
       console.log("update the description")
-      fetch(`${apiUrl}/datasets/${dataset.id}/scopes/${scope.id}/description?description=${data.get('description')}&label=${data.get('label')}`, {
-        method: 'GET',
-      }).then(response => response.json()).then(data => {
+      apiService.updateScopeLabelDescription(dataset.id, scope.id, data.get('label'), data.get('description')).then(data => {
         console.log("updated description", data)
-        fetchScopes(dataset.id, onNew)
+        apiService.fetchScopes(dataset.id).then(scopes => {
+          setScopes(scopes)
+        })
       }).catch(error => {
         console.error('Error updating description:', error);
       });
@@ -124,105 +136,149 @@ function Scope() {
   }, [dataset, scope, cluster, clusterLabelId, umap, embedding]);
 
   const [isDifferent, setIsDifferent] = useState(false);
-  const descriptionIsDifferent = label !== scope?.label || description !== scope?.description;
+  const descriptionIsDifferent = useMemo(() => 
+    savedScope?.label !== label || savedScope?.description !== description
+  , [savedScope, label, description]);
 
   useEffect(() => {
     if(!scope) {
       setIsDifferent(true);
     } else {
-      if(scope.embedding_id != embedding?.id
-        || scope.umap_id != umap?.id
-        || scope.cluster_id != cluster?.id
-        || scope.cluster_labels_id != clusterLabelId) {
+      if(scope.embedding_id != savedScope?.embedding_id
+        || scope.umap_id != savedScope?.umap_id
+        || scope.cluster_id != savedScope?.cluster_id
+        || scope.cluster_labels_id != savedScope?.cluster_labels_id) {
         setIsDifferent(true);
+        console.log("is different", scope, savedScope)
       } else {
         setIsDifferent(false)
       }
     }
-  }, [scope, cluster, umap, embedding, clusterLabelId]);
+  }, [scope, savedScope]);
 
   return (
-    <div className="setup-scope">
-      <div className="dataset--setup-save-box-title">
-        Embedding: {embedding?.id} - {embedding?.model_id}<br/>
-        Umap: {umap?.id}<br/>
-        Cluster: {cluster?.id}<br/>
-        Labels: {clusterLabelId }
-      </div>
-      <div className="dataset--setup-save-box-boxes">
-        { cluster ? <div className="box-item">
-          {/* {cluster.id} */}
-          <img src={cluster.url} alt={cluster.id} />
-        </div> : 
-          umap ? <div className="box-item">
-            {/* {umap.id} */}
-            <img src={umap.url} alt={umap.id} />
-          </div> : <div className="empty-box"></div> 
-        }
-      </div>
-      <div className="dataset--setup-save-box-nav">
-        <form onSubmit={handleSaveScope}>
-          <label>
-            Label:
-            <input type="text" name="label" defaultValue={scope ? scope.label: ""} onChange={(e) => setLabel(e.target.value)}/>
-          </label>
-          <label>
-            Description:
-            <input type="text" name="description" defaultValue={scope ? scope.description: ""} onChange={(e) => setDescription(e.target.value)}/>
-          </label>
-          <input type="hidden" name="action" value="" />
-          { scope 
-           && descriptionIsDifferent ?
-            <button type="submit" disabled={cluster ? false : true } onClick={() => { 
-              document.querySelector('input[name="action"]').value = 'description'; 
-            }}>Update description</button> 
-          : null }
-        {scope && isDifferent ? <div className="previous-scope">
-          <h4>Previous Scope Settings</h4>
-          Embedding: {scope.embedding_id}<br/>
-          Umap: { scope.umap_id }<br/>
-          Cluster: { scope.cluster_id }<br/>
-          Labels: { scope.cluster_labels_id }<br/>
+    <div className={styles["scope"]}>
+      <div className={styles["scope-setup"]}>
+        <div className={styles["scope-setup-info"]}>
+          Embedding: {embedding?.id} - {embedding?.model_id}<br/>
+          Umap: {umap?.id}<br/>
+          Cluster: {cluster?.id}<br/>
+          Labels: {clusterLabelId}
+        </div>
 
-        </div> : null }
+        <div className={styles["scope-setup-img"]}>
+          { cluster ? <div className={styles["box-item"]}>
+            {/* {cluster.id} */}
+            <img src={cluster.url} alt={cluster.id} />
+          </div> : 
+            umap ? <div className={styles["box-item"]}>
+              {/* {umap.id} */}
+              <img src={umap.url} alt={umap.id} />
+            </div> : <div className={styles["empty-box"]}></div> 
+          }
+        </div>
 
-        <JobProgress job={scopeJob} clearJob={()=> {
-            setScopeJob(null)
-            if(scopeJob?.status == "completed") {
-              fetchScopes(dataset.id, (scopes) => {
-                console.log("fetched and setting")
-                onNew(scopes)
-                if(scopeJob.job_name == "rm") {
-                  navigate(`/datasets/${dataset.id}/setup`)
-                } else {
-                  onChange(scopes.find(d => d.id == scopeJob.run_id))
-                  navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
+
+        <div className={styles["scope-form"]}>
+          <form onSubmit={handleSaveScope} >
+            <label>
+              <span className={styles["scope-form-label"]}>Label:</span>
+              <input type="text" name="label" defaultValue={scope ? scope.label: ""} onChange={(e) => setLabel(e.target.value)}/>
+            </label>
+            <label>
+              <span className={styles["scope-form-label"]}>Description:</span>
+              <input type="text" name="description" defaultValue={scope ? scope.description: ""} onChange={(e) => setDescription(e.target.value)}/>
+            </label>
+            <input type="hidden" name="action" value="" />
+            { scope 
+            && descriptionIsDifferent ?
+              <Button type="submit" disabled={cluster ? false : true } onClick={() => { 
+                document.querySelector('input[name="action"]').value = 'description'; 
+              }} text="Update label & description"/> 
+            : null }
+            {savedScope && isDifferent ? <div className={styles["previous-scope"]}>
+              <h4>Previous Scope Settings</h4>
+              Embedding: {savedScope.embedding_id}<br/>
+              Umap: { savedScope.umap_id }<br/>
+              Cluster: { savedScope.cluster_id }<br/>
+              Labels: { savedScope.cluster_labels_id }<br/>
+
+            </div> : null }
+
+            <JobProgress job={scopeJob} clearJob={()=> {
+                setScopeJob(null)
+                if(scopeJob?.status == "completed") {
+                  apiService.fetchScopes(dataset.id).then(scopes => {
+                    console.log("fetched and setting")
+                    setScopes(scopes)
+                    if(scopeJob.job_name == "rm") {
+                      navigate(`/datasets/${dataset.id}/setup`)
+                    } else {
+                      navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
+                    }
+                  })
                 }
-              })
-            }
-        }} />
+            }} />
 
-          {scope && !scopeJob ? <button type="submit" disabled={cluster ? false : true } onClick={() => { 
-              document.querySelector('input[name="action"]').value = 'save'; 
-            }}>Overwrite {scope.name}</button> : null }
-            { isDifferent && !scopeJob ? <button type="submit" disabled={cluster  ? false : true } onClick={() => { 
-              document.querySelector('input[name="action"]').value = 'new'; 
-            }}>New scope</button> : null }
-        </form>
-
-
-        { scope ? <div className="scope-actions" style={{display: "flex", justifyContent: "space-between", flexDirection: "row"}}>
-          <div className="links">
-            <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> Explore {scope.label} ({scope.id}) <br/></Link>
-            <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> Export data ({scope.id}) <br/></Link>
-            <Link to={`/datasets/${dataset?.id}/plot/${scope?.id}`}> Export plot ({scope.id}) <br/></Link>
-          </div>
-          <div className="delete">
-            <button onClick={() => startDeleteScopeJob({dataset: dataset.id, scope_id: scope.id})}>Delete scope</button>
-          </div>
-        </div> : null}
-        
+            {savedScope && !scopeJob && isDifferent ? <Button type="submit" disabled={cluster ? false : true } 
+              onClick={() => { 
+                document.querySelector('input[name="action"]').value = 'save'; 
+              }} 
+              text={`Overwrite ${savedScope.id}`}
+            /> : null }
+              { isDifferent && !scopeJob ? <Button type="submit" disabled={cluster  ? false : true } 
+                onClick={() => { 
+                  document.querySelector('input[name="action"]').value = 'new'; 
+                }} 
+                text="New scope"
+              /> : null }
+          </form>
+        </div>
       </div>
+
+      {scope && scope.id && (
+        <div className={styles["setup-scope-preview"]}>
+          <div className={styles["preview"]}>
+            <div className={styles["scope-actions"]}>
+              <div className={styles["action-card"]}>
+                <h3>Explore Data</h3>
+                <p>Interact with your data in an interactive visualization</p>
+                <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`} className={styles["action-link"]}>
+                  Explore {scope.label} ({scope.id})
+                </Link>
+              </div>
+
+              <div className={styles["action-card"]}>
+                <h3>Export Data</h3>
+                <p>Download your data with embeddings and cluster assignments</p>
+                <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`} className={styles["action-link"]}>
+                  Export data ({scope.id})
+                </Link>
+              </div>
+
+              <div className={styles["action-card"]}>
+                <h3>Export Plot</h3>
+                <p>Generate publication-ready visualizations</p>
+                <Link to={`/datasets/${dataset?.id}/plot/${scope?.id}`} className={styles["action-link"]}>
+                  Export plot ({scope.id})
+                </Link>
+              </div>
+
+              <div className={styles["action-card"]}>
+                <h3>Delete Scope</h3>
+                <p>Remove this scope. Underlying data will not be deleted.</p>
+                <Button 
+                  onClick={() => startDeleteScopeJob({dataset: dataset.id, scope_id: scope.id})}
+                  icon="trash"
+                  color="delete"
+                  variant="outline"
+                  text="Delete scope"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
