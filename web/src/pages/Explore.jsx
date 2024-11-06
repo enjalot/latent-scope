@@ -38,7 +38,7 @@ function Explore() {
   // fetch dataset and current scope metadata
   // - scopes: all scopes available for this dataset
   // - embeddings: embeddings available for this dataset
-  const { embeddings, dataset, scope, fetchScopeMeta, scopes } = useCurrentScope(
+  const { embeddings, dataset, scope, fetchScopeMeta, scopes, tagset, fetchTagSet, tags } = useCurrentScope(
     datasetId,
     scopeId,
     apiUrl,
@@ -140,26 +140,26 @@ function Explore() {
   // ====================================================================================================
   // Tags
   // ====================================================================================================
-  const [tagset, setTagset] = useState({});
+  // const [tagset, setTagset] = useState({});
 
-  const fetchTagSet = useCallback(() => {
-    fetch(`${apiUrl}/tags?dataset=${datasetId}`)
-      .then((response) => response.json())
-      .then((data) => setTagset(data));
-  }, [datasetId, setTagset]);
+  // const fetchTagSet = useCallback(() => {
+  //   fetch(`${apiUrl}/tags?dataset=${datasetId}`)
+  //     .then((response) => response.json())
+  //     .then((data) => setTagset(data));
+  // }, [datasetId, setTagset]);
 
-  useEffect(() => {
-    fetchTagSet();
-  }, [fetchTagSet]);
+  // useEffect(() => {
+  //   fetchTagSet();
+  // }, [fetchTagSet]);
 
-  const tags = useMemo(() => {
-    const tags = [];
-    for (const tag in tagset) {
-      tags.push(tag);
-    }
-    // console.log("tagset", tagset, tags)
-    return tags;
-  }, [tagset]);
+  // const tags = useMemo(() => {
+  //   const tags = [];
+  //   for (const tag in tagset) {
+  //     tags.push(tag);
+  //   }
+  //   // console.log("tagset", tagset, tags)
+  //   return tags;
+  // }, [tagset]);
 
   const [tag, setTag] = useState(tags[0]);
 
@@ -423,6 +423,7 @@ function Explore() {
       <div className="left-column">
         <ScopeHeader
           dataset={dataset}
+          tags={tags}
           scope={scope}
           scopes={scopes}
           onScopeChange={handleScopeChange}
