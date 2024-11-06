@@ -1,0 +1,23 @@
+@import '../latentscope--brand-theme.scss';
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px);
+  overflow: hidden;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0 6px;
+  flex-grow: 1;
+  overflow: hidden;
+  // background-color: $neutrals-color-neutral-1;
+}
+
+.stepRenderer {
+  flex-grow: 1;
+  min-height: 0;
+}

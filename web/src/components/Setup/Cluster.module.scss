@@ -1,0 +1,55 @@
+@import "./_shared";
+
+.cluster {
+  @include setup-container;
+}
+.cluster-setup {
+  @include setup-left;
+}
+.cluster-preview {
+  @include setup-right;
+}
+.preview {
+  @include setup-preview;
+}
+.navigate {
+  @include setup-navigate;
+}
+.step {
+  @include setup-step;
+}
+.cluster-form {
+  @include setup-form;
+}
+.cluster-list {
+  @include item-list;
+}
+.item {
+  @include setup-item;
+}
+.selected {
+  @include selected;
+}
+.item-info {
+  @include setup-item-info;
+}
+.item-deps {
+  @include setup-item-deps;
+}
+.delete {
+  @include setup-delete;
+}
+.cluster-form-label {
+  width: 125px;
+  display: inline-block;
+}
+.cluster-form input {
+  width: 84px;
+}
+
+
+.item img {
+  width: 120px;
+  height: 120px;
+  user-select: none;
+}

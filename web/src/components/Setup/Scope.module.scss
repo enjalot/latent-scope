@@ -1,0 +1,95 @@
+@import "./_shared";
+
+.scope {
+  @include setup-container;
+}
+.scope-setup {
+  @include setup-left;
+}
+.scope-preview {
+  @include setup-right;
+}
+.preview {
+  @include setup-preview;
+  position: relative;
+
+  .preview-header {
+    position: absolute;
+    top: -70px;
+    left: 0;
+    right: 0;
+  }
+}
+.navigate {
+  @include setup-navigate;
+}
+.step {
+  @include setup-step;
+}
+.scope-form {
+  @include setup-form;
+}
+
+.item {
+  @include setup-item;
+}
+.selected {
+  @include selected;
+}
+.item-info {
+  @include setup-item-info;
+}
+.item-deps {
+  @include setup-item-deps;
+}
+.delete {
+  @include setup-delete;
+}
+.scope-form-label {
+  width: 100px;
+  display: inline-block;
+}
+.scope-form input {
+  width: calc(90% - 100px);
+}
+.scope-table {
+  height: 98%;
+  overflow: scroll;
+  flex-grow: 1;
+  padding: 6px;
+}
+.scope-setup-img img {
+  width: 120px;
+  height: 120px;
+  user-select: none;
+}
+
+
+.action-card {
+  background: var(--background);
+  padding: 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  h3 {
+    margin: 0;
+    color: var(--text-primary);
+  }
+
+  p {
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}
+
+.action-link {
+  margin-top: auto;
+  text-decoration: none;
+  // color: var(--primary);
+  font-weight: 500;
+  &:hover {
+    text-decoration: underline;
+  }
+}

@@ -1,0 +1,46 @@
+
+.header {
+
+  h3 {
+    background-color: var(--neutrals-color-neutral-1);
+    color: var(--text-color-text-main);
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0;
+    padding: 6px 12px;
+  }
+
+  .datasetLength {
+    font-size: 0.8em;
+    margin-left: 6px;
+    color: var(--text-color-text-neutral);
+  }
+}
+
+.scope {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 6px;
+  background-color: var(--neutrals-color-neutral-1);
+
+  a {
+    line-height: 3.5em;
+    padding: 0 6px;
+  }
+  padding: 0 6px;
+}
+.scopesList {
+  display: flex;
+  width: 50%;
+  line-height: 40px;
+}
+
+.scopeLinks {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  
+  
+}
+

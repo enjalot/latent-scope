@@ -1,5 +1,5 @@
 .filter-data-table {
-  width: calc(100% - 14px);
+  width: calc(100% - 2px);
   display: flex;
   flex-direction: column;
   padding-top: 12px;

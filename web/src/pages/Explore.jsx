@@ -380,6 +380,42 @@ function Explore() {
   const containerRef = useRef(null);
   const filtersContainerRef = useRef(null);
 
+  const [filtersHeight, setFiltersHeight] = useState(250);
+  const FILTERS_PADDING = 62;
+  const tableHeight = useMemo(
+    () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
+    [filtersHeight],
+  );
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { height } = entry.contentRect;
+        setFiltersHeight(height);
+      }
+    });
+
+    let node = filtersContainerRef?.current;
+    if (node) {
+      resizeObserver.observe(node);
+    } else {
+      setTimeout(() => {
+        node = filtersContainerRef?.current;
+        if (node) {
+          resizeObserver.observe(node);
+        } else {
+          setFiltersHeight(0)
+        }
+      }, 100);
+    }
+
+    return () => {
+      if (node) {
+        resizeObserver.unobserve(node);
+      }
+    };
+  }, []);
+
   if (!dataset) return <div>Loading...</div>;
 
   return (
@@ -646,6 +682,7 @@ function Explore() {
         </div>
 
         <FilterDataTable
+          height={tableHeight}
           dataset={dataset}
           scope={scope}
           indices={intersectedIndices}

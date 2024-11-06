@@ -135,6 +135,7 @@ FilterDataTable.propTypes = {
 };
 
 function FilterDataTable({
+  height,
   dataset,
   scope,
   indices = [], 
@@ -144,6 +145,7 @@ function FilterDataTable({
   tagset,
   showEmbeddings = null,
   showDifference = null,
+  showNavigation = true,
   onTagset,
   onScope,
   onHover, 
@@ -151,39 +153,7 @@ function FilterDataTable({
   onRows,
   filtersContainerRef,
 }) {
-  const [filtersHeight, setFiltersHeight] = useState(250);
-  const FILTERS_PADDING = 62;
-  const height = useMemo(
-    () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
-    [filtersHeight],
-  );
-
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        const { height } = entry.contentRect;
-        setFiltersHeight(height);
-      }
-    });
-
-    let node = filtersContainerRef.current;
-    if (node) {
-      resizeObserver.observe(node);
-    } else {
-      setTimeout(() => {
-        node = filtersContainerRef.current;
-        if (node) {
-          resizeObserver.observe(node);
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (node) {
-        resizeObserver.unobserve(node);
-      }
-    };
-  }, []);
+  
 
   const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
@@ -199,6 +169,7 @@ function FilterDataTable({
   // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
   const [highlightColumn, setHighlightColumn] = useState(null)
   useEffect(() => {
+    console.log("changed?", dataset)
     setHighlightColumn(dataset?.text_column || null)
   }, [dataset])
 
@@ -266,7 +237,7 @@ function FilterDataTable({
       .then(response => response.json())
       .then(data => {
         let { rows, totalPages, total } = data;
-        console.log("rows", rows)
+        // console.log("rows", rows)
         // console.log("pages", totalPages, total)
         setPageCount(totalPages)
 
@@ -301,7 +272,7 @@ function FilterDataTable({
       let columns = ["ls_index"]
       if(distances && distances.length) columns.push("ls_similarity")
       if(showEmbeddings) columns.push("ls_embedding")
-      if(scope) columns.push("ls_cluster")
+      if(clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
       if(tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
@@ -352,7 +323,7 @@ function FilterDataTable({
                 e.preventDefault()
                 
               }}>
-                <select value={value?.cluster} onChange={(e) => {
+                {scope ? <select value={value?.cluster} onChange={(e) => {
                   e.stopPropagation()
                   e.preventDefault()
                   console.log("was cluster", value)
@@ -377,7 +348,7 @@ function FilterDataTable({
                   {clusterLabels.map((c,i) => {
                     return <option key={i} value={c.cluster}>{c.cluster}: {c.label}</option>
                   })}
-                </select>
+                </select> : <span>{value}</span>}
               </div>
               // return <span>{value.cluster}: {value.label}</span>
             } if(c === "ls_embedding") {
@@ -432,7 +403,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
 
 
   const [columnFilters, setColumnFilters] = useState([])
@@ -571,7 +542,7 @@ function FilterDataTable({
         </tbody>
       </table>
       </div>
-      <div className="filter-data-table-page-controls">
+      {showNavigation && <div className="filter-data-table-page-controls">
         <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
           First
         </button>
@@ -587,7 +558,7 @@ function FilterDataTable({
         <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
           Last
         </button>
-      </div>
+      </div>}
     </div>
   )
 }
