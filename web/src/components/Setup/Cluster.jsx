@@ -41,6 +41,7 @@ function Cluster() {
     } else {
       setEmbedding(embeddings?.[0])
     }
+    debugger;
     if(scope?.umap_id) {
       const um = umaps.find(u => u.id == scope.umap_id)
       setUmap(um)
@@ -131,7 +132,7 @@ function Cluster() {
                 The cluster selection epsilon parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
               </Tooltip>
             </label>
-            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={!!clusterJob || !cluster} text="New Clusters" />
+            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={false} text="New Clusters" />
           </form>
 
           <JobProgress job={clusterJob} clearJob={() => setClusterJob(null)} />
