@@ -168,6 +168,10 @@ export const apiService = {
   fetchSaes: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/saes`)
       .then(response => response.json())
+  },
+  fetchSae: async (datasetId, saeId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/saes/${saeId}`)
+      .then(response => response.json())
   }
 }
 

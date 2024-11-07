@@ -1,5 +1,6 @@
 import { processHulls } from '../utils';
 import { useState, useCallback, useEffect } from 'react';
+import { apiService } from '../lib/apiService';
 
 const useScopeData = (apiUrl, datasetId, scope) => {
     const [clusterMap, setClusterMap] = useState({});
@@ -15,8 +16,9 @@ const useScopeData = (apiUrl, datasetId, scope) => {
     const [sae, setSae] = useState(null)
     useEffect(() => {
         if(scope?.sae_id) {
-            // TODO: fetch the SAE metadata via API
-            setSae({id: scope.sae_id})
+            apiService.fetchSae(datasetId, scope.sae_id).then(sae => {
+                setSae(sae)
+            })
         }
     }, [scope])
 

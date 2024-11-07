@@ -131,7 +131,7 @@ function Cluster() {
                 The cluster selection epsilon parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
               </Tooltip>
             </label>
-            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={!!clusterJob || !cluster} text="New Clusters" />
+            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={!!clusterJob} text="New Clusters" />
           </form>
 
           <JobProgress job={clusterJob} clearJob={() => setClusterJob(null)} />

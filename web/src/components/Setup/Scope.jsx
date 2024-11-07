@@ -162,9 +162,9 @@ function Scope() {
       label: data.get('label'),
       description: data.get('description')
     };
-    // if(sae) {
-    //   payload.sae_id = sae.id
-    // }
+    if(scope.sae_id) {
+      payload.sae_id = scope.sae_id
+    }
 
     console.log("action", action)
     if(action == "save") {
