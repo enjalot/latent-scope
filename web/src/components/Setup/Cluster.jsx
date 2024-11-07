@@ -100,6 +100,8 @@ function Cluster() {
     goToNextStep()
   }, [updateScope, goToNextStep, cluster, savedScope])
 
+  console.log({ cluster, clusters, umap })
+
   return (
     <div className={styles["cluster"]}>
       <div className={styles["cluster-setup"]}>

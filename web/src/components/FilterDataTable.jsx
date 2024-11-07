@@ -100,15 +100,15 @@ const TableCell = memo(({ cell }) => {
 TableCell.displayName = 'TableCell';
 
 // Memoized TableRow component
-const TableRow = memo(({ row, onHover, onClick, collapse=false }) => {
+const TableRow = memo(({ row, onHover, onClick, collapse = false, lsIndexCol }) => {
   return (
     <tr
       style={{  visibility: collapse ? 'collapse' : '' }}
       key={row.id}
       onMouseEnter={() => {
-        onHover && onHover(row.getValue("0"));
+        onHover && onHover(row.getValue(lsIndexCol));
       }}
-      onClick={() => onClick && onClick(row.getValue("0"))}
+      onClick={() => onClick && onClick(row.getValue(lsIndexCol))}
     >
       {row.getVisibleCells().map(cell => (
         <TableCell key={cell.id} cell={cell} />
@@ -265,11 +265,16 @@ function FilterDataTable({
     }
   }, [dataset, distances, clusterMap, currentPage, showEmbeddings])
 
+  const lsIndexCol = editMode ? "1" : "0";
+
   useEffect(() => {
-    if(dataset) {
-      // console.log("refetching hydrate", indices, dataset)
-      // console.log("Tagset", tagset)
-      let columns = ["ls_index"]
+    if (dataset) {
+      let columns;
+      if (editMode) {
+        columns = ["selection", "ls_index"]
+      } else {
+        columns = ["ls_index"]
+      }
       if(distances && distances.length) columns.push("ls_similarity")
       if(showEmbeddings) columns.push("ls_embedding")
       if(clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
@@ -277,7 +282,27 @@ function FilterDataTable({
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
       let columnDefs = columns.map((c, i) => {
-      // let columns = dataset.columns.map((c, i) => {
+        if (c === "selection") {
+          return {
+            id: "selection",
+            header: ({ table }) => (
+              <input
+                type="checkbox"
+                checked={table.getIsAllRowsSelected()}
+                onChange={table.getToggleAllRowsSelectedHandler()}
+              />
+            ),
+            cell: ({ row }) => (
+              <input
+                type="checkbox"
+                checked={row.getIsSelected()}
+                onChange={row.getToggleSelectedHandler()}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ),
+            enableSorting: false,
+          }
+        }
         const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
         // console.log("COLUMN", c, metadata)
         return {
@@ -285,7 +310,7 @@ function FilterDataTable({
           cell: info => {
             const value = info.getValue();
             let val = value;
-            let idx = info.row.getValue("0")
+            let idx = info.row.getValue(lsIndexCol);
             // If metadata specifies image, render as an image tag
             if (metadata?.image) {
               return <a href={value} target="_blank" rel="noreferrer"><img src={value} alt="" style={{ height: '100px' }} /></a>;
@@ -410,12 +435,15 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
   // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference, editMode])
 
 
   const [columnFilters, setColumnFilters] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
 
+
+  // Add rowSelection state
+  const [rowSelection, setRowSelection] = useState({})
 
   const table = useReactTable({
     data: rows,
@@ -426,10 +454,10 @@ function FilterDataTable({
     state: {
       columnFilters,
       globalFilter,
-      // pagination: {
-      //   pageSize: 100,
-      // },
+      rowSelection: {},
     },
+    enableRowSelection: editMode,
+    onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: fuzzyFilter,
@@ -517,6 +545,8 @@ function FilterDataTable({
   };
   }, []);
 
+
+
   return (
     <div className="filter-data-table" style={{  height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
       {/* Fixed Header */}
@@ -526,7 +556,7 @@ function FilterDataTable({
           {/* the hidden table body to make sure header rows are proper size */}
         <tbody>
            {table.getRowModel().rows.map(row => (
-            <TableRow key={row.id} row={row} collapse={true} />
+             <TableRow key={row.id} row={row} collapse={true} lsIndexCol={lsIndexCol} />
           ))}
         </tbody>
       </table>
@@ -544,7 +574,7 @@ function FilterDataTable({
         </thead>
         <tbody>
           {table.getRowModel().rows.map(row => (
-            <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} />
+            <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} lsIndexCol={lsIndexCol} />
           ))}
         </tbody>
       </table>
