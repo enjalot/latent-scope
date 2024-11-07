@@ -6,12 +6,15 @@ import {
   useRef,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+const { asyncBufferFromUrl, parquetRead } = await import('hyparquet')
 
 import "./Explore.css";
 import useCurrentScope from "../hooks/useCurrentScope";
 import useNearestNeighborsSearch from '../hooks/useNearestNeighborsSearch';
 import useScopeData from "../hooks/useScopeData";
 import useColumnFilter from "../hooks/useColumnFilter";
+import { saeAvailable } from "../lib/SAE";
+import { apiUrl } from "../lib/apiService";
 
 import ScopeHeader from "../components/Explore/ScopeHeader";
 import VisualizationPane from "../components/Explore/VisualizationPane";
@@ -26,10 +29,6 @@ import Clustering from "../components/Bulk/Clustering";
 import Deleting from "../components/Bulk/Deleting";
 
 
-
-
-const apiUrl = import.meta.env.VITE_API_URL;
-const readonly = import.meta.env.MODE == "read_only";
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -62,6 +61,40 @@ function Explore() {
   // TODO: the user should be able to highlight a feature
   // when passed to the data table it will show that feature first?
   const [feature, setFeature] = useState(-1)
+  const [features, setFeatures] = useState([])
+
+  useEffect(() => {
+    const asyncRead = async (meta) => {
+      console.log("META", meta)
+      const buffer = await asyncBufferFromUrl(meta.url)
+      parquetRead({
+        file: buffer,
+        onComplete: data => {
+          // let pts = []
+          // console.log("DATA", data)
+          let fts = data.map(f => {
+            // pts.push([f[2], f[3], parseInt(f[5])])
+            return {
+              feature: parseInt(f[0]),
+              max_activation: f[1],
+              label: f[6],
+              order: f[7],
+            }
+          })
+          // .filter(d => d.label.indexOf("linear") >= 0)
+          // .sort((a,b) => a.order - b.order)
+          console.log("FEATURES", fts)
+          setFeatures(fts)
+        }
+      })
+    }
+    if(sae && embeddings && scope) {
+      let embedding = embeddings.find(e => e.id == scope.embedding_id)
+      if(embedding) {
+        asyncRead(saeAvailable[embedding.model_id])
+      }
+    }
+  }, [scope, sae, embeddings])
 
  
   const hydrateIndices = useCallback(

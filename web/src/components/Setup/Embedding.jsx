@@ -10,6 +10,7 @@ import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
+import { saeAvailable } from '../../lib/SAE';
 
 import Sae from './Sae';
 import Preview from './Preview';
@@ -25,15 +26,6 @@ const debounce = (func, wait) => {
   };
 };
 
-const saeAvailable = {
-  "🤗-nomic-ai___nomic-embed-text-v1.5": {
-    "embedding_model_id": "🤗-nomic-ai___nomic-embed-text-v1.5",
-    "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
-    "k_expansion": "64_32"
-  },
-  // "🤗-sentence-transformers___all-MiniLM-L6-v2": {
-  // }
-}
 
 
 function Embedding() {
