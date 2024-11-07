@@ -41,7 +41,6 @@ function Cluster() {
     } else {
       setEmbedding(embeddings?.[0])
     }
-    debugger;
     if(scope?.umap_id) {
       const um = umaps.find(u => u.id == scope.umap_id)
       setUmap(um)
