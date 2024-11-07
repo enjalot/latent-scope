@@ -108,7 +108,7 @@ function Sae({ embedding, model }) {
       .then(saes => {
         setSaes(saes)
         if(saes.length) {
-          setSae(saes[0].id)
+          setSae(saes[0])
         }
       });
   }, [dataset, setSaes])
@@ -124,7 +124,7 @@ function Sae({ embedding, model }) {
           } else if(saeJob.job_name == "rm") {
             s = saes[saes.length - 1]
           }
-          setSae(s?.id)
+          setSae(s)
         });
     }
   }, [saeJob, dataset, setSaes, setSae])
@@ -146,6 +146,10 @@ function Sae({ embedding, model }) {
   // const handleModelSelectChange = (selectedOption) => {
   //   setModel(selectedOption);
   // };
+  useEffect(() => {
+    console.log("SAE", sae)
+    console.log("SAES", saes)
+  }, [sae, saes])
 
   return (
     <div className={styles["sae"]}>
@@ -179,14 +183,16 @@ function Sae({ embedding, model }) {
 
       {/* Render the list of existing embeddings */}
       <div className={styles["saes-list"]}>
-      {saes.map((sae, index) => {
-        // let umps = umaps.filter(d => d.sae_id == sae.id)
-        // let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0)
+      {/* {saes && saes.map((sae, index) => { */}
+        {/* // let umps = umaps.filter(d => d.sae_id == sae.id)
+        // let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0) */}
 
-        return (
-        <div className={styles["item"]} key={index}>
+        {/* return ( */}
+        {sae ? 
+        // <div className={styles["item"]} key={index}>
+        <div className={styles["item"]} key={sae.id}>
           {/* <input type="radio" id={`sae${index}`} name="sae" value={sae.id} checked={sae.id === sae?.id} onChange={() => setSae(sae)} /> */}
-          <label htmlFor={`sae${index}`}>
+          <label htmlFor={`sae${sae.id}`}>
             <span>
               <span>{sae.id} - {sae.num_features} features</span>
               {/* <span>{sae.id} - {sae.num_features} features, {sae.model_id} {sae.k_expansion} </span> */}
@@ -201,9 +207,10 @@ function Sae({ embedding, model }) {
             text="🗑️"
             />
         </div>
-      )}
-    )}
-    <br></br>
+      // )}
+        : null}
+      {/* )} */}
+      <br></br>
     </div>
     </div>
   );

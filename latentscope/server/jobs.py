@@ -242,6 +242,8 @@ def delete_embedding():
     
     # Get a list of all the saes that have embedding_id in their .json so we can delete them too
     sae_dir = os.path.join(DATA_DIR, dataset, 'sae')
+    if not os.path.exists(sae_dir):
+        os.makedirs(sae_dir)
     saes_to_delete = []
     for file in os.listdir(sae_dir):
         if file.endswith(".json"):
