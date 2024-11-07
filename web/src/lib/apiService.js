@@ -164,6 +164,10 @@ export const apiService = {
   updateScopeLabelDescription: async (datasetId, scopeId, label, description) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/description?label=${label}&description=${description}`)
       .then(response => response.json())
+  },
+  fetchSaes: async (datasetId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/saes`)
+      .then(response => response.json())
   }
 }
 
