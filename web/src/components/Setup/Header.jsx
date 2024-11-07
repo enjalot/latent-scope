@@ -27,7 +27,7 @@ function Header() {
               {scopes ?
                 <Select
                   onChange={(e) => {
-                    navigate(`/datasets/${dataset?.id}/setup2/${e.target.value}`)
+                    navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)
                   }}
                   options={[{ label: "New scope", value: "" }, ...scopes.map(s => ({ label: `${s.label} (${s.id})`, value: s.id }))]}
                   value={scope?.id || ""}

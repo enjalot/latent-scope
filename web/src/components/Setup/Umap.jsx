@@ -155,6 +155,10 @@ function Umap({}) {
                   A smaller value will result in a more clustered UMAP, while a larger value will result in a more spread out UMAP.
                 </Tooltip>
               </label>
+              <label>
+                <span className={styles["umap-form-label"]}>Seed: </span>
+                <input type="text" name="seed" defaultValue="-1" disabled={!!umapJob} />
+              </label>
           
           <div className={styles["umap-form-align"]}>
             <Switch onChange={toggleShowAlign} color="secondary" label="Align UMAP"/>
@@ -181,7 +185,7 @@ function Umap({}) {
           </div>}
 
           {!showAlign && <div className={styles["umap-form-save"]}>
-            <Switch onChange={toggleSave} color="secondary" label="Save UMAP"/>
+            <Switch onChange={toggleSave} color="secondary" label="Save UMAP model"/>
             <span className="tooltip" data-tooltip-id="save-umap">🤔</span>
             <Tooltip id="save-umap" place="top" effect="solid" className={styles["tooltip"]}>
               Saving a UMAP model will allow you to project new data (from the same embedding model) onto it later. 
