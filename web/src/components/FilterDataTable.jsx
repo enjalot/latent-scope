@@ -61,7 +61,7 @@ const TableHeader = memo(({ table, highlightColumn, columns }) => {
   return (
     <thead>
       {table.getHeaderGroups().map(headerGroup => (
-        <tr key={headerGroup.id} style={{ backgroundColor: '#f9f9f9' }}>
+        <tr key={headerGroup.id}>
           {headerGroup.headers.map(header => (
             <th key={header.id} colSpan={header.colSpan} style={{
               backgroundColor: header.column.columnDef.accessorKey === highlightColumn ? '#d3d3d3' : '', 
@@ -151,7 +151,7 @@ function FilterDataTable({
   onHover, 
   onClick, 
   onRows,
-  filtersContainerRef,
+  editMode = false,
 }) {
   
 
@@ -306,15 +306,22 @@ function FilterDataTable({
             if(c === "tags") {
               
               return <div className="tags">
-                {tags.map(t => {
-                  let ti = tagset[t]?.indexOf(idx) >= 0
-                  // console.log(t, ti, idx)
-                  return <button className={ti ? 'tag-active' : 'tag-inactive'} key={t} onClick={(e) => {
+                {tags.filter(t => tagset[t]?.indexOf(idx) >= 0).map(t => {
+                  return <button className="tag-active" key={t} onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     handleTagClick(t, idx)
                   }}>{t}</button>
                 })}
+                {/* {tags.map(t => {
+                  let ti = tagset[t]?.indexOf(idx) >= 0
+                  // console.log(t, ti, idx)
+                  return <button title="add tag" className={ti ? 'tag-active' : 'tag-inactive'} key={t} onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleTagClick(t, idx)
+                  }}>{t}</button>
+                })} */}
               </div>
             }
             if(c === "ls_cluster") {
@@ -547,13 +554,13 @@ function FilterDataTable({
           First
         </button>
         <button onClick={() => setCurrentPage(old => Math.max(0, old - 1))} disabled={currentPage === 0}>
-          Previous
+          ←
         </button>
         <span>
           Page {currentPage + 1} of {pageCount || 1}
         </span>
         <button onClick={() => setCurrentPage(old => Math.min(pageCount - 1, old + 1))} disabled={currentPage === pageCount - 1}>
-          Next
+          →
         </button>
         <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
           Last
