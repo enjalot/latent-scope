@@ -140,26 +140,6 @@ function Explore() {
   // ====================================================================================================
   // Tags
   // ====================================================================================================
-  // const [tagset, setTagset] = useState({});
-
-  // const fetchTagSet = useCallback(() => {
-  //   fetch(`${apiUrl}/tags?dataset=${datasetId}`)
-  //     .then((response) => response.json())
-  //     .then((data) => setTagset(data));
-  // }, [datasetId, setTagset]);
-
-  // useEffect(() => {
-  //   fetchTagSet();
-  // }, [fetchTagSet]);
-
-  // const tags = useMemo(() => {
-  //   const tags = [];
-  //   for (const tag in tagset) {
-  //     tags.push(tag);
-  //   }
-  //   // console.log("tagset", tagset, tags)
-  //   return tags;
-  // }, [tagset]);
 
   const [tag, setTag] = useState(tags[0]);
 
@@ -610,12 +590,13 @@ function Explore() {
             <div className="filter-cell middle intersected-count">
               <span>{intersectedIndices.length} rows</span>
             </div>
-            <div className="filter-cell right" />
+            {/* <div className="filter-cell right" /> */}
 
-            {/* <div className="filter-cell right bulk-actions">
+            <div className="filter-cell right bulk-actions">
               <div className="bulk-actions-buttons">
                 Bulk Actions:
                 <button
+                  title="Tag rows"
                   className={`bulk ${bulkAction == "tag" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "tag"
@@ -626,6 +607,7 @@ function Explore() {
                   🏷️
                 </button>
                 <button
+                  title="Cluster rows"
                   className={`bulk ${bulkAction == "cluster" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "cluster"
@@ -636,6 +618,7 @@ function Explore() {
                   ️📍
                 </button>
                 <button
+                  title="Delete rows"
                   className={`bulk ${bulkAction == "delete" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "delete"
@@ -683,7 +666,7 @@ function Explore() {
                   />
                 ) : null}
               </div>
-            </div> */}
+            </div>
           </div>
 
           {/* <div className="filter-row embeddings-controls">
