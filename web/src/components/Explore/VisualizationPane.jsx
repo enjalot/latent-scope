@@ -141,6 +141,7 @@ function VisualizationPane({
                           fill="lightgray"
                           stroke="gray"
                           strokeWidth={2}
+                          opacity={0.25}
                         // fill="#f0f0f0"
                           duration={0}
                           xDomain={xDomain}
@@ -159,7 +160,7 @@ function VisualizationPane({
                           fill="darkgray"
                           stroke="gray"
                           strokeWidth={2}
-                          strokeWidth={2}
+                          opacity={0.35}
                           duration={0}
                           xDomain={xDomain}
                           yDomain={yDomain}
@@ -183,7 +184,7 @@ function VisualizationPane({
                   />
               )} */}
 
-              <AnnotationPlot
+              {/* <AnnotationPlot
                   points={intersectedAnnotations}
                   stroke="black"
                   fill="steelblue"
@@ -192,7 +193,7 @@ function VisualizationPane({
                   yDomain={yDomain}
                   width={width}
                   height={height}
-              />
+              /> */}
 
               <AnnotationPlot
                   points={hoverAnnotations}

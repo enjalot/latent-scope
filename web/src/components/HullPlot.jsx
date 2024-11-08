@@ -17,6 +17,7 @@ const HullPlot = ({
   delay = 0,
   duration = 2000,
   strokeWidth,
+  opacity = 0.75,
   symbol,
   xDomain,
   yDomain,
@@ -86,14 +87,14 @@ const HullPlot = ({
         //   .delay(delay + 100)
         //   .duration(duration - 100)
         //   .ease(easeExpOut)
-          .style("opacity", 0.75)
+          .style("opacity", opacity)
 
     const update = sel
       // .transition() 
       // .duration(duration)
       // .delay(delay)
       // .ease(easeCubicInOut)
-      .style("opacity", 0.75)
+      .style("opacity", opacity)
       .attr("d", draw)
       // .attrTween("d", function(d,i) {
       //   // console.log("d,i", d, i)
@@ -156,7 +157,7 @@ const HullPlot = ({
         .style("fill", fill)
         .style("stroke", stroke)
         .attr("stroke-width", scaledStrokeWidth)
-        .style("opacity", 0.75)
+        .style("opacity", opacity)
 
     sel.exit().remove()
 
@@ -164,7 +165,7 @@ const HullPlot = ({
       .style("fill", fill)
       .style("stroke", stroke)
       .attr("stroke-width", scaledStrokeWidth)
-      .style("opacity", 0.75)
+      .style("opacity", opacity)
 
   }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height])
 
