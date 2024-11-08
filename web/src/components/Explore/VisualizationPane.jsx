@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import Scatter from "../Scatter";
 import AnnotationPlot from "../AnnotationPlot";
 import HullPlot from "../HullPlot";
+import { Tooltip } from "react-tooltip";
 import { processHulls, isMobileDevice } from "../../utils";
 import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey, mapSelectionOpacity, mapPointSizeRange } from "../../lib/colors";
 
@@ -66,6 +67,34 @@ function VisualizationPane({
             }
         })
     }, [drawPoints, intersectedIndices])
+
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    // TODO: calculate these properly
+    const heightOffset = 320
+    const umapHeight = 450
+    // const umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
+    useEffect(() => {
+        if(hovered) {
+            console.log("hovered", hovered)
+            const point = drawPoints[hovered.index] // TODO: check the inputToScopeIndexMap
+            if (point && xDomain && yDomain) {
+                let px = point[0]
+                if(px < xDomain[0]) px = xDomain[0]
+                if(px > xDomain[1]) px = xDomain[1]
+                let py = point[1]
+                if(py < yDomain[0]) py = yDomain[0]
+                if(py > yDomain[1]) py = yDomain[1]
+                const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
+                // let umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
+                const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (umapHeight) + heightOffset // + umapHeightOffset
+                console.log("xPos", xPos, "yPos", yPos)
+                setTooltipPosition({ 
+                  x: xPos,
+                  y: yPos
+                });
+              }
+        }
+    }, [hovered, drawPoints, xDomain, yDomain, width, heightOffset, umapHeight])
 
     return (
         <div className="umap-container">
@@ -178,7 +207,44 @@ function VisualizationPane({
           </div>
 
           {/* Hover information display */}
-          {!isMobileDevice() && (
+          {hovered&& <div
+            data-tooltip-id="featureTooltip"
+            style={{
+                position: 'absolute',
+                left: tooltipPosition.x,
+                top: tooltipPosition.y,
+                pointerEvents: 'none',
+            }}
+            ></div> }
+            {hovered && <Tooltip id="featureTooltip" 
+                isOpen={hovered !== null}
+                delayShow={0}
+                delayHide={0}
+                delayUpdate={0}
+                style={{
+                    position: 'absolute',
+                    left: tooltipPosition.x,
+                    top: tooltipPosition.y,
+                    pointerEvents: 'none',
+                    maxWidth: "400px",
+                    backgroundColor: hovered?.ls_search_index >= 0 ? "#111" : "#666"
+                }}
+            >
+                <div className="tooltip-content">
+                    {/* {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null} */}
+                    {hoveredCluster && (
+                        <span>
+                            <span className="key">Cluster {hoveredCluster.cluster}: </span>
+                            <span className="value">{hoveredCluster.label}</span>
+                        </span>
+                    )}
+                    <br></br>
+                    <span>Index: {hovered.index}</span>
+                    <p>{hovered[scope?.embedding?.text_column]}</p>
+                </div>
+            </Tooltip> }
+
+          {/* {!isMobileDevice() && (
               <div className="hovered-point">
                   {hoveredCluster && (
                       <span>
@@ -228,7 +294,7 @@ function VisualizationPane({
                 );
             })}
               </div>
-          )}
+          )} */}
       </div>
   );
 }
