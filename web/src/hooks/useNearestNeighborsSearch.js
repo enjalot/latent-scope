@@ -43,7 +43,8 @@ export default function useNearestNeighborsSearch({
                     .filter((idx) => inputToScopeIndexMap[idx] >= 0);
 
                 setDistances(dists);
-                setSearchIndices(inds);
+                // TODO: make the # of results configurable
+                setSearchIndices(inds.slice(0, 10));
                 onSearchEmbedding?.(data.search_embedding[0]);
             } catch (error) {
                 console.error('Search failed:', error);
