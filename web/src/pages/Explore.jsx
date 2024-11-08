@@ -361,6 +361,8 @@ function Explore() {
     // console.log("searchIndices", searchIndices)
     // console.log("tag", tag)
     // console.log("tagset", tagset[tag])
+
+    // these are all in the original scope space
     const filteredClusterIndices = scopeRows
       .filter((d) => d.cluster == slide?.cluster)
       .map((d) => d.ls_index);
@@ -480,6 +482,7 @@ function Explore() {
             scope={scope}
             containerRef={containerRef}
             inputToScopeIndexMap={inputToScopeIndexMap}
+            scopeToInputIndexMap={scopeToInputIndexMap}
             onScatter={setScatter}
             onSelect={handleSelected}
             onHover={handleHover}

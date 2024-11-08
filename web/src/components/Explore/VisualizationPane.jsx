@@ -23,6 +23,7 @@ function VisualizationPane({
     slide,
     scope,
     inputToScopeIndexMap,
+    scopeToInputIndexMap,
     onScatter,
     onSelect,
     onHover,
@@ -58,9 +59,12 @@ function VisualizationPane({
     const [width, height] = size;
 
     const drawingPoints = useMemo(() => {
+        // intersectedIndicies is in the original dataset space
+        // drawPoints are in the current scope space (w/ possible row deletions)
+        // need to convert intersectedIndices to the current scope space
         if(!intersectedIndices?.length) return drawPoints
         return drawPoints.map((p, i) => {
-            if (intersectedIndices?.includes(inputToScopeIndexMap[i])) {
+            if (intersectedIndices?.includes(scopeToInputIndexMap[i])) {
                 return [p[0], p[1], 1, p[2]]
             } else {
                 return [p[0], p[1], 2, p[2]]
