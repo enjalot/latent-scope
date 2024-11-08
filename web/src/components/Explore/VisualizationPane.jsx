@@ -59,7 +59,7 @@ function VisualizationPane({
     const drawingPoints = useMemo(() => {
         if(!intersectedIndices?.length) return drawPoints
         return drawPoints.map((p, i) => {
-            if (intersectedIndices?.includes(i)) {
+            if (intersectedIndices?.includes(inputToScopeIndexMap[i])) {
                 return [p[0], p[1], 1, p[2]]
             } else {
                 return [p[0], p[1], 2, p[2]]
