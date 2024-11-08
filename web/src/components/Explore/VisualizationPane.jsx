@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import Scatter from "../Scatter";
 import AnnotationPlot from "../AnnotationPlot";
 import HullPlot from "../HullPlot";
 import { processHulls, isMobileDevice } from "../../utils";
+import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey, mapSelectionOpacity, mapPointSizeRange } from "../../lib/colors";
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -15,6 +16,7 @@ function VisualizationPane({
     drawPoints,
     hulls,
     hoverAnnotations,
+    intersectedIndices,
     intersectedAnnotations,
     hoveredCluster,
     slide,
@@ -54,16 +56,32 @@ function VisualizationPane({
 
     const [width, height] = size;
 
+    const drawingPoints = useMemo(() => {
+        if(!intersectedIndices?.length) return drawPoints
+        return drawPoints.map((p, i) => {
+            if (intersectedIndices?.includes(i)) {
+                return [p[0], p[1], 1, p[2]]
+            } else {
+                return [p[0], p[1], 2, p[2]]
+            }
+        })
+    }, [drawPoints, intersectedIndices])
+
     return (
         <div className="umap-container">
             <div className="scatters" style={{ width, height }}>
                 {!isIOS() && scope ? (
                     <Scatter
-                        points={drawPoints}
+                        points={drawingPoints}
                         duration={2000}
                         width={width}
                         height={height}
                         colorScaleType="categorical"
+                        colorRange={mapSelectionColorsLight}
+                        colorDomain={mapSelectionDomain}
+                        opacityRange={mapSelectionOpacity}
+                        pointSizeRange={mapPointSizeRange}
+                        opacityBy="valueA"
                         onScatter={onScatter}
                         onView={handleView}
                         onSelect={onSelect}
@@ -92,6 +110,8 @@ function VisualizationPane({
                               inputToScopeIndexMap,
                           )}
                           fill="lightgray"
+                          stroke="gray"
+                          strokeWidth={2}
                         // fill="#f0f0f0"
                           duration={0}
                           xDomain={xDomain}
@@ -108,6 +128,8 @@ function VisualizationPane({
                       <HullPlot
                           hulls={processHulls([slide], points, inputToScopeIndexMap)}
                           fill="darkgray"
+                          stroke="gray"
+                          strokeWidth={2}
                           strokeWidth={2}
                           duration={0}
                           xDomain={xDomain}
@@ -117,7 +139,8 @@ function VisualizationPane({
                       />
                   )}
 
-              {hulls.length && !scope.ignore_hulls && (
+                {/* show all the hulls */}
+              {/* {hulls.length && !scope.ignore_hulls && (
                   <HullPlot
                       hulls={hulls}
                         stroke="#9d9d9d"
@@ -129,7 +152,7 @@ function VisualizationPane({
                       width={width}
                       height={height}
                   />
-              )}
+              )} */}
 
               <AnnotationPlot
                   points={intersectedAnnotations}

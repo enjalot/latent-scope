@@ -43,7 +43,8 @@ const useScopeData = (apiUrl, datasetId, scope) => {
                 const pts = scopeRows.map((d) => [d.x, d.y]);
                 setPoints(pts);
 
-                const dpts = scopeRows.map((d, i) => [d.x, d.y, d.cluster]);
+                // const dpts = scopeRows.map((d, i) => [d.x, d.y, d.cluster]);
+                const dpts = scopeRows.map((d, i) => [d.x, d.y, 0, d.cluster]);
                 setDrawPoints(dpts);
                 setHulls([]);
 

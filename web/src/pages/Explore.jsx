@@ -231,7 +231,7 @@ function Explore() {
   useEffect(() => {
     if (slide) {
       // const annots = slide.indices.map(index => points[index])
-      const annots = drawPoints.filter((p) => p[2] == slide.cluster);
+      const annots = drawPoints.filter((p) => p[3] == slide.cluster);
       setSlideAnnotations(annots);
     } else {
       setSlideAnnotations([]);
@@ -471,9 +471,9 @@ function Explore() {
             points={points}
             drawPoints={drawPoints}
             hulls={hulls}
-            selectedIndices={selectedIndices}
             hoveredIndex={hoveredIndex}
             hoverAnnotations={hoverAnnotations}
+            intersectedIndices={intersectedIndices}
             intersectedAnnotations={intersectedAnnotations}
             hoveredCluster={hoveredCluster}
             slide={slide}
