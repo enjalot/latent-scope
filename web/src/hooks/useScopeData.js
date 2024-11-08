@@ -17,6 +17,7 @@ const useScopeData = (apiUrl, datasetId, scope) => {
     useEffect(() => {
         if(scope?.sae_id) {
             apiService.fetchSae(datasetId, scope.sae_id).then(sae => {
+                console.log("SAE", sae)
                 setSae(sae)
             })
         }

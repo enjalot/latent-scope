@@ -45,7 +45,7 @@ function Scope() {
     } else {
       setPreviewLabel(null)
     }
-  }, [scope])
+  }, [scope, setPreviewLabel])
 
   // Fetch initial data
   useEffect(() => {
@@ -172,7 +172,7 @@ function Scope() {
     }
     startScopeJob(payload)
 
-  }, [dataset, scope, cluster, clusterLabelSet, umap, embedding]);
+  }, [dataset, scope, cluster, clusterLabelSet, umap, embedding, startScopeJob]);
 
   const [isDifferent, setIsDifferent] = useState(false);
   const descriptionIsDifferent = useMemo(() => 
@@ -186,7 +186,9 @@ function Scope() {
       if(scope.embedding_id != savedScope?.embedding_id
         || scope.umap_id != savedScope?.umap_id
         || scope.cluster_id != savedScope?.cluster_id
-        || scope.cluster_labels_id != savedScope?.cluster_labels_id) {
+        || scope.cluster_labels_id != savedScope?.cluster_labels_id
+        || scope.sae_id != savedScope?.sae_id
+      ) {
         setIsDifferent(true);
       } else {
         setIsDifferent(false)
