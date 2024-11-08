@@ -11,19 +11,12 @@
 .filter-data-table-page-controls {
   margin-top: 0px;
   display: flex;
-    justify-content: center;
+  justify-content: center;
     align-items: center;
     gap: 4px;
-  }
-    .filter-data-table-page-controls-center {
-      flex-shrink: 0;
-      padding: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-grow: 1;
-      gap: 4px;
-    }
+  flex-shrink: 0;
+}
+
 .filter-data-table table {
   border-spacing: 0;
 }
@@ -62,8 +55,8 @@
 .edit-controls {
   position: fixed;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0%;
+    transform: translateX(-25%);
   background: white;
   padding: 10px 20px;
   border-radius: 8px;

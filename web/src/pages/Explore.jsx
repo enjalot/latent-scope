@@ -596,7 +596,7 @@ function Explore() {
               <div className="bulk-actions-buttons">
                 Bulk Actions:
                 <button
-                  title="Tag rows"
+                  title="Add tags to rows"
                   className={`bulk ${bulkAction == "tag" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "tag"
@@ -607,7 +607,7 @@ function Explore() {
                   🏷️
                 </button>
                 <button
-                  title="Cluster rows"
+                  title="Change cluster of rows"
                   className={`bulk ${bulkAction == "cluster" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "cluster"

@@ -151,9 +151,8 @@ function FilterDataTable({
   onHover,
   onClick,
   onRows,
-  editMode = false,
 }) {
-
+  const lsIndexCol = "0";
 
   const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
@@ -265,31 +264,15 @@ function FilterDataTable({
     }
   }, [dataset, distances, clusterMap, currentPage, showEmbeddings])
 
-  const lsIndexCol = editMode ? "1" : "0";
-
-  // Add rowSelection state
-  const [rowSelection, setRowSelection] = useState([])
-
-  // Add handler for "select all" functionality
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      // Select all rows by adding all IDs to selectedRows
-      const allIds = rows.map(row => row.id);
-      setRowSelection(allIds);
-    } else {
-      // Deselect all rows
-      setRowSelection([]);
-    }
-  };
 
   useEffect(() => {
     if (dataset) {
-      let columns;
-      if (editMode) {
-        columns = ["selection", "ls_index"]
-      } else {
-        columns = ["ls_index"]
-      }
+      let columns = ["ls_index"]
+      // if (editMode) {
+      //   columns = ["ls_index"]
+      // } else {
+      //   columns = ["ls_index"]
+      // }
       if (distances && distances.length) columns.push("ls_similarity")
       if (showEmbeddings) columns.push("ls_embedding")
       if (clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
@@ -303,17 +286,18 @@ function FilterDataTable({
             header: ({ table }) => (
               <input
                 type="checkbox"
-                checked={rowSelection.length > 0 && rowSelection.length === rows.length}
-                onChange={(e) => handleSelectAll(e.target.checked)}
+                // Check if we have any rows and if the number of selected rows equals total rows
+                checked={table.getIsAllRowsSelected()}
+                indeterminate={table.getIsSomeRowsSelected()}
+                onChange={table.getToggleAllRowsSelectedHandler()}
               />
             ),
             cell: ({ row }) => (
               <input
                 type="checkbox"
-                title="Edit row"
                 checked={row.getIsSelected()}
+                disabled={!row.getCanSelect()}
                 onChange={row.getToggleSelectedHandler()}
-                onClick={(e) => e.stopPropagation()}
               />
             ),
             enableSorting: false,
@@ -347,22 +331,22 @@ function FilterDataTable({
             if (c === "tags") {
 
               return <div className="tags">
-                {tags.filter(t => tagset[t]?.indexOf(idx) >= 0).map(t => {
+                {/* {tags.filter(t => tagset[t]?.indexOf(idx) >= 0).map(t => {
                   return <button className="tag-active" key={t} onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     handleTagClick(t, idx)
                   }}>{t}</button>
-                })}
-                {/* {tags.map(t => {
+                })} */}
+                {tags.map(t => {
                   let ti = tagset[t]?.indexOf(idx) >= 0
                   // console.log(t, ti, idx)
-                  return <button title="add tag" className={ti ? 'tag-active' : 'tag-inactive'} key={t} onClick={(e) => {
+                  return <button title={`add ${t} tag`} className={ti ? 'tag-active' : 'tag-inactive'} key={t} onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     handleTagClick(t, idx)
                   }}>{t}</button>
-                })} */}
+                })}
               </div>
             }
             if (c === "ls_cluster") {
@@ -451,7 +435,7 @@ function FilterDataTable({
     }
     hydrateIndices(indices)
     // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference, editMode, rowSelection])
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
 
 
   const [columnFilters, setColumnFilters] = useState([])
@@ -472,8 +456,6 @@ function FilterDataTable({
       globalFilter,
       rowSelection: {},
     },
-    enableRowSelection: editMode,
-    onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: fuzzyFilter,
@@ -566,17 +548,6 @@ function FilterDataTable({
   return (
     <div className="filter-data-table" style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
 
-      <div className={`edit-controls ${rowSelection.length > 0 ? 'visible' : ''}`}>
-        <span>{rowSelection.length} rows selected</span>
-        <button
-          onClick={() => {
-            // Handle edit action here
-            console.log('Editing rows:', rowSelection);
-          }}
-        >
-          Edit
-        </button>
-      </div>
 
       {/* Fixed Header */}
       <div className="filter-data-table-fixed-header" style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px` }} ref={headerRef}>
@@ -609,7 +580,6 @@ function FilterDataTable({
         </table>
       </div>
       {showNavigation && <div className="filter-data-table-page-controls">
-        <div className="filter-data-table-page-controls-center">
           <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
             First
           </button>
@@ -623,15 +593,8 @@ function FilterDataTable({
             →
           </button>
           <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
-            Last
-          </button>
-        </div>
-
-        <button style={{ marginLeft: 'auto' }} onClick={() => {
-        }}>
-          Edit
+          Last
         </button>
-
       </div>}
     </div>
   )
