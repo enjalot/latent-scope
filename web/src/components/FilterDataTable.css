@@ -52,24 +52,6 @@
   opacity: 0.5;
 }
 
-.edit-controls {
-  position: fixed;
-  bottom: 20px;
-  right: 0%;
-    transform: translateX(-25%);
-  background: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-  opacity: 0;
-  visibility: hidden;
-}
-
-.edit-controls.visible {
-  opacity: 1;
-  visibility: visible;
-}
 
 @media (prefers-color-scheme: dark) {
   

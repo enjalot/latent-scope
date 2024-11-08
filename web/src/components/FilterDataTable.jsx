@@ -280,29 +280,29 @@ function FilterDataTable({
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
       let columnDefs = columns.map((c, i) => {
-        if (c === "selection") {
-          return {
-            id: "selection",
-            header: ({ table }) => (
-              <input
-                type="checkbox"
-                // Check if we have any rows and if the number of selected rows equals total rows
-                checked={table.getIsAllRowsSelected()}
-                indeterminate={table.getIsSomeRowsSelected()}
-                onChange={table.getToggleAllRowsSelectedHandler()}
-              />
-            ),
-            cell: ({ row }) => (
-              <input
-                type="checkbox"
-                checked={row.getIsSelected()}
-                disabled={!row.getCanSelect()}
-                onChange={row.getToggleSelectedHandler()}
-              />
-            ),
-            enableSorting: false,
-          }
-        }
+        // if (c === "selection") {
+        //   return {
+        //     id: "selection",
+        //     header: ({ table }) => (
+        //       <input
+        //         type="checkbox"
+        //         // Check if we have any rows and if the number of selected rows equals total rows
+        //         checked={table.getIsAllRowsSelected()}
+        //         indeterminate={table.getIsSomeRowsSelected()}
+        //         onChange={table.getToggleAllRowsSelectedHandler()}
+        //       />
+        //     ),
+        //     cell: ({ row }) => (
+        //       <input
+        //         type="checkbox"
+        //         checked={row.getIsSelected()}
+        //         disabled={!row.getCanSelect()}
+        //         onChange={row.getToggleSelectedHandler()}
+        //       />
+        //     ),
+        //     enableSorting: false,
+        //   }
+        // }
         const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
         // console.log("COLUMN", c, metadata)
         return {

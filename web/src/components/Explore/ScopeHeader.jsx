@@ -31,15 +31,17 @@ function DatasetHeader({
             ))}
           </select>
 
-
-        </div>
-
-        {!readonly && (
+          {!readonly && (
             <>
+              <div style={{ display: 'flex', gap: '1rem' }}>
               <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>
               <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>
+              </div>
             </>
         )}
+        </div>
+
+
 
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
 
