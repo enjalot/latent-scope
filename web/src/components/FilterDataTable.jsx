@@ -8,10 +8,10 @@ const apiUrl = import.meta.env.VITE_API_URL
 import './FilterDataTable.css'
 
 import {
-//   Column,
-//   ColumnFiltersState,
-//   FilterFn,
-//   SortingFn,
+  //   Column,
+  //   ColumnFiltersState,
+  //   FilterFn,
+  //   SortingFn,
   // Table,
   createColumnHelper,
   flexRender,
@@ -61,10 +61,10 @@ const TableHeader = memo(({ table, highlightColumn, columns }) => {
   return (
     <thead>
       {table.getHeaderGroups().map(headerGroup => (
-        <tr key={headerGroup.id} style={{ backgroundColor: '#f9f9f9' }}>
+        <tr key={headerGroup.id}>
           {headerGroup.headers.map(header => (
             <th key={header.id} colSpan={header.colSpan} style={{
-              backgroundColor: header.column.columnDef.accessorKey === highlightColumn ? '#d3d3d3' : '', 
+              backgroundColor: header.column.columnDef.accessorKey === highlightColumn ? '#d3d3d3' : '',
             }}>
               {header.isPlaceholder ? null : (
                 <div
@@ -100,15 +100,15 @@ const TableCell = memo(({ cell }) => {
 TableCell.displayName = 'TableCell';
 
 // Memoized TableRow component
-const TableRow = memo(({ row, onHover, onClick, collapse=false }) => {
+const TableRow = memo(({ row, onHover, onClick, collapse = false, lsIndexCol }) => {
   return (
     <tr
-      style={{  visibility: collapse ? 'collapse' : '' }}
+      style={{ visibility: collapse ? 'collapse' : '' }}
       key={row.id}
       onMouseEnter={() => {
-        onHover && onHover(row.getValue("0"));
+        onHover && onHover(row.getValue(lsIndexCol));
       }}
-      onClick={() => onClick && onClick(row.getValue("0"))}
+      onClick={() => onClick && onClick(row.getValue(lsIndexCol))}
     >
       {row.getVisibleCells().map(cell => (
         <TableCell key={cell.id} cell={cell} />
@@ -138,10 +138,10 @@ function FilterDataTable({
   height,
   dataset,
   scope,
-  indices = [], 
-  distances = [], 
+  indices = [],
+  distances = [],
   clusterMap = {},
-  clusterLabels, 
+  clusterLabels,
   tagset,
   showEmbeddings = null,
   showDifference = null,
@@ -150,20 +150,19 @@ function FilterDataTable({
   feature = -1,
   onTagset,
   onScope,
-  onHover, 
-  onClick, 
+  onHover,
+  onClick,
   onRows,
-  filtersContainerRef,
 }) {
-  
+  const lsIndexCol = "0";
 
   const [columns, setColumns] = useState([])
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
 
-  useEffect(() =>{
-    if(onRows) {
+  useEffect(() => {
+    if (onRows) {
       onRows(rows)
     }
   }, [rows])
@@ -177,7 +176,7 @@ function FilterDataTable({
 
   const [tags, setTags] = useState([])
   useEffect(() => {
-    if(tagset){
+    if (tagset) {
       setTags(Object.keys(tagset))
     }
   }, [tagset])
@@ -185,7 +184,7 @@ function FilterDataTable({
   const [embeddingMinValues, setEmbeddingMinValues] = useState([])
   const [embeddingMaxValues, setEmbeddingMaxValues] = useState([])
   useEffect(() => {
-    if(dataset && showEmbeddings) {
+    if (dataset && showEmbeddings) {
       fetch(`${apiUrl}/datasets/${dataset.id}/embeddings/${showEmbeddings}`)
         .then(response => response.json())
         .then(data => {
@@ -201,7 +200,7 @@ function FilterDataTable({
     // console.log("index", index)
     // console.log("tagset", tagset)
     // console.log("tagset[tag]", tagset[tag])
-    if(tagset[tag].includes(index)) {
+    if (tagset[tag].includes(index)) {
       console.log("removing")
       fetch(`${apiUrl}/tags/remove?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
         .then(response => response.json())
@@ -222,56 +221,54 @@ function FilterDataTable({
 
   const hydrateIndices = useCallback((indices) => {
     // console.log("hydrate!", dataset)
-    if(dataset && indices.length) {
+    if (dataset && indices.length) {
       console.log("fetching query", dataset)
       fetch(`${apiUrl}/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          dataset: dataset.id, 
-          indices: indices, 
+        body: JSON.stringify({
+          dataset: dataset.id,
+          indices: indices,
           embedding_id: showEmbeddings,
           page: currentPage,
           sae_id: sae_id,
         }),
       })
-      .then(response => response.json())
-      .then(data => {
-        let { rows, totalPages, total } = data;
-        // console.log("rows", rows)
-        // console.log("pages", totalPages, total)
-        setPageCount(totalPages)
+        .then(response => response.json())
+        .then(data => {
+          let { rows, totalPages, total } = data;
+          // console.log("rows", rows)
+          // console.log("pages", totalPages, total)
+          setPageCount(totalPages)
 
-        if(Object.keys(clusterMap).length){
-          rows.forEach(r => {
-            let ri = r["ls_index"]
-            let cluster = clusterMap[ri]
-            if(cluster) {
-              r["ls_cluster"] = cluster
-            }
-          })
-        }
+          if (Object.keys(clusterMap).length) {
+            rows.forEach(r => {
+              let ri = r["ls_index"]
+              let cluster = clusterMap[ri]
+              if (cluster) {
+                r["ls_cluster"] = cluster
+              }
+            })
+          }
 
-        if(distances && distances.length) {
-          rows.forEach(r => {
-            let ri = r["ls_index"]
-            r["ls_similarity"] = distances[ri]
-          })
-        }
+          if (distances && distances.length) {
+            rows.forEach(r => {
+              let ri = r["ls_index"]
+              r["ls_similarity"] = distances[ri]
+            })
+          }
 
-        setRows(rows)
-      })
+          setRows(rows)
+        })
     } else {
       setRows([])
     }
   }, [dataset, distances, clusterMap, currentPage, showEmbeddings, sae_id])
 
   useEffect(() => {
-    if(dataset) {
-      // console.log("refetching hydrate", indices, dataset)
-      // console.log("Tagset", tagset)
+    if (dataset) {
       let columns = ["ls_index"]
       if(distances && distances.length) columns.push("ls_similarity")
       if(showEmbeddings) columns.push("ls_embedding")
@@ -281,15 +278,37 @@ function FilterDataTable({
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
       let columnDefs = columns.map((c, i) => {
-      // let columns = dataset.columns.map((c, i) => {
+        // if (c === "selection") {
+        //   return {
+        //     id: "selection",
+        //     header: ({ table }) => (
+        //       <input
+        //         type="checkbox"
+        //         // Check if we have any rows and if the number of selected rows equals total rows
+        //         checked={table.getIsAllRowsSelected()}
+        //         indeterminate={table.getIsSomeRowsSelected()}
+        //         onChange={table.getToggleAllRowsSelectedHandler()}
+        //       />
+        //     ),
+        //     cell: ({ row }) => (
+        //       <input
+        //         type="checkbox"
+        //         checked={row.getIsSelected()}
+        //         disabled={!row.getCanSelect()}
+        //         onChange={row.getToggleSelectedHandler()}
+        //       />
+        //     ),
+        //     enableSorting: false,
+        //   }
+        // }
         const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
         // console.log("COLUMN", c, metadata)
         return {
-          id: ""+i,
+          id: "" + i,
           cell: info => {
             const value = info.getValue();
             let val = value;
-            let idx = info.row.getValue("0")
+            let idx = info.row.getValue(lsIndexCol);
             // If metadata specifies image, render as an image tag
             if (metadata?.image) {
               return <a href={value} target="_blank" rel="noreferrer"><img src={value} alt="" style={{ height: '100px' }} /></a>;
@@ -301,19 +320,26 @@ function FilterDataTable({
             // If type is "array", display the array's length
             else if (metadata?.type === "array") {
               val = Array.isArray(value) ? `[${value.length}]` : '';
-            } 
+            }
             else if (typeof value === "object") {
               val = JSON.stringify(value)
             } else if (c === "ls_similarity" && val) {
               val = parseFloat(val).toFixed(4);
             }
-            if(c === "tags") {
-              
+            if (c === "tags") {
+
               return <div className="tags">
+                {/* {tags.filter(t => tagset[t]?.indexOf(idx) >= 0).map(t => {
+                  return <button className="tag-active" key={t} onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleTagClick(t, idx)
+                  }}>{t}</button>
+                })} */}
                 {tags.map(t => {
                   let ti = tagset[t]?.indexOf(idx) >= 0
                   // console.log(t, ti, idx)
-                  return <button className={ti ? 'tag-active' : 'tag-inactive'} key={t} onClick={(e) => {
+                  return <button title={`add ${t} tag`} className={ti ? 'tag-active' : 'tag-inactive'} key={t} onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     handleTagClick(t, idx)
@@ -321,11 +347,11 @@ function FilterDataTable({
                 })}
               </div>
             }
-            if(c === "ls_cluster") {
+            if (c === "ls_cluster") {
               return <div className="ls-cluster" onClick={(e) => {
                 e.stopPropagation()
                 e.preventDefault()
-                
+
               }}>
                 {scope ? <select value={value?.cluster} onChange={(e) => {
                   e.stopPropagation()
@@ -337,44 +363,43 @@ function FilterDataTable({
                     headers: {
                       'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
+                    body: JSON.stringify({
                       dataset_id: dataset.id,
                       scope_id: scope.id,
                       row_ids: [idx],
                       new_cluster: e.target.value
                     }),
                   })
-                  .then(response => response.json())
-                  .then(data => {
-                    onScope();
-                  });
+                    .then(response => response.json())
+                    .then(data => {
+                      onScope();
+                    });
                 }}>
-                  {clusterLabels.map((c,i) => {
+                  {clusterLabels.map((c, i) => {
                     return <option key={i} value={c.cluster}>{c.cluster}: {c.label}</option>
                   })}
                 </select> : <span>{value}</span>}
               </div>
               // return <span>{value.cluster}: {value.label}</span>
-            } 
-            if(c === "ls_embedding") {
+            } if (c === "ls_embedding") {
               return <div>
-                {showDifference ? 
-                  <EmbeddingVis 
-                    embedding={value} 
-                    minValues={embeddingMinValues} 
-                    maxValues={embeddingMaxValues} 
+                {showDifference ?
+                  <EmbeddingVis
+                    embedding={value}
+                    minValues={embeddingMinValues}
+                    maxValues={embeddingMaxValues}
                     height={64}
                     spacing={0}
                     difference={showDifference}
-                    />
+                  />
                   :
-                  <EmbeddingVis 
-                    embedding={value} 
-                    minValues={embeddingMinValues} 
-                    maxValues={embeddingMaxValues} 
+                  <EmbeddingVis
+                    embedding={value}
+                    minValues={embeddingMinValues}
+                    maxValues={embeddingMaxValues}
                     height={64}
                     spacing={0}
-                    />
+                  />
                 }
               </div>
             }
@@ -390,23 +415,23 @@ function FilterDataTable({
 
             // Default text rendering
             return <div
-            style={{
-              display: '-webkit-box',
-              WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 3,
-              overflow: 'hidden',
-              maxWidth: c == dataset.text_column ? '480px' : '200px',
-              width: c == dataset.text_column ? '480px' : '',
-              fontWeight: c == dataset.text_column ? '300' : '',
-              // maxHeight: '3em',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'normal',
-            }}
-            title={val?.toString() || ""} // Shows the full text on hover
-            onClick={() => navigator.clipboard.writeText(val)} // Copies the text to clipboard on click
-          >
-            {val}
-          </div> 
+              style={{
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 3,
+                overflow: 'hidden',
+                maxWidth: c == dataset.text_column ? '480px' : '200px',
+                width: c == dataset.text_column ? '480px' : '',
+                fontWeight: c == dataset.text_column ? '300' : '',
+                // maxHeight: '3em',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'normal',
+              }}
+              title={val?.toString() || ""} // Shows the full text on hover
+              onClick={() => navigator.clipboard.writeText(val)} // Copies the text to clipboard on click
+            >
+              {val}
+            </div>
           },
           header: c,
           accessorKey: c,
@@ -417,12 +442,15 @@ function FilterDataTable({
       setColumns(columnDefs)
     }
     hydrateIndices(indices)
-  // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
-  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference ])
+    // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
+  }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
 
 
   const [columnFilters, setColumnFilters] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
+
+
+
 
 
   const table = useReactTable({
@@ -434,9 +462,7 @@ function FilterDataTable({
     state: {
       columnFilters,
       globalFilter,
-      // pagination: {
-      //   pageSize: 100,
-      // },
+      rowSelection: {},
     },
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
@@ -503,74 +529,78 @@ function FilterDataTable({
       resizeObserver.observe(bodyRef.current);
     }
 
-  
+
     // Start: Code to synchronize horizontal scroll
     const syncHorizontalScroll = () => {
       if (headerRef.current && bodyRef.current) {
         headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
       }
     };
-  
+
     const bodyEl = bodyRef.current;
     bodyEl.addEventListener('scroll', syncHorizontalScroll);
-  
+
     // End: Code to synchronize horizontal scroll
-  
+
     return () => {
-    window.removeEventListener('resize', calculateScrollbarWidth);
-    window.removeEventListener('resize', adjustHeaderWidth);
-    // Clean up the scroll listener
-    bodyEl.removeEventListener('scroll', syncHorizontalScroll);
-    resizeObserver.disconnect();
-  };
+      window.removeEventListener('resize', calculateScrollbarWidth);
+      window.removeEventListener('resize', adjustHeaderWidth);
+      // Clean up the scroll listener
+      bodyEl.removeEventListener('scroll', syncHorizontalScroll);
+      resizeObserver.disconnect();
+    };
   }, []);
 
+
+
   return (
-    <div className="filter-data-table" style={{  height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
+    <div className="filter-data-table" style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
+
+
       {/* Fixed Header */}
-      <div className="filter-data-table-fixed-header" style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px`}} ref={headerRef}>
+      <div className="filter-data-table-fixed-header" style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px` }} ref={headerRef}>
         <table>
-        <TableHeader table={table} highlightColumn={highlightColumn} columns={columns} />
+          <TableHeader table={table} highlightColumn={highlightColumn} columns={columns} />
           {/* the hidden table body to make sure header rows are proper size */}
-        <tbody>
-           {table.getRowModel().rows.map(row => (
-            <TableRow key={row.id} row={row} collapse={true} />
-          ))}
-        </tbody>
-      </table>
+          <tbody>
+            {table.getRowModel().rows.map(row => (
+              <TableRow key={row.id} row={row} collapse={true} lsIndexCol={lsIndexCol} />
+            ))}
+          </tbody>
+        </table>
       </div>
       {/* Scrollable Table Body */}
       <div className="filter-table-scrollable-body table-body" style={{ flexGrow: 1, overflowY: 'auto' }} ref={bodyRef}>
-        <table style={{width: '100%'}}>
-        {/* Invisible header mimicking the real header for column width synchronization */}
-        <thead style={{ visibility: 'collapse' }}>
-          <tr>
-            {columns.map((column, index) => (
-              <th key={index} style={{ textAlign: 'left', paddingLeft: '6px' }}>{column.header}</th>
+        <table style={{ width: '100%' }}>
+          {/* Invisible header mimicking the real header for column width synchronization */}
+          <thead style={{ visibility: 'collapse' }}>
+            <tr>
+              {columns.map((column, index) => (
+                <th key={index} style={{ textAlign: 'left', paddingLeft: '6px' }}>{column.header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map(row => (
+              <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} lsIndexCol={lsIndexCol} />
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map(row => (
-            <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} />
-          ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
       </div>
       {showNavigation && <div className="filter-data-table-page-controls">
-        <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
-          First
-        </button>
-        <button onClick={() => setCurrentPage(old => Math.max(0, old - 1))} disabled={currentPage === 0}>
-          Previous
-        </button>
-        <span>
-          Page {currentPage + 1} of {pageCount || 1}
-        </span>
-        <button onClick={() => setCurrentPage(old => Math.min(pageCount - 1, old + 1))} disabled={currentPage === pageCount - 1}>
-          Next
-        </button>
-        <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
+          <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
+            First
+          </button>
+          <button onClick={() => setCurrentPage(old => Math.max(0, old - 1))} disabled={currentPage === 0}>
+            ←
+          </button>
+          <span>
+            Page {currentPage + 1} of {pageCount || 1}
+          </span>
+          <button onClick={() => setCurrentPage(old => Math.min(pageCount - 1, old + 1))} disabled={currentPage === pageCount - 1}>
+            →
+          </button>
+          <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
           Last
         </button>
       </div>}

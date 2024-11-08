@@ -28,9 +28,11 @@ function Preview({
 } = {}) {
   const { datasetId, dataset, scope, currentStep, stepIds } = useSetup();
 
+  const length = dataset?.length || 100;
   // Search related state
   // ------------------------------------------------------------
-  const [dataIndices, setDataIndices] = useState(range(0, 100));
+  const [dataIndices, setDataIndices] = useState(range(0, Math.min(length, 100)));
+
   const [distances, setDistances] = useState([])
   const [clusterMap, setClusterMap] = useState({})
 

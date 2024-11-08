@@ -9,13 +9,12 @@
 }
 
 .filter-data-table-page-controls {
-  flex-shrink: 0; 
-  margin-top: 0px; 
-  padding: 6px;
-  display: flex; 
-  justify-content: center; 
-  align-items: center;
-  gap: 4px;
+  margin-top: 0px;
+  display: flex;
+  justify-content: center;
+    align-items: center;
+    gap: 4px;
+  flex-shrink: 0;
 }
 
 .filter-data-table table {

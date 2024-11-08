@@ -37,7 +37,7 @@ function Explore() {
   // fetch dataset and current scope metadata
   // - scopes: all scopes available for this dataset
   // - embeddings: embeddings available for this dataset
-  const { embeddings, dataset, scope, fetchScopeMeta, scopes } = useCurrentScope(
+  const { embeddings, dataset, scope, fetchScopeMeta, scopes, tagset, fetchTagSet, tags } = useCurrentScope(
     datasetId,
     scopeId,
     apiUrl,
@@ -179,26 +179,6 @@ function Explore() {
   // ====================================================================================================
   // Tags
   // ====================================================================================================
-  const [tagset, setTagset] = useState({});
-
-  const fetchTagSet = useCallback(() => {
-    fetch(`${apiUrl}/tags?dataset=${datasetId}`)
-      .then((response) => response.json())
-      .then((data) => setTagset(data));
-  }, [datasetId, setTagset]);
-
-  useEffect(() => {
-    fetchTagSet();
-  }, [fetchTagSet]);
-
-  const tags = useMemo(() => {
-    const tags = [];
-    for (const tag in tagset) {
-      tags.push(tag);
-    }
-    // console.log("tagset", tagset, tags)
-    return tags;
-  }, [tagset]);
 
   const [tag, setTag] = useState(tags[0]);
 
@@ -347,18 +327,32 @@ function Explore() {
     [inputToScopeIndexMap],
   );
 
-  function intersectMultipleArrays(...arrays) {
+  function intersectMultipleArrays(filterMode, ...arrays) {
     arrays = arrays.filter((d) => d.length > 0);
     if (arrays.length === 0) return [];
     if (arrays.length == 1) return arrays[0];
-    // Use reduce to accumulate intersections
-    return arrays.reduce((acc, curr) => {
-      // Convert current array to a Set for fast lookup
-      const currSet = new Set(curr);
-      // Filter the accumulated results to keep only elements also in the current array
-      return acc.filter((x) => currSet.has(x));
-    });
+
+    if (filterMode === "all") {
+      // AND mode - intersection
+      return arrays.reduce((acc, curr) => {
+        const currSet = new Set(curr);
+        return acc.filter((x) => currSet.has(x));
+      });
+    } else {
+      // ANY mode - union 
+      const unionSet = new Set();
+      arrays.forEach(arr => {
+        arr.forEach(x => unionSet.add(x));
+      });
+      return Array.from(unionSet);
+    }
   }
+
+  // ==== FILTER SELECT MODE ====
+  const [filterMode, setFilterMode] = useState("all");
+  const handleFilterModeChange = useCallback((mode) => {
+    setFilterMode(mode);
+  }, [setFilterMode]);
 
   const [intersectedIndices, setIntersectedIndices] = useState([]);
   // intersect the indices from the various filters
@@ -372,15 +366,16 @@ function Explore() {
       .map((d) => d.ls_index);
     const filteredTagset = filterInputIndices(tagset[tag] || []);
     let indices = intersectMultipleArrays(
+      filterMode,
       selectedIndices || [],
       searchIndices || [],
       filteredClusterIndices || [],
       filteredTagset || [],
       columnIndices || [],
     );
-    if (indices.length == 0 && selectedIndices.length > 0) {
-      indices = selectedIndices;
-    }
+    // if (indices.length == 0 && selectedIndices.length > 0) {
+    //   indices = selectedIndices;
+    // }
     // console.log("indices!", indices)
     setIntersectedIndices(indices);
   }, [
@@ -392,6 +387,7 @@ function Explore() {
     tag,
     inputToScopeIndexMap,
     columnIndices,
+    filterMode,
   ]);
 
   const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
@@ -455,6 +451,8 @@ function Explore() {
     };
   }, []);
 
+
+
   if (!dataset) return <div>Loading...</div>;
 
   return (
@@ -462,6 +460,7 @@ function Explore() {
       <div className="left-column">
         <ScopeHeader
           dataset={dataset}
+          tags={tags}
           scope={scope}
           scopes={scopes}
           onScopeChange={handleScopeChange}
@@ -520,15 +519,14 @@ function Explore() {
               }`}
           >
             <div className="filter-cell left tags-select">
-              {tags.map((t, index) => (
-                <button
-                  key={index}
-                  className={`tag-button ${tag === t ? "selected" : ""}`}
-                  onClick={() => setTag(tag === t ? null : t)}
-                >
-                  {t} ({filterInputIndices(tagset[t] || []).length})
-                </button>
-              ))}
+              <select onChange={(e) => setTag(e.target.value === "-1" ? null : e.target.value)} value={tag || "-1"}>
+                {"2"}<option value="-1">Filter by tag</option>
+                {tags.map((t, index) => (
+                  <option key={index} value={t}>
+                    {t} ({filterInputIndices(tagset[t] || []).length})
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="filter-cell middle">
               {tag && filterInputIndices(tagset[tag] || []).length ? (
@@ -580,7 +578,7 @@ function Explore() {
                         });
                     }}
                   >
-                    <button type="submit">➖ {tag}</button>
+                    <button type="submit" title="Delete tag from Scope">➖ {tag}</button>
                 </form>
               )}
             </div>
@@ -598,7 +596,7 @@ function Explore() {
           <div
             className={`filter-row ${selectedIndices?.length ? "active" : ""}`}
           >
-            <div className="filter-cell left">
+            <div className="filter-cell left filter-description">
               Shift+Drag on the map to filter by points.
             </div>
             <div className="filter-cell middle">
@@ -622,19 +620,22 @@ function Explore() {
           </div>
 
           <div className="filter-row">
-            <div className="filter-cell left">
-              {intersectedIndices.length > 0
-                ? "Intersection of filtered rows:"
-                : "No rows filtered"}
+            <div className="filter-cell left filter-description">
+              Displaying rows matching
+              <button className={`filter-mode ${filterMode == "all" ? "active" : ""}`} type="submit" title="toggle to all" onClick={() => handleFilterModeChange("all")}>all</button>
+              <button className={`filter-mode ${filterMode == "any" ? "active" : ""}`} style={{ marginLeft: 0 }} type="submit" title="toggle to any" onClick={() => handleFilterModeChange("any")}>any</button>
+              {` `}filters
             </div>
             <div className="filter-cell middle intersected-count">
               <span>{intersectedIndices.length} rows</span>
             </div>
+            {/* <div className="filter-cell right" /> */}
 
             <div className="filter-cell right bulk-actions">
               <div className="bulk-actions-buttons">
                 Bulk Actions:
                 <button
+                  title="Add tags to rows"
                   className={`bulk ${bulkAction == "tag" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "tag"
@@ -645,6 +646,7 @@ function Explore() {
                   🏷️
                 </button>
                 <button
+                  title="Change cluster of rows"
                   className={`bulk ${bulkAction == "cluster" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "cluster"
@@ -655,6 +657,7 @@ function Explore() {
                   ️📍
                 </button>
                 <button
+                  title="Delete rows"
                   className={`bulk ${bulkAction == "delete" ? "active" : ""}`}
                   onClick={() =>
                     bulkAction == "delete"
@@ -720,30 +723,35 @@ function Explore() {
           </div> */}
         </div>
 
-            <FilterDataTable
-              height={tableHeight}
-              dataset={dataset}
-              scope={scope}
-              indices={intersectedIndices}
-              distances={distances}
-              clusterMap={clusterMap}
-              clusterLabels={clusterLabels}
-              tagset={tagset}
+            {intersectedIndices.length > 0 ? (
+          <FilterDataTable
+                height={tableHeight}
+                dataset={dataset}
+                scope={scope}
+                indices={intersectedIndices}
+                distances={distances}
+                clusterMap={clusterMap}
+                clusterLabels={clusterLabels}
+                tagset={tagset}
               sae_id={sae?.id}
               feature={feature}
               // showEmbeddings={showEmbeddings}
-              onTagset={fetchTagSet}
-              onScope={() => {
-                fetchScopeMeta()
-                fetchScopeRows()
-              }}
-              onHover={(index) => handleHover(inputToScopeIndexMap[index])}
-              onClick={handleClicked}
-              onRows={setRows}
-              showDifference={null}
-              filtersContainerRef={filtersContainerRef}
+                onTagset={fetchTagSet}
+                onScope={() => {
+                  fetchScopeMeta()
+                  fetchScopeRows()
+                }}
+                onHover={(index) => handleHover(inputToScopeIndexMap[index])}
+                onClick={handleClicked}
+                onRows={setRows}
+                editMode={true}
+            showDifference={null}
+                filtersContainerRef={filtersContainerRef}
               // showDifference={showDifference ? searchEmbedding : null}
-            />
+              />
+        ) : (
+          <div className="filter-table no-data">Select a filter to display rows</div>
+        )}
 
         {/* {selectedIndices?.length > 0 ?
               <IndexDataTable

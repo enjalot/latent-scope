@@ -100,6 +100,8 @@ function Cluster() {
     goToNextStep()
   }, [updateScope, goToNextStep, cluster, savedScope])
 
+  console.log({ cluster, clusters, umap })
+
   return (
     <div className={styles["cluster"]}>
       <div className={styles["cluster-setup"]}>
@@ -131,7 +133,7 @@ function Cluster() {
                 The cluster selection epsilon parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
               </Tooltip>
             </label>
-            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={!!clusterJob} text="New Clusters" />
+            <Button type="submit" color={cluster ? "secondary" : "primary"} disabled={false} text="New Clusters" />
           </form>
 
           <JobProgress job={clusterJob} clearJob={() => setClusterJob(null)} />

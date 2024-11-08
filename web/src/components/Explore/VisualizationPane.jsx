@@ -92,6 +92,7 @@ function VisualizationPane({
                               inputToScopeIndexMap,
                           )}
                           fill="lightgray"
+                        // fill="#f0f0f0"
                           duration={0}
                           xDomain={xDomain}
                           yDomain={yDomain}
@@ -119,7 +120,7 @@ function VisualizationPane({
               {hulls.length && !scope.ignore_hulls && (
                   <HullPlot
                       hulls={hulls}
-                      stroke="black"
+                        stroke="#9d9d9d"
                       fill="none"
                       duration={200}
                       strokeWidth={1}

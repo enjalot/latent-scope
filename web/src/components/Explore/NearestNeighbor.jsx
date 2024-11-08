@@ -24,7 +24,7 @@ export default function NearestNeighbor({
                     <input
                         type="text"
                         id="searchBox"
-                        placeholder="Nearest Neighbor Search..."
+                        placeholder="Filter by nearest neighbors to search query..."
                     />
                     {searchLoading ? (
                         "Querying..."
@@ -48,6 +48,7 @@ export default function NearestNeighbor({
                     ) : null}
                 </span>
             </div>
+            <div className="filter-cell right" />
         </div>
     );
 }

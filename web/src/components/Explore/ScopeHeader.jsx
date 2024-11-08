@@ -10,6 +10,7 @@ function DatasetHeader({
   scope,
   scopes,
   onScopeChange,
+  tags
 }) {
   if (!dataset) return null;
 
@@ -17,6 +18,7 @@ function DatasetHeader({
     <div className="summary">
       <div className="scope-card">
         <div className='heading'>
+          <span>{dataset?.id} &gt; </span>
           <select
             className="scope-selector"
             onChange={(e) => onScopeChange(e.target.value)}
@@ -31,21 +33,35 @@ function DatasetHeader({
 
           {!readonly && (
             <>
+              <div style={{ display: 'flex', gap: '1rem' }}>
               <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>
               <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>
+              </div>
             </>
-          )}
+        )}
         </div>
+
+
 
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
 
         {scope?.ls_version ? (
           <span>
-            <span>{scope?.description}</span>
+            <span><span className="metadata-label">Scope</span> {scope?.id}</span>
             <br />
-            <span>{scope?.embedding?.model_id}</span>
+            <span><span className="metadata-label">Description</span> {scope?.description}</span>
             <br />
-            <span>{scope?.cluster_labels_lookup?.length} clusters</span>
+            <span><span className="metadata-label">Embedding</span> {scope?.embedding?.model_id}</span>
+            <br />
+            {/* <div className="dataset-card"> */}
+            <span>
+              {scope?.rows}/{dataset?.length} rows
+            </span>
+            <br />
+            {/* </div> */}
+            <span><span>{scope?.cluster_labels_lookup?.length} clusters</span></span>
+            <br />
+            <span><span>{tags.length} tags</span></span>
           </span>
         ) : (
           <div className="scope-version-warning">
@@ -55,11 +71,11 @@ function DatasetHeader({
         )}
       </div>
 
-      <div className="dataset-card">
+      {/* <div className="dataset-card">
         <span>
           <b>{dataset.id}</b> {scope?.rows}/{dataset?.length} rows
         </span>
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -69,7 +85,8 @@ DatasetHeader.propTypes = {
   scope: PropTypes.object,
   scopes: PropTypes.array.isRequired,
   onScopeChange: PropTypes.func.isRequired,
-  isMobileDevice: PropTypes.bool
+  isMobileDevice: PropTypes.bool,
+  tags: PropTypes.array.isRequired
 };
 
 export default DatasetHeader; 

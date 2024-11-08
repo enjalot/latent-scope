@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 
 const useCurrentScope = (datasetId, scopeId, apiUrl) => {
     const [dataset, setDataset] = useState(null);
@@ -49,7 +49,28 @@ const useCurrentScope = (datasetId, scopeId, apiUrl) => {
             });
     }, [datasetId, setEmbeddings]);
 
-    return { dataset, setDataset, scope, setScope, fetchScopeMeta, scopes, embeddings };
+    const [tagset, setTagset] = useState({});
+    const fetchTagSet = useCallback(() => {
+        fetch(`${apiUrl}/tags?dataset=${datasetId}`)
+            .then((response) => response.json())
+            .then((data) => setTagset(data));
+    }, [datasetId, setTagset]);
+
+    useEffect(() => {
+        fetchTagSet();
+    }, [fetchTagSet]);
+
+    const tags = useMemo(() => {
+        const tags = [];
+        for (const tag in tagset) {
+            tags.push(tag);
+        }
+        // console.log("tagset", tagset, tags)
+        return tags;
+    }, [tagset]);
+
+
+    return { dataset, setDataset, scope, setScope, fetchScopeMeta, scopes, embeddings, tagset, fetchTagSet, setTagset, tags };
 };
 
 export default useCurrentScope;
