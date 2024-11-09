@@ -21,7 +21,6 @@ function VisualizationPane({
     hoveredCluster,
     slide,
     scope,
-    inputToScopeIndexMap,
     onScatter,
     onSelect,
     onHover,
@@ -56,14 +55,7 @@ function VisualizationPane({
     const [width, height] = size;
 
     const drawingPoints = useMemo(() => {
-        // intersectedIndicies is in the original dataset space
-        // drawPoints are in the current scope space (w/ possible row deletions)
-        // need to convert intersectedIndices to the current scope space
-        if(!intersectedIndices?.length) return drawPoints
         return drawPoints.map((p, i) => {
-            // TODO: if the row is deleted, don't draw it
-            // return [p[0], p[1], mapSelectionKey.hidden, p[2]]
-
             if (deletedIndices?.includes(i)) {
                 return [p[0], p[1], mapSelectionKey.hidden, p[2]]
             } else if (intersectedIndices?.includes(i)) {
@@ -72,7 +64,7 @@ function VisualizationPane({
                 return [p[0], p[1], mapSelectionKey.notSelected, p[2]]
             }
         })
-    }, [drawPoints, intersectedIndices])
+    }, [drawPoints, deletedIndices, intersectedIndices])
 
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
     // TODO: calculate these properly
@@ -82,7 +74,7 @@ function VisualizationPane({
     useEffect(() => {
         if(hovered) {
             console.log("hovered", hovered)
-            const point = drawPoints[hovered.index] // TODO: check the inputToScopeIndexMap
+            const point = drawPoints[hovered.index]
             if (point && xDomain && yDomain) {
                 let px = point[0]
                 if(px < xDomain[0]) px = xDomain[0]
@@ -140,21 +132,19 @@ function VisualizationPane({
                   !scope.ignore_hulls &&
                   scope.cluster_labels_lookup && (
                       <HullPlot
-                          hulls={processHulls(
-                              [hoveredCluster],
-                              points,
-                              inputToScopeIndexMap,
-                          )}
-                          fill="lightgray"
-                          stroke="gray"
-                          strokeWidth={2}
-                          opacity={0.25}
-                        // fill="#f0f0f0"
-                          duration={0}
-                          xDomain={xDomain}
-                          yDomain={yDomain}
-                          width={width}
-                          height={height}
+                        hulls={processHulls(
+                            [hoveredCluster],
+                            points
+                        )}
+                        fill="lightgray"
+                        stroke="gray"
+                        strokeWidth={2}
+                        opacity={0.25}
+                        duration={0}
+                        xDomain={xDomain}
+                        yDomain={yDomain}
+                        width={width}
+                        height={height}
                       />
                   )}
 
@@ -163,16 +153,16 @@ function VisualizationPane({
                   !scope.ignore_hulls &&
                   scope.cluster_labels_lookup && (
                       <HullPlot
-                          hulls={processHulls([slide], points, inputToScopeIndexMap)}
-                          fill="darkgray"
-                          stroke="gray"
-                          strokeWidth={2}
-                          opacity={0.35}
-                          duration={0}
-                          xDomain={xDomain}
-                          yDomain={yDomain}
-                          width={width}
-                          height={height}
+                        hulls={processHulls([slide], points)}
+                        fill="darkgray"
+                        stroke="gray"
+                        strokeWidth={2}
+                        opacity={0.35}
+                        duration={0}
+                        xDomain={xDomain}
+                        yDomain={yDomain}
+                        width={width}
+                        height={height}
                       />
                   )}
 
@@ -203,15 +193,15 @@ function VisualizationPane({
               /> */}
 
               <AnnotationPlot
-                  points={hoverAnnotations}
-                  stroke="black"
+                    points={hoverAnnotations}
+                    stroke="black"
                     deletedIndices={deletedIndices}
-                  fill="orange"
-                  size="16"
-                  xDomain={xDomain}
-                  yDomain={yDomain}
-                  width={width}
-                  height={height}
+                    fill="orange"
+                    size="16"
+                    xDomain={xDomain}
+                    yDomain={yDomain}
+                    width={width}
+                    height={height}
               />
           </div>
 
@@ -317,7 +307,6 @@ VisualizationPane.propTypes = {
     hoveredCluster: PropTypes.object,
     slide: PropTypes.object,
     scope: PropTypes.object,
-    inputToScopeIndexMap: PropTypes.object.isRequired,
     onScatter: PropTypes.func.isRequired,
     onSelect: PropTypes.func.isRequired,
     onHover: PropTypes.func.isRequired,

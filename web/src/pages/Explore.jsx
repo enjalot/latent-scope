@@ -53,10 +53,11 @@ function Explore() {
     points,
     drawPoints,
     hulls,
-    scopeToInputIndexMap,
-    inputToScopeIndexMap,
     sae,
+    deletedIndices
   } = useScopeData(apiUrl, datasetId, scope);
+
+  console.log("deletedIndices", deletedIndices);
 
   // TODO: the user should be able to highlight a feature
   // when passed to the data table it will show that feature first?
@@ -135,13 +136,12 @@ function Explore() {
   const handleSelected = useCallback(
     (indices) => {
       // console.log("handle selected", indices)
-      // we have to map from the scatterplot indices to the ls_index of the original input data (in case any has been deleted)
-      let idxs = indices.map((i) => scopeToInputIndexMap[i]);
-      setSelectedIndices(idxs);
+      const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
+      setSelectedIndices(nonDeletedIndices);
       // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-      // scatter?.zoomToPoints(indices, { transition: true })
+      // scatter?.zoomToPoints(nonDeletedIndices, { transition: true })
     },
-    [setSelectedIndices, scopeToInputIndexMap],
+    [setSelectedIndices],
   );
 
   // Hover via scatterplot or tables
@@ -149,23 +149,23 @@ function Explore() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [hovered, setHovered] = useState(null);
   useEffect(() => {
-    if (hoveredIndex !== null && hoveredIndex !== undefined) {
-      hydrateIndices([scopeToInputIndexMap[hoveredIndex]], (results) => {
+    if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndices.includes(hoveredIndex)) {
+      hydrateIndices([hoveredIndex], (results) => {
         setHovered(results[0]);
       });
     } else {
       setHovered(null);
     }
-  }, [hoveredIndex, setHovered, hydrateIndices, scopeToInputIndexMap]);
+  }, [hoveredIndex, setHovered, hydrateIndices]);
 
   const [hoveredCluster, setHoveredCluster] = useState(null);
   useEffect(() => {
     if (hoveredIndex) {
-      setHoveredCluster(clusterMap[scopeToInputIndexMap[hoveredIndex]]);
+      setHoveredCluster(clusterMap[hoveredIndex]);
     } else {
       setHoveredCluster(null);
     }
-  }, [hoveredIndex, clusterMap, scopeToInputIndexMap, setHoveredCluster]);
+  }, [hoveredIndex, clusterMap, setHoveredCluster]);
 
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
@@ -181,7 +181,6 @@ function Explore() {
   // ====================================================================================================
 
   const [tag, setTag] = useState(tags[0]);
-
   const [tagAnnotations, setTagAnnotations] = useState([]);
   useEffect(() => {
     if (tagset[tag]) {
@@ -212,7 +211,7 @@ function Explore() {
     datasetId,
     scope,
     embeddings,
-    inputToScopeIndexMap,
+    deletedIndices
   });
 
   // ====================================================================================================
@@ -279,7 +278,8 @@ function Explore() {
   );
   const handleHover = useCallback(
     (index) => {
-      setHoveredIndex(index);
+      const nonDeletedIndex = deletedIndices.includes(index) ? null : index;
+      setHoveredIndex(nonDeletedIndex);
     },
     [setHoveredIndex],
   );
@@ -311,7 +311,7 @@ function Explore() {
     columnFiltersActive,
     setColumnFiltersActive,
     columnFilters,
-  } = useColumnFilter(apiUrl, dataset, datasetId, inputToScopeIndexMap, points);
+  } = useColumnFilter(apiUrl, dataset, datasetId, points);
 
   const clearFilters = useCallback(() => {
     setSelectedIndices([]);
@@ -320,12 +320,7 @@ function Explore() {
     setColumnIndices([]);
   }, [setSelectedIndices, setSearchIndices, setTag, setColumnIndices]);
 
-  const filterInputIndices = useCallback(
-    (indices) => {
-      return indices.filter((d) => inputToScopeIndexMap[d] >= 0);
-    },
-    [inputToScopeIndexMap],
-  );
+
 
   function intersectMultipleArrays(filterMode, ...arrays) {
     arrays = arrays.filter((d) => d.length > 0);
@@ -366,7 +361,7 @@ function Explore() {
     const filteredClusterIndices = scopeRows
       .filter((d) => d.cluster == slide?.cluster)
       .map((d) => d.ls_index);
-    const filteredTagset = filterInputIndices(tagset[tag] || []);
+    const filteredTagset = filterTagIndices(tagset[tag] || []);
     let indices = intersectMultipleArrays(
       filterMode,
       selectedIndices || [],
@@ -387,18 +382,15 @@ function Explore() {
     slide,
     tagset,
     tag,
-    inputToScopeIndexMap,
     columnIndices,
     filterMode,
   ]);
 
   const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
   useEffect(() => {
-    const annots = intersectedIndices.map(
-      (index) => points[inputToScopeIndexMap[index]],
-    );
+    const annots = intersectedIndices.map(index => points[index]);
     setIntersectedAnnotations(annots);
-  }, [intersectedIndices, points, inputToScopeIndexMap]);
+  }, [intersectedIndices, points]);
 
   const [bulkAction, setBulkAction] = useState(null);
 
@@ -453,9 +445,17 @@ function Explore() {
     };
   }, []);
 
-  const nonDeletedIndices = useMemo(() => {
-    return scopeRows.filter(d => !d.deleted).map(d => d.ls_index)
-  }, [scopeRows]);
+
+
+  // Tag indices are set on the original dataset, which may have rows deleted
+  // so we need to filter them here to make sure we are working with all valid rows
+  // in the current scope
+  const filterTagIndices = useCallback(
+    (indices) => {
+      return indices.filter((d) => !deletedIndices.includes(d));
+    },
+    [deletedIndices],
+  );
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -467,7 +467,7 @@ function Explore() {
           tags={tags}
           scope={scope}
           scopes={scopes}
-          nonDeletedIndices={nonDeletedIndices}
+          deletedIndices={deletedIndices}
           onScopeChange={handleScopeChange}
         />
 
@@ -484,13 +484,12 @@ function Explore() {
             slide={slide}
             scope={scope}
             containerRef={containerRef}
-            inputToScopeIndexMap={inputToScopeIndexMap}
             onScatter={setScatter}
             onSelect={handleSelected}
             onHover={handleHover}
             hovered={hovered}
             dataset={dataset}
-            deletedIndices={scopeRows.filter(d => d.deleted).map(d => d.ls_index)}
+            deletedIndices={deletedIndices}
           />
         ) : null}
       </div>
@@ -521,7 +520,7 @@ function Explore() {
 
           {/* row 3: tags */}
           <div
-            className={`filter-row tags-box ${filterInputIndices(tagset[tag] || [])?.length ? "active" : ""
+            className={`filter-row tags-box ${filterTagIndices(tagset[tag] || [])?.length ? "active" : ""
               }`}
           >
             <div className="filter-cell left tags-select">
@@ -529,15 +528,15 @@ function Explore() {
                 {"2"}<option value="-1">Filter by tag</option>
                 {tags.map((t, index) => (
                   <option key={index} value={t}>
-                    {t} ({filterInputIndices(tagset[t] || []).length})
+                    {t} ({filterTagIndices(tagset[t] || []).length})
                   </option>
                 ))}
               </select>
             </div>
             <div className="filter-cell middle">
-              {tag && filterInputIndices(tagset[tag] || []).length ? (
+              {tag && filterTagIndices(tagset[tag] || []).length ? (
                 <span>
-                  {filterInputIndices(tagset[tag] || []).length} rows
+                  {filterTagIndices(tagset[tag] || []).length} rows
                   <button
                     className="deselect"
                     onClick={() => {
@@ -729,32 +728,32 @@ function Explore() {
           </div> */}
         </div>
 
-            {intersectedIndices.length > 0 ? (
+        {intersectedIndices.length > 0 ? (
           <FilterDataTable
-                height={tableHeight}
-                dataset={dataset}
-                scope={scope}
-                indices={intersectedIndices}
-                distances={distances}
-                clusterMap={clusterMap}
-                clusterLabels={clusterLabels}
-                tagset={tagset}
+            height={tableHeight}
+            dataset={dataset}
+            scope={scope}
+            indices={intersectedIndices}
+            deletedIndices={deletedIndices}
+            distances={distances}
+            clusterMap={clusterMap}
+            clusterLabels={clusterLabels}
+            tagset={tagset}
             sae_id={sae?.id}
             feature={feature}
-            // showEmbeddings={showEmbeddings}
-                onTagset={fetchTagSet}
-                onScope={() => {
-                  fetchScopeMeta()
-                  fetchScopeRows()
-                }}
-                onHover={(index) => handleHover(inputToScopeIndexMap[index])}
-                onClick={handleClicked}
-                onRows={setRows}
-                editMode={true}
+            onTagset={fetchTagSet}
+            onScope={() => {
+              fetchScopeMeta()
+              fetchScopeRows()
+            }}
+            onHover={(index) => handleHover(index)}
+            onClick={handleClicked}
+            onRows={setRows}
+            editMode={true}
             showDifference={null}
-                filtersContainerRef={filtersContainerRef}
-              // showDifference={showDifference ? searchEmbedding : null}
-              />
+            filtersContainerRef={filtersContainerRef}
+          // showDifference={showDifference ? searchEmbedding : null}
+          />
         ) : (
           <div className="filter-table no-data">Select a filter to display rows</div>
         )}

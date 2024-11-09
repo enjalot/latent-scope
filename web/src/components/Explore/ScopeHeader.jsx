@@ -11,7 +11,7 @@ function DatasetHeader({
   scopes,
   onScopeChange,
   tags,
-  nonDeletedIndices
+  deletedIndices
 }) {
   if (!dataset) return null;
 
@@ -56,7 +56,8 @@ function DatasetHeader({
             <br />
             {/* <div className="dataset-card"> */}
             <span>
-              {nonDeletedIndices?.length}/{dataset?.length} rows
+              {dataset?.length - deletedIndices?.length}/{dataset?.length} rows
+              {deletedIndices?.length > 0 && <span className="metadata-label"> ({deletedIndices?.length} deleted)</span>}
             </span>
             <br />
             {/* </div> */}

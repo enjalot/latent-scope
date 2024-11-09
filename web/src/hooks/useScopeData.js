@@ -10,8 +10,8 @@ const useScopeData = (apiUrl, datasetId, scope) => {
     const [drawPoints, setDrawPoints] = useState([]);
     const [hulls, setHulls] = useState([]);
     const [scopeRows, setScopeRows] = useState([]);
-    const [scopeToInputIndexMap, setScopeToInputIndexMap] = useState({});
-    const [inputToScopeIndexMap, setInputToScopeIndexMap] = useState({});
+
+    const [deletedIndices, setDeletedIndices] = useState([]);
 
     const [sae, setSae] = useState(null)
     useEffect(() => {
@@ -27,17 +27,10 @@ const useScopeData = (apiUrl, datasetId, scope) => {
         fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
             .then((response) => response.json())
             .then((scopeRows) => {
+                console.log("scopeRows", scopeRows)
+
                 setScopeRows(scopeRows);
 
-                // Calculate scopeIndexMap
-                let sim = {};
-                let ism = {};
-                scopeRows.forEach((d, i) => {
-                    ism[d.ls_index] = i;
-                    sim[i] = d.ls_index;
-                });
-                setScopeToInputIndexMap(sim);
-                setInputToScopeIndexMap(ism);
 
                 const pts = scopeRows.map((d) => [d.x, d.y]);
                 setPoints(pts);
@@ -47,18 +40,28 @@ const useScopeData = (apiUrl, datasetId, scope) => {
                 setDrawPoints(dpts);
                 setHulls([]);
 
-                const labelsData = scope.cluster_labels_lookup || [];
+
+                let clusterMap = {};
+                let nonDeletedClusters = new Set();
+                scopeRows.forEach((d) => {
+                    const label = scope.cluster_labels_lookup?.[d.cluster];
+                    clusterMap[d.ls_index] = label;
+                    if (!d.deleted) {
+                        nonDeletedClusters.add(label.cluster);
+                    }
+                });
+                // only take the labels of clusters that belong to rows that are not deleted 
+                const labelsData = scope.cluster_labels_lookup.filter((l) => nonDeletedClusters.has(l.cluster)) || [];
+
                 setClusterLabels(labelsData);
                 setClusterIndices(scopeRows.map((d) => d.cluster));
 
-                let clusterMap = {};
-                scopeRows.forEach((d) => {
-                    clusterMap[d.ls_index] = scope.cluster_labels_lookup?.[d.cluster];
-                });
                 setClusterMap(clusterMap);
 
+                setDeletedIndices(scopeRows.filter(d => d.deleted).map(d => d.ls_index));
+
                 setTimeout(() => {
-                    if (labelsData) setHulls(processHulls(labelsData, pts, ism));
+                    if (labelsData) setHulls(processHulls(labelsData, pts));
                 }, 100);
             })
             .catch((error) => console.error("Fetching data failed", error));
@@ -72,10 +75,9 @@ const useScopeData = (apiUrl, datasetId, scope) => {
         points,
         drawPoints,
         hulls,
-        scopeToInputIndexMap,
-        inputToScopeIndexMap,
         fetchScopeRows,
         setClusterLabels,
+        deletedIndices,
         sae
     };
 };

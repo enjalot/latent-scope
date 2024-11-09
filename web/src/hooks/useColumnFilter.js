@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 
-const useColumnFilter = (apiUrl, dataset, datasetId, inputToScopeIndexMap, points) => {
+const useColumnFilter = (apiUrl, dataset, datasetId, points) => {
     const [columnIndices, setColumnIndices] = useState([]);
     const [columnFiltersActive, setColumnFiltersActive] = useState({});
     const [columnIndicesAnnotations, setColumnIndicesAnnotations] = useState([]);
@@ -39,21 +39,19 @@ const useColumnFilter = (apiUrl, dataset, datasetId, inputToScopeIndexMap, point
             })
                 .then((response) => response.json())
                 .then((data) => {
-                    let indices = data.indices.filter(
-                        (d) => inputToScopeIndexMap[d] >= 0,
-                    );
+                    let indices = data.indices;
                     setColumnIndices(indices);
                 });
         },
-        [apiUrl, datasetId, inputToScopeIndexMap],
+        [apiUrl, datasetId],
     );
 
     useEffect(() => {
         const annots = columnIndices.map(
-            (index) => points[inputToScopeIndexMap[index]],
+            (index) => points[index]
         );
         setColumnIndicesAnnotations(annots);
-    }, [columnIndices, points, inputToScopeIndexMap]);
+    }, [columnIndices, points]);
 
     useEffect(() => {
         let active = Object.values(columnFiltersActive).filter((d) => !!d).length;

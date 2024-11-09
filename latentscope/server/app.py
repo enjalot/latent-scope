@@ -140,12 +140,8 @@ def indexed():
     else:
         df = DATAFRAMES[dataset]
 
-    # import pdb; pdb.set_trace()
-
     if columns:
         df = df[columns]
-
-    print("df", df.head())
     
     # get the indexed rows, handling missing indices
     valid_indices = [i for i in indices if i < len(df)]
@@ -182,8 +178,6 @@ def indexed():
 
 @app.route('/api/column-filter', methods=['POST'])
 def column_filter():
-
-
     data = request.get_json()
     dataset = data['dataset']
     filters = data['filters']
@@ -196,7 +190,6 @@ def column_filter():
     
     # apply filters
     rows = df.copy()
-
 
     print("FILTERS", filters)
     if filters:
@@ -240,8 +233,6 @@ def query():
     rows = df.copy()
     rows['ls_index'] = rows.index
     
-
-    print("df", df.columns)
 
     # get the indexed rows
     # print("INDICES", indices)

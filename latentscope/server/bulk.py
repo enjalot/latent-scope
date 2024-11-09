@@ -132,7 +132,8 @@ def delete_rows():
   df = pd.read_parquet(scope_file)
   # df = df[~df['ls_index'].isin(row_ids)]
   # df.reset_index(drop=True, inplace=True)
-  df.loc[df['ls_index'].isin(row_ids), "deleted"] = True
+  if 'deleted' in df.columns:
+      df.loc[df['ls_index'].isin(row_ids), "deleted"] = True
 
   df.to_parquet(scope_file)
 
@@ -164,6 +165,8 @@ def delete_rows():
   return jsonify({"success": True})
 
 def update_combined(df, dataset_id, scope_id):
+
+  
   input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
   input_df.reset_index(inplace=True)
   input_df = input_df[input_df['index'].isin(df['ls_index'])]
