@@ -4,8 +4,8 @@ import Scatter from "../Scatter";
 import AnnotationPlot from "../AnnotationPlot";
 import HullPlot from "../HullPlot";
 import { Tooltip } from "react-tooltip";
-import { processHulls, isMobileDevice } from "../../utils";
-import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey, mapSelectionOpacity, mapPointSizeRange } from "../../lib/colors";
+import { processHulls } from "../../utils";
+import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from "../../lib/colors";
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -15,20 +15,17 @@ const isIOS = () => {
 function VisualizationPane({
     points,
     drawPoints,
-    hulls,
     hoverAnnotations,
     intersectedIndices,
-    intersectedAnnotations,
+    deletedIndices = [],
     hoveredCluster,
     slide,
     scope,
     inputToScopeIndexMap,
-    scopeToInputIndexMap,
     onScatter,
     onSelect,
     onHover,
     hovered,
-    dataset,
     containerRef,
 }) {
     const [xDomain, setXDomain] = useState([-1, 1]);
@@ -64,10 +61,15 @@ function VisualizationPane({
         // need to convert intersectedIndices to the current scope space
         if(!intersectedIndices?.length) return drawPoints
         return drawPoints.map((p, i) => {
-            if (intersectedIndices?.includes(scopeToInputIndexMap[i])) {
-                return [p[0], p[1], 1, p[2]]
+            // TODO: if the row is deleted, don't draw it
+            // return [p[0], p[1], mapSelectionKey.hidden, p[2]]
+
+            if (deletedIndices?.includes(i)) {
+                return [p[0], p[1], mapSelectionKey.hidden, p[2]]
+            } else if (intersectedIndices?.includes(i)) {
+                return [p[0], p[1], mapSelectionKey.selected, p[2]]
             } else {
-                return [p[0], p[1], 2, p[2]]
+                return [p[0], p[1], mapSelectionKey.notSelected, p[2]]
             }
         })
     }, [drawPoints, intersectedIndices])
@@ -123,6 +125,7 @@ function VisualizationPane({
                 ) : (
                     <AnnotationPlot
                         points={points}
+                            deletedIndices={deletedIndices}
                         fill="gray"
                           height={height}
                           width={width}
@@ -202,6 +205,7 @@ function VisualizationPane({
               <AnnotationPlot
                   points={hoverAnnotations}
                   stroke="black"
+                    deletedIndices={deletedIndices}
                   fill="orange"
                   size="16"
                   xDomain={xDomain}

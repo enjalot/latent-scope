@@ -23,7 +23,6 @@ const useScopeData = (apiUrl, datasetId, scope) => {
         }
     }, [scope])
 
-
     const fetchScopeRows = useCallback(() => {
         fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/parquet`)
             .then((response) => response.json())

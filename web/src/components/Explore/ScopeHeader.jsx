@@ -10,7 +10,8 @@ function DatasetHeader({
   scope,
   scopes,
   onScopeChange,
-  tags
+  tags,
+  nonDeletedIndices
 }) {
   if (!dataset) return null;
 
@@ -55,7 +56,7 @@ function DatasetHeader({
             <br />
             {/* <div className="dataset-card"> */}
             <span>
-              {scope?.rows}/{dataset?.length} rows
+              {nonDeletedIndices?.length}/{dataset?.length} rows
             </span>
             <br />
             {/* </div> */}

@@ -122,6 +122,9 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     # TODO: add the max activated feature to the scope_parquet
     # or all the sparse features? top 10?
 
+    # create a column to indicate if the row has been deleted in the scope
+    scope_parquet["deleted"] = False
+
     # Add an ls_index column that is the index of each row in the dataframe
     scope_parquet['ls_index'] = scope_parquet.index
     print("scope columns", scope_parquet.columns)

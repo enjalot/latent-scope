@@ -453,7 +453,9 @@ function Explore() {
     };
   }, []);
 
-
+  const nonDeletedIndices = useMemo(() => {
+    return scopeRows.filter(d => !d.deleted).map(d => d.ls_index)
+  }, [scopeRows]);
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -465,6 +467,7 @@ function Explore() {
           tags={tags}
           scope={scope}
           scopes={scopes}
+          nonDeletedIndices={nonDeletedIndices}
           onScopeChange={handleScopeChange}
         />
 
@@ -482,12 +485,12 @@ function Explore() {
             scope={scope}
             containerRef={containerRef}
             inputToScopeIndexMap={inputToScopeIndexMap}
-            scopeToInputIndexMap={scopeToInputIndexMap}
             onScatter={setScatter}
             onSelect={handleSelected}
             onHover={handleHover}
             hovered={hovered}
             dataset={dataset}
+            deletedIndices={scopeRows.filter(d => d.deleted).map(d => d.ls_index)}
           />
         ) : null}
       </div>
@@ -736,9 +739,9 @@ function Explore() {
                 clusterMap={clusterMap}
                 clusterLabels={clusterLabels}
                 tagset={tagset}
-              sae_id={sae?.id}
-              feature={feature}
-              // showEmbeddings={showEmbeddings}
+            sae_id={sae?.id}
+            feature={feature}
+            // showEmbeddings={showEmbeddings}
                 onTagset={fetchTagSet}
                 onScope={() => {
                   fetchScopeMeta()

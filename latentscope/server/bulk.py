@@ -130,8 +130,9 @@ def delete_rows():
   # read in the scope parquet
   scope_file = os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + ".parquet")
   df = pd.read_parquet(scope_file)
-  df = df[~df['ls_index'].isin(row_ids)]
-  df.reset_index(drop=True, inplace=True)
+  # df = df[~df['ls_index'].isin(row_ids)]
+  # df.reset_index(drop=True, inplace=True)
+  df.loc[df['ls_index'].isin(row_ids), "deleted"] = True
 
   df.to_parquet(scope_file)
 
