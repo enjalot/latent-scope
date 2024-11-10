@@ -1,0 +1,116 @@
+name: Cypress Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Install Node dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Create test data directory
+        shell: bash
+        run: |
+          mkdir -p ~/latent-scope-data
+          ls-init ~/latent-scope-data
+
+      - name: Start backend server
+        shell: bash
+        run: |
+          ls-serve &
+
+      - name: Start frontend dev server
+        working-directory: web
+        shell: bash
+        run: |
+          npm run dev &
+
+      - name: Wait and check server ports
+        shell: bash
+        run: |
+          echo "Checking if servers are running..."
+          
+          # Try for 30 seconds, checking every second
+          for i in {1..30}; do
+            backend_up=false
+            frontend_up=false
+            
+            # Check backend server
+            if curl -s http://localhost:5001/health > /dev/null; then
+              echo "✓ Backend server running on port 5001"
+              backend_up=true
+            else
+              echo "Backend server not yet running on port 5001..."
+            fi
+            
+            # Check frontend server  
+            if curl -s http://localhost:5174 > /dev/null; then
+              echo "✓ Frontend server running on port 5174"
+              frontend_up=true
+            else
+              echo "Frontend server not yet running on port 5174..."
+            fi
+            
+            # If both are up, we can exit successfully
+            if [ "$backend_up" = true ] && [ "$frontend_up" = true ]; then
+              echo "Both servers are up!"
+              exit 0
+            fi
+            
+            # If we haven't succeeded yet, sleep and try again
+            if [ $i -lt 30 ]; then
+              echo "Waiting 1 second before retry..."
+              sleep 1
+            fi
+          done
+          
+          # If we get here, we've timed out
+          echo "Timed out waiting for servers to start"
+          exit 1
+
+      - name: Run Cypress tests
+        id: cypress
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: web
+          browser: chrome
+          config: baseUrl=http://localhost:5174
+        env:
+          CYPRESS_BASE_URL: http://localhost:5174
+          CYPRESS_API_URL: http://localhost:5001
+
+      - name: Upload test screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-screenshots
+          path: web/cypress/screenshots
+          retention-days: 30
