@@ -65,6 +65,9 @@ app.register_blueprint(bulk_bp, url_prefix='/api/bulk')
 if(not READ_ONLY):
     app.register_blueprint(bulk_write_bp, url_prefix='/api/bulk') 
 
+from .admin import admin_bp
+if not READ_ONLY:
+    app.register_blueprint(admin_bp, url_prefix='/api/admin') 
 
 # ===========================================================
 # File based routes for reading data and metadata from disk
