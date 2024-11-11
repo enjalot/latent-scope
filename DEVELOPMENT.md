@@ -33,6 +33,14 @@ npm run dev
 This sets up a local development server for the client code, typically at http://localhost:5173  
 This will call the local API at http://localhost:5001 as set in `web/.env.development`
 
+### Running Cypress tests
+
+This will run an E2E cypress test runner in a browser window.  
+Make sure that both latentscope and the webapp are running.
+
+```
+npm run cypress:open
+```
 
 ## Building for distribution
 You can build a new version of the module, this will package the latest version of the web interface as well.
