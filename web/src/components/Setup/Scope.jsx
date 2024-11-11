@@ -264,11 +264,21 @@ function Scope() {
         
         <div className={styles["scope-setup-info"]}>
            <h4>Scope Settings</h4>
-          <span className={styles["scope-form-label"]}>Embedding: </span><span className={styles["scope-form-value"]}>{embedding?.id} - {embedding?.model_id}</span><br/>
-          <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{umap?.id}</span><br/>
-          <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{cluster?.id} - {cluster?.n_clusters}</span><br/>
-          <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{clusterLabelSet?.id} - {clusterLabelSet?.model_id}</span><br/>
-          <span className={styles["scope-form-label"]}>Version: </span><span className={styles["scope-form-value"]}>{lsVersion}</span><br/>
+          <span className={savedScope?.embedding_id !== embedding?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Embedding: </span><span className={styles["scope-form-value"]}>{embedding?.id} - {embedding?.model_id}</span><br/>
+          </span>
+          <span className={savedScope?.umap_id !== umap?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{umap?.id}</span><br/>
+          </span>
+          <span className={savedScope?.cluster_id !== cluster?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{cluster?.id} - {cluster?.n_clusters}</span><br/>
+          </span>
+          <span className={savedScope?.cluster_labels_id !== clusterLabelSet?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{clusterLabelSet?.id} - {clusterLabelSet?.model_id}</span><br/>
+          </span>
+          <span className={savedScope?.ls_version !== lsVersion ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Version: </span><span className={styles["scope-form-value"]}>{lsVersion}</span><br/>
+          </span>
         </div>
         {savedScope && isDifferent || newVersion ? <div className={styles["previous-scope"]}>
           <h4>Previous Scope Settings</h4>
