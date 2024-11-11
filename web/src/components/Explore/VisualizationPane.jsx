@@ -57,11 +57,13 @@ function VisualizationPane({
     const drawingPoints = useMemo(() => {
         return drawPoints.map((p, i) => {
             if (deletedIndices?.includes(i)) {
-                return [p[0], p[1], mapSelectionKey.hidden, p[2]]
+                return [-10, -10, mapSelectionKey.hidden]
             } else if (intersectedIndices?.includes(i)) {
-                return [p[0], p[1], mapSelectionKey.selected, p[2]]
+                return [p[0], p[1], mapSelectionKey.selected]
+            } else if(intersectedIndices?.length) {
+                return [p[0], p[1], mapSelectionKey.notSelected]
             } else {
-                return [p[0], p[1], mapSelectionKey.notSelected, p[2]]
+                return [p[0], p[1], mapSelectionKey.normal]
             }
         })
     }, [drawPoints, deletedIndices, intersectedIndices])

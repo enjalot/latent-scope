@@ -138,6 +138,7 @@ function Scope() {
 
   const handleSaveScope = useCallback((event) => {
     event.preventDefault();
+    console.log("handle save scope", umap, cluster)
     if(!umap || !cluster) return;
     const form = event.target;
     const data = new FormData(form);
@@ -245,18 +246,18 @@ function Scope() {
             }} />
 
             {(savedScope && !scopeJob && isDifferent) || newVersion ? 
-              <Button type="submit" disabled={cluster ? false : true } 
+              <Button type="submit" 
                 onClick={() => { 
                   document.querySelector('input[name="action"]').value = 'save'; 
                 }} 
                 text={`Overwrite ${savedScope.id}`}
               /> : null }
               { isDifferent && !scopeJob ? 
-                <Button type="submit" disabled={cluster  ? false : true } 
+                <Button type="submit"
                   onClick={() => { 
                     document.querySelector('input[name="action"]').value = 'new'; 
-                }} 
-                text="New scope"
+                  }} 
+                  text="New scope"
               /> : null }
             
           </form>
