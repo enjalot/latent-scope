@@ -113,23 +113,23 @@ function Cluster() {
               <span className={styles["cluster-form-label"]}>Min Cluster Size:</span>
               <input type="number" name="samples" defaultValue={dataset.length < 1000 ? 3 : dataset.length < 10000 ? 15 : 25} disabled={!!clusterJob || !umap}/>
               <span className="tooltip" data-tooltip-id="samples">🤔</span>
-              <Tooltip id="samples" place="top" effect="solid">
-                This parameter determines the minimum number of data points you need to make a cluster. lower values mean more clusters.
+              <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
+                This parameter determines the minimum number of data points you need to make a cluster. Lower values mean more clusters.
               </Tooltip>
             </label>
             <label>
               <span className={styles["cluster-form-label"]}>Min Samples:</span>
               <input type="number" name="min_samples" defaultValue={dataset.length < 1000 ? 2 : 5} disabled={!!clusterJob || !umap} />
               <span className="tooltip" data-tooltip-id="min_samples">🤔</span>
-              <Tooltip id="min_samples" place="top" effect="solid">
-                The number of samples in a neighbourhoodfor a point to be considered a core point. lower values mean more clusters.
+              <Tooltip id="min_samples" place="top" effect="solid" className="tooltip-area">
+                The number of samples in a neighborhood for a point to be considered a core point. Lower values mean more clusters.
               </Tooltip>
             </label>
             <label>
               <span className={styles["cluster-form-label"]}>Epsilon:</span>
               <input type="number" name="cluster_selection_epsilon" defaultValue={dataset.length < 1000 ? 0.05 : 0.005} step="0.0001" disabled={!!clusterJob || !umap} />
               <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">🤔</span>
-              <Tooltip id="cluster_selection_epsilon" place="top" effect="solid">
+              <Tooltip id="cluster_selection_epsilon" place="top" effect="solid" className="tooltip-area">
                 The cluster selection epsilon parameter sets a distance threshold that allows you to balance the density of clusters. Set to 0 to use pure HDBSCAN.
               </Tooltip>
             </label>

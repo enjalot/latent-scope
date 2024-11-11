@@ -225,6 +225,7 @@ function FilterDataTable({
 
   const hydrateIndices = useCallback((indices) => {
     // console.log("hydrate!", dataset)
+    console.log("indices", indices)
     if (dataset && indices.length) {
       console.log("fetching query", dataset)
       fetch(`${apiUrl}/query`, {

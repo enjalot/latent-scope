@@ -240,7 +240,6 @@ def query():
     
 
     # get the indexed rows
-    # print("INDICES", indices)
     if len(indices):
         rows = rows.loc[indices]
 
