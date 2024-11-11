@@ -46,3 +46,8 @@
   border-radius: 6px;
   padding: 6px;
 }
+
+.tooltip-content {
+  max-height: 300px;
+  overflow: hidden;
+}

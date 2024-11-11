@@ -314,6 +314,15 @@ button:focus-visible {
 
 }
 
+.tooltip-content {
+  max-height: 300px;
+  overflow: hidden;
+}
+// .tooltip-text {
+//   max-height: 300px;
+//   overflow: hidden;
+// }
+
 // select {
 //   font-weight: 500;
 //   margin: 0 6px;
