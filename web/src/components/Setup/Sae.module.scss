@@ -1,0 +1,45 @@
+@import "./_shared";
+
+.sae {
+  @include setup-container;
+}
+.sae-setup {
+  @include setup-left;
+}
+.sae-preview {
+  @include setup-right;
+}
+.preview {
+  @include setup-preview;
+}
+.navigate {
+  @include setup-navigate;
+}
+.step {
+  @include setup-step;
+}
+.sae-form {
+  @include setup-form;
+}
+.sae-list {
+  @include item-list;
+  
+}
+.item {
+  @include setup-item;
+  label {
+    cursor: default !important;
+  }
+}
+.selected {
+  @include selected;
+}
+.item-info {
+  @include setup-item-info;
+}
+.item-deps {
+  @include setup-item-deps;
+}
+.delete {
+  @include setup-delete;
+}

@@ -20,12 +20,12 @@ export const mapSelectionColorsLight = [
 export const mapSelectionOpacity = [
   0.75, // normal
   1, // selected
-  0.25, // not selected
+  0.45, // not selected
   0, // hidden
 ]
 export const mapPointSizeRange = [
-  2, // normal
-  6, // selected
-  2, // not selected
+  4, // normal
+  8, // selected
+  3, // not selected
   0, // hidden
 ]

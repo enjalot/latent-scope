@@ -240,12 +240,26 @@ def delete_embedding():
             if umap_data.get('embedding_id') == embedding_id:
                 umaps_to_delete.append(file.replace('.json', ''))
     
+    # Get a list of all the saes that have embedding_id in their .json so we can delete them too
+    sae_dir = os.path.join(DATA_DIR, dataset, 'sae')
+    if not os.path.exists(sae_dir):
+        os.makedirs(sae_dir)
+    saes_to_delete = []
+    for file in os.listdir(sae_dir):
+        if file.endswith(".json"):
+            with open(os.path.join(sae_dir, file), 'r') as f:
+                umap_data = json.load(f)
+            if umap_data.get('embedding_id') == embedding_id:
+                saes_to_delete.append(file.replace('.json', ''))
+
 
     job_id = str(uuid.uuid4())
     path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}*").replace(" ", "\\ ")
     command = f'rm -rf {path}'
     for umap in umaps_to_delete:
         delete_umap(dataset, umap)
+    for sae in saes_to_delete:
+        delete_sae(dataset, sae)
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -253,12 +267,14 @@ def delete_embedding():
 def run_umap():
     dataset = request.args.get('dataset')
     embedding_id = request.args.get('embedding_id')
+    sae_id = request.args.get('sae_id')
     neighbors = request.args.get('neighbors')
     min_dist = request.args.get('min_dist')
     init = request.args.get('init')
     align = request.args.get('align')
     save = request.args.get('save')
-    print("run umap", dataset, embedding_id, neighbors, min_dist, init, align, save)
+    seed = request.args.get('seed')
+    print("run umap", dataset, embedding_id, sae_id, neighbors, min_dist, init, align, save, seed)
 
     job_id = str(uuid.uuid4())
     command = f'ls-umap "{dataset}" "{embedding_id}" {neighbors} {min_dist}'
@@ -268,6 +284,10 @@ def run_umap():
         command += f' --align={align}'
     if save:
         command += f' --save'
+    if sae_id:
+        command += f' --sae_id={sae_id}'
+    if seed:
+        command += f' --seed={seed}'
 
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
@@ -297,6 +317,47 @@ def delete_umap(dataset, umap_id):
     for cluster in clusters_to_delete:
         cpath = os.path.join(DATA_DIR, dataset, "clusters", f"{cluster}*").replace(" ", "\\ ")
         command += f'; rm -rf {cpath}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
+
+@jobs_write_bp.route('/sae')
+def run_sae():
+    dataset = request.args.get('dataset')
+    embedding_id = request.args.get('embedding_id')
+    model_id = request.args.get('model_id')
+    k_expansion = request.args.get('k_expansion')
+
+    job_id = str(uuid.uuid4())
+    command = f'ls-sae "{dataset}" "{embedding_id}" "{model_id}" {k_expansion}'
+
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+@jobs_write_bp.route('/delete/sae')
+def delete_sae_request():
+    dataset = request.args.get('dataset')
+    sae_id = request.args.get('sae_id')
+    return delete_sae(dataset, sae_id)
+
+def delete_sae(dataset, sae_id):
+    # Get a list of all the umaps that have sae_id in their .json so we can delete them too
+    umap_dir = os.path.join(DATA_DIR, dataset, 'umaps')
+    umaps_to_delete = []
+    for file in os.listdir(umap_dir):
+        if file.endswith(".json"):
+            with open(os.path.join(umap_dir, file), 'r') as f:
+                umap_data = json.load(f)
+            if umap_data.get('sae_id') == sae_id:
+                umaps_to_delete.append(file.replace('.json', ''))
+    
+
+    job_id = str(uuid.uuid4())
+    path = os.path.join(DATA_DIR, dataset, "saes", f"{sae_id}*").replace(" ", "\\ ")
+    command = f'rm -rf {path}'
+    for umap in umaps_to_delete:
+        delete_umap(dataset, umap)
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -346,16 +407,19 @@ def run_cluster_label():
 def run_scope():
     dataset = request.args.get('dataset')
     embedding_id = request.args.get('embedding_id')
+    sae_id = request.args.get('sae_id')
     umap_id = request.args.get('umap_id')
     cluster_id = request.args.get('cluster_id')
     cluster_labels_id = request.args.get('cluster_labels_id')
     label = request.args.get('label')
     description = request.args.get('description')
     scope_id = request.args.get('scope_id')
-    print("run scope", dataset, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id)
+    print("run scope", dataset, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id, sae_id)
 
     job_id = str(uuid.uuid4())
     command = f'ls-scope "{dataset}" "{embedding_id}" "{umap_id}" "{cluster_id}" "{cluster_labels_id}" "{label}" "{description}"'
+    if sae_id:
+        command += f' --sae_id={sae_id}'
     if scope_id:
         command += f' --scope_id={scope_id}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()

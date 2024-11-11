@@ -5,6 +5,7 @@ import { interpolatePurples} from "d3-scale-chromatic";
 import { Input, Button } from "react-element-forge"
 import { Tooltip } from "react-tooltip"
 
+import { processHulls } from "../../utils";
 import { useSetup } from "../../contexts/SetupContext";
 import { apiService } from "../../lib/apiService";
 import FilterDataTable from '../FilterDataTable';
@@ -13,12 +14,6 @@ import HullPlot from "../HullPlot";
 import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionKey, mapSelectionOpacity, mapPointSizeRange } from "../../lib/colors";
 
 import styles from "./Preview.module.scss";
-
-function processHulls(labels, points) {
-  return labels.map(d => {
-    return d.hull.map(i => points[i])
-  })
-}
 
 function Preview({
   embedding,

@@ -73,7 +73,7 @@ function Umap({}) {
         setUmap(ump)
       })
     }
-  }, [umapJob, dataset, embedding, setUmaps]);
+  }, [umapJob, dataset, setUmaps]);
 
 
   const handleChangeInit = useCallback((e) => {
@@ -88,6 +88,7 @@ function Umap({}) {
     const data = new FormData(form)
     const neighbors = data.get('neighbors')
     const min_dist = data.get('min_dist')
+    const seed = data.get('seed')
     const align = Array.from(document.querySelectorAll('input[name="umapAlign"]:checked'))
       .map(input => input.value)
       .sort((a,b) => a.localeCompare(b))
@@ -98,7 +99,16 @@ function Umap({}) {
     if(align.length > 0) {
       s = "";
     }
-    startUmapJob({embedding_id: embedding?.id, neighbors, min_dist, init, align, save: s})
+
+    let job = {
+      embedding_id: embedding?.id, 
+      neighbors, 
+      min_dist, 
+      init, 
+      align, save: s,
+      seed
+    }
+    startUmapJob(job)
   }, [startUmapJob, embedding, init, save])
 
   const [showAlign, setShowAlign] = useState(false);
@@ -145,6 +155,10 @@ function Umap({}) {
                   A smaller value will result in a more clustered UMAP, while a larger value will result in a more spread out UMAP.
                 </Tooltip>
               </label>
+              <label>
+                <span className={styles["umap-form-label"]}>Seed: </span>
+                <input type="text" name="seed" defaultValue="-1" disabled={!!umapJob} />
+              </label>
           
           <div className={styles["umap-form-align"]}>
             <Switch onChange={toggleShowAlign} color="secondary" label="Align UMAP"/>
@@ -171,7 +185,7 @@ function Umap({}) {
           </div>}
 
           {!showAlign && <div className={styles["umap-form-save"]}>
-            <Switch onChange={toggleSave} color="secondary" label="Save UMAP"/>
+            <Switch onChange={toggleSave} color="secondary" label="Save UMAP model"/>
             <span className="tooltip" data-tooltip-id="save-umap">🤔</span>
             <Tooltip id="save-umap" place="top" effect="solid" className={styles["tooltip"]}>
               Saving a UMAP model will allow you to project new data (from the same embedding model) onto it later. 

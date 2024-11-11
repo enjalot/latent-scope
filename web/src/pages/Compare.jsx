@@ -337,7 +337,7 @@ function Compare() {
                 let emb = embeddings.find(d => um.embedding_id == d.id)
                 return (
                 <option key={index} value={um.id}>
-                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}] {um.align_id}
+                  {um.embedding_id} - {um.id} - {emb?.model_id || um.embedding_id} [{emb?.dimensions}] {um.align_id}
                   </option>
               )})}
             </select>
@@ -370,7 +370,7 @@ function Compare() {
                 let emb = embeddings.find(d => um.embedding_id == d.id)
                 return (
                 <option key={index} value={um.id}>
-                  {um.embedding_id} - {um.id} - {emb?.model_id} [{emb?.dimensions}] {um.align_id}
+                  {um.embedding_id} - {um.id} - {emb?.model_id || um.embedding_id} [{emb?.dimensions}] {um.align_id}
                   </option>
               )})}
             </select>
@@ -392,9 +392,9 @@ function Compare() {
                 width={scopeWidth}
                 height={scopeHeight}
                 colorScaleType="continuous"
-                colorInterpolator={interpolateMagma}
+                // colorInterpolator={interpolateMagma}
+                colorInterpolator={interpolateReds}
                 opacityBy="valueA"
-                // colorInterpolator={interpolateReds}
                 onScatter={setScatter}
                 onView={handleView}
                 onSelect={handleSelected}

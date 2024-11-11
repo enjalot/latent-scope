@@ -23,7 +23,7 @@
   min-height: 0;
 }
 .scatters .scatter canvas {
-  background-color: #666;
+  background-color: #111;
 }
 
 .tab-tables {

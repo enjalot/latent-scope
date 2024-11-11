@@ -5,8 +5,8 @@ export default function useNearestNeighborsSearch({
     datasetId,
     scope,
     embeddings,
-    inputToScopeIndexMap,
-    onSearchEmbedding
+    onSearchEmbedding,
+    deletedIndices
 }) {
     const [searchIndices, setSearchIndices] = useState([]);
     const [distances, setDistances] = useState([]);
@@ -40,10 +40,12 @@ export default function useNearestNeighborsSearch({
                         dists[idx] = data.distances[i];
                         return idx;
                     })
-                    .filter((idx) => inputToScopeIndexMap[idx] >= 0);
+                    .filter((idx) => !deletedIndices.includes(idx));
+                // TODO: handle deleted indices
 
                 setDistances(dists);
-                setSearchIndices(inds);
+                // TODO: make the # of results configurable
+                setSearchIndices(inds.slice(0, 10));
                 onSearchEmbedding?.(data.search_embedding[0]);
             } catch (error) {
                 console.error('Search failed:', error);
@@ -51,7 +53,7 @@ export default function useNearestNeighborsSearch({
                 setIsLoading(false);
             }
         },
-        [apiUrl, datasetId, scope, embeddings, inputToScopeIndexMap, onSearchEmbedding]
+        [apiUrl, datasetId, scope, embeddings, onSearchEmbedding]
     );
 
     const clearSearch = useCallback(() => {

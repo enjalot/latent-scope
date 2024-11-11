@@ -10,7 +10,9 @@ import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
+import { saeAvailable } from '../../lib/SAE';
 
+import Sae from './Sae';
 import Preview from './Preview';
 
 import styles from './Embedding.module.scss';
@@ -25,6 +27,7 @@ const debounce = (func, wait) => {
 };
 
 
+
 function Embedding() {
   const { datasetId, dataset, scope, savedScope, setDataset, updateScope, goToNextStep, setPreviewLabel } = useSetup();
 
@@ -33,6 +36,7 @@ function Embedding() {
   const [embeddings, setEmbeddings] = useState([]);
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
+  const [saes, setSaes] = useState([]);
 
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
@@ -67,6 +71,7 @@ function Embedding() {
       apiService.fetchEmbeddings(dataset?.id).then(embs => setEmbeddings(embs))
       apiService.fetchUmaps(dataset?.id).then(ums => setUmaps(ums))
       apiService.fetchClusters(dataset?.id).then(cls => setClusters(cls))
+      apiService.fetchSaes(dataset?.id).then(saes => setSaes(saes))
       setTextColumn(dataset?.text_column)
     }
   }, [dataset, setEmbeddings, setUmaps, setClusters])
@@ -251,13 +256,17 @@ function Embedding() {
   }, [startEmbeddingsTruncateJob])
 
   const handleNextStep = useCallback(() => {
+    let sae_id = null;
+    if(embedding?.id) {
+      sae_id = saes.find(d => d.embedding_id == embedding?.id)?.id
+    }
     if(savedScope?.embedding_id == embedding?.id) {
-      updateScope({...savedScope})
+      updateScope({...savedScope, sae_id})
     } else {
-      updateScope({embedding_id: embedding?.id, umap_id: null, cluster_id: null, cluster_labels_id: null, id: null})
+      updateScope({embedding_id: embedding?.id, sae_id, umap_id: null, cluster_id: null, cluster_labels_id: null, id: null})
     }
     goToNextStep()
-  }, [updateScope, goToNextStep, embedding, savedScope])
+  }, [updateScope, goToNextStep, embedding, savedScope, saes])
 
   return (
     <div className={styles["embeddings"]}>
@@ -400,13 +409,15 @@ function Embedding() {
                           return (<option key={"dimension-"+i} value={d}>{d}</option>)
                         })}
                       </select>
-                      <span className={`button ${styles["button"]}`} onClick={() => handleTruncate(emb.id)}>Truncate</span>
+                      <Button color="secondary" onClick={() => handleTruncate(emb.id)} text="Truncate"/>
                       <span className="tooltip" data-tooltip-id="truncate">🤔</span>
                       <Tooltip id="truncate" place="top" effect="solid">
                         This model supports Matroyshka embeddings. <br></br>
                         You can make a truncated copy of this embedding with fewer dimensions.
                       </Tooltip>
                   </div> : <br/> }
+
+                  {saeAvailable[emb.model_id] ? <Sae embedding={emb} model={saeAvailable[emb.model_id]}/> : null}
                 </span>
               </label>
               <Button className={styles["delete"]} 

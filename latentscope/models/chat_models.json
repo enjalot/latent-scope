@@ -10,16 +10,16 @@
     },
     {
         "provider": "openai",
-        "name": "gpt-4o-mini",
-        "id": "openai-gpt-4o-mini",
+        "name": "gpt-4o",
+        "id": "openai-gpt-4o",
         "params": {
             "max_tokens": 128000
         }
     },
     {
         "provider": "openai",
-        "name": "gpt-4o",
-        "id": "openai-gpt-4o",
+        "name": "gpt-4o-mini",
+        "id": "openai-gpt-4o-mini",
         "params": {
             "max_tokens": 128000
         }

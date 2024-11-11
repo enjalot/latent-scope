@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useStartJobPolling } from '../Job/Run';
 import JobProgress from '../Job/Progress';
 import { Button } from 'react-element-forge';
-
+import { compareVersions } from 'compare-versions';
 import { apiService, apiUrl } from '../../lib/apiService';
 import { useSetup } from '../../contexts/SetupContext';
 
@@ -45,14 +45,16 @@ function Scope() {
     } else {
       setPreviewLabel(null)
     }
-  }, [scope])
+  }, [scope, setPreviewLabel])
 
+  const [lsVersion, setLsVersion] = useState(null);
   // Fetch initial data
   useEffect(() => {
     if(dataset) {
       apiService.fetchEmbeddings(dataset?.id).then(embs => setEmbeddings(embs))
       apiService.fetchUmaps(dataset?.id).then(umaps => setUmaps(umaps))
       apiService.fetchClusters(dataset?.id).then(cls => setClusters(cls))
+      apiService.fetchVersion().then(setLsVersion)
     }
   }, [dataset])
 
@@ -136,6 +138,7 @@ function Scope() {
 
   const handleSaveScope = useCallback((event) => {
     event.preventDefault();
+    console.log("handle save scope", umap, cluster)
     if(!umap || !cluster) return;
     const form = event.target;
     const data = new FormData(form);
@@ -162,6 +165,9 @@ function Scope() {
       label: data.get('label'),
       description: data.get('description')
     };
+    if(scope.sae_id) {
+      payload.sae_id = scope.sae_id
+    }
 
     console.log("action", action)
     if(action == "save") {
@@ -176,6 +182,14 @@ function Scope() {
     savedScope?.label !== label || savedScope?.description !== description
   , [savedScope, label, description]);
 
+  const [newVersion, setNewVersion] = useState(false);
+  useEffect(() => {
+    console.log("VERSIONS", lsVersion, savedScope?.ls_version, scope?.ls_version)
+    if(lsVersion && savedScope?.ls_version && compareVersions(savedScope?.ls_version, lsVersion) < 0) {
+      setNewVersion(true)
+    }
+  }, [lsVersion, savedScope])
+
   useEffect(() => {
     if(!scope) {
       setIsDifferent(true);
@@ -183,7 +197,9 @@ function Scope() {
       if(scope.embedding_id != savedScope?.embedding_id
         || scope.umap_id != savedScope?.umap_id
         || scope.cluster_id != savedScope?.cluster_id
-        || scope.cluster_labels_id != savedScope?.cluster_labels_id) {
+        || scope.cluster_labels_id != savedScope?.cluster_labels_id
+        || scope.sae_id != savedScope?.sae_id
+      ) {
         setIsDifferent(true);
       } else {
         setIsDifferent(false)
@@ -229,19 +245,19 @@ function Scope() {
                 }
             }} />
 
-            {savedScope && !scopeJob && isDifferent ? 
-              <Button type="submit" disabled={cluster ? false : true } 
+            {(savedScope && !scopeJob && isDifferent) || newVersion ? 
+              <Button type="submit" 
                 onClick={() => { 
                   document.querySelector('input[name="action"]').value = 'save'; 
                 }} 
                 text={`Overwrite ${savedScope.id}`}
               /> : null }
               { isDifferent && !scopeJob ? 
-                <Button type="submit" disabled={cluster  ? false : true } 
+                <Button type="submit"
                   onClick={() => { 
                     document.querySelector('input[name="action"]').value = 'new'; 
-                }} 
-                text="New scope"
+                  }} 
+                  text="New scope"
               /> : null }
             
           </form>
@@ -252,13 +268,25 @@ function Scope() {
           <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{umap?.id}</span><br/>
           <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{cluster?.id} - {cluster?.n_clusters}</span><br/>
           <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{clusterLabelSet?.id} - {clusterLabelSet?.model_id}</span><br/>
+          <span className={styles["scope-form-label"]}>Version: </span><span className={styles["scope-form-value"]}>{lsVersion}</span><br/>
         </div>
-        {savedScope && isDifferent ? <div className={styles["previous-scope"]}>
+        {savedScope && isDifferent || newVersion ? <div className={styles["previous-scope"]}>
           <h4>Previous Scope Settings</h4>
-          <span className={styles["scope-form-label"]}>Embedding: </span><span className={styles["scope-form-value"]}>{savedScope.embedding_id} - {savedEmbedding?.model_id}</span><br/>
-          <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{ savedScope.umap_id }</span><br/>
-          <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_id } - {savedCluster?.n_clusters}</span><br/>
-          <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_labels_id } - { savedClusterLabelSet?.model_id }</span><br/>
+          <span className={savedScope.embedding_id !== embedding?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Embedding: </span><span className={styles["scope-form-value"]}>{savedScope.embedding_id} - {savedEmbedding?.model_id}</span><br/>
+          </span>
+          <span className={savedScope.umap_id !== umap?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{ savedScope.umap_id }</span><br/>
+          </span>
+          <span className={savedScope.cluster_id !== cluster?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_id } - {savedCluster?.n_clusters}</span><br/>
+          </span>
+          <span className={savedScope.cluster_labels_id !== clusterLabelSet?.id ? styles["different"] : ""}>
+            <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_labels_id } - { savedClusterLabelSet?.model_id }</span><br/>
+          </span>
+          <span className={savedScope.ls_version !== lsVersion ? styles["different"] : ""}>
+              <span className={styles["scope-form-label"]}>Version: </span><span className={styles["scope-form-value"]}>{savedScope.ls_version}</span><br/>
+          </span>
         </div> : null }
 
         <div className={styles["scope-setup-img"]}>

@@ -17,11 +17,12 @@ def main():
     parser.add_argument('label', type=str, help='Label for the scope')
     parser.add_argument('description', type=str, help='Description of the scope')
     parser.add_argument('--scope_id', type=str, help='Scope id to overwrite existing scope', default=None)
+    parser.add_argument('--sae_id', type=str, help='SAE id', default=None)
 
     args = parser.parse_args()
     scope(**vars(args))
 
-def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id=None):
+def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id=None, sae_id=None):
     DATA_DIR = get_data_dir()
     print("DATA DIR", DATA_DIR)
     directory = os.path.join(DATA_DIR, dataset_id, "scopes")
@@ -58,6 +59,8 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
         "label": label,
         "description": description
     }
+    if(sae_id):
+        scope["sae_id"] = sae_id
 
     # read each json file and add its contents to the scope file
     dataset_file = os.path.join(DATA_DIR, dataset_id, "meta.json")
@@ -69,7 +72,13 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     with open(embedding_file) as f:
         embedding = json.load(f)
         scope["embedding"] = embedding
-    
+
+    if sae_id:
+        sae_file = os.path.join(DATA_DIR, dataset_id, "saes", sae_id + ".json")
+        with open(sae_file) as f:
+            sae = json.load(f)
+            scope["sae"] = sae
+
     umap_file = os.path.join(DATA_DIR, dataset_id, "umaps", umap_id + ".json")
     with open(umap_file) as f:
         umap = json.load(f)
@@ -110,6 +119,20 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     cluster_df["label"] = cluster_df["cluster"].apply(lambda x: cluster_labels_df.loc[x]["label"])
     print("cluster columns", cluster_df.columns)
     scope_parquet = pd.concat([umap_df, cluster_df], axis=1)
+    # TODO: add the max activated feature to the scope_parquet
+    # or all the sparse features? top 10?
+
+    # create a column to indicate if the row has been deleted in the scope
+    scope_parquet["deleted"] = False
+    if scope_id:
+        # read the transactions file
+        transactions_file_path = os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + "-transactions.json")
+        with open(transactions_file_path) as f:
+            transactions = json.load(f)
+            for transaction in transactions:
+                if transaction["action"] == "delete_rows":
+                    scope_parquet.loc[transaction["payload"]["row_ids"], "deleted"] = True
+
     # Add an ls_index column that is the index of each row in the dataframe
     scope_parquet['ls_index'] = scope_parquet.index
     print("scope columns", scope_parquet.columns)

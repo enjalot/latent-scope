@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import Scatter from "../Scatter";
 import AnnotationPlot from "../AnnotationPlot";
 import HullPlot from "../HullPlot";
-import { processHulls, isMobileDevice } from "../../utils";
+import { Tooltip } from "react-tooltip";
+import { processHulls } from "../../utils";
+import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from "../../lib/colors";
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -13,18 +15,16 @@ const isIOS = () => {
 function VisualizationPane({
     points,
     drawPoints,
-    hulls,
     hoverAnnotations,
-    intersectedAnnotations,
+    intersectedIndices,
+    deletedIndices = [],
     hoveredCluster,
     slide,
     scope,
-    inputToScopeIndexMap,
     onScatter,
     onSelect,
     onHover,
     hovered,
-    dataset,
     containerRef,
 }) {
     const [xDomain, setXDomain] = useState([-1, 1]);
@@ -54,16 +54,63 @@ function VisualizationPane({
 
     const [width, height] = size;
 
+    const drawingPoints = useMemo(() => {
+        return drawPoints.map((p, i) => {
+            if (deletedIndices?.includes(i)) {
+                return [-10, -10, mapSelectionKey.hidden]
+            } else if (intersectedIndices?.includes(i)) {
+                return [p[0], p[1], mapSelectionKey.selected]
+            } else if(intersectedIndices?.length) {
+                return [p[0], p[1], mapSelectionKey.notSelected]
+            } else {
+                return [p[0], p[1], mapSelectionKey.normal]
+            }
+        })
+    }, [drawPoints, deletedIndices, intersectedIndices])
+
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+    // TODO: calculate these properly
+    const heightOffset = 320
+    const umapHeight = 450
+    // const umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
+    useEffect(() => {
+        if(hovered) {
+            console.log("hovered", hovered)
+            const point = drawPoints[hovered.index]
+            if (point && xDomain && yDomain) {
+                let px = point[0]
+                if(px < xDomain[0]) px = xDomain[0]
+                if(px > xDomain[1]) px = xDomain[1]
+                let py = point[1]
+                if(py < yDomain[0]) py = yDomain[0]
+                if(py > yDomain[1]) py = yDomain[1]
+                const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
+                // let umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
+                const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (umapHeight) + heightOffset // + umapHeightOffset
+                console.log("xPos", xPos, "yPos", yPos)
+                setTooltipPosition({ 
+                  x: xPos,
+                  y: yPos
+                });
+              }
+        }
+    }, [hovered, drawPoints, xDomain, yDomain, width, heightOffset, umapHeight])
+
     return (
         <div className="umap-container">
             <div className="scatters" style={{ width, height }}>
                 {!isIOS() && scope ? (
                     <Scatter
-                        points={drawPoints}
+                        points={drawingPoints}
                         duration={2000}
                         width={width}
                         height={height}
                         colorScaleType="categorical"
+                        colorRange={mapSelectionColorsLight}
+                        colorDomain={mapSelectionDomain}
+                        opacityRange={mapSelectionOpacity}
+                        pointSizeRange={mapPointSizeRange}
+                        opacityBy="valueA"
                         onScatter={onScatter}
                         onView={handleView}
                         onSelect={onSelect}
@@ -72,6 +119,7 @@ function VisualizationPane({
                 ) : (
                     <AnnotationPlot
                         points={points}
+                            deletedIndices={deletedIndices}
                         fill="gray"
                           height={height}
                           width={width}
@@ -86,18 +134,19 @@ function VisualizationPane({
                   !scope.ignore_hulls &&
                   scope.cluster_labels_lookup && (
                       <HullPlot
-                          hulls={processHulls(
-                              [hoveredCluster],
-                              points,
-                              inputToScopeIndexMap,
-                          )}
-                          fill="lightgray"
-                        // fill="#f0f0f0"
-                          duration={0}
-                          xDomain={xDomain}
-                          yDomain={yDomain}
-                          width={width}
-                          height={height}
+                        hulls={processHulls(
+                            [hoveredCluster],
+                            points
+                        )}
+                        fill="lightgray"
+                        stroke="gray"
+                        strokeWidth={2}
+                        opacity={0.25}
+                        duration={0}
+                        xDomain={xDomain}
+                        yDomain={yDomain}
+                        width={width}
+                        height={height}
                       />
                   )}
 
@@ -106,18 +155,21 @@ function VisualizationPane({
                   !scope.ignore_hulls &&
                   scope.cluster_labels_lookup && (
                       <HullPlot
-                          hulls={processHulls([slide], points, inputToScopeIndexMap)}
-                          fill="darkgray"
-                          strokeWidth={2}
-                          duration={0}
-                          xDomain={xDomain}
-                          yDomain={yDomain}
-                          width={width}
-                          height={height}
+                        hulls={processHulls([slide], points)}
+                        fill="darkgray"
+                        stroke="gray"
+                        strokeWidth={2}
+                        opacity={0.35}
+                        duration={0}
+                        xDomain={xDomain}
+                        yDomain={yDomain}
+                        width={width}
+                        height={height}
                       />
                   )}
 
-              {hulls.length && !scope.ignore_hulls && (
+                {/* show all the hulls */}
+              {/* {hulls.length && !scope.ignore_hulls && (
                   <HullPlot
                       hulls={hulls}
                         stroke="#9d9d9d"
@@ -129,9 +181,9 @@ function VisualizationPane({
                       width={width}
                       height={height}
                   />
-              )}
+              )} */}
 
-              <AnnotationPlot
+              {/* <AnnotationPlot
                   points={intersectedAnnotations}
                   stroke="black"
                   fill="steelblue"
@@ -140,22 +192,60 @@ function VisualizationPane({
                   yDomain={yDomain}
                   width={width}
                   height={height}
-              />
+              /> */}
 
               <AnnotationPlot
-                  points={hoverAnnotations}
-                  stroke="black"
-                  fill="orange"
-                  size="16"
-                  xDomain={xDomain}
-                  yDomain={yDomain}
-                  width={width}
-                  height={height}
+                    points={hoverAnnotations}
+                    stroke="black"
+                    deletedIndices={deletedIndices}
+                    fill="orange"
+                    size="16"
+                    xDomain={xDomain}
+                    yDomain={yDomain}
+                    width={width}
+                    height={height}
               />
           </div>
 
           {/* Hover information display */}
-          {!isMobileDevice() && (
+          {hovered&& <div
+            data-tooltip-id="featureTooltip"
+            style={{
+                position: 'absolute',
+                left: tooltipPosition.x,
+                top: tooltipPosition.y,
+                pointerEvents: 'none',
+            }}
+            ></div> }
+            {hovered && <Tooltip id="featureTooltip" 
+                isOpen={hovered !== null}
+                delayShow={0}
+                delayHide={0}
+                delayUpdate={0}
+                style={{
+                    position: 'absolute',
+                    left: tooltipPosition.x,
+                    top: tooltipPosition.y,
+                    pointerEvents: 'none',
+                    maxWidth: "400px",
+                    backgroundColor: hovered?.ls_search_index >= 0 ? "#111" : "#666"
+                }}
+            >
+                <div className="tooltip-content">
+                    {/* {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null} */}
+                    {hoveredCluster && (
+                        <span>
+                            <span className="key">Cluster {hoveredCluster.cluster}: </span>
+                            <span className="value">{hoveredCluster.label}</span>
+                        </span>
+                    )}
+                    <br></br>
+                    <span>Index: {hovered.index}</span>
+                    <p>{hovered[scope?.embedding?.text_column]}</p>
+                </div>
+            </Tooltip> }
+
+          {/* {!isMobileDevice() && (
               <div className="hovered-point">
                   {hoveredCluster && (
                       <span>
@@ -205,7 +295,7 @@ function VisualizationPane({
                 );
             })}
               </div>
-          )}
+          )} */}
       </div>
   );
 }
@@ -219,7 +309,6 @@ VisualizationPane.propTypes = {
     hoveredCluster: PropTypes.object,
     slide: PropTypes.object,
     scope: PropTypes.object,
-    inputToScopeIndexMap: PropTypes.object.isRequired,
     onScatter: PropTypes.func.isRequired,
     onSelect: PropTypes.func.isRequired,
     onHover: PropTypes.func.isRequired,

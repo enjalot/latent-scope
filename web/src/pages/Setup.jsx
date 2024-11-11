@@ -3,6 +3,7 @@
 import { SetupProvider, useSetup } from '../contexts/SetupContext';
 import SetupHeader from '../components/Setup/Header';
 import Embedding from '../components/Setup/Embedding';
+import Sae from '../components/Setup/Sae';
 import Umap from '../components/Setup/Umap';
 import Cluster from '../components/Setup/Cluster';
 import ClusterLabels from '../components/Setup/ClusterLabels';

@@ -5,6 +5,7 @@ import "./AnnotationPlot.css"
 
 const AnnotationPlot = ({ 
   points, 
+  deletedIndices,
   fill,
   stroke,
   size,
@@ -35,14 +36,20 @@ const AnnotationPlot = ({
       ctx.globalAlpha = 0.75
       let rw = zScale(size)
       if(!points.length) return
-      points.map(point => {
+
+      const filteredPoints = points.filter(p => !deletedIndices.includes(p[2]))
+      filteredPoints.map(point => {
         if(!point) return;
         if(fill)
-          ctx.fillRect(xScale(point[0]) - rw/2, yScale(point[1]) - rw/2, rw, rw)
+          // ctx.fillRect(xScale(point[0]) - rw/2, yScale(point[1]) - rw/2, rw, rw);
+          ctx.beginPath();
+          ctx.arc(xScale(point[0]), yScale(point[1]), rw / 2, 0, 2 * Math.PI);
+          ctx.fill();
         if(stroke)
-          ctx.strokeRect(xScale(point[0]) - rw/2, yScale(point[1]) - rw/2, rw, rw)
+          ctx.stroke();
+          // ctx.strokeRect(xScale(point[0]) - rw/2, yScale(point[1]) - rw/2, rw, rw)
         if(symbol)
-          ctx.fillText(symbol, xScale(point[0]) - rw/3.2, yScale(point[1]) + rw/3.2)
+          ctx.fillText(symbol, xScale(point[0]) - rw/2.2, yScale(point[1]) + rw/3.2)
       })
     }
 

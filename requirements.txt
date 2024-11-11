@@ -47,7 +47,7 @@ h5py
 hdbscan
 httpcore~=1.0.2
 httpx~=0.25.2
-huggingface-hub~=0.23.2
+huggingface-hub~=0.24.5
 idna~=3.6
 importlib-metadata~=6.11.0
 ipykernel~=6.29.0
