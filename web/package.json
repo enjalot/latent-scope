@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/match-sorter-utils": "^8.11.8",
     "@tanstack/react-table": "^8.15.0",
+    "compare-versions": "^6.1.1",
     "d3-scale": "^4.0.2",
     "d3-scale-chromatic": "^3.0.0",
     "d3-selection": "^3.0.0",

@@ -1,6 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { compareVersions } from 'compare-versions';
 
+import { apiService } from '../../lib/apiService';
 import { isMobileDevice } from '../../utils';
 
 const readonly = import.meta.env.MODE == "read_only"
@@ -14,6 +17,12 @@ function DatasetHeader({
   deletedIndices
 }) {
   if (!dataset) return null;
+
+  const [lsVersion, setLsVersion] = useState(null);
+
+  useEffect(() => {
+    apiService.fetchVersion().then(setLsVersion);
+  }, []);
 
   return (
     <div className="summary">
@@ -48,6 +57,12 @@ function DatasetHeader({
 
         {scope?.ls_version ? (
           <span>
+            {lsVersion && compareVersions(scope?.ls_version, lsVersion) < 0 ? 
+              <div className="scope-version-warning">
+                <span className="warning-header">Outdated Scope</span>
+                <span> This scope was created with Latent Scope version <code>{scope.ls_version}</code>, while you are running Latent Scope <code>{lsVersion}</code></span>
+                <span> please "Overwrite" the scope in the last step on the <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to update.</span>
+              </div> : null}
             <span><span className="metadata-label">Scope</span> {scope?.id}</span>
             <br />
             <span><span className="metadata-label">Description</span> {scope?.description}</span>

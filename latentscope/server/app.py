@@ -16,6 +16,8 @@ from flask_cors import CORS
 
 # from latentscope.util import update_data_dir
 from latentscope.util import get_data_dir, get_supported_api_keys
+from latentscope.__version__ import __version__
+
 
 app = Flask(__name__)
 
@@ -305,6 +307,10 @@ if not READ_ONLY:
             "env_file": os.path.abspath(".env")
         }
         return jsonify(settings)
+
+@app.route('/api/version', methods=['GET'])
+def get_version():
+    return __version__
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
