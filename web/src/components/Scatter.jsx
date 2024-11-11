@@ -123,12 +123,19 @@ function ScatterPlot ({
     scatterplot.subscribe("pointOut", () => {
       onHover && onHover(null)
     });
-  
+
+    const handleMouseLeave = () => {
+      onHover && onHover(null);
+    };
+    const canvas = container.current;
+    canvas.addEventListener('mouseleave', handleMouseLeave);
+
     onScatter && onScatter(scatterplot)
 
     return () => {
       scatterplotRef.current = null;
       scatterplot.destroy();
+      canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [width, height, onScatter, onView, onSelect, onHover])
 
