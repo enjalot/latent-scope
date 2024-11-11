@@ -21,3 +21,6 @@
   text-decoration: underline;
 }
 
+.tooltip-area {
+  z-index: 300;
+}

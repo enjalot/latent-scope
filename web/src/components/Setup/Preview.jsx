@@ -27,6 +27,9 @@ function Preview({
   // Search related state
   // ------------------------------------------------------------
   const [dataIndices, setDataIndices] = useState(range(0, Math.min(length, 100)));
+  useEffect(() => {
+    setDataIndices(range(0, Math.min(length, 100)))
+  }, [dataset])
 
   const [distances, setDistances] = useState([])
   const [clusterMap, setClusterMap] = useState({})

@@ -186,7 +186,7 @@ function ClusterLabels() {
               <span className={styles["cluster-labels-form-label"]}>Samples:</span>
               <input type="number" name="samples" value={10} min={0} disabled={!!clusterLabelsJob || !cluster} />
               <span className="tooltip" data-tooltip-id="samples">🤔</span>
-              <Tooltip id="samples" place="top" effect="solid">
+              <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
                 The number of samples to use from each cluster for summarization. Set to 0 to use all samples.
               </Tooltip>
             </label>
