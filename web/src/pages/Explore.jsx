@@ -22,6 +22,7 @@ import NearestNeighbor from '../components/Explore/NearestNeighbor';
 import ClusterFilter from '../components/Explore/ClusterFilter';
 import ColumnFilter from '../components/Explore/ColumnFilter';
 import BulkActions from '../components/Explore/BulkActions';
+import ConfigurationPanel from "../components/Explore/ConfigurationPanel";
 
 import FilterDataTable from "../components/FilterDataTable";
 
@@ -119,6 +120,8 @@ function Explore() {
     },
     [dataset, datasetId],
   );
+
+
 
   // ====================================================================================================
   // Scatterplot related logic
@@ -449,7 +452,11 @@ function Explore() {
   if (!dataset) return <div>Loading...</div>;
 
   return (
-    <div ref={containerRef} className="container">
+    <div
+      ref={containerRef}
+      className="container"
+      onMouseEnter={() => handleHover(null)}
+    >
       <div className="left-column">
         <ScopeHeader
           dataset={dataset}

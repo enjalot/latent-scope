@@ -34,6 +34,7 @@
   height: 100%;
   overflow-y: hidden;
   min-height: 0;
+  /* position: relative; */
 }
 
 .tab-tables {

@@ -6,6 +6,8 @@ import HullPlot from "../HullPlot";
 import { Tooltip } from "react-tooltip";
 import { processHulls } from "../../utils";
 import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from "../../lib/colors";
+import styles from "./VisualizationPane.module.scss";
+import ConfigurationPanel from "./ConfigurationPanel";
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -31,9 +33,9 @@ function VisualizationPane({
         (xDomain, yDomain) => {
             setXDomain(xDomain);
             setYDomain(yDomain);
-      },
-      [setXDomain, setYDomain],
-  );
+        },
+        [setXDomain, setYDomain],
+    );
 
     const [size, setSize] = useState([500, 500]);
     const umapRef = useRef(null);
@@ -52,21 +54,21 @@ function VisualizationPane({
             setUmapOffset(rect.top + top);
             // console.log("UMAP OFFSET", rect.top + top)
         }
-      window.addEventListener("resize", updateSize);
-      updateSize();
-      return () => window.removeEventListener("resize", updateSize);
-  }, []);
+        window.addEventListener("resize", updateSize);
+        updateSize();
+        return () => window.removeEventListener("resize", updateSize);
+    }, []);
 
     const [width, height] = size;
 
     const drawingPoints = useMemo(() => {
         return scopeRows.map((p, i) => {
             // if (deletedIndices?.includes(i)) {
-            if(p.deleted){
+            if (p.deleted) {
                 return [-10, -10, mapSelectionKey.hidden]
             } else if (intersectedIndices?.includes(i)) {
                 return [p.x, p.y, mapSelectionKey.selected]
-            } else if(intersectedIndices?.length) {
+            } else if (intersectedIndices?.length) {
                 return [p.x, p.y, mapSelectionKey.notSelected]
             } else {
                 return [p.x, p.y, mapSelectionKey.normal]
@@ -82,40 +84,61 @@ function VisualizationPane({
 
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
     useEffect(() => {
-        if(hovered) {
+        if (hovered) {
             // console.log("hovered", hovered, scopeRows[hovered.index])
             const point = scopeRows[hovered.index]
             if (point && xDomain && yDomain) {
                 let px = point.x
-                if(px < xDomain[0]) px = xDomain[0]
-                if(px > xDomain[1]) px = xDomain[1]
+                if (px < xDomain[0]) px = xDomain[0]
+                if (px > xDomain[1]) px = xDomain[1]
                 let py = point.y
-                if(py < yDomain[0]) py = yDomain[0]
-                if(py > yDomain[1]) py = yDomain[1]
+                if (py < yDomain[0]) py = yDomain[0]
+                if (py > yDomain[1]) py = yDomain[1]
                 const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
                 const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (size[1]) + umapOffset - 28
                 // console.log("xPos", xPos, "yPos", yPos)
-                setTooltipPosition({ 
-                  x: xPos,
-                  y: yPos
+                setTooltipPosition({
+                    x: xPos,
+                    y: yPos
                 });
-              }
+            }
         }
     }, [hovered, scopeRows, xDomain, yDomain, width, size, umapOffset])
 
     // derive the hulls from the scope rows, and filter deleted points via an accessor
     const clusterHulls = useMemo(() => {
-        if(!slide || !scopeRows) return []
+        if (!slide || !scopeRows) return []
         return processHulls([slide], scopeRows, d => d.deleted ? null : [d.x, d.y])
     }, [slide, scopeRows])
 
     const hoveredHulls = useMemo(() => {
-        if(!hoveredCluster || !scopeRows) return []
+        if (!hoveredCluster || !scopeRows) return []
         return processHulls([hoveredCluster], scopeRows, d => d.deleted ? null : [d?.x, d?.y])
     }, [hoveredCluster, scopeRows])
 
+    // ====================================================================================================
+    // Configuration Panel
+    // ====================================================================================================
+    const [isPanelOpen, setIsPanelOpen] = useState(false);
+
     return (
         <div className="umap-container" ref={umapRef}>
+            <div className={styles.configToggleContainer}>
+                <button
+                    className={styles.configToggle}
+                    onClick={() => setIsPanelOpen(!isPanelOpen)}
+                    aria-label="Toggle configuration panel"
+                >
+                    {isPanelOpen ? "<<" : ">>"}
+                </button>
+
+                <ConfigurationPanel
+                    isOpen={isPanelOpen}
+                    onClose={() => setIsPanelOpen(false)}
+                    title="View Settings"
+                />
+            </div>
+
             <div className="scatters" style={{ width, height }}>
                 {!isIOS() && scope ? (
                     <Scatter
@@ -143,47 +166,47 @@ function VisualizationPane({
                         size="8"
                         xDomain={xDomain}
                         yDomain={yDomain}
-                  />
-              )}
+                    />
+                )}
 
-              {hoveredCluster &&
-                  hoveredCluster.hull &&
-                  !scope.ignore_hulls &&
-                  scope.cluster_labels_lookup && (
-                      <HullPlot
-                        hulls={hoveredHulls}
-                        fill="lightgray"
-                        stroke="gray"
-                        strokeWidth={2}
-                        opacity={0.25}
-                        duration={0}
-                        xDomain={xDomain}
-                        yDomain={yDomain}
-                        width={width}
-                        height={height}
-                      />
-                  )}
+                {hoveredCluster &&
+                    hoveredCluster.hull &&
+                    !scope.ignore_hulls &&
+                    scope.cluster_labels_lookup && (
+                        <HullPlot
+                            hulls={hoveredHulls}
+                            fill="lightgray"
+                            stroke="gray"
+                            strokeWidth={2}
+                            opacity={0.25}
+                            duration={0}
+                            xDomain={xDomain}
+                            yDomain={yDomain}
+                            width={width}
+                            height={height}
+                        />
+                    )}
 
-              {slide &&
-                  slide.hull &&
-                  !scope.ignore_hulls &&
-                  scope.cluster_labels_lookup && (
-                      <HullPlot
-                        hulls={clusterHulls}
-                        fill="darkgray"
-                        stroke="gray"
-                        strokeWidth={2}
-                        opacity={0.35}
-                        duration={0}
-                        xDomain={xDomain}
-                        yDomain={yDomain}
-                        width={width}
-                        height={height}
-                      />
-                  )}
+                {slide &&
+                    slide.hull &&
+                    !scope.ignore_hulls &&
+                    scope.cluster_labels_lookup && (
+                        <HullPlot
+                            hulls={clusterHulls}
+                            fill="darkgray"
+                            stroke="gray"
+                            strokeWidth={2}
+                            opacity={0.35}
+                            duration={0}
+                            xDomain={xDomain}
+                            yDomain={yDomain}
+                            width={width}
+                            height={height}
+                        />
+                    )}
 
-              {/* show all the hulls */}
-              {/* {hulls.length && !scope.ignore_hulls && (
+                {/* show all the hulls */}
+                {/* {hulls.length && !scope.ignore_hulls && (
                   <HullPlot
                       hulls={hulls}
                         stroke="#9d9d9d"
@@ -197,7 +220,7 @@ function VisualizationPane({
                   />
               )} */}
 
-              <AnnotationPlot
+                <AnnotationPlot
                     points={hoverAnnotations}
                     stroke="black"
                     fill="orange"
@@ -206,20 +229,20 @@ function VisualizationPane({
                     yDomain={yDomain}
                     width={width}
                     height={height}
-              />
-          </div>
+                />
+            </div>
 
-          {/* Hover information display */}
-          {hovered&& <div
-            data-tooltip-id="featureTooltip"
-            style={{
-                position: 'absolute',
-                left: tooltipPosition.x,
-                top: tooltipPosition.y,
-                pointerEvents: 'none',
-            }}
-            ></div> }
-            {hovered && <Tooltip id="featureTooltip" 
+            {/* Hover information display */}
+            {hovered && <div
+                data-tooltip-id="featureTooltip"
+                style={{
+                    position: 'absolute',
+                    left: tooltipPosition.x,
+                    top: tooltipPosition.y,
+                    pointerEvents: 'none',
+                }}
+            ></div>}
+            {hovered && <Tooltip id="featureTooltip"
                 isOpen={hovered !== null}
                 delayShow={0}
                 delayHide={0}
@@ -246,9 +269,9 @@ function VisualizationPane({
                     <span>Index: {hovered.index}</span>
                     <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
                 </div>
-            </Tooltip> }
+            </Tooltip>}
 
-          {/* {!isMobileDevice() && (
+            {/* {!isMobileDevice() && (
               <div className="hovered-point">
                   {hoveredCluster && (
                       <span>
@@ -299,8 +322,8 @@ function VisualizationPane({
             })}
               </div>
           )} */}
-      </div>
-  );
+        </div>
+    );
 }
 
 VisualizationPane.propTypes = {
