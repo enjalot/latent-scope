@@ -224,6 +224,7 @@ function VisualizationPane({
                 delayShow={0}
                 delayHide={0}
                 delayUpdate={0}
+                className="tooltip-area"
                 style={{
                     position: 'absolute',
                     left: tooltipPosition.x,

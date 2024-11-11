@@ -21,12 +21,12 @@ import VisualizationPane from "../components/Explore/VisualizationPane";
 import NearestNeighbor from '../components/Explore/NearestNeighbor';
 import ClusterFilter from '../components/Explore/ClusterFilter';
 import ColumnFilter from '../components/Explore/ColumnFilter';
+import BulkActions from '../components/Explore/BulkActions';
 
 import FilterDataTable from "../components/FilterDataTable";
 
-import Tagging from "../components/Bulk/Tagging";
-import Clustering from "../components/Bulk/Clustering";
-import Deleting from "../components/Bulk/Deleting";
+
+
 
 
 
@@ -621,82 +621,19 @@ function Explore() {
             <div className="filter-cell middle intersected-count">
               <span>{intersectedIndices.length} rows</span>
             </div>
-            {/* <div className="filter-cell right" /> */}
 
             <div className="filter-cell right bulk-actions">
-              <div className="bulk-actions-buttons">
-                Bulk Actions:
-                <button
-                  title="Add tags to rows"
-                  className={`bulk ${bulkAction == "tag" ? "active" : ""}`}
-                  onClick={() =>
-                    bulkAction == "tag"
-                      ? setBulkAction(null)
-                      : setBulkAction("tag")
-                  }
-                >
-                  🏷️
-                </button>
-                <button
-                  title="Change cluster of rows"
-                  className={`bulk ${bulkAction == "cluster" ? "active" : ""}`}
-                  onClick={() =>
-                    bulkAction == "cluster"
-                      ? setBulkAction(null)
-                      : setBulkAction("cluster")
-                  }
-                >
-                  ️📍
-                </button>
-                <button
-                  title="Delete rows"
-                  className={`bulk ${bulkAction == "delete" ? "active" : ""}`}
-                  onClick={() =>
-                    bulkAction == "delete"
-                      ? setBulkAction(null)
-                      : setBulkAction("delete")
-                  }
-                >
-                  🗑️
-                </button>
-              </div>
-              <div className="bulk-actions-action">
-                {bulkAction == "tag" ? (
-                  <Tagging
-                    dataset={dataset}
-                    indices={intersectedIndices}
-                    onSuccess={() => {
-                      setBulkAction(null);
-                      fetchTagSet();
-                    }}
-                  />
-                ) : null}
-                {bulkAction == "cluster" ? (
-                  <Clustering
-                    dataset={dataset}
-                    scope={scope}
-                    indices={intersectedIndices}
-                    onSuccess={() => {
-                      setBulkAction(null);
-                      fetchScopeMeta();
-                      fetchScopeRows();
-                    }}
-                  />
-                ) : null}
-                {bulkAction == "delete" ? (
-                  <Deleting
-                    dataset={dataset}
-                    scope={scope}
-                    indices={intersectedIndices}
-                    onSuccess={() => {
-                      setBulkAction(null);
-                      clearFilters();
-                      fetchScopeMeta();
-                      fetchScopeRows();
-                    }}
-                  />
-                ) : null}
-              </div>
+              {intersectedIndices.length > 0 ? <BulkActions
+                bulkAction={bulkAction}
+                setBulkAction={setBulkAction}
+                dataset={dataset}
+                scope={scope}
+                intersectedIndices={intersectedIndices}
+                fetchTagSet={fetchTagSet}
+                fetchScopeMeta={fetchScopeMeta}
+                fetchScopeRows={fetchScopeRows}
+                clearFilters={clearFilters}
+              /> : null}
             </div>
           </div>
 
