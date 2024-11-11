@@ -84,7 +84,6 @@ function Scope() {
       }
       if(scope.cluster_labels_id) {
         const cls = clusterLabelSets.find(c => c.id == scope.cluster_labels_id)
-        console.log("cls", cls, clusterLabelSets)
         setClusterLabelSet(cls || { id: scope.cluster_labels_id, model_id: "N/A" })
       }
     }
@@ -105,7 +104,6 @@ function Scope() {
       }
       if(savedScope.cluster_labels_id) {
         const cls = clusterLabelSets.find(c => c.id == savedScope.cluster_labels_id)
-        console.log("saved cls", cls, clusterLabelSets)
         setSavedClusterLabelSet(cls)
       }
     }
@@ -171,11 +169,11 @@ function Scope() {
 
     console.log("action", action)
     if(action == "save") {
-      payload.scope_id = scope.id
+      payload.scope_id = savedScope?.id
     }
     startScopeJob(payload)
 
-  }, [dataset, scope, cluster, clusterLabelSet, umap, embedding, startScopeJob]);
+  }, [dataset, scope, cluster, clusterLabelSet, umap, embedding, startScopeJob, savedScope]);
 
   const [isDifferent, setIsDifferent] = useState(false);
   const descriptionIsDifferent = useMemo(() => 
@@ -184,7 +182,7 @@ function Scope() {
 
   const [newVersion, setNewVersion] = useState(false);
   useEffect(() => {
-    console.log("VERSIONS", lsVersion, savedScope?.ls_version, scope?.ls_version)
+    // console.log("VERSIONS", lsVersion, savedScope?.ls_version, scope?.ls_version)
     if(lsVersion && savedScope?.ls_version && compareVersions(savedScope?.ls_version, lsVersion) < 0) {
       setNewVersion(true)
     }
@@ -194,6 +192,7 @@ function Scope() {
     if(!scope) {
       setIsDifferent(true);
     } else {
+      console.log("scope", scope, "savedScope",savedScope)
       if(scope.embedding_id != savedScope?.embedding_id
         || scope.umap_id != savedScope?.umap_id
         || scope.cluster_id != savedScope?.cluster_id
@@ -271,7 +270,7 @@ function Scope() {
             <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{umap?.id}</span><br/>
           </span>
           <span className={savedScope?.cluster_id !== cluster?.id ? styles["different"] : ""}>
-            <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{cluster?.id} - {cluster?.n_clusters}</span><br/>
+            <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{cluster?.id} - ({cluster?.n_clusters} clusters)</span><br/>
           </span>
           <span className={savedScope?.cluster_labels_id !== clusterLabelSet?.id ? styles["different"] : ""}>
             <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{clusterLabelSet?.id} - {clusterLabelSet?.model_id}</span><br/>
@@ -289,10 +288,10 @@ function Scope() {
             <span className={styles["scope-form-label"]}>Umap: </span><span className={styles["scope-form-value"]}>{ savedScope.umap_id }</span><br/>
           </span>
           <span className={savedScope.cluster_id !== cluster?.id ? styles["different"] : ""}>
-            <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_id } - {savedCluster?.n_clusters}</span><br/>
+            <span className={styles["scope-form-label"]}>Cluster: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_id } - ({savedCluster?.n_clusters} clusters)</span><br/>
           </span>
           <span className={savedScope.cluster_labels_id !== clusterLabelSet?.id ? styles["different"] : ""}>
-            <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_labels_id } - { savedClusterLabelSet?.model_id }</span><br/>
+            <span className={styles["scope-form-label"]}>Labels: </span><span className={styles["scope-form-value"]}>{ savedScope.cluster_labels_id } - { savedClusterLabelSet?.model_id || "N/A" }</span><br/>
           </span>
           <span className={savedScope.ls_version !== lsVersion ? styles["different"] : ""}>
               <span className={styles["scope-form-label"]}>Version: </span><span className={styles["scope-form-value"]}>{savedScope.ls_version}</span><br/>

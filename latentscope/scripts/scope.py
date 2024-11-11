@@ -122,9 +122,10 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     # TODO: add the max activated feature to the scope_parquet
     # or all the sparse features? top 10?
 
+    print("scope_id", scope_id)
     # create a column to indicate if the row has been deleted in the scope
     scope_parquet["deleted"] = False
-    if scope_id:
+    if scope_id is not None:
         # read the transactions file
         transactions_file_path = os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + "-transactions.json")
         with open(transactions_file_path) as f:
