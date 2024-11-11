@@ -172,6 +172,10 @@ export const apiService = {
   fetchSae: async (datasetId, saeId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/saes/${saeId}`)
       .then(response => response.json())
+  },
+  fetchVersion: async () => {
+    return fetch(`${apiUrl}/version`)
+      .then(response => response.text())
   }
 }
 

@@ -108,6 +108,9 @@ const TableRow = memo(({ row, onHover, onClick, collapse = false, lsIndexCol }) 
       onMouseEnter={() => {
         onHover && onHover(row.getValue(lsIndexCol));
       }}
+      onMouseLeave={() => {
+        onHover && onHover(null);
+      }}
       onClick={() => onClick && onClick(row.getValue(lsIndexCol))}
     >
       {row.getVisibleCells().map(cell => (
@@ -146,13 +149,14 @@ function FilterDataTable({
   showEmbeddings = null,
   showDifference = null,
   showNavigation = true,
-  sae_id = null, 
+  sae_id = null,
   feature = -1,
   onTagset,
   onScope,
   onHover,
   onClick,
   onRows,
+  deletedIndices = [],
 }) {
   const lsIndexCol = "0";
 
@@ -270,11 +274,11 @@ function FilterDataTable({
   useEffect(() => {
     if (dataset) {
       let columns = ["ls_index"]
-      if(distances && distances.length) columns.push("ls_similarity")
-      if(showEmbeddings) columns.push("ls_embedding")
-      if(sae_id) columns.push("ls_features")
-      if(clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
-      if(tagset && Object.keys(tagset).length) columns.push("tags")
+      if (distances && distances.length) columns.push("ls_similarity")
+      if (showEmbeddings) columns.push("ls_embedding")
+      if (sae_id) columns.push("ls_features")
+      if (clusterMap && Object.keys(clusterMap).length) columns.push("ls_cluster")
+      if (tagset && Object.keys(tagset).length) columns.push("tags")
       columns.push(dataset.text_column)
       columns = columns.concat(dataset.columns.filter(d => d !== dataset.text_column))
       let columnDefs = columns.map((c, i) => {
@@ -329,13 +333,6 @@ function FilterDataTable({
             if (c === "tags") {
 
               return <div className="tags">
-                {/* {tags.filter(t => tagset[t]?.indexOf(idx) >= 0).map(t => {
-                  return <button className="tag-active" key={t} onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    handleTagClick(t, idx)
-                  }}>{t}</button>
-                })} */}
                 {tags.map(t => {
                   let ti = tagset[t]?.indexOf(idx) >= 0
                   // console.log(t, ti, idx)
@@ -403,9 +400,9 @@ function FilterDataTable({
                 }
               </div>
             }
-           if(c === "ls_features") {
+            if (c === "ls_features") {
               let featIdx = 0;
-              if(feature >= 0) {
+              if (feature >= 0) {
                 featIdx = value.top_indices.findIndex(i => i === feature)
               }
               return <div>
@@ -442,16 +439,11 @@ function FilterDataTable({
       setColumns(columnDefs)
     }
     hydrateIndices(indices)
-    // }, [ indices, dataset, scope, tagset, tags, currentPage, clusterLabels]) // hydrateIndicies
   }, [dataset, indices, distances, tags, scope, tagset, currentPage, clusterMap, clusterLabels, showEmbeddings, embeddingMinValues, embeddingMaxValues, showDifference])
 
 
   const [columnFilters, setColumnFilters] = useState([])
   const [globalFilter, setGlobalFilter] = useState('')
-
-
-
-
 
   const table = useReactTable({
     data: rows,
@@ -551,7 +543,7 @@ function FilterDataTable({
     };
   }, []);
 
-
+  console.log("deletedIndices", deletedIndices);
 
   return (
     <div className="filter-data-table" style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
@@ -581,26 +573,27 @@ function FilterDataTable({
             </tr>
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(row => (
-              <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} lsIndexCol={lsIndexCol} />
-            ))}
+            {table.getRowModel().rows.map(row => {
+              const deleted = deletedIndices.includes(row.getValue(lsIndexCol));
+              return <TableRow key={row.id} row={row} onHover={onHover} onClick={onClick} lsIndexCol={lsIndexCol} collapse={deleted} />
+            })}
           </tbody>
         </table>
       </div>
       {showNavigation && <div className="filter-data-table-page-controls">
-          <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
-            First
-          </button>
-          <button onClick={() => setCurrentPage(old => Math.max(0, old - 1))} disabled={currentPage === 0}>
-            ←
-          </button>
-          <span>
-            Page {currentPage + 1} of {pageCount || 1}
-          </span>
-          <button onClick={() => setCurrentPage(old => Math.min(pageCount - 1, old + 1))} disabled={currentPage === pageCount - 1}>
-            →
-          </button>
-          <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
+        <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
+          First
+        </button>
+        <button onClick={() => setCurrentPage(old => Math.max(0, old - 1))} disabled={currentPage === 0}>
+          ←
+        </button>
+        <span>
+          Page {currentPage + 1} of {pageCount || 1}
+        </span>
+        <button onClick={() => setCurrentPage(old => Math.min(pageCount - 1, old + 1))} disabled={currentPage === pageCount - 1}>
+          →
+        </button>
+        <button onClick={() => setCurrentPage(pageCount - 1)} disabled={currentPage === pageCount - 1}>
           Last
         </button>
       </div>}

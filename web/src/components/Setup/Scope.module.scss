@@ -29,6 +29,10 @@
 .scope-form {
   @include setup-form;
 }
+.different {
+  font-weight: bold;
+  color: var(--semantic-color-semantic-critical);
+}
 
 .item {
   @include setup-item;
