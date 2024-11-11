@@ -28,18 +28,7 @@ const useScopeData = (apiUrl, datasetId, scope) => {
             .then((response) => response.json())
             .then((scopeRows) => {
                 console.log("scopeRows", scopeRows)
-
                 setScopeRows(scopeRows);
-
-
-                const pts = scopeRows.map((d) => [d.x, d.y]);
-                setPoints(pts);
-
-                // const dpts = scopeRows.map((d, i) => [d.x, d.y, d.cluster]);
-                const dpts = scopeRows.map((d, i) => [d.x, d.y, 0, d.cluster]);
-                setDrawPoints(dpts);
-                setHulls([]);
-
 
                 let clusterMap = {};
                 let nonDeletedClusters = new Set();
@@ -59,10 +48,6 @@ const useScopeData = (apiUrl, datasetId, scope) => {
                 setClusterMap(clusterMap);
 
                 setDeletedIndices(scopeRows.filter(d => d.deleted).map(d => d.ls_index));
-
-                setTimeout(() => {
-                    if (labelsData) setHulls(processHulls(labelsData, pts));
-                }, 100);
             })
             .catch((error) => console.error("Fetching data failed", error));
     }, [apiUrl, datasetId, scope]);
@@ -72,11 +57,7 @@ const useScopeData = (apiUrl, datasetId, scope) => {
         clusterIndices,
         clusterLabels,
         scopeRows,
-        points,
-        drawPoints,
-        hulls,
         fetchScopeRows,
-        setClusterLabels,
         deletedIndices,
         sae
     };

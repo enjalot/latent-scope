@@ -543,8 +543,6 @@ function FilterDataTable({
     };
   }, []);
 
-  console.log("deletedIndices", deletedIndices);
-
   return (
     <div className="filter-data-table" style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}>
 

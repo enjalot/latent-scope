@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import PropTypes from "prop-types";
 import Scatter from "../Scatter";
 import AnnotationPlot from "../AnnotationPlot";
@@ -13,11 +13,9 @@ const isIOS = () => {
 };
 
 function VisualizationPane({
-    points,
-    drawPoints,
+    scopeRows,
     hoverAnnotations,
     intersectedIndices,
-    deletedIndices = [],
     hoveredCluster,
     slide,
     scope,
@@ -38,14 +36,21 @@ function VisualizationPane({
   );
 
     const [size, setSize] = useState([500, 500]);
+    const umapRef = useRef(null);
+    const [umapOffset, setUmapOffset] = useState(0);
+
 
     // let's fill the container and update the width and height if window resizes
     useEffect(() => {
         function updateSize() {
             if (!containerRef.current) return;
-            const { width } = containerRef.current.getBoundingClientRect();
+            const rect = containerRef.current.getBoundingClientRect();
+            const width = rect.width
             let swidth = width > 500 ? 500 : width - 50;
             setSize([swidth, swidth]);
+            const { top } = umapRef.current.getBoundingClientRect();
+            setUmapOffset(rect.top + top);
+            // console.log("UMAP OFFSET", rect.top + top)
         }
       window.addEventListener("resize", updateSize);
       updateSize();
@@ -55,49 +60,62 @@ function VisualizationPane({
     const [width, height] = size;
 
     const drawingPoints = useMemo(() => {
-        return drawPoints.map((p, i) => {
-            if (deletedIndices?.includes(i)) {
+        return scopeRows.map((p, i) => {
+            // if (deletedIndices?.includes(i)) {
+            if(p.deleted){
                 return [-10, -10, mapSelectionKey.hidden]
             } else if (intersectedIndices?.includes(i)) {
-                return [p[0], p[1], mapSelectionKey.selected]
+                return [p.x, p.y, mapSelectionKey.selected]
             } else if(intersectedIndices?.length) {
-                return [p[0], p[1], mapSelectionKey.notSelected]
+                return [p.x, p.y, mapSelectionKey.notSelected]
             } else {
-                return [p[0], p[1], mapSelectionKey.normal]
+                return [p.x, p.y, mapSelectionKey.normal]
             }
         })
-    }, [drawPoints, deletedIndices, intersectedIndices])
+    }, [scopeRows, intersectedIndices])
+
+    const points = useMemo(() => {
+        return scopeRows.filter((p) => !p.deleted).map((p) => {
+            return [p.x, p.y]
+        })
+    }, [scopeRows])
 
     const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-    // TODO: calculate these properly
-    const heightOffset = 320
-    const umapHeight = 450
-    // const umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
     useEffect(() => {
         if(hovered) {
-            console.log("hovered", hovered)
-            const point = drawPoints[hovered.index]
+            // console.log("hovered", hovered, scopeRows[hovered.index])
+            const point = scopeRows[hovered.index]
             if (point && xDomain && yDomain) {
-                let px = point[0]
+                let px = point.x
                 if(px < xDomain[0]) px = xDomain[0]
                 if(px > xDomain[1]) px = xDomain[1]
-                let py = point[1]
+                let py = point.y
                 if(py < yDomain[0]) py = yDomain[0]
                 if(py > yDomain[1]) py = yDomain[1]
                 const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
-                // let umapHeightOffset = (heightOffset / 2) - 31 // remove the row info height from the calculation and some padding
-                const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (umapHeight) + heightOffset // + umapHeightOffset
-                console.log("xPos", xPos, "yPos", yPos)
+                const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * (size[1]) + umapOffset - 28
+                // console.log("xPos", xPos, "yPos", yPos)
                 setTooltipPosition({ 
                   x: xPos,
                   y: yPos
                 });
               }
         }
-    }, [hovered, drawPoints, xDomain, yDomain, width, heightOffset, umapHeight])
+    }, [hovered, scopeRows, xDomain, yDomain, width, size, umapOffset])
+
+    // derive the hulls from the scope rows, and filter deleted points via an accessor
+    const clusterHulls = useMemo(() => {
+        if(!slide || !scopeRows) return []
+        return processHulls([slide], scopeRows, d => d.deleted ? null : [d.x, d.y])
+    }, [slide, scopeRows])
+
+    const hoveredHulls = useMemo(() => {
+        if(!hoveredCluster || !scopeRows) return []
+        return processHulls([hoveredCluster], scopeRows, d => d.deleted ? null : [d?.x, d?.y])
+    }, [hoveredCluster, scopeRows])
 
     return (
-        <div className="umap-container">
+        <div className="umap-container" ref={umapRef}>
             <div className="scatters" style={{ width, height }}>
                 {!isIOS() && scope ? (
                     <Scatter
@@ -119,13 +137,12 @@ function VisualizationPane({
                 ) : (
                     <AnnotationPlot
                         points={points}
-                            deletedIndices={deletedIndices}
                         fill="gray"
-                          height={height}
-                          width={width}
-                          size="8"
-                          xDomain={xDomain}
-                          yDomain={yDomain}
+                        height={height}
+                        width={width}
+                        size="8"
+                        xDomain={xDomain}
+                        yDomain={yDomain}
                   />
               )}
 
@@ -134,10 +151,7 @@ function VisualizationPane({
                   !scope.ignore_hulls &&
                   scope.cluster_labels_lookup && (
                       <HullPlot
-                        hulls={processHulls(
-                            [hoveredCluster],
-                            points
-                        )}
+                        hulls={hoveredHulls}
                         fill="lightgray"
                         stroke="gray"
                         strokeWidth={2}
@@ -155,7 +169,7 @@ function VisualizationPane({
                   !scope.ignore_hulls &&
                   scope.cluster_labels_lookup && (
                       <HullPlot
-                        hulls={processHulls([slide], points)}
+                        hulls={clusterHulls}
                         fill="darkgray"
                         stroke="gray"
                         strokeWidth={2}
@@ -168,7 +182,7 @@ function VisualizationPane({
                       />
                   )}
 
-                {/* show all the hulls */}
+              {/* show all the hulls */}
               {/* {hulls.length && !scope.ignore_hulls && (
                   <HullPlot
                       hulls={hulls}
@@ -183,21 +197,9 @@ function VisualizationPane({
                   />
               )} */}
 
-              {/* <AnnotationPlot
-                  points={intersectedAnnotations}
-                  stroke="black"
-                  fill="steelblue"
-                  size="8"
-                  xDomain={xDomain}
-                  yDomain={yDomain}
-                  width={width}
-                  height={height}
-              /> */}
-
               <AnnotationPlot
                     points={hoverAnnotations}
                     stroke="black"
-                    deletedIndices={deletedIndices}
                     fill="orange"
                     size="16"
                     xDomain={xDomain}
@@ -301,11 +303,9 @@ function VisualizationPane({
 }
 
 VisualizationPane.propTypes = {
-    points: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
-    drawPoints: PropTypes.arrayOf(PropTypes.arrayOf(PropTypes.number)).isRequired,
+    scopeRows: PropTypes.array.isRequired,
     hulls: PropTypes.array.isRequired,
     hoverAnnotations: PropTypes.array.isRequired,
-    intersectedAnnotations: PropTypes.array.isRequired,
     hoveredCluster: PropTypes.object,
     slide: PropTypes.object,
     scope: PropTypes.object,

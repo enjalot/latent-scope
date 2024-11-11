@@ -1,7 +1,7 @@
-export function processHulls(labels, points) {
+export function processHulls(labels, points, pointSelector = (d) => d) {
     if (!labels) return []
     return labels.map(d => {
-        return d.hull.map(i => points[i])
+        return d.hull.map(i => pointSelector(points[i])).filter(d => !!d)
     })
 }
 

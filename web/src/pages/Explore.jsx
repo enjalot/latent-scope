@@ -57,8 +57,6 @@ function Explore() {
     deletedIndices
   } = useScopeData(apiUrl, datasetId, scope);
 
-  console.log("deletedIndices", deletedIndices);
-
   // TODO: the user should be able to highlight a feature
   // when passed to the data table it will show that feature first?
   const [feature, setFeature] = useState(-1)
@@ -170,11 +168,12 @@ function Explore() {
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined) {
-      setHoverAnnotations([points[hoveredIndex]]);
+      let sr = scopeRows[hoveredIndex]
+      setHoverAnnotations([sr.x, sr.y]);
     } else {
       setHoverAnnotations([]);
     }
-  }, [hoveredIndex, points]);
+  }, [hoveredIndex, scopeRows]);
 
   // ====================================================================================================
   // Tags
@@ -184,7 +183,7 @@ function Explore() {
   const [tagAnnotations, setTagAnnotations] = useState([]);
   useEffect(() => {
     if (tagset[tag]) {
-      const annots = tagset[tag].map((index) => points[index]);
+      const annots = tagset[tag].map((index) => [scopeRows[index].x, scopeRows[index].y]);
       setTagAnnotations(annots);
     } else {
       setTagAnnotations([]);
@@ -192,7 +191,7 @@ function Explore() {
         // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
       }
     }
-  }, [tagset, tag, points, scatter, setTagAnnotations]);
+  }, [tagset, tag, scopeRows, scatter, setTagAnnotations]);
 
   // ====================================================================================================
   // NN Search
@@ -229,8 +228,7 @@ function Explore() {
 
   useEffect(() => {
     if (slide) {
-      // const annots = slide.indices.map(index => points[index])
-      const annots = drawPoints.filter((p) => p[3] == slide.cluster);
+      const annots = scopeRows.filter((d) => d.cluster == slide.cluster);
       setSlideAnnotations(annots);
     } else {
       setSlideAnnotations([]);
@@ -238,7 +236,7 @@ function Explore() {
         // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
       }
     }
-  }, [slide, points, scatter, setSlideAnnotations]);
+  }, [slide, scopeRows, scatter, setSlideAnnotations]);
 
   const [clusterLabel, setClusterLabel] = useState(slide?.label || "");
   const [newClusterLabel, setNewClusterLabel] = useState("");
@@ -311,7 +309,7 @@ function Explore() {
     columnFiltersActive,
     setColumnFiltersActive,
     columnFilters,
-  } = useColumnFilter(apiUrl, dataset, datasetId, points);
+  } = useColumnFilter(apiUrl, dataset, datasetId);
 
   const clearFilters = useCallback(() => {
     setSelectedIndices([]);
@@ -349,6 +347,13 @@ function Explore() {
     setFilterMode(mode);
   }, [setFilterMode]);
 
+  // Tag indices are set on the original dataset, which may have rows deleted
+  // so we need to filter them here to make sure we are working with all valid rows
+  // in the current scope
+  const filterTagIndices = useCallback((indices) => {
+    return indices.filter((d) => !deletedIndices.includes(d));
+  }, [deletedIndices]);
+
   const [intersectedIndices, setIntersectedIndices] = useState([]);
   // intersect the indices from the various filters
   useEffect(() => {
@@ -384,14 +389,10 @@ function Explore() {
     tag,
     columnIndices,
     filterMode,
+    filterTagIndices
   ]);
 
-  const [intersectedAnnotations, setIntersectedAnnotations] = useState([]);
-  useEffect(() => {
-    const annots = intersectedIndices.map(index => points[index]);
-    setIntersectedAnnotations(annots);
-  }, [intersectedIndices, points]);
-
+  
   const [bulkAction, setBulkAction] = useState(null);
 
 
@@ -443,19 +444,7 @@ function Explore() {
         resizeObserver.unobserve(node);
       }
     };
-  }, []);
-
-
-
-  // Tag indices are set on the original dataset, which may have rows deleted
-  // so we need to filter them here to make sure we are working with all valid rows
-  // in the current scope
-  const filterTagIndices = useCallback(
-    (indices) => {
-      return indices.filter((d) => !deletedIndices.includes(d));
-    },
-    [deletedIndices],
-  );
+  }, []); 
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -471,15 +460,13 @@ function Explore() {
           onScopeChange={handleScopeChange}
         />
 
-        {points.length ? (
+        {scopeRows?.length ? (
           <VisualizationPane
-            points={points}
-            drawPoints={drawPoints}
+            scopeRows={scopeRows}
             hulls={hulls}
             hoveredIndex={hoveredIndex}
             hoverAnnotations={hoverAnnotations}
             intersectedIndices={intersectedIndices}
-            intersectedAnnotations={intersectedAnnotations}
             hoveredCluster={hoveredCluster}
             slide={slide}
             scope={scope}
