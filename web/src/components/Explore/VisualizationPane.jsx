@@ -10,25 +10,26 @@ import { processHulls } from "../../utils";
 import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from "../../lib/colors";
 import styles from "./VisualizationPane.module.scss";
 import ConfigurationPanel from "./ConfigurationPanel";
+import { Icon, Button } from 'react-element-forge';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 };
 
 function VisualizationPane({
-    scopeRows,
-    clusterLabels,
-    hoverAnnotations,
-    intersectedIndices,
-    hoveredCluster,
-    slide,
-    scope,
-    onScatter,
-    onSelect,
-    onHover,
-    hovered,
-    containerRef,
+  scopeRows,
+  clusterLabels,
+  hoverAnnotations,
+  intersectedIndices,
+  hoveredCluster,
+  slide,
+  scope,
+  onScatter,
+  onSelect,
+  onHover,
+  hovered,
+  containerRef,
 }) {
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -98,12 +99,8 @@ function VisualizationPane({
         let py = point.y;
         if (py < yDomain[0]) py = yDomain[0];
         if (py > yDomain[1]) py = yDomain[1];
-        const xPos =
-          ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
-        const yPos =
-          ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * size[1] +
-          umapOffset -
-          28;
+        const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
+        const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * size[1] + umapOffset - 28;
         // console.log("xPos", xPos, "yPos", yPos)
         setTooltipPosition({
           x: xPos,
@@ -114,40 +111,35 @@ function VisualizationPane({
   }, [hovered, scopeRows, xDomain, yDomain, width, size, umapOffset]);
 
   const hulls = useMemo(() => {
-    return processHulls(clusterLabels, scopeRows, (d) => d.deleted ? null : [d.x, d.y])
-  }, [scopeRows, clusterLabels])
+    return processHulls(clusterLabels, scopeRows, (d) => (d.deleted ? null : [d.x, d.y]));
+  }, [scopeRows, clusterLabels]);
 
   // derive the hulls from the slide, and filter deleted points via an accessor
   const clusterHulls = useMemo(() => {
     if (!slide || !scopeRows) return [];
-    return processHulls([slide], scopeRows, (d) =>
-      d.deleted ? null : [d.x, d.y]
-    );
+    return processHulls([slide], scopeRows, (d) => (d.deleted ? null : [d.x, d.y]));
   }, [slide, scopeRows]);
 
   const hoveredHulls = useMemo(() => {
     if (!hoveredCluster || !scopeRows) return [];
-    return processHulls([hoveredCluster], scopeRows, (d) =>
-      d.deleted ? null : [d?.x, d?.y]
-    );
+    return processHulls([hoveredCluster], scopeRows, (d) => (d.deleted ? null : [d?.x, d?.y]));
   }, [hoveredCluster, scopeRows]);
 
-    // TODO: these should just be based on which tile we choose, 32, 64 or 128
-    const tileMeta = useMemo(() => {
-        return {
-            size: 2 / 64,
-            cols: 64
-        }
-    }, [])
-    const tiles = useMemo(() => {
-        return groups(scopeRows, d => d.tile_index_64)
-        .map(tile => {
-            return {
-                tile_index: tile[0],
-                points: tile[1]
-            }
-        })
-    }, [scopeRows])
+  // TODO: these should just be based on which tile we choose, 32, 64 or 128
+  const tileMeta = useMemo(() => {
+    return {
+      size: 2 / 64,
+      cols: 64,
+    };
+  }, []);
+  const tiles = useMemo(() => {
+    return groups(scopeRows, (d) => d.tile_index_64).map((tile) => {
+      return {
+        tile_index: tile[0],
+        points: tile[1],
+      };
+    });
+  }, [scopeRows]);
 
   // ====================================================================================================
   // Configuration Panel
@@ -157,42 +149,43 @@ function VisualizationPane({
     showHeatMap: false,
     showClusterOutlines: false,
     pointSize: 1,
-    pointOpacity: 1
+    pointOpacity: 1,
   });
 
   const toggleShowHeatMap = useCallback(() => {
-    setVizConfig(prev => ({ ...prev, showHeatMap: !prev.showHeatMap }));
+    setVizConfig((prev) => ({ ...prev, showHeatMap: !prev.showHeatMap }));
   }, []);
 
   const toggleShowClusterOutlines = useCallback(() => {
-    setVizConfig(prev => ({ ...prev, showClusterOutlines: !prev.showClusterOutlines }));
+    setVizConfig((prev) => ({ ...prev, showClusterOutlines: !prev.showClusterOutlines }));
   }, []);
 
   const updatePointSize = useCallback((value) => {
-    setVizConfig(prev => ({ ...prev, pointSize: value }));
+    setVizConfig((prev) => ({ ...prev, pointSize: value }));
   }, []);
 
   const updatePointOpacity = useCallback((value) => {
-    setVizConfig(prev => ({ ...prev, pointOpacity: value }));
+    setVizConfig((prev) => ({ ...prev, pointOpacity: value }));
   }, []);
 
   const pointSizeRange = useMemo(() => {
-    return mapPointSizeRange.map(d => d * vizConfig.pointSize)
-  }, [vizConfig.pointSize])
+    return mapPointSizeRange.map((d) => d * vizConfig.pointSize);
+  }, [vizConfig.pointSize]);
   const pointOpacityRange = useMemo(() => {
-    return mapSelectionOpacity.map(d => d * vizConfig.pointOpacity)
-  }, [vizConfig.pointOpacity])
+    return mapSelectionOpacity.map((d) => d * vizConfig.pointOpacity);
+  }, [vizConfig.pointOpacity]);
 
   return (
     <div className="umap-container" ref={umapRef}>
       <div className={styles.configToggleContainer}>
-        <button
-          className={styles.configToggle}
+        <Button
+          className={styles["configToggle"]}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           aria-label="Toggle configuration panel"
-        >
-          {isPanelOpen ? '<<' : '>>'}
-        </button>
+          icon={isPanelOpen ? 'chevrons-left' : 'chevrons-right'}
+          size="small"
+          // color="#333"
+        />
 
         <ConfigurationPanel
           isOpen={isPanelOpen}
@@ -254,37 +247,34 @@ function VisualizationPane({
             />
           )}
 
-        {slide &&
-          slide.hull &&
-          !scope.ignore_hulls &&
-          scope.cluster_labels_lookup && (
-            <HullPlot
-              hulls={clusterHulls}
-              fill="darkgray"
-              stroke="gray"
-              strokeWidth={2}
-              opacity={0.35}
-              duration={0}
-              xDomain={xDomain}
-              yDomain={yDomain}
-              width={width}
-              height={height}
-            />
-          )}
+        {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
+          <HullPlot
+            hulls={clusterHulls}
+            fill="darkgray"
+            stroke="gray"
+            strokeWidth={2}
+            opacity={0.35}
+            duration={0}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+          />
+        )}
 
         {/* show all the hulls */}
         {vizConfig.showClusterOutlines && hulls.length && (
-            <HullPlot
-                hulls={hulls}
-                stroke="#9d9d9d"
-                fill="none"
-                duration={200}
-                strokeWidth={1}
-                xDomain={xDomain}
-                yDomain={yDomain}
-                width={width}
-                height={height}
-            />
+          <HullPlot
+            hulls={hulls}
+            stroke="#9d9d9d"
+            fill="none"
+            duration={200}
+            strokeWidth={1}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+          />
         )}
 
         <AnnotationPlot
@@ -299,16 +289,16 @@ function VisualizationPane({
         />
 
         {vizConfig.showHeatMap && tiles?.length > 1 && (
-            <TilePlot
-                tiles={tiles}
-                tileMeta={tileMeta}
-                xDomain={xDomain}
-                yDomain={yDomain}
-                width={width}
-                height={height}
-                fill="gray"
-                // stroke="black"
-            />
+          <TilePlot
+            tiles={tiles}
+            tileMeta={tileMeta}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+            fill="gray"
+            // stroke="black"
+          />
         )}
       </div>
 
@@ -351,9 +341,7 @@ function VisualizationPane({
             )}
             <br></br>
             <span>Index: {hovered.index}</span>
-            <p className="tooltip-text">
-              {hovered[scope?.embedding?.text_column]}
-            </p>
+            <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
           </div>
         </Tooltip>
       )}
