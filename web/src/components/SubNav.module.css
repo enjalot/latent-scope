@@ -9,6 +9,8 @@
     justify-content: space-between;
     width: 100%;
     color: var(--text-color-text-neutral);
+    font-size: var(--input-font-size);
+    font-weight: 500;
 }
 
 .leftTabs {
@@ -24,14 +26,24 @@
 
 .scope {
     border-bottom: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
+
+.scopeSelector {
+    min-width: 250px !important;
+    /* padding: 6px !important; */
+}
+
+
 .tab {
     text-decoration: none;
     color: var(--text-color-text-neutral);
     padding: 8px 12px;
     border-bottom: 2px solid transparent;
     transition: border-color 0.2s;
-    font-size: 14px;
+    /* font-size: 14px; */
 }
 
 .tab:hover {
@@ -39,8 +51,8 @@
 }
 
 .activeTab {
-    border-bottom-color: #646cff;
-    color: #646cff;
+    border-bottom-color: var(--semantic-color-semantic-primary);
+    color: var(--semantic-color-semantic-primary);
 }
 
 .disabledTab {
@@ -49,7 +61,7 @@
 }
 
 .divider {
-    border-left: 1px solid #e5e5e5;
-    height: 28px;
+    border-left: 2px solid #e5e5e5;
+    height: 34px;
     margin: 0 10px;
 }

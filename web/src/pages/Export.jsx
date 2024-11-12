@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import SubNav from '../components/SubNav';
+import { apiService } from '../lib/apiService';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const readonly = import.meta.env.MODE == 'read_only';
@@ -19,6 +20,8 @@ function niceBytes(bytes) {
 
 function Export() {
   const [dataset, setDataset] = useState(null);
+  const [scopes, setScopes] = useState([]);
+  const navigate = useNavigate();
   const { dataset: datasetId, scope: scopeId } = useParams();
 
   useEffect(() => {
@@ -51,6 +54,9 @@ function Export() {
   }, [datasetId]);
 
   // TODO: get all scopes for dataset
+  useEffect(() => {
+    apiService.fetchScopes(datasetId).then(setScopes);
+  }, [datasetId]);
 
   const fileLink = useCallback(
     (d, i) => {
@@ -65,9 +71,13 @@ function Export() {
     [datasetId]
   );
 
+  const navigateToScope = (e) => {
+    navigate(`/datasets/${datasetId}/export/${e.target.value}`);
+  };
+
   return (
     <div className={styles['page']}>
-      <SubNav dataset={dataset} scope={scope} scopes={[scope]} onScopeChange={() => {}} />
+      <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={navigateToScope} />
       <div className={styles['header']}>
         <h2>
           Export Data for {dataset?.id} {scopeId}

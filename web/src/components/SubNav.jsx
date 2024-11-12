@@ -5,40 +5,55 @@ import { Select } from 'react-element-forge';
 const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
   const location = useLocation();
 
-  const hidden = !dataset || !scope || !scopes;
+  console.log({ dataset, scope, scopes });
 
-  console.log(location.pathname);
+  // If no dataset, show ghost version
+  if (!dataset || !scope || !scopes) {
+    return (
+      <div className={styles.subHeaderContainer}>
+        <div className={styles.tabsContainer}>
+          <div className={styles.leftTabs}>
+            <div className={styles.scope}>
+              <Select
+                className={styles.scopeSelector}
+                onChange={() => {}}
+                value=""
+                options={[]}
+                disabled
+              />
+            </div>
+            <div className={styles.divider} />
+            <span className={`${styles.tab} ${styles.disabledTab}`}>Setup</span>
+            <span className={`${styles.tab} ${styles.disabledTab}`}>Explore</span>
+          </div>
+          <div className={styles.rightTabs}>
+            <span className={`${styles.tab} ${styles.disabledTab}`}>Export Data</span>
+            <span className={`${styles.tab} ${styles.disabledTab}`}>Export Plot</span>
+            <span className={`${styles.tab} ${styles.disabledTab}`}>Job History</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // if (!scope) {
-  //   return null;
-  // }
-
-  // <div className={styles.scopesList}>
-  //             {scopes ?
-  //               <Select
-  //                 onChange={(e) => {
-  //                   navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)
-  //                 }}
-  //                 options={[{ label: "New scope", value: "" }, ...scopes.map(s => ({ label: `${s.label} (${s.id})`, value: s.id }))]}
-  //                 value={scope?.id || ""}
-  //               >
-  //               </Select>
-  //             : null}
-  //         </div>
+  const scopeOptions = dataset
+    ? scopes.map((s) => ({
+        label: `${dataset?.id} / ${s.id ? `${s.label} (${s.id})` : 'New scope'}`,
+        value: `${s.id ? s.id : ''}`,
+      }))
+    : [];
 
   return (
     <div className={styles.subHeaderContainer}>
       <div className={styles.tabsContainer}>
         <div className={styles.leftTabs}>
           <div className={styles.scope}>
-            <span>{dataset?.id} &gt; </span>
-            <select className="scope-selector" onChange={onScopeChange} value={scope?.id}>
-              {scopes.map((scopeOption) => (
-                <option key={scopeOption.id} value={scopeOption.id}>
-                  {scopeOption.label} {scopeOption.id ? `(${scopeOption.id})` : ''}
-                </option>
-              ))}
-            </select>
+            <Select
+              className={styles.scopeSelector}
+              onChange={onScopeChange}
+              value={scope?.id || ''}
+              options={scopeOptions}
+            />
           </div>
           <div className={styles.divider} />
           <Link

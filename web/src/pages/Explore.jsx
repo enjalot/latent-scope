@@ -388,10 +388,10 @@ function Explore() {
   const [delay, setDelay] = useState(200);
   const [rows, setRows] = useState([]);
   const handleScopeChange = useCallback(
-    (scopeId) => {
+    (e) => {
       clearScope();
       setDelay(2000);
-      navigate(`/datasets/${dataset?.id}/explore/${scopeId}`);
+      navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`);
     },
     [dataset, clearScope, navigate]
   );
@@ -435,7 +435,13 @@ function Explore() {
     };
   }, []);
 
-  if (!dataset) return <div>Loading...</div>;
+  if (!dataset)
+    return (
+      <>
+        <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
+        <div>Loading...</div>
+      </>
+    );
 
   return (
     <>

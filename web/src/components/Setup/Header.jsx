@@ -25,29 +25,49 @@ function Header() {
     navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`);
   };
 
-  // THIS IS UGLY, handle loading state better from the useSetp
   const scopesToShow = [{ label: 'New scope', value: '' }, ...(scopes ?? [])];
 
+  if (!dataset) {
+    return (
+      <>
+        <SubNav
+          dataset={dataset}
+          scope={scope}
+          scopes={scopesToShow}
+          onScopeChange={onScopeChange}
+        />
+        <div>Loading...</div>
+      </>
+    );
+  }
+
   return (
-    <SubNav dataset={dataset} scope={scope} scopes={scopesToShow} onScopeChange={onScopeChange} />
+    <>
+      <SubNav dataset={dataset} scope={scope} scopes={scopesToShow} onScopeChange={onScopeChange} />
+      <div className={styles.dataset}>
+        {!dataset.ls_version ? (
+          <div className={styles.reimport}>
+            <span className="warning-header">WARNING: outdated dataset!</span>
+            <button
+              onClick={() => {
+                startReingestJob({ text_column: dataset.text_column });
+              }}
+            >
+              Reimport
+            </button>
+          </div>
+        ) : null}
+
+        <JobProgress
+          job={reingestJob}
+          clearJob={() => {
+            setReingestJob(null);
+            window.location.reload();
+          }}
+        />
+      </div>
+    </>
   );
-  // TODO: need to add this back in
-  //     <div className={styles.dataset}>
-  //       {!dataset.ls_version ? <div className={styles.reimport}>
-  //         <span className="warning-header">WARNING: outdated dataset!</span>
-  //         <button onClick={() => {
-  //           startReingestJob({ text_column: dataset.text_column })
-  //         }}>Reimport</button>
-  //       </div> : null}
-
-  //       <JobProgress job={reingestJob} clearJob={()=> {
-  //         setReingestJob(null)
-  //         window.location.reload();
-  //       }}/>
-
-  //     </div>
-  //   </div>}
-  // </div>
 }
 
 export default Header;
