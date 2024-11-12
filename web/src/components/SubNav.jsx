@@ -7,8 +7,6 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
 
   const hidden = !dataset || !scope || !scopes;
 
-  console.log(location.pathname);
-
   // if (!scope) {
   //   return null;
   // }
@@ -26,19 +24,28 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
   //             : null}
   //         </div>
 
+  const scopeOptions = dataset
+    ? scopes.map((s) => ({
+        label: `${dataset?.id} / ${s.id ? `${s.label} (${s.id})` : 'New scope'}`,
+        value: `${s.id ? s.id : ''}`,
+      }))
+    : [];
+  // { label: 'New scope', value: '' },,
+  // ];
+
+  console.log({ dataset, scope, scopes });
+
   return (
     <div className={styles.subHeaderContainer}>
       <div className={styles.tabsContainer}>
         <div className={styles.leftTabs}>
           <div className={styles.scope}>
-            <span>{dataset?.id} &gt; </span>
-            <select className="scope-selector" onChange={onScopeChange} value={scope?.id}>
-              {scopes.map((scopeOption) => (
-                <option key={scopeOption.id} value={scopeOption.id}>
-                  {scopeOption.label} {scopeOption.id ? `(${scopeOption.id})` : ''}
-                </option>
-              ))}
-            </select>
+            <Select
+              className={styles.scopeSelector}
+              onChange={onScopeChange}
+              value={scope?.id || ''}
+              options={scopeOptions}
+            />
           </div>
           <div className={styles.divider} />
           <Link

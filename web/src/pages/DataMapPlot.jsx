@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import JobProgress from '../components/Job/Progress';
 import { useStartJobPolling } from '../components/Job/Run';
 import SubNav from '../components/SubNav';
-
+import { apiService } from '../lib/apiService';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import styles from './DataMapPlot.module.css';
@@ -20,10 +20,16 @@ function niceBytes(bytes) {
 
 function DataMapPlot() {
   const [dataset, setDataset] = useState(null);
+  const [scopes, setScopes] = useState([]);
   const { dataset: datasetId, scope: scopeId } = useParams();
 
   const [plotJob, setPlotJob] = useState(null);
   const { startJob: startPlotJob } = useStartJobPolling(dataset, setPlotJob, `${apiUrl}/jobs/plot`);
+
+  // TODO: get all scopes for dataset
+  useEffect(() => {
+    apiService.fetchScopes(datasetId).then(setScopes);
+  }, [datasetId]);
 
   // Initialize state with default values
   const [config, setConfig] = useState({
@@ -157,11 +163,15 @@ function DataMapPlot() {
     [datasetId]
   );
 
-  console.log('scope', scope);
+  const navigate = useNavigate();
+
+  const navigateToScope = (e) => {
+    navigate(`/datasets/${datasetId}/plot/${e.target.value}`);
+  };
 
   return (
     <div className={styles['page']}>
-      <SubNav dataset={dataset} scope={scope} scopes={[scope]} onScopeChange={() => {}} />
+      <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={navigateToScope} />
       <div className={styles['header']}>
         <h2>
           Export Static Plot for {dataset?.id} {scopeId}

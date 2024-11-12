@@ -303,7 +303,6 @@ def get_dataset_export_list(dataset):
 def get_dataset_plot_list(dataset, scope):
     directory_path = os.path.join(DATA_DIR, dataset, "plots")
     print("dataset", dataset, directory_path)
-    print("exists", os.path.exists(directory_path))
     if not os.path.exists(directory_path):
         return jsonify([])
     # scan the directory for files and directories
