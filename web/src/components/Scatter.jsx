@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import createScatterplot from 'regl-scatterplot';
 import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
 import { range, groups, extent } from 'd3-array';
@@ -75,6 +75,10 @@ function ScatterPlot ({
   const yDomain = useRef([-1, 1]);
   const scatterplotRef = useRef(null);
 
+  const handleMouseLeave = useCallback(() => {
+    onHover && onHover(null);
+  }, [onHover]);
+
   // setup the scatterplot on first render
   useEffect(() => {
     const xScale = scaleLinear()
@@ -124,18 +128,16 @@ function ScatterPlot ({
       onHover && onHover(null)
     });
 
-    const handleMouseLeave = () => {
-      onHover && onHover(null);
-    };
-    const canvas = container.current;
-    canvas.addEventListener('mouseleave', handleMouseLeave);
+    
+    // const canvas = container.current;
+    // canvas.addEventListener('mouseleave', handleMouseLeave);
 
     onScatter && onScatter(scatterplot)
 
     return () => {
       scatterplotRef.current = null;
       scatterplot.destroy();
-      canvas.removeEventListener('mouseleave', handleMouseLeave);
+      // canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [width, height, onScatter, onView, onSelect, onHover])
 
@@ -207,7 +209,7 @@ function ScatterPlot ({
     }
   }, [points, width, height, colorScaleType, colorInterpolator, duration, pointScale, opacityRange, pointSizeRange]);
 
-  return <canvas className={styles.scatter} ref={container} />;
+  return <canvas className={styles.scatter} ref={container} onMouseLeave={handleMouseLeave}/>;
 }
 
 export default ScatterPlot;
