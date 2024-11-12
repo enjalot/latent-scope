@@ -1,0 +1,26 @@
+.subHeaderContainer {
+    border-bottom: 1px solid #e5e5e5;
+    background-color: white;
+}
+
+.tabsContainer {
+    display: flex;
+    /* padding: 0 10px; */
+}
+
+.tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #666;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tab:hover {
+    color: #333;
+}
+
+.activeTab {
+    color: #1a73e8;
+    border-bottom: 2px solid #1a73e8;
+}

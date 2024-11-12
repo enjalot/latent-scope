@@ -16,6 +16,7 @@ import useColumnFilter from "../hooks/useColumnFilter";
 import { saeAvailable } from "../lib/SAE";
 import { apiUrl } from "../lib/apiService";
 
+import SubNav from '../components/SubNav';
 import ScopeHeader from "../components/Explore/ScopeHeader";
 import VisualizationPane from "../components/Explore/VisualizationPane";
 import NearestNeighbor from '../components/Explore/NearestNeighbor';
@@ -450,199 +451,221 @@ function Explore() {
   if (!dataset) return <div>Loading...</div>;
 
   return (
-    <div
-      ref={containerRef}
-      className="container"
-      onMouseEnter={() => handleHover(null)}
-    >
-      <div className="left-column">
-        <ScopeHeader
-          dataset={dataset}
-          tags={tags}
-          scope={scope}
-          scopes={scopes}
-          deletedIndices={deletedIndices}
-          onScopeChange={handleScopeChange}
-        />
-
-        {scopeRows?.length ? (
-          <VisualizationPane
-            scopeRows={scopeRows}
-            clusterLabels={clusterLabels}
-            hoveredIndex={hoveredIndex}
-            hoverAnnotations={hoverAnnotations}
-            intersectedIndices={intersectedIndices}
-            hoveredCluster={hoveredCluster}
-            slide={slide}
-            scope={scope}
-            containerRef={containerRef}
-            onScatter={setScatter}
-            onSelect={handleSelected}
-            onHover={handleHover}
-            hovered={hovered}
+    <>
+      <SubNav />
+      <div ref={containerRef} className="container">
+        <div className="left-column">
+          <ScopeHeader
             dataset={dataset}
+            tags={tags}
+            scope={scope}
+            scopes={scopes}
             deletedIndices={deletedIndices}
-          />
-        ) : null}
-      </div>
-
-      <div className="data">
-        <div className="filters-container" ref={filtersContainerRef}>
-          {/* row 1: nearest neighbor search */}
-          <NearestNeighbor
-            searchIndices={searchIndices}
-            searchLoading={searchLoading}
-            setSearchText={setSearchText}
-            clearSearch={clearSearch}
+            onScopeChange={handleScopeChange}
           />
 
-          {/* row 2: cluster select */}
-          <ClusterFilter
-            clusterLabels={clusterLabels}
-            slide={slide}
-            slideAnnotations={slideAnnotations}
-            setSlide={setSlide}
-            clusterLabel={clusterLabel}
-            setClusterLabel={setClusterLabel}
-            handleLabelUpdate={handleLabelUpdate}
-            newClusterLabel={newClusterLabel}
-            setNewClusterLabel={setNewClusterLabel}
-            handleNewCluster={handleNewCluster}
-          />
+          {scopeRows?.length ? (
+            <div onMouseLeave={() => {
+              console.log("mouse left")
+              setHoveredIndex(null);
+              setHoveredCluster(null);
+              setHoverAnnotations([]);
+              setHovered(null);
+            }}>
+              <VisualizationPane
+                scopeRows={scopeRows}
+                hulls={hulls}
+                hoveredIndex={hoveredIndex}
+                hoverAnnotations={hoverAnnotations}
+                intersectedIndices={intersectedIndices}
+                hoveredCluster={hoveredCluster}
+                slide={slide}
+                scope={scope}
+                containerRef={containerRef}
+                onScatter={setScatter}
+                onSelect={handleSelected}
+                onHover={handleHover}
+                hovered={hovered}
+                dataset={dataset}
+                deletedIndices={deletedIndices}
+              />
+            </div>
+          ) : null}
+        </div>
 
-          {/* row 3: tags */}
-          <div
-            className={`filter-row tags-box ${filterTagIndices(tagset[tag] || [])?.length ? "active" : ""
+        <div className="data">
+          <div className="filters-container" ref={filtersContainerRef}>
+            {/* row 1: nearest neighbor search */}
+            <NearestNeighbor
+              searchIndices={searchIndices}
+              searchLoading={searchLoading}
+              setSearchText={setSearchText}
+              clearSearch={clearSearch}
+            />
+
+            {/* row 2: cluster select */}
+            <ClusterFilter
+              clusterLabels={clusterLabels}
+              slide={slide}
+              slideAnnotations={slideAnnotations}
+              setSlide={setSlide}
+              clusterLabel={clusterLabel}
+              setClusterLabel={setClusterLabel}
+              handleLabelUpdate={handleLabelUpdate}
+              newClusterLabel={newClusterLabel}
+              setNewClusterLabel={setNewClusterLabel}
+              handleNewCluster={handleNewCluster}
+            />
+
+            {/* row 3: tags */}
+            <div
+              className={`filter-row tags-box ${
+                filterTagIndices(tagset[tag] || [])?.length ? 'active' : ''
               }`}
-          >
-            <div className="filter-cell left tags-select">
-              <select onChange={(e) => setTag(e.target.value === "-1" ? null : e.target.value)} value={tag || "-1"}>
-                {"2"}<option value="-1">Filter by tag</option>
-                {tags.map((t, index) => (
-                  <option key={index} value={t}>
-                    {t} ({filterTagIndices(tagset[t] || []).length})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="filter-cell middle">
-              {tag && filterTagIndices(tagset[tag] || []).length ? (
-                <span>
-                  {filterTagIndices(tagset[tag] || []).length} rows
-                  <button
-                    className="deselect"
-                    onClick={() => {
-                      setTag(null);
-                    }}
-                  >
-                    X
-                  </button>
-                </span>
-              ) : null}
-            </div>
-            <div className="filter-cell right new-tag">
-              {!tag ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const newTag = e.target.elements.newTag.value;
-                    fetch(
-                      `${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`,
-                    )
-                      .then((response) => response.json())
-                      .then((data) => {
-                        console.log("new tag", data);
-                        e.target.elements.newTag.value = "";
-                        fetchTagSet();
-                      });
-                  }}
+            >
+              <div className="filter-cell left tags-select">
+                <select
+                  onChange={(e) => setTag(e.target.value === '-1' ? null : e.target.value)}
+                  value={tag || '-1'}
                 >
-                  <input type="text" id="newTag" placeholder="New Tag" />
-                  <button type="submit">➕ Tag</button>
-                </form>
-              ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                      fetch(
-                        `${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`,
-                      )
+                  {'2'}
+                  <option value="-1">Filter by tag</option>
+                  {tags.map((t, index) => (
+                    <option key={index} value={t}>
+                      {t} ({filterTagIndices(tagset[t] || []).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-cell middle">
+                {tag && filterTagIndices(tagset[tag] || []).length ? (
+                  <span>
+                    {filterTagIndices(tagset[tag] || []).length} rows
+                    <button
+                      className="deselect"
+                      onClick={() => {
+                        setTag(null);
+                      }}
+                    >
+                      X
+                    </button>
+                  </span>
+                ) : null}
+              </div>
+              <div className="filter-cell right new-tag">
+                {!tag ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const newTag = e.target.elements.newTag.value;
+                      fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
                         .then((response) => response.json())
                         .then((data) => {
-                          console.log("deleted tag", data);
+                          console.log('new tag', data);
+                          e.target.elements.newTag.value = '';
+                          fetchTagSet();
+                        });
+                    }}
+                  >
+                    <input type="text" id="newTag" placeholder="New Tag" />
+                    <button type="submit">➕ Tag</button>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      fetch(`${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`)
+                        .then((response) => response.json())
+                        .then((data) => {
+                          console.log('deleted tag', data);
                           setTag(null);
                           fetchTagSet();
                         });
                     }}
                   >
-                    <button type="submit" title="Delete tag from Scope">➖ {tag}</button>
-                </form>
-              )}
+                    <button type="submit" title="Delete tag from Scope">
+                      ➖ {tag}
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* row 4: column filters */}
-          <ColumnFilter
-            columnFilters={columnFilters}
-            columnIndices={columnIndices}
-            columnFiltersActive={columnFiltersActive}
-            setColumnFiltersActive={setColumnFiltersActive}
-            setColumnIndices={setColumnIndices}
-          />
+            {/* row 4: column filters */}
+            <ColumnFilter
+              columnFilters={columnFilters}
+              columnIndices={columnIndices}
+              columnFiltersActive={columnFiltersActive}
+              setColumnFiltersActive={setColumnFiltersActive}
+              setColumnIndices={setColumnIndices}
+            />
 
-          <div
-            className={`filter-row ${selectedIndices?.length ? "active" : ""}`}
-          >
-            <div className="filter-cell left filter-description">
-              Shift+Drag on the map to filter by points.
+            <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
+              <div className="filter-cell left filter-description">
+                Shift+Drag on the map to filter by points.
+              </div>
+              <div className="filter-cell middle">
+                {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
+                {selectedIndices?.length > 0 ? (
+                  <button
+                    className="deselect"
+                    onClick={() => {
+                      setSelectedIndices([]);
+                      scatter?.select([]);
+                      // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                    }}
+                  >
+                    X
+                  </button>
+                ) : null}
+              </div>
+              <div className="filter-cell right"></div>
             </div>
-            <div className="filter-cell middle">
-              {selectedIndices?.length > 0 ? (
-                <span>{selectedIndices?.length} rows</span>
-              ) : null}
-              {selectedIndices?.length > 0 ? (
+
+            <div className="filter-row">
+              <div className="filter-cell left filter-description">
+                Displaying rows matching
                 <button
-                  className="deselect"
-                  onClick={() => {
-                    setSelectedIndices([]);
-                    scatter?.select([]);
-                    // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                  }}
+                  className={`filter-mode ${filterMode == 'all' ? 'active' : ''}`}
+                  type="submit"
+                  title="toggle to all"
+                  onClick={() => handleFilterModeChange('all')}
                 >
-                  X
+                  all
                 </button>
-              ) : null}
-            </div>
-            <div className="filter-cell right"></div>
-          </div>
+                <button
+                  className={`filter-mode ${filterMode == 'any' ? 'active' : ''}`}
+                  style={{ marginLeft: 0 }}
+                  type="submit"
+                  title="toggle to any"
+                  onClick={() => handleFilterModeChange('any')}
+                >
+                  any
+                </button>
+                {` `}filters
+              </div>
+              <div className="filter-cell middle intersected-count">
+                <span>{intersectedIndices.length} rows</span>
+              </div>
 
-          <div className="filter-row">
-            <div className="filter-cell left filter-description">
-              Displaying rows matching
-              <button className={`filter-mode ${filterMode == "all" ? "active" : ""}`} type="submit" title="toggle to all" onClick={() => handleFilterModeChange("all")}>all</button>
-              <button className={`filter-mode ${filterMode == "any" ? "active" : ""}`} style={{ marginLeft: 0 }} type="submit" title="toggle to any" onClick={() => handleFilterModeChange("any")}>any</button>
-              {` `}filters
-            </div>
-            <div className="filter-cell middle intersected-count">
-              <span>{intersectedIndices.length} rows</span>
+              <div className="filter-cell right bulk-actions">
+                {intersectedIndices.length > 0 ? (
+                  <BulkActions
+                    bulkAction={bulkAction}
+                    setBulkAction={setBulkAction}
+                    dataset={dataset}
+                    scope={scope}
+                    intersectedIndices={intersectedIndices}
+                    fetchTagSet={fetchTagSet}
+                    fetchScopeMeta={fetchScopeMeta}
+                    fetchScopeRows={fetchScopeRows}
+                    clearFilters={clearFilters}
+                  />
+                ) : null}
+              </div>
             </div>
 
-            <div className="filter-cell right bulk-actions">
-              {intersectedIndices.length > 0 ? <BulkActions
-                bulkAction={bulkAction}
-                setBulkAction={setBulkAction}
-                dataset={dataset}
-                scope={scope}
-                intersectedIndices={intersectedIndices}
-                fetchTagSet={fetchTagSet}
-                fetchScopeMeta={fetchScopeMeta}
-                fetchScopeRows={fetchScopeRows}
-                clearFilters={clearFilters}
-              /> : null}
-            </div>
-          </div>
-
-          {/* <div className="filter-row embeddings-controls">
+            {/* <div className="filter-row embeddings-controls">
             <EmbeddingControls
               showEmbeddings={showEmbeddings}
               handleShowEmbeddings={handleShowEmbeddings}
@@ -655,39 +678,39 @@ function Explore() {
               embeddings={embeddings}
             />
           </div> */}
-        </div>
+          </div>
 
-        {intersectedIndices.length > 0 ? (
-          <FilterDataTable
-            height={tableHeight}
-            dataset={dataset}
-            scope={scope}
-            indices={intersectedIndices}
-            deletedIndices={deletedIndices}
-            distances={distances}
-            clusterMap={clusterMap}
-            clusterLabels={clusterLabels}
-            tagset={tagset}
-            sae_id={sae?.id}
-            feature={feature}
-            onTagset={fetchTagSet}
-            onScope={() => {
-              fetchScopeMeta()
-              fetchScopeRows()
-            }}
-            onHover={(index) => handleHover(index)}
-            onClick={handleClicked}
-            onRows={setRows}
-            editMode={true}
-            showDifference={null}
-            filtersContainerRef={filtersContainerRef}
-          // showDifference={showDifference ? searchEmbedding : null}
-          />
-        ) : (
-          <div className="filter-table no-data">Select a filter to display rows</div>
-        )}
+          {intersectedIndices.length > 0 ? (
+            <FilterDataTable
+              height={tableHeight}
+              dataset={dataset}
+              scope={scope}
+              indices={intersectedIndices}
+              deletedIndices={deletedIndices}
+              distances={distances}
+              clusterMap={clusterMap}
+              clusterLabels={clusterLabels}
+              tagset={tagset}
+              sae_id={sae?.id}
+              feature={feature}
+              onTagset={fetchTagSet}
+              onScope={() => {
+                fetchScopeMeta();
+                fetchScopeRows();
+              }}
+              onHover={(index) => handleHover(index)}
+              onClick={handleClicked}
+              onRows={setRows}
+              editMode={true}
+              showDifference={null}
+              filtersContainerRef={filtersContainerRef}
+              // showDifference={showDifference ? searchEmbedding : null}
+            />
+          ) : (
+            <div className="filter-table no-data">Select a filter to display rows</div>
+          )}
 
-        {/* {selectedIndices?.length > 0 ?
+          {/* {selectedIndices?.length > 0 ?
               <IndexDataTable
                 indices={selectedIndices}
                 clusterIndices={clusterIndices}
@@ -701,9 +724,10 @@ function Explore() {
               />
               : null} */}
 
-        {/* </div> */}
+          {/* </div> */}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

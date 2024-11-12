@@ -402,18 +402,17 @@ function VisualizationPane({
 }
 
 VisualizationPane.propTypes = {
-    scopeRows: PropTypes.array.isRequired,
-    hulls: PropTypes.array.isRequired,
-    hoverAnnotations: PropTypes.array.isRequired,
-    hoveredCluster: PropTypes.object,
-    slide: PropTypes.object,
-    scope: PropTypes.object,
-    onScatter: PropTypes.func.isRequired,
-    onSelect: PropTypes.func.isRequired,
-    onHover: PropTypes.func.isRequired,
-    hovered: PropTypes.object,
-    dataset: PropTypes.object.isRequired,
-    containerRef: PropTypes.object.isRequired,
+  scopeRows: PropTypes.array.isRequired,
+  hoverAnnotations: PropTypes.array.isRequired,
+  hoveredCluster: PropTypes.object,
+  slide: PropTypes.object,
+  scope: PropTypes.object,
+  onScatter: PropTypes.func.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  onHover: PropTypes.func.isRequired,
+  hovered: PropTypes.object,
+  dataset: PropTypes.object.isRequired,
+  containerRef: PropTypes.object.isRequired,
 };
 
 export default VisualizationPane;

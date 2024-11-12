@@ -9,7 +9,7 @@
 
 .page {
   padding-top: 40px;
-  height: calc(100vh - 40px);
+    height: calc(100vh - 78px);
 }
 
 .docs-banner {
