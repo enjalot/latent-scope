@@ -1,26 +1,55 @@
 .subHeaderContainer {
+    background-color: var(--neutrals-color-neutral-1);
     border-bottom: 1px solid #e5e5e5;
-    background-color: white;
+    padding: 0 10px;
 }
 
 .tabsContainer {
     display: flex;
-    /* padding: 0 10px; */
+    justify-content: space-between;
+    width: 100%;
+    color: var(--text-color-text-neutral);
 }
 
+.leftTabs {
+    display: flex;
+    align-items: center;
+}
+
+.rightTabs {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.scope {
+    border-bottom: 2px solid transparent;
+}
 .tab {
-    padding: 8px 16px;
-    font-size: 14px;
-    color: #666;
     text-decoration: none;
-    cursor: pointer;
+    color: var(--text-color-text-neutral);
+    padding: 8px 12px;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s;
+    font-size: 14px;
 }
 
 .tab:hover {
-    color: #333;
+    border-bottom-color: rgba(0, 0, 0, 0.2);
 }
 
 .activeTab {
-    color: #1a73e8;
-    border-bottom: 2px solid #1a73e8;
+    border-bottom-color: #646cff;
+    color: #646cff;
+}
+
+.disabledTab {
+    color: var(--semantic-color-semantic-neutral-disabled);
+    cursor: not-allowed;
+}
+
+.divider {
+    border-left: 1px solid #e5e5e5;
+    height: 28px;
+    margin: 0 10px;
 }

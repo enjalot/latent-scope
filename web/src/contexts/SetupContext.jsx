@@ -16,46 +16,45 @@ export const SetupProvider = ({ children }) => {
   const [scopes, setScopes] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [previewLabel, setPreviewLabel] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    apiService.fetchDataset(datasetId)
-      .then(data => {
-        setDataset(data)
-      });
-    apiService.fetchScopes(datasetId)
-      .then(data => {
-        setScopes(data)
-      });
+    apiService.fetchDataset(datasetId).then((data) => {
+      setDataset(data);
+    });
+    apiService.fetchScopes(datasetId).then((data) => {
+      setScopes(data);
+    });
   }, [datasetId]);
 
   useEffect(() => {
-    if(scopeId) {
-      apiService.fetchScope(datasetId, scopeId)
-        .then(data => {
-          setScope(data)
-          setSavedScope(data)
-          console.log("setting saved scope", data)
-          setCurrentStep(5)
-        });
+    if (scopeId) {
+      apiService.fetchScope(datasetId, scopeId).then((data) => {
+        setScope(data);
+        setSavedScope(data);
+        console.log('setting saved scope', data);
+        setIsLoaded(true);
+        setCurrentStep(5);
+      });
     } else {
-      console.log("setting scope to null")
-      setScope(null)
-      setSavedScope(null)
-      setCurrentStep(1)
+      console.log('setting scope to null');
+      setScope(null);
+      setSavedScope(null);
+      setCurrentStep(1);
     }
   }, [datasetId, scopeId]);
 
   const updateScope = useCallback((updates) => {
-    setScope(prevScope => ({ ...prevScope, ...updates }));
+    setScope((prevScope) => ({ ...prevScope, ...updates }));
   }, []);
 
   const goToNextStep = useCallback(() => {
-    setCurrentStep(prev => prev + 1);
+    setCurrentStep((prev) => prev + 1);
   }, []);
 
   const goToPreviousStep = useCallback(() => {
-    setCurrentStep(prev => prev - 1);
+    setCurrentStep((prev) => prev - 1);
   }, []);
 
   const value = {
@@ -74,7 +73,8 @@ export const SetupProvider = ({ children }) => {
     goToPreviousStep,
     navigate,
     previewLabel,
-    setPreviewLabel
+    setPreviewLabel,
+    isLoaded,
   };
 
   return <SetupContext.Provider value={value}>{children}</SetupContext.Provider>;

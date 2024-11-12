@@ -27,7 +27,7 @@ function DatasetHeader({
   return (
     <div className="summary">
       <div className="scope-card">
-        <div className='heading'>
+        {/* <div className="heading">
           <span>{dataset?.id} &gt; </span>
           <select
             className="scope-selector"
@@ -41,49 +41,83 @@ function DatasetHeader({
             ))}
           </select>
 
-          {!readonly && (
+          {/* {!readonly && (
             <>
               <div style={{ display: 'flex', gap: '1rem' }}>
               <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>
               <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>
               </div>
             </>
-        )}
-        </div>
-
-
+          )}
+        </div> */}
 
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
 
         {scope?.ls_version ? (
           <span>
-            {lsVersion && compareVersions(scope?.ls_version, lsVersion) < 0 ? 
+            {lsVersion && compareVersions(scope?.ls_version, lsVersion) < 0 ? (
               <div className="scope-version-warning">
                 <span className="warning-header">Outdated Scope</span>
-                <span> This scope was created with Latent Scope version <code>{scope.ls_version}</code>, while you are running Latent Scope <code>{lsVersion}</code></span>
-                <span> please "Overwrite" the scope in the last step on the <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to update.</span>
-              </div> : null}
-            <span><span className="metadata-label">Scope</span> {scope?.id}</span>
+                <span>
+                  {' '}
+                  This scope was created with Latent Scope version <code>{scope.ls_version}</code>,
+                  while you are running Latent Scope <code>{lsVersion}</code>
+                </span>
+                <span>
+                  {' '}
+                  please "Overwrite" the scope in the last step on the{' '}
+                  <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to
+                  update.
+                </span>
+              </div>
+            ) : null}
+            <span>
+              <span className="metadata-label">Dataset</span> {dataset?.id}
+            </span>
             <br />
-            <span><span className="metadata-label">Description</span> {scope?.description}</span>
+            <span>
+              <span className="metadata-label">Scope</span> {scope?.id}
+            </span>
             <br />
-            <span><span className="metadata-label">Embedding</span> {scope?.embedding?.model_id}</span>
+            <span>
+              <span className="metadata-label">Description</span> {scope?.description}
+            </span>
+            <br />
+            <span>
+              <span className="metadata-label">Embedding</span> {scope?.embedding?.model_id}
+            </span>
+
+            <br />
+            <span>
+              <span className="metadata-label">Version</span> {scope?.ls_version}
+            </span>
             <br />
             {/* <div className="dataset-card"> */}
             <span>
               {dataset?.length - deletedIndices?.length}/{dataset?.length} rows
-              {deletedIndices?.length > 0 && <span className="metadata-label"> ({deletedIndices?.length} deleted)</span>}
+              {deletedIndices?.length > 0 && (
+                <span className="metadata-label"> ({deletedIndices?.length} deleted)</span>
+              )}
             </span>
             <br />
             {/* </div> */}
-            <span><span>{scope?.cluster_labels_lookup?.length} clusters</span></span>
+            <span>
+              <span>{scope?.cluster_labels_lookup?.length} clusters</span>
+            </span>
             <br />
-            <span><span>{tags.length} tags</span></span>
+            <span>
+              <span>{tags.length} tags</span>
+            </span>
           </span>
         ) : (
           <div className="scope-version-warning">
             <span className="warning-header">Outdated Scope!</span>
-            <span> please "Overwrite" the scope in the last step on the <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to update.</span>
+            <span>
+              {' '}
+              please "Overwrite" the scope in the last step on the{' '}
+              <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to
+              update.
+            </span>
           </div>
         )}
       </div>

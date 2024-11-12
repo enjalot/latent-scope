@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl } from '../../lib/apiService';
+import SubNav from '../SubNav';
 import { Select } from 'react-element-forge';
 
 import { useSetup } from '../../contexts/SetupContext';
@@ -14,59 +15,39 @@ function Header() {
 
   // have job for re-ingesting dataset
   const [reingestJob, setReingestJob] = useState(null);
-  const { startJob: startReingestJob } = useStartJobPolling(dataset, setReingestJob, `${apiUrl}/jobs/reingest`);
+  const { startJob: startReingestJob } = useStartJobPolling(
+    dataset,
+    setReingestJob,
+    `${apiUrl}/jobs/reingest`
+  );
+
+  const onScopeChange = (e) => {
+    navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`);
+  };
+
+  // THIS IS UGLY, handle loading state better from the useSetp
+  const scopesToShow = [{ label: 'New scope', value: '' }, ...(scopes ?? [])];
 
   return (
-    <div className={styles.header}>
-      <h3>{dataset ? dataset.id : "Loading..."} 
-        <span className={styles.datasetLength}>{dataset?.length ? ` ${dataset.length} rows` : null}</span>
-      </h3>
-      {dataset && <div>
-        <div className={styles.scope}>
-          <div className={styles.scopesList}>
-              {scopes ?
-                <Select
-                  onChange={(e) => {
-                    navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`)
-                  }}
-                  options={[{ label: "New scope", value: "" }, ...scopes.map(s => ({ label: `${s.label} (${s.id})`, value: s.id }))]}
-                  value={scope?.id || ""}
-                >
-                </Select> 
-              : null}
-          </div>
+    <SubNav dataset={dataset} scope={scope} scopes={scopesToShow} onScopeChange={onScopeChange} />
+  );
+  // TODO: need to add this back in
+  //     <div className={styles.dataset}>
+  //       {!dataset.ls_version ? <div className={styles.reimport}>
+  //         <span className="warning-header">WARNING: outdated dataset!</span>
+  //         <button onClick={() => {
+  //           startReingestJob({ text_column: dataset.text_column })
+  //         }}>Reimport</button>
+  //       </div> : null}
 
-          <div className={styles.scopeLinks}>
-            { scope ? <>
-                <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}> ↗ Export data <br/></Link> 
-                <Link to={`/datasets/${dataset?.id}/plot/${scope?.id}`}> ↗ Export plot <br/></Link> 
-              </>
-            : <Link to={`/datasets/${dataset?.id}/export`}> ↗ Export data <br/></Link> }
-            { scope ? <Link to={`/datasets/${dataset?.id}/explore/${scope?.id}`}> ↗ Explore <br/></Link> : null } 
-          </div>
+  //       <JobProgress job={reingestJob} clearJob={()=> {
+  //         setReingestJob(null)
+  //         window.location.reload();
+  //       }}/>
 
-          <div className={styles.jobHistory}>
-            <Link to={`/datasets/${dataset?.id}/jobs`}> Job history</Link><br/>
-          </div>
-        </div>
-
-        <div className={styles.dataset}>
-          {!dataset.ls_version ? <div className={styles.reimport}>
-            <span className="warning-header">WARNING: outdated dataset!</span>
-            <button onClick={() => {
-              startReingestJob({ text_column: dataset.text_column })
-            }}>Reimport</button>
-          </div> : null}
-          
-          <JobProgress job={reingestJob} clearJob={()=> {
-            setReingestJob(null)
-            window.location.reload();
-          }}/>
-
-        </div> 
-      </div>}
-    </div>
-  )
+  //     </div>
+  //   </div>}
+  // </div>
 }
 
 export default Header;

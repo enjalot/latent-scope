@@ -1,36 +1,25 @@
-import {
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
-import { useParams, useNavigate } from "react-router-dom";
-const { asyncBufferFromUrl, parquetRead } = await import('hyparquet')
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
 
-import "./Explore.css";
-import useCurrentScope from "../hooks/useCurrentScope";
+import './Explore.css';
+import useCurrentScope from '../hooks/useCurrentScope';
 import useNearestNeighborsSearch from '../hooks/useNearestNeighborsSearch';
-import useScopeData from "../hooks/useScopeData";
-import useColumnFilter from "../hooks/useColumnFilter";
-import { saeAvailable } from "../lib/SAE";
-import { apiUrl } from "../lib/apiService";
+import useScopeData from '../hooks/useScopeData';
+import useColumnFilter from '../hooks/useColumnFilter';
+import { saeAvailable } from '../lib/SAE';
+import { apiUrl } from '../lib/apiService';
 
 import SubNav from '../components/SubNav';
-import ScopeHeader from "../components/Explore/ScopeHeader";
-import VisualizationPane from "../components/Explore/VisualizationPane";
+import ScopeHeader from '../components/Explore/ScopeHeader';
+import VisualizationPane from '../components/Explore/VisualizationPane';
 import NearestNeighbor from '../components/Explore/NearestNeighbor';
 import ClusterFilter from '../components/Explore/ClusterFilter';
 import ColumnFilter from '../components/Explore/ColumnFilter';
 import BulkActions from '../components/Explore/BulkActions';
-import ConfigurationPanel from "../components/Explore/ConfigurationPanel";
+import ConfigurationPanel from '../components/Explore/ConfigurationPanel';
 
-import FilterDataTable from "../components/FilterDataTable";
-
-
-
-
-
+import FilterDataTable from '../components/FilterDataTable';
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -39,11 +28,8 @@ function Explore() {
   // fetch dataset and current scope metadata
   // - scopes: all scopes available for this dataset
   // - embeddings: embeddings available for this dataset
-  const { embeddings, dataset, scope, fetchScopeMeta, scopes, tagset, fetchTagSet, tags } = useCurrentScope(
-    datasetId,
-    scopeId,
-    apiUrl,
-  );
+  const { embeddings, dataset, scope, fetchScopeMeta, scopes, tagset, fetchTagSet, tags } =
+    useCurrentScope(datasetId, scopeId, apiUrl);
 
   // fetch data for the current scope and populate data structures for scatterplot and clustering
   const {
@@ -53,55 +39,54 @@ function Explore() {
     clusterLabels,
     scopeRows,
     sae,
-    deletedIndices
+    deletedIndices,
   } = useScopeData(apiUrl, datasetId, scope);
 
   // TODO: the user should be able to highlight a feature
   // when passed to the data table it will show that feature first?
-  const [feature, setFeature] = useState(-1)
-  const [features, setFeatures] = useState([])
+  const [feature, setFeature] = useState(-1);
+  const [features, setFeatures] = useState([]);
 
   useEffect(() => {
     const asyncRead = async (meta) => {
       // console.log("META", meta)
-      if(!meta) return;
-      const buffer = await asyncBufferFromUrl(meta.url)
+      if (!meta) return;
+      const buffer = await asyncBufferFromUrl(meta.url);
       parquetRead({
         file: buffer,
-        onComplete: data => {
+        onComplete: (data) => {
           // let pts = []
           // console.log("DATA", data)
-          let fts = data.map(f => {
+          let fts = data.map((f) => {
             // pts.push([f[2], f[3], parseInt(f[5])])
             return {
               feature: parseInt(f[0]),
               max_activation: f[1],
               label: f[6],
               order: f[7],
-            }
-          })
+            };
+          });
           // .filter(d => d.label.indexOf("linear") >= 0)
           // .sort((a,b) => a.order - b.order)
-          console.log("FEATURES", fts)
-          setFeatures(fts)
-        }
-      })
-    }
-    if(sae && embeddings && scope) {
-      let embedding = embeddings.find(e => e.id == scope.embedding_id)
-      if(embedding) {
-        asyncRead(saeAvailable[embedding.model_id])
+          console.log('FEATURES', fts);
+          setFeatures(fts);
+        },
+      });
+    };
+    if (sae && embeddings && scope) {
+      let embedding = embeddings.find((e) => e.id == scope.embedding_id);
+      if (embedding) {
+        asyncRead(saeAvailable[embedding.model_id]);
       }
     }
-  }, [scope, sae, embeddings])
+  }, [scope, sae, embeddings]);
 
- 
   const hydrateIndices = useCallback(
     (indices, setter, distances = []) => {
       fetch(`${apiUrl}/indexed`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ dataset: datasetId, indices: indices }),
       })
@@ -117,10 +102,8 @@ function Explore() {
           setter(rows);
         });
     },
-    [dataset, datasetId],
+    [dataset, datasetId]
   );
-
-
 
   // ====================================================================================================
   // Scatterplot related logic
@@ -141,7 +124,7 @@ function Explore() {
       // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
       // scatter?.zoomToPoints(nonDeletedIndices, { transition: true })
     },
-    [setSelectedIndices],
+    [setSelectedIndices]
   );
 
   // Hover via scatterplot or tables
@@ -149,7 +132,11 @@ function Explore() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [hovered, setHovered] = useState(null);
   useEffect(() => {
-    if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndices.includes(hoveredIndex)) {
+    if (
+      hoveredIndex !== null &&
+      hoveredIndex !== undefined &&
+      !deletedIndices.includes(hoveredIndex)
+    ) {
       hydrateIndices([hoveredIndex], (results) => {
         setHovered(results[0]);
       });
@@ -170,7 +157,7 @@ function Explore() {
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined) {
-      let sr = scopeRows[hoveredIndex]
+      let sr = scopeRows[hoveredIndex];
       setHoverAnnotations([sr.x, sr.y]);
     } else {
       setHoverAnnotations([]);
@@ -206,13 +193,13 @@ function Explore() {
     setSearchIndices,
     distances,
     isLoading: searchLoading,
-    clearSearch
+    clearSearch,
   } = useNearestNeighborsSearch({
     apiUrl,
     datasetId,
     scope,
     embeddings,
-    deletedIndices
+    deletedIndices,
   });
 
   // ====================================================================================================
@@ -240,29 +227,27 @@ function Explore() {
     }
   }, [slide, scopeRows, scatter, setSlideAnnotations]);
 
-  const [clusterLabel, setClusterLabel] = useState(slide?.label || "");
-  const [newClusterLabel, setNewClusterLabel] = useState("");
+  const [clusterLabel, setClusterLabel] = useState(slide?.label || '');
+  const [newClusterLabel, setNewClusterLabel] = useState('');
   useEffect(() => {
-    setNewClusterLabel("");
+    setNewClusterLabel('');
   }, [slide]);
 
   const handleNewCluster = useCallback(
     (label) => {
-      console.log("new cluster", label);
-      fetch(
-        `${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/new-cluster?label=${label}`,
-      )
+      console.log('new cluster', label);
+      fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/new-cluster?label=${label}`)
         .then((response) => response.json())
         .then((data) => {
-          console.log("what happened?", data);
+          console.log('what happened?', data);
           fetchScopeMeta();
         });
     },
-    [datasetId, scope, fetchScopeMeta],
+    [datasetId, scope, fetchScopeMeta]
   );
 
   useEffect(() => {
-    setClusterLabel(slide?.label || "");
+    setClusterLabel(slide?.label || '');
   }, [slide]);
 
   // Handlers for responding to individual data points
@@ -274,29 +259,29 @@ function Explore() {
         transitionDuration: 1500,
       });
     },
-    [scatter],
+    [scatter]
   );
   const handleHover = useCallback(
     (index) => {
       const nonDeletedIndex = deletedIndices.includes(index) ? null : index;
       setHoveredIndex(nonDeletedIndex);
     },
-    [setHoveredIndex],
+    [setHoveredIndex]
   );
 
   const handleLabelUpdate = useCallback(
     (cluster, label) => {
-      console.log("update label", cluster, label);
+      console.log('update label', cluster, label);
       fetch(
-        `${apiUrl}/bulk/change-cluster-name?dataset_id=${datasetId}&scope_id=${scope.id}&cluster=${cluster}&new_label=${label}`,
+        `${apiUrl}/bulk/change-cluster-name?dataset_id=${datasetId}&scope_id=${scope.id}&cluster=${cluster}&new_label=${label}`
       )
         .then((response) => response.json())
         .then((data) => {
-          console.log("got new labels", data);
+          console.log('got new labels', data);
           fetchScopeMeta();
         });
     },
-    [datasetId, scope],
+    [datasetId, scope]
   );
 
   const clearScope = useCallback(() => {
@@ -320,41 +305,45 @@ function Explore() {
     setColumnIndices([]);
   }, [setSelectedIndices, setSearchIndices, setTag, setColumnIndices]);
 
-
-
   function intersectMultipleArrays(filterMode, ...arrays) {
     arrays = arrays.filter((d) => d.length > 0);
     if (arrays.length === 0) return [];
     if (arrays.length == 1) return arrays[0];
 
-    if (filterMode === "all") {
+    if (filterMode === 'all') {
       // AND mode - intersection
       return arrays.reduce((acc, curr) => {
         const currSet = new Set(curr);
         return acc.filter((x) => currSet.has(x));
       });
     } else {
-      // ANY mode - union 
+      // ANY mode - union
       const unionSet = new Set();
-      arrays.forEach(arr => {
-        arr.forEach(x => unionSet.add(x));
+      arrays.forEach((arr) => {
+        arr.forEach((x) => unionSet.add(x));
       });
       return Array.from(unionSet);
     }
   }
 
   // ==== FILTER SELECT MODE ====
-  const [filterMode, setFilterMode] = useState("all");
-  const handleFilterModeChange = useCallback((mode) => {
-    setFilterMode(mode);
-  }, [setFilterMode]);
+  const [filterMode, setFilterMode] = useState('all');
+  const handleFilterModeChange = useCallback(
+    (mode) => {
+      setFilterMode(mode);
+    },
+    [setFilterMode]
+  );
 
   // Tag indices are set on the original dataset, which may have rows deleted
   // so we need to filter them here to make sure we are working with all valid rows
   // in the current scope
-  const filterTagIndices = useCallback((indices) => {
-    return indices.filter((d) => !deletedIndices.includes(d));
-  }, [deletedIndices]);
+  const filterTagIndices = useCallback(
+    (indices) => {
+      return indices.filter((d) => !deletedIndices.includes(d));
+    },
+    [deletedIndices]
+  );
 
   const [intersectedIndices, setIntersectedIndices] = useState([]);
   // intersect the indices from the various filters
@@ -375,7 +364,7 @@ function Explore() {
       searchIndices || [],
       filteredClusterIndices || [],
       filteredTagset || [],
-      columnIndices || [],
+      columnIndices || []
     );
     // if (indices.length == 0 && selectedIndices.length > 0) {
     //   indices = selectedIndices;
@@ -391,12 +380,10 @@ function Explore() {
     tag,
     columnIndices,
     filterMode,
-    filterTagIndices
+    filterTagIndices,
   ]);
 
-  
   const [bulkAction, setBulkAction] = useState(null);
-
 
   const [delay, setDelay] = useState(200);
   const [rows, setRows] = useState([]);
@@ -406,7 +393,7 @@ function Explore() {
       setDelay(2000);
       navigate(`/datasets/${dataset?.id}/explore/${scopeId}`);
     },
-    [dataset, clearScope, navigate],
+    [dataset, clearScope, navigate]
   );
 
   const containerRef = useRef(null);
@@ -416,7 +403,7 @@ function Explore() {
   const FILTERS_PADDING = 62;
   const tableHeight = useMemo(
     () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
-    [filtersHeight],
+    [filtersHeight]
   );
 
   useEffect(() => {
@@ -436,7 +423,7 @@ function Explore() {
         if (node) {
           resizeObserver.observe(node);
         } else {
-          setFiltersHeight(0)
+          setFiltersHeight(0);
         }
       }, 100);
     }
@@ -446,13 +433,13 @@ function Explore() {
         resizeObserver.unobserve(node);
       }
     };
-  }, []); 
+  }, []);
 
   if (!dataset) return <div>Loading...</div>;
 
   return (
     <>
-      <SubNav />
+      <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
       <div ref={containerRef} className="container">
         <div className="left-column">
           <ScopeHeader
@@ -465,16 +452,17 @@ function Explore() {
           />
 
           {scopeRows?.length ? (
-            <div onMouseLeave={() => {
-              console.log("mouse left")
-              setHoveredIndex(null);
-              setHoveredCluster(null);
-              setHoverAnnotations([]);
-              setHovered(null);
-            }}>
+            <div
+              onMouseLeave={() => {
+                console.log('mouse left');
+                setHoveredIndex(null);
+                setHoveredCluster(null);
+                setHoverAnnotations([]);
+                setHovered(null);
+              }}
+            >
               <VisualizationPane
                 scopeRows={scopeRows}
-                hulls={hulls}
                 hoveredIndex={hoveredIndex}
                 hoverAnnotations={hoverAnnotations}
                 intersectedIndices={intersectedIndices}
