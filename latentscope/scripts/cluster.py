@@ -72,7 +72,8 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     from scipy.spatial.distance import cdist
 
     umap_embeddings_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
-    umap_embeddings = umap_embeddings_df.to_numpy()
+    # Extract x,y columns into numpy array with shape (n,2)
+    umap_embeddings = np.column_stack((umap_embeddings_df['x'], umap_embeddings_df['y']))
 
     if column is not None:
         input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, f"input.parquet"))

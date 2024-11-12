@@ -102,9 +102,9 @@ function ClusterLabels() {
           let lbl;
           const defaultLabel = { id: "default", model_id: "N/A", cluster_id: cluster.id }
           if(selected){
-            console.log("selected", selected)
+            // console.log("selected", selected)
             lbl = labelsAvailable.find(d => d.id == selected) || defaultLabel
-            console.log("found?", lbl, labelsAvailable)
+            // console.log("found?", lbl, labelsAvailable)
           } else if(labelsAvailable[0]) {
             lbl = labelsAvailable[0]
           } else {
@@ -155,13 +155,13 @@ function ClusterLabels() {
   }, [datasetId])
 
   const handleNextStep = useCallback(() => {
-    if(savedScope?.cluster_labels_id == selected) {
+    if(savedScope?.cluster_labels_id == selected && savedScope?.cluster_id == cluster.id) {
       updateScope({...savedScope})
     } else {
       updateScope({cluster_labels_id: selected, id: null})
     }
     goToNextStep()
-  }, [updateScope, goToNextStep, selected, savedScope])
+  }, [updateScope, goToNextStep, selected, savedScope, cluster])
 
   return (
     <div className={styles["cluster-labels"]}>
