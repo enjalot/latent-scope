@@ -62,7 +62,8 @@ function Explore() {
 
   useEffect(() => {
     const asyncRead = async (meta) => {
-      console.log("META", meta)
+      // console.log("META", meta)
+      if(!meta) return;
       const buffer = await asyncBufferFromUrl(meta.url)
       parquetRead({
         file: buffer,
