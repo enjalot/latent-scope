@@ -205,7 +205,7 @@ function ScatterPlot ({
       }
       prevPointsRef.current = points;
     }
-  }, [points, width, height, colorScaleType, colorInterpolator, duration, pointScale]);
+  }, [points, width, height, colorScaleType, colorInterpolator, duration, pointScale, opacityRange, pointSizeRange]);
 
   return <canvas className={styles.scatter} ref={container} />;
 }

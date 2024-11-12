@@ -51,9 +51,6 @@ function Explore() {
     clusterMap,
     clusterLabels,
     scopeRows,
-    points,
-    drawPoints,
-    hulls,
     sae,
     deletedIndices
   } = useScopeData(apiUrl, datasetId, scope);
@@ -468,25 +465,23 @@ function Explore() {
         />
 
         {scopeRows?.length ? (
-          <div onMouseLeave={() => handleHover(null)}>
-            <VisualizationPane
-              scopeRows={scopeRows}
-              hulls={hulls}
-              hoveredIndex={hoveredIndex}
-              hoverAnnotations={hoverAnnotations}
-              intersectedIndices={intersectedIndices}
-              hoveredCluster={hoveredCluster}
-              slide={slide}
-              scope={scope}
-              containerRef={containerRef}
-              onScatter={setScatter}
-              onSelect={handleSelected}
-              onHover={handleHover}
-              hovered={hovered}
-              dataset={dataset}
-              deletedIndices={deletedIndices}
-            />
-          </div>
+          <VisualizationPane
+            scopeRows={scopeRows}
+            clusterLabels={clusterLabels}
+            hoveredIndex={hoveredIndex}
+            hoverAnnotations={hoverAnnotations}
+            intersectedIndices={intersectedIndices}
+            hoveredCluster={hoveredCluster}
+            slide={slide}
+            scope={scope}
+            containerRef={containerRef}
+            onScatter={setScatter}
+            onSelect={handleSelected}
+            onHover={handleHover}
+            hovered={hovered}
+            dataset={dataset}
+            deletedIndices={deletedIndices}
+          />
         ) : null}
       </div>
 
@@ -516,17 +511,12 @@ function Explore() {
 
           {/* row 3: tags */}
           <div
-            className={`filter-row tags-box ${
-              filterTagIndices(tagset[tag] || [])?.length ? 'active' : ''
-            }`}
+            className={`filter-row tags-box ${filterTagIndices(tagset[tag] || [])?.length ? "active" : ""
+              }`}
           >
             <div className="filter-cell left tags-select">
-              <select
-                onChange={(e) => setTag(e.target.value === '-1' ? null : e.target.value)}
-                value={tag || '-1'}
-              >
-                {'2'}
-                <option value="-1">Filter by tag</option>
+              <select onChange={(e) => setTag(e.target.value === "-1" ? null : e.target.value)} value={tag || "-1"}>
+                {"2"}<option value="-1">Filter by tag</option>
                 {tags.map((t, index) => (
                   <option key={index} value={t}>
                     {t} ({filterTagIndices(tagset[t] || []).length})
@@ -555,11 +545,13 @@ function Explore() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     const newTag = e.target.elements.newTag.value;
-                    fetch(`${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`)
+                    fetch(
+                      `${apiUrl}/tags/new?dataset=${datasetId}&tag=${newTag}`,
+                    )
                       .then((response) => response.json())
                       .then((data) => {
-                        console.log('new tag', data);
-                        e.target.elements.newTag.value = '';
+                        console.log("new tag", data);
+                        e.target.elements.newTag.value = "";
                         fetchTagSet();
                       });
                   }}
@@ -571,18 +563,18 @@ function Explore() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    fetch(`${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`)
-                      .then((response) => response.json())
-                      .then((data) => {
-                        console.log('deleted tag', data);
-                        setTag(null);
-                        fetchTagSet();
-                      });
-                  }}
-                >
-                  <button type="submit" title="Delete tag from Scope">
-                    ➖ {tag}
-                  </button>
+                      fetch(
+                        `${apiUrl}/tags/delete?dataset=${datasetId}&tag=${tag}`,
+                      )
+                        .then((response) => response.json())
+                        .then((data) => {
+                          console.log("deleted tag", data);
+                          setTag(null);
+                          fetchTagSet();
+                        });
+                    }}
+                  >
+                    <button type="submit" title="Delete tag from Scope">➖ {tag}</button>
                 </form>
               )}
             </div>
@@ -597,12 +589,16 @@ function Explore() {
             setColumnIndices={setColumnIndices}
           />
 
-          <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
+          <div
+            className={`filter-row ${selectedIndices?.length ? "active" : ""}`}
+          >
             <div className="filter-cell left filter-description">
               Shift+Drag on the map to filter by points.
             </div>
             <div className="filter-cell middle">
-              {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
+              {selectedIndices?.length > 0 ? (
+                <span>{selectedIndices?.length} rows</span>
+              ) : null}
               {selectedIndices?.length > 0 ? (
                 <button
                   className="deselect"
@@ -622,23 +618,8 @@ function Explore() {
           <div className="filter-row">
             <div className="filter-cell left filter-description">
               Displaying rows matching
-              <button
-                className={`filter-mode ${filterMode == 'all' ? 'active' : ''}`}
-                type="submit"
-                title="toggle to all"
-                onClick={() => handleFilterModeChange('all')}
-              >
-                all
-              </button>
-              <button
-                className={`filter-mode ${filterMode == 'any' ? 'active' : ''}`}
-                style={{ marginLeft: 0 }}
-                type="submit"
-                title="toggle to any"
-                onClick={() => handleFilterModeChange('any')}
-              >
-                any
-              </button>
+              <button className={`filter-mode ${filterMode == "all" ? "active" : ""}`} type="submit" title="toggle to all" onClick={() => handleFilterModeChange("all")}>all</button>
+              <button className={`filter-mode ${filterMode == "any" ? "active" : ""}`} style={{ marginLeft: 0 }} type="submit" title="toggle to any" onClick={() => handleFilterModeChange("any")}>any</button>
               {` `}filters
             </div>
             <div className="filter-cell middle intersected-count">
@@ -646,19 +627,17 @@ function Explore() {
             </div>
 
             <div className="filter-cell right bulk-actions">
-              {intersectedIndices.length > 0 ? (
-                <BulkActions
-                  bulkAction={bulkAction}
-                  setBulkAction={setBulkAction}
-                  dataset={dataset}
-                  scope={scope}
-                  intersectedIndices={intersectedIndices}
-                  fetchTagSet={fetchTagSet}
-                  fetchScopeMeta={fetchScopeMeta}
-                  fetchScopeRows={fetchScopeRows}
-                  clearFilters={clearFilters}
-                />
-              ) : null}
+              {intersectedIndices.length > 0 ? <BulkActions
+                bulkAction={bulkAction}
+                setBulkAction={setBulkAction}
+                dataset={dataset}
+                scope={scope}
+                intersectedIndices={intersectedIndices}
+                fetchTagSet={fetchTagSet}
+                fetchScopeMeta={fetchScopeMeta}
+                fetchScopeRows={fetchScopeRows}
+                clearFilters={clearFilters}
+              /> : null}
             </div>
           </div>
 
@@ -692,8 +671,8 @@ function Explore() {
             feature={feature}
             onTagset={fetchTagSet}
             onScope={() => {
-              fetchScopeMeta();
-              fetchScopeRows();
+              fetchScopeMeta()
+              fetchScopeRows()
             }}
             onHover={(index) => handleHover(index)}
             onClick={handleClicked}
@@ -701,7 +680,7 @@ function Explore() {
             editMode={true}
             showDifference={null}
             filtersContainerRef={filtersContainerRef}
-            // showDifference={showDifference ? searchEmbedding : null}
+          // showDifference={showDifference ? searchEmbedding : null}
           />
         ) : (
           <div className="filter-table no-data">Select a filter to display rows</div>

@@ -18,6 +18,7 @@ const isIOS = () => {
 
 function VisualizationPane({
     scopeRows,
+    clusterLabels,
     hoverAnnotations,
     intersectedIndices,
     hoveredCluster,
@@ -112,7 +113,11 @@ function VisualizationPane({
     }
   }, [hovered, scopeRows, xDomain, yDomain, width, size, umapOffset]);
 
-  // derive the hulls from the scope rows, and filter deleted points via an accessor
+  const hulls = useMemo(() => {
+    return processHulls(clusterLabels, scopeRows, (d) => d.deleted ? null : [d.x, d.y])
+  }, [scopeRows, clusterLabels])
+
+  // derive the hulls from the slide, and filter deleted points via an accessor
   const clusterHulls = useMemo(() => {
     if (!slide || !scopeRows) return [];
     return processHulls([slide], scopeRows, (d) =>
@@ -171,6 +176,13 @@ function VisualizationPane({
     setVizConfig(prev => ({ ...prev, pointOpacity: value }));
   }, []);
 
+  const pointSizeRange = useMemo(() => {
+    return mapPointSizeRange.map(d => d * vizConfig.pointSize)
+  }, [vizConfig.pointSize])
+  const pointOpacityRange = useMemo(() => {
+    return mapSelectionOpacity.map(d => d * vizConfig.pointOpacity)
+  }, [vizConfig.pointOpacity])
+
   return (
     <div className="umap-container" ref={umapRef}>
       <div className={styles.configToggleContainer}>
@@ -204,8 +216,8 @@ function VisualizationPane({
             colorScaleType="categorical"
             colorRange={mapSelectionColorsLight}
             colorDomain={mapSelectionDomain}
-            opacityRange={mapSelectionOpacity}
-            pointSizeRange={mapPointSizeRange}
+            opacityRange={pointOpacityRange}
+            pointSizeRange={pointSizeRange}
             opacityBy="valueA"
             onScatter={onScatter}
             onView={handleView}
@@ -261,19 +273,19 @@ function VisualizationPane({
           )}
 
         {/* show all the hulls */}
-        {/* {hulls.length && !scope.ignore_hulls && (
-                  <HullPlot
-                      hulls={hulls}
-                        stroke="#9d9d9d"
-                      fill="none"
-                      duration={200}
-                      strokeWidth={1}
-                      xDomain={xDomain}
-                      yDomain={yDomain}
-                      width={width}
-                      height={height}
-                  />
-              )} */}
+        {vizConfig.showClusterOutlines && hulls.length && (
+            <HullPlot
+                hulls={hulls}
+                stroke="#9d9d9d"
+                fill="none"
+                duration={200}
+                strokeWidth={1}
+                xDomain={xDomain}
+                yDomain={yDomain}
+                width={width}
+                height={height}
+            />
+        )}
 
         <AnnotationPlot
           points={hoverAnnotations}
@@ -286,7 +298,7 @@ function VisualizationPane({
           height={height}
         />
 
-        {tiles?.length > 1 && (
+        {vizConfig.showHeatMap && tiles?.length > 1 && (
             <TilePlot
                 tiles={tiles}
                 tileMeta={tileMeta}
