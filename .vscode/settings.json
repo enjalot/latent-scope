@@ -2,7 +2,7 @@
    "[javascriptreact]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-  // "editor.formatOnSave": true,
+  "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[scss]": {
     "editor.defaultFormatter": "sibiraj-s.vscode-scss-formatter"
