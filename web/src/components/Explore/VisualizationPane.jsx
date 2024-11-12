@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { groups } from "d3-array";
 import PropTypes from "prop-types";
 import Scatter from "../Scatter";
 import AnnotationPlot from "../AnnotationPlot";
 import HullPlot from "../HullPlot";
+import TilePlot from "../TilePlot";
 import { Tooltip } from "react-tooltip";
 import { processHulls } from "../../utils";
 import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from "../../lib/colors";
@@ -115,6 +117,23 @@ function VisualizationPane({
         if (!hoveredCluster || !scopeRows) return []
         return processHulls([hoveredCluster], scopeRows, d => d.deleted ? null : [d?.x, d?.y])
     }, [hoveredCluster, scopeRows])
+
+    // TODO: these should just be based on which tile we choose, 32, 64 or 128
+    const tileMeta = useMemo(() => {
+        return {
+            size: 2 / 64,
+            cols: 64
+        }
+    }, [])
+    const tiles = useMemo(() => {
+        return groups(scopeRows, d => d.tile_index_64)
+        .map(tile => {
+            return {
+                tile_index: tile[0],
+                points: tile[1]
+            }
+        })
+    }, [scopeRows])
 
     // ====================================================================================================
     // Configuration Panel
@@ -230,6 +249,19 @@ function VisualizationPane({
                     width={width}
                     height={height}
                 />
+
+                {tiles?.length > 1 && (
+                    <TilePlot
+                        tiles={tiles}
+                        tileMeta={tileMeta}
+                        xDomain={xDomain}
+                        yDomain={yDomain}
+                        width={width}
+                        height={height}
+                        fill="gray"
+                        // stroke="black"
+                    />
+                )}
             </div>
 
             {/* Hover information display */}
