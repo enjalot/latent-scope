@@ -113,6 +113,29 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     # then write the parquet to the scopes directory
     umap_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", umap_id + ".parquet"))
     print("umap columns", umap_df.columns)
+
+    # TODO: make this a shared function with umapper.py
+    # or maybe we don't need it in UMAP.py at all?
+    def make_tiles(x, y, num_tiles=64):
+        import numpy as np
+        tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
+        
+        # Calculate row and column indices (0-63) for each point
+        col_indices = np.floor((x + 1) / tile_size).astype(int)
+        row_indices = np.floor((y + 1) / tile_size).astype(int)
+        
+        # Clip indices to valid range in case of numerical edge cases
+        col_indices = np.clip(col_indices, 0, num_tiles - 1)
+        row_indices = np.clip(row_indices, 0, num_tiles - 1)
+        
+        # Convert 2D grid indices to 1D tile index (row * num_cols + col)
+        tile_indices = row_indices * num_tiles + col_indices
+        return tile_indices
+
+    umap_df['tile_index_32'] = make_tiles(umap_df['x'], umap_df['y'], 32)
+    umap_df['tile_index_64'] = make_tiles(umap_df['x'], umap_df['y'], 64)
+    umap_df['tile_index_128'] = make_tiles(umap_df['x'], umap_df['y'], 128)
+
     cluster_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_id + ".parquet"))
     cluster_labels_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_labels_id + ".parquet"))
     # create a column where we lookup the label from cluster_labels_df for the index found in the cluster_df

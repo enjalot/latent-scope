@@ -126,26 +126,26 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         # save umap embeddings to a parquet file with columns x,y
         df = pd.DataFrame(umap_embeddings, columns=['x', 'y'])
 
+        # TODO I moved this to scope.py it's cheap and it makes it backwards compatible
         # Calculate tile indices for a 64x64 grid from -1 to 1
-        num_tiles = 64
-        def make_tiles(embeddings, num_tiles=64):
-            tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
+        # def make_tiles(x, y, num_tiles=64):
+        #     tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
             
-            # Calculate row and column indices (0-63) for each point
-            col_indices = np.floor((embeddings[:, 0] + 1) / tile_size).astype(int)
-            row_indices = np.floor((embeddings[:, 1] + 1) / tile_size).astype(int)
+        #     # Calculate row and column indices (0-63) for each point
+        #     col_indices = np.floor((x + 1) / tile_size).astype(int)
+        #     row_indices = np.floor((y + 1) / tile_size).astype(int)
             
-            # Clip indices to valid range in case of numerical edge cases
-            col_indices = np.clip(col_indices, 0, num_tiles - 1)
-            row_indices = np.clip(row_indices, 0, num_tiles - 1)
+        #     # Clip indices to valid range in case of numerical edge cases
+        #     col_indices = np.clip(col_indices, 0, num_tiles - 1)
+        #     row_indices = np.clip(row_indices, 0, num_tiles - 1)
             
-            # Convert 2D grid indices to 1D tile index (row * num_cols + col)
-            tile_indices = row_indices * num_tiles + col_indices
-            return tile_indices
+        #     # Convert 2D grid indices to 1D tile index (row * num_cols + col)
+        #     tile_indices = row_indices * num_tiles + col_indices
+        #     return tile_indices
 
-        df['tile_index_32'] = make_tiles(umap_embeddings, 32)
-        df['tile_index_64'] = make_tiles(umap_embeddings, 64)
-        df['tile_index_128'] = make_tiles(umap_embeddings, 128)
+        # df['tile_index_32'] = make_tiles(umap_embeddings[:, 0], umap_embeddings[:, 1], 32)
+        # df['tile_index_64'] = make_tiles(umap_embeddings[:, 0], umap_embeddings[:, 1], 64)
+        # df['tile_index_128'] = make_tiles(umap_embeddings[:, 0], umap_embeddings[:, 1], 128)
 
         output_file = os.path.join(umap_dir, f"{umap_id}.parquet")
         df.to_parquet(output_file)

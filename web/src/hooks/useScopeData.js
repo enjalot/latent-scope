@@ -1,4 +1,3 @@
-import { processHulls } from '../utils';
 import { useState, useCallback, useEffect } from 'react';
 import { apiService } from '../lib/apiService';
 
@@ -8,7 +7,6 @@ const useScopeData = (apiUrl, datasetId, scope) => {
     const [clusterLabels, setClusterLabels] = useState([]);
     const [points, setPoints] = useState([]);
     const [drawPoints, setDrawPoints] = useState([]);
-    const [hulls, setHulls] = useState([]);
     const [scopeRows, setScopeRows] = useState([]);
 
     const [deletedIndices, setDeletedIndices] = useState([]);
