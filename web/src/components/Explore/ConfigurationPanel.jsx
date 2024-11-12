@@ -1,25 +1,19 @@
-import { useState, useCallback } from 'react';
 import { Button, Switch } from 'react-element-forge';
 import styles from './ConfigurationPanel.module.scss';
 
 const ConfigurationPanel = ({
   isOpen,
   onClose,
-  title = "Configuration"
+  title = 'Configuration',
+  vizConfig,
+  toggleShowHeatMap,
+  toggleShowClusterOutlines,
+  updatePointSize,
+  updatePointOpacity,
 }) => {
-  const [showHeatMap, setShowHeatMap] = useState(false);
-  const [showClusterOutlines, setShowClusterOutlines] = useState(false);
-  // pointSize and pointOpacity will be multiplied with the values in th colors.js arrays like mapPointSize
-  const [pointSize, setPointSize] = useState(1);
-  const [pointOpacity, setPointOpacity] = useState(1);
+  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } =
+    vizConfig;
 
-  const toggleShowHeatMap = useCallback(() => {
-    setShowHeatMap(!showHeatMap);
-  }, [setShowHeatMap]);
-  const toggleShowClusterOutlines = useCallback(() => {
-    setShowClusterOutlines(!showClusterOutlines);
-  }, [setShowClusterOutlines]);
-  
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
       <div className={styles.header}>
@@ -29,7 +23,7 @@ const ConfigurationPanel = ({
           variant="outline"
           onClick={onClose}
           aria-label="Close configuration panel"
-          icon={"x"}
+          icon={'x'}
         />
       </div>
 
@@ -50,7 +44,7 @@ const ConfigurationPanel = ({
             max="10"
             step="0.1"
             value={pointSize}
-            onChange={(e) => setPointSize(+e.target.value)}
+            onChange={(e) => updatePointSize(+e.target.value)}
             className={styles.slider}
           />
         </div>
@@ -63,20 +57,29 @@ const ConfigurationPanel = ({
             max="1.5"
             step="0.1"
             value={pointOpacity}
-            onChange={(e) => setPointOpacity(+e.target.value)}
+            onChange={(e) => updatePointOpacity(+e.target.value)}
             className={styles.slider}
           />
         </div>
 
-        <Switch value={showClusterOutlines} onChange={toggleShowClusterOutlines} color="secondary" label="Show Cluster Outlines" />
+        <Switch
+          value={showClusterOutlines}
+          onChange={toggleShowClusterOutlines}
+          color="secondary"
+          label="Show Cluster Outlines"
+        />
 
-        <Switch value={showHeatMap} onChange={toggleShowHeatMap} color="secondary" label="Show Heat Map" />
+        <Switch
+          value={showHeatMap}
+          onChange={toggleShowHeatMap}
+          color="secondary"
+          label="Show Heat Map"
+        />
 
-        <div className={styles.configSection}>
-        </div>
+        <div className={styles.configSection}></div>
       </div>
     </div>
   );
 };
 
-export default ConfigurationPanel; 
+export default ConfigurationPanel;
