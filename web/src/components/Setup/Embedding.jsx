@@ -43,7 +43,7 @@ function Embedding() {
   const [embeddings, setEmbeddings] = useState([]);
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
-  const [saes, setSaes] = useState([]);
+  const [sae, setSae] = useState(null);
 
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
@@ -314,19 +314,20 @@ function Embedding() {
     [startEmbeddingsTruncateJob]
   );
 
+  const handleSAE = useCallback(
+    (sae) => {
+      setSae(sae);
+    },
+    [setSae]
+  );
+
   const handleNextStep = useCallback(() => {
-    let sae_id = null;
-    if (embedding?.id) {
-      if (saes && !saes.error) {
-        sae_id = saes.find((d) => d.embedding_id == embedding?.id)?.id;
-      }
-    }
     if (savedScope?.embedding_id == embedding?.id) {
-      updateScope({ ...savedScope, sae_id });
+      updateScope({ ...savedScope, sae_id: sae?.id });
     } else {
       updateScope({
         embedding_id: embedding?.id,
-        sae_id,
+        sae_id: sae?.id,
         umap_id: null,
         cluster_id: null,
         cluster_labels_id: null,
@@ -334,7 +335,7 @@ function Embedding() {
       });
     }
     goToNextStep();
-  }, [updateScope, goToNextStep, embedding, savedScope, saes]);
+  }, [updateScope, goToNextStep, embedding, savedScope, sae]);
 
   const isComplete = embeddingsJob && embeddingsJob.status === 'completed';
 
@@ -592,7 +593,7 @@ function Embedding() {
                     )}
 
                     {saeAvailable[emb.model_id] ? (
-                      <Sae embedding={emb} model={saeAvailable[emb.model_id]} />
+                      <Sae embedding={emb} model={saeAvailable[emb.model_id]} onSAE={handleSAE} />
                     ) : null}
                   </span>
                 </label>
