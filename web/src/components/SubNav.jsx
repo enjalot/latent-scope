@@ -8,7 +8,7 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
   console.log({ dataset, scope, scopes });
 
   // If no dataset, show ghost version
-  if (!dataset || !scope || !scopes) {
+  if (!dataset) {
     return (
       <div className={styles.subHeaderContainer}>
         <div className={styles.tabsContainer}>
