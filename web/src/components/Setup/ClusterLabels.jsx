@@ -32,6 +32,11 @@ function ClusterLabels() {
     setClusterLabelsJob,
     `${apiUrl}/jobs/rerun`
   );
+  const { startJob: deleteClusterLabelsJob } = useStartJobPolling(
+    dataset,
+    setClusterLabelsJob,
+    `${apiUrl}/jobs/delete/cluster_label`
+  );
 
   const [selected, setSelected] = useState('default');
   const [embedding, setEmbedding] = useState(null);
@@ -137,10 +142,14 @@ function ClusterLabels() {
   }, [datasetId, selected, cluster, clusterLabelsJob, setClusterLabelSets, setSelected]);
 
   useEffect(() => {
-    if (clusterLabelsJob?.status == 'completed' && clusterLabelsJob?.job_name == 'label') {
+    if (clusterLabelsJob?.status == 'completed') {
+      // && clusterLabelsJob?.job_name == 'label') {
       let label_id = clusterLabelsJob.run_id;
       let found = clusterLabelSets.find((d) => d.id == label_id);
       if (found) setSelected(found.id);
+      if (!found) {
+        setSelected('default');
+      }
     }
   }, [clusterLabelsJob, clusterLabelSets, setSelected]);
 
@@ -302,7 +311,14 @@ function ClusterLabels() {
 
                   <span></span>
 
-                  {/* <Button className={styles["delete"]} color="secondary" onClick={() => handleKill(cl)} text="🗑️" /> */}
+                  {cl?.id != 'default' && (
+                    <Button
+                      className={styles['delete']}
+                      color="secondary"
+                      onClick={() => deleteClusterLabelsJob({ cluster_labels_id: cl.id })}
+                      text="🗑️"
+                    />
+                  )}
                 </div>
               ))}
         </div>

@@ -403,6 +403,17 @@ def run_cluster_label():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
+@jobs_write_bp.route('/delete/cluster_label')
+def delete_cluster_label():
+    dataset = request.args.get('dataset')
+    cluster_labels_id = request.args.get('cluster_labels_id')
+    job_id = str(uuid.uuid4())
+    path = os.path.join(DATA_DIR, dataset, "clusters", f"{cluster_labels_id}*").replace(" ", "\\ ")
+    command = f'rm -rf {path}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
 @jobs_write_bp.route('/scope')
 def run_scope():
     dataset = request.args.get('dataset')

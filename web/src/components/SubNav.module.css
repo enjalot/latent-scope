@@ -34,6 +34,9 @@
 .scopeSelector {
     min-width: 250px !important;
     /* padding: 6px !important; */
+    select {
+        padding-right: 40px !important;
+    }
 }
 
 
