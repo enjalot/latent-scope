@@ -9,7 +9,7 @@
 
 .page {
   padding-top: 40px;
-    height: calc(100vh - 78px);
+  height: calc(100vh - 93px); /* 40 + 53 (subnav height) */
 }
 
 .docs-banner {
