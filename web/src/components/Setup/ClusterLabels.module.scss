@@ -26,10 +26,10 @@
 .step {
   @include setup-step;
 }
-.cluster-form {
+.cluster-labels-form {
   @include setup-form;
 }
-.cluster-list {
+.cluster-labels-list {
   @include item-list;
 }
 .item {
@@ -59,9 +59,4 @@
   overflow: scroll;
   flex-grow: 1;
   padding: 6px;
-}
-.item img {
-  width: 120px;
-  height: 120px;
-  user-select: none;
 }

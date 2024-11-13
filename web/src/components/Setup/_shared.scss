@@ -28,6 +28,7 @@
   flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
+  max-height: 40px;
 }
 
 @mixin setup-step {
