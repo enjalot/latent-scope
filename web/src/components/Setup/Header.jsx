@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
 import { apiUrl } from '../../lib/apiService';
 import SubNav from '../SubNav';
 import { Select } from 'react-element-forge';
@@ -25,7 +24,10 @@ function Header() {
     navigate(`/datasets/${dataset?.id}/setup/${e.target.value}`);
   };
 
-  const scopesToShow = [{ label: 'New scope', value: '' }, ...(scopes ?? [])];
+  const scopesToShow = useMemo(
+    () => [{ label: 'New scope', value: '' }, ...(scopes ?? [])],
+    [scopes]
+  );
 
   if (!dataset) {
     return (

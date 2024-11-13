@@ -11,7 +11,16 @@ import { useSetup } from '../../contexts/SetupContext';
 import styles from './Scope.module.scss';
 
 function Scope() {
-  const { dataset, scope, savedScope, setPreviewLabel } = useSetup();
+  const {
+    dataset,
+    scope,
+    savedScope,
+    setPreviewLabel,
+    setScope,
+    setSavedScope,
+    scopes,
+    setScopes,
+  } = useSetup();
 
   const navigate = useNavigate();
 
@@ -44,7 +53,6 @@ function Scope() {
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
   const [clusterLabelSets, setClusterLabelSets] = useState([]);
-  const [scopes, setScopes] = useState([]);
 
   useEffect(() => {
     if (scope && scope.id) {
@@ -125,27 +133,21 @@ function Scope() {
     }
   }, [embedding, clusterLabelSet, scope]);
 
-  useEffect(() => {
-    if (dataset) {
-      console.log('fetching scopes');
-      apiService.fetchScopes(dataset.id).then((scopes) => {
-        setScopes(scopes);
-      });
-    }
-  }, [dataset]);
-
+  // When the job is done (we either wrote a new scope or overwrote an existing scope)
+  // we want to update the state so that the scope and savedScope are updated
   useEffect(() => {
     if (scopeJob?.status == 'completed') {
       console.log('completed', scopeJob);
-      // fetchScopes(dataset.id, onNew)
-      // fetchScopes(dataset.id, (scopes) => {
-      //   setScopeJob(null)
-      //   onNew(scopes)
-      //   onChange(scopes.find(d => d.id == scopeJob.run_id))
-      //   navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
-      // })
+      apiService.fetchScopes(dataset.id).then((scopes) => {
+        setScopes(scopes);
+        let s = scopes.find((s) => s.id == scopeJob.run_id);
+        if (!s) s = scopes[scopes.length - 1];
+        setScope(s);
+        setSavedScope(s);
+        navigate(`/datasets/${dataset.id}/setup/${s?.id}`);
+      });
     }
-  }, [scopeJob, dataset]);
+  }, [scopeJob, dataset, navigate, setScope, setSavedScope]);
 
   const handleSaveScope = useCallback(
     (event) => {
@@ -276,17 +278,6 @@ function Scope() {
               job={scopeJob}
               clearJob={() => {
                 setScopeJob(null);
-                if (scopeJob?.status == 'completed') {
-                  apiService.fetchScopes(dataset.id).then((scopes) => {
-                    console.log('fetched and setting');
-                    setScopes(scopes);
-                    if (scopeJob.job_name == 'rm') {
-                      navigate(`/datasets/${dataset.id}/setup`);
-                    } else {
-                      navigate(`/datasets/${dataset.id}/setup/${scopeJob.run_id}`);
-                    }
-                  });
-                }
               }}
             />
 
