@@ -1,15 +1,21 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { groups } from "d3-array";
-import PropTypes from "prop-types";
-import Scatter from "../Scatter";
-import AnnotationPlot from "../AnnotationPlot";
-import HullPlot from "../HullPlot";
-import TilePlot from "../TilePlot";
-import { Tooltip } from "react-tooltip";
-import { processHulls } from "../../utils";
-import { mapSelectionColorsLight, mapSelectionDomain, mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from "../../lib/colors";
-import styles from "./VisualizationPane.module.scss";
-import ConfigurationPanel from "./ConfigurationPanel";
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { groups } from 'd3-array';
+import PropTypes from 'prop-types';
+import Scatter from '../Scatter';
+import AnnotationPlot from '../AnnotationPlot';
+import HullPlot from '../HullPlot';
+import TilePlot from '../TilePlot';
+import { Tooltip } from 'react-tooltip';
+import { processHulls } from '../../utils';
+import {
+  mapSelectionColorsLight,
+  mapSelectionDomain,
+  mapSelectionOpacity,
+  mapPointSizeRange,
+  mapSelectionKey,
+} from '../../lib/colors';
+import styles from './VisualizationPane.module.scss';
+import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
 
 // unfortunately regl-scatter doesn't even render in iOS
@@ -41,6 +47,7 @@ function VisualizationPane({
     [setXDomain, setYDomain]
   );
 
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [size, setSize] = useState([500, 500]);
   const umapRef = useRef(null);
   const [umapOffset, setUmapOffset] = useState(0);
@@ -49,18 +56,28 @@ function VisualizationPane({
   useEffect(() => {
     function updateSize() {
       if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const width = rect.width;
-      let swidth = width > 500 ? 500 : width - 50;
-      setSize([swidth, swidth]);
-      const { top } = umapRef.current.getBoundingClientRect();
-      setUmapOffset(rect.top + top);
+
+      if (isFullScreen) {
+        // Use window dimensions in fullscreen mode
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        setSize([windowWidth, windowHeight - 60]);
+        setUmapOffset(80); // TODO: why is this the
+      } else {
+        const rect = containerRef.current.getBoundingClientRect();
+        const width = rect.width;
+        let swidth = width > 500 ? 500 : width - 50;
+        setSize([swidth, swidth]);
+        const { top } = umapRef.current.getBoundingClientRect();
+        setUmapOffset(top + 40); // 40 is the height of the top header
+      }
+
       // console.log("UMAP OFFSET", rect.top + top)
     }
     window.addEventListener('resize', updateSize);
     updateSize();
     return () => window.removeEventListener('resize', updateSize);
-  }, []);
+  }, [isFullScreen]);
 
   const [width, height] = size;
 
@@ -179,10 +196,18 @@ function VisualizationPane({
     <div className="umap-container" ref={umapRef}>
       <div className={styles.configToggleContainer}>
         <Button
-          className={styles["configToggle"]}
+          className={styles['configToggle']}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           aria-label="Toggle configuration panel"
           icon={isPanelOpen ? 'chevrons-left' : 'chevrons-right'}
+          size="small"
+          // color="#333"
+        />
+        <Button
+          className={styles['fullscreenToggle']}
+          onClick={() => setIsFullScreen(!isFullScreen)}
+          aria-label="Toggle full screen"
+          icon={isFullScreen ? 'minimize' : 'maximize'}
           size="small"
           // color="#333"
         />
@@ -199,7 +224,10 @@ function VisualizationPane({
         />
       </div>
 
-      <div className="scatters" style={{ width, height }}>
+      <div
+        className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
+        style={{ width, height }}
+      >
         {!isIOS() && scope ? (
           <Scatter
             points={drawingPoints}

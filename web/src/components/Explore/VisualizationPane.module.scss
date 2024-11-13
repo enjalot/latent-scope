@@ -4,7 +4,22 @@
   height: 100%;
 }
 
-.configToggle {
+.scatters {
+  position: relative;
+  border: 1px solid gray;
+  border-radius: 5px;
+  padding: 6px;
+}
+.fullScreen {
+  position: fixed;
+  top: 40px;
+  left: 12px;
+  z-index: 10;
+  width: 100%;
+  background-color: white;
+}
+
+@mixin configToggle {
   position: absolute;
   width: 30px;
   height: 30px;
@@ -18,17 +33,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1001;
   transition: transform 0.2s ease;
+}
+.configToggle {
+  @include configToggle;
   top: 10px;
+}
+.fullscreenToggle {
+  @include configToggle;
+  top: 50px;
 }
 
 .configToggleContainer {
-  position: relative;
+  position: absolute;
 }
 
 @media (prefers-color-scheme: light) {
-  .configToggle {
+  .configToggle,
+  .fullscreenToggle {
     background-color: #f9f9f9 !important;
     color: #525151 !important;
   }

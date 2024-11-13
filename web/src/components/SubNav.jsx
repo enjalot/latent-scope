@@ -5,7 +5,7 @@ import { Select } from 'react-element-forge';
 const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
   const location = useLocation();
 
-  console.log({ dataset, scope, scopes });
+  // console.log({ dataset, scope, scopes });
 
   // If no dataset, show ghost version
   if (!dataset) {

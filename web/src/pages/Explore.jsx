@@ -460,7 +460,6 @@ function Explore() {
           {scopeRows?.length ? (
             <div
               onMouseLeave={() => {
-                console.log('mouse left');
                 setHoveredIndex(null);
                 setHoveredCluster(null);
                 setHoverAnnotations([]);
