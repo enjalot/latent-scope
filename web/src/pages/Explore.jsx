@@ -468,6 +468,7 @@ function Explore() {
             >
               <VisualizationPane
                 scopeRows={scopeRows}
+                clusterLabels={clusterLabels}
                 hoveredIndex={hoveredIndex}
                 hoverAnnotations={hoverAnnotations}
                 intersectedIndices={intersectedIndices}

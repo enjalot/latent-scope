@@ -257,23 +257,35 @@ function VisualizationPane({
           />
         )}
 
-        {hoveredCluster &&
-          hoveredCluster.hull &&
-          !scope.ignore_hulls &&
-          scope.cluster_labels_lookup && (
-            <HullPlot
-              hulls={hoveredHulls}
-              fill="lightgray"
-              stroke="gray"
-              strokeWidth={2}
-              opacity={0.25}
-              duration={0}
-              xDomain={xDomain}
-              yDomain={yDomain}
-              width={width}
-              height={height}
-            />
-          )}
+        {/* show all the hulls */}
+        {vizConfig.showClusterOutlines && hulls.length && (
+          <HullPlot
+            hulls={hulls}
+            stroke="#9d9d9d"
+            fill="none"
+            duration={200}
+            strokeWidth={0.5}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+          />
+        )}
+
+        {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
+          <HullPlot
+            hulls={hoveredHulls}
+            fill="lightgray"
+            stroke="gray"
+            strokeWidth={2}
+            opacity={0.25}
+            duration={0}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+          />
+        )}
 
         {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
@@ -283,21 +295,6 @@ function VisualizationPane({
             strokeWidth={2}
             opacity={0.35}
             duration={0}
-            xDomain={xDomain}
-            yDomain={yDomain}
-            width={width}
-            height={height}
-          />
-        )}
-
-        {/* show all the hulls */}
-        {vizConfig.showClusterOutlines && hulls.length && (
-          <HullPlot
-            hulls={hulls}
-            stroke="#9d9d9d"
-            fill="none"
-            duration={200}
-            strokeWidth={1}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
