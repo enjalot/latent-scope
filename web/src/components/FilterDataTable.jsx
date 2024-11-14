@@ -104,6 +104,31 @@ const TableCell = memo(({ cell }) => {
 });
 TableCell.displayName = 'TableCell';
 
+const renderTags = (tags, row, tagset, handleTagClick) => {
+  const { ls_index } = row;
+  return (
+    <div className="tags">
+      {tags.map((t) => {
+        let ti = tagset[t]?.indexOf(ls_index) >= 0;
+        return (
+          <button
+            title={`add ${t} tag`}
+            className={ti ? 'tag-active' : 'tag-inactive'}
+            key={t}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleTagClick(t, ls_index);
+            }}
+          >
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 // Memoized TableRow component
 const TableRow = memo(({ row, onHover, onClick, collapse = false, lsIndexCol }) => {
   return (
@@ -272,254 +297,366 @@ function FilterDataTable({
     [dataset, distances, clusterMap, currentPage, showEmbeddings, sae_id]
   );
 
-  // Convert simple column names to React Data Grid format
-  const formattedColumns = useMemo(
-    () =>
-      dataset.columns.map((col) => {
-        if (col === dataset.text_column) {
-          return {
-            key: col,
-            name: col,
-            width: 500,
-          };
-        }
+  const formattedColumns = useMemo(() => {
+    let columns = ['ls_index'];
+    if (distances && distances.length) columns.push('ls_similarity');
+    if (showEmbeddings) columns.push('ls_embedding');
+    if (sae_id) columns.push('ls_features');
+    if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
+    if (tagset && Object.keys(tagset).length) columns.push('tags');
+
+    columns.push(dataset.text_column);
+    columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
+
+    let columnDefs = columns.map((col) => {
+      const metadata = dataset.column_metadata ? dataset.column_metadata[col] : null;
+
+      const baseCol = {
+        key: col,
+        name: col,
+        resizable: true,
+      };
+
+      if (col === 'tags') {
         return {
-          key: col,
-          name: col,
+          ...baseCol,
+          renderCell: ({ row }) => renderTags(tags, row, tagset, handleTagClick),
         };
-      }),
-    [dataset.columns]
-  );
+      }
 
-  console.log({ formattedColumns, tableData: rows });
-
-  useEffect(() => {
-    if (dataset) {
-      // adapt this to use react-data-grid
-      // https://github.com/adazzle/react-data-grid
-      console.log({ columns: dataset.columns });
-
-      console.log('======= SETTING COLUMNS =======');
-      let columns = ['ls_index'];
-      if (distances && distances.length) columns.push('ls_similarity');
-      if (showEmbeddings) columns.push('ls_embedding');
-      if (sae_id) columns.push('ls_features');
-      if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
-      if (tagset && Object.keys(tagset).length) columns.push('tags');
-      columns.push(dataset.text_column);
-      columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
-      let columnDefs = columns.map((c, i) => {
-        // if (c === "selection") {
-        //   return {
-        //     id: "selection",
-        //     header: ({ table }) => (
-        //       <input
-        //         type="checkbox"
-        //         // Check if we have any rows and if the number of selected rows equals total rows
-        //         checked={table.getIsAllRowsSelected()}
-        //         indeterminate={table.getIsSomeRowsSelected()}
-        //         onChange={table.getToggleAllRowsSelectedHandler()}
-        //       />
-        //     ),
-        //     cell: ({ row }) => (
-        //       <input
-        //         type="checkbox"
-        //         checked={row.getIsSelected()}
-        //         disabled={!row.getCanSelect()}
-        //         onChange={row.getToggleSelectedHandler()}
-        //       />
-        //     ),
-        //     enableSorting: false,
-        //   }
-        // }
-        const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
-        // console.log("COLUMN", c, metadata)
+      if (metadata?.image) {
         return {
-          id: '' + i,
-          cell: (info) => {
-            const value = info.getValue();
-            let val = value;
-            let idx = info.row.getValue(lsIndexCol);
-            // If metadata specifies image, render as an image tag
-            if (metadata?.image) {
-              return (
-                <a href={value} target="_blank" rel="noreferrer">
-                  <img src={value} alt="" style={{ height: '100px' }} />
-                </a>
-              );
-            }
-            // If metadata specifies URL, render as a link
-            else if (metadata?.url) {
-              return (
-                <a href={value} target="_blank" rel="noopener noreferrer">
-                  url
-                </a>
-              );
-            }
-            // If type is "array", display the array's length
-            else if (metadata?.type === 'array') {
-              val = Array.isArray(value) ? `[${value.length}]` : '';
-            } else if (typeof value === 'object') {
-              val = JSON.stringify(value);
-            } else if (c === 'ls_similarity' && val) {
-              val = parseFloat(val).toFixed(4);
-            }
-            if (c === 'tags') {
-              return (
-                <div className="tags">
-                  {tags.map((t) => {
-                    let ti = tagset[t]?.indexOf(idx) >= 0;
-                    // console.log(t, ti, idx)
-                    return (
-                      <button
-                        title={`add ${t} tag`}
-                        className={ti ? 'tag-active' : 'tag-inactive'}
-                        key={t}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleTagClick(t, idx);
-                        }}
-                      >
-                        {t}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            }
-            if (c === 'ls_cluster') {
-              return (
-                <div
-                  className="ls-cluster"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                >
-                  {scope ? (
-                    <select
-                      value={value?.cluster}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        console.log('was cluster', value);
-                        console.log('updating to cluster', e.target.value);
-                        fetch(`${apiUrl}/bulk/change-cluster`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            dataset_id: dataset.id,
-                            scope_id: scope.id,
-                            row_ids: [idx],
-                            new_cluster: e.target.value,
-                          }),
-                        })
-                          .then((response) => response.json())
-                          .then((data) => {
-                            onScope();
-                          });
-                      }}
-                    >
-                      {clusterLabels.map((c, i) => {
-                        return (
-                          <option key={i} value={c.cluster}>
-                            {c.cluster}: {c.label}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  ) : (
-                    <span>{value}</span>
-                  )}
-                </div>
-              );
-              // return <span>{value.cluster}: {value.label}</span>
-            }
-            if (c === 'ls_embedding') {
-              return (
-                <div>
-                  {showDifference ? (
-                    <EmbeddingVis
-                      embedding={value}
-                      minValues={embeddingMinValues}
-                      maxValues={embeddingMaxValues}
-                      height={64}
-                      spacing={0}
-                      difference={showDifference}
-                    />
-                  ) : (
-                    <EmbeddingVis
-                      embedding={value}
-                      minValues={embeddingMinValues}
-                      maxValues={embeddingMaxValues}
-                      height={64}
-                      spacing={0}
-                    />
-                  )}
-                </div>
-              );
-            }
-            if (c === 'ls_features') {
-              let featIdx = 0;
-              if (feature >= 0) {
-                featIdx = value.top_indices.findIndex((i) => i === feature);
-              }
-              return (
-                <div>
-                  {value.top_acts?.[featIdx]?.toFixed(3)} ({value.top_indices?.[featIdx]})
-                </div>
-              );
-            }
-
-            // Default text rendering
+          ...baseCol,
+          renderCell: ({ row }) => (
+            <a href={row[col]} target="_blank" rel="noreferrer">
+              <img src={row[col]} alt="" style={{ height: '100px' }} />
+            </a>
+          ),
+        };
+      } else if (metadata?.url) {
+        return {
+          ...baseCol,
+          renderCell: ({ row }) => (
+            <a href={row[col]} target="_blank" rel="noreferrer">
+              url
+            </a>
+          ),
+        };
+      } else if (metadata?.type === 'array') {
+        return {
+          ...baseCol,
+          renderCell: ({ row }) => <span>{`[${row[col].length}]`}</span>,
+        };
+      }
+      // } else if (typeof row[col] === 'object') {
+      //   return {
+      //     ...baseCol,
+      //     renderCell: ({ row }) => <span>{JSON.stringify(row[col])}</span>,
+      //   };
+      // } else if (col === 'ls_similarity' && row[col]) {
+      //   return {
+      //     ...baseCol,
+      //     renderCell: ({ row }) => <span>{parseFloat(row[col]).toFixed(4)}</span>,
+      //   };
+      // }
+      if (col === 'ls_cluster') {
+        return {
+          ...baseCol,
+          width: 250,
+          renderCell({ row, onRowChange }) {
+            const { ls_index, ls_cluster } = row;
             return (
-              <div
-                style={{
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: 3,
-                  overflow: 'hidden',
-                  maxWidth: c == dataset.text_column ? '480px' : '200px',
-                  width: c == dataset.text_column ? '480px' : '',
-                  fontWeight: c == dataset.text_column ? '300' : '',
-                  // maxHeight: '3em',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'normal',
+              <select
+                value={ls_cluster?.cluster}
+                onChange={(event) => {
+                  event.stopPropagation();
+                  event.preventDefault();
+
+                  fetch(`${apiUrl}/bulk/change-cluster`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      dataset_id: dataset.id,
+                      scope_id: scope.id,
+                      row_ids: [ls_index],
+                      new_cluster: event.target.value,
+                    }),
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      onScope();
+                    });
+                  // onRowChange({ ...row, cluster: event.target.value }, true);
                 }}
-                title={val?.toString() || ''} // Shows the full text on hover
-                onClick={() => navigator.clipboard.writeText(val)} // Copies the text to clipboard on click
               >
-                {val}
+                {clusterLabels.map((c, i) => (
+                  <option key={i} value={c.cluster}>
+                    {c.cluster}: {c.label}
+                  </option>
+                ))}
+              </select>
+            );
+          },
+        };
+      }
+
+      if (col === dataset.text_column) {
+        return {
+          ...baseCol,
+          width: 500,
+          renderCell: ({ row }) => <span title={row[col]}>{row[col]}</span>,
+        };
+      }
+
+      if (col === 'ls_features') {
+        return {
+          ...baseCol,
+          renderCell: ({ row }) => {
+            let featIdx = 0;
+            if (feature >= 0) {
+              featIdx = row.ls_features.top_indices.findIndex((i) => i === feature);
+            }
+            return (
+              <div>
+                {row.ls_features.top_acts?.[featIdx]?.toFixed(3)} (
+                {row.ls_features.top_indices?.[featIdx]})
               </div>
             );
           },
-          header: c,
-          accessorKey: c,
-          footer: (props) => props.column.id,
         };
-      });
-      // console.log("COLUMNS", columns, columnDefs)
-      setColumns(columnDefs);
-    }
+      }
+
+      // TODO: add more custom renderers here
+      // types: object
+      return {
+        ...baseCol,
+        formatter: ({ row }) => <span title={row[col]}>'hi'</span>,
+      };
+    });
+    return columnDefs;
+  }, [dataset.columns, tags, tagset]);
+
+  useEffect(() => {
+    setColumns(formattedColumns);
+  }, [formattedColumns]);
+
+  useEffect(() => {
     hydrateIndices(indices);
-  }, [
-    dataset,
-    indices,
-    distances,
-    tags,
-    scope,
-    tagset,
-    currentPage,
-    clusterMap,
-    clusterLabels,
-    showEmbeddings,
-    embeddingMinValues,
-    embeddingMaxValues,
-    showDifference,
-  ]);
+  }, [indices]);
+
+  console.log({ formattedColumns, tableData: rows });
+
+  // useEffect(() => {
+  //   if (dataset) {
+  //     // adapt this to use react-data-grid
+  //     // https://github.com/adazzle/react-data-grid
+  //     console.log({ columns: dataset.columns });
+
+  //     console.log('======= SETTING COLUMNS =======');
+  //     let columns = ['ls_index'];
+  //     if (distances && distances.length) columns.push('ls_similarity');
+  //     if (showEmbeddings) columns.push('ls_embedding');
+  //     if (sae_id) columns.push('ls_features');
+  //     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
+  //     if (tagset && Object.keys(tagset).length) columns.push('tags');
+  //     columns.push(dataset.text_column);
+  //     columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
+  //     let columnDefs = columns.map((c, i) => {
+  //       // if (c === "selection") {
+  //       //   return {
+  //       //     id: "selection",
+  //       //     header: ({ table }) => (
+  //       //       <input
+  //       //         type="checkbox"
+  //       //         // Check if we have any rows and if the number of selected rows equals total rows
+  //       //         checked={table.getIsAllRowsSelected()}
+  //       //         indeterminate={table.getIsSomeRowsSelected()}
+  //       //         onChange={table.getToggleAllRowsSelectedHandler()}
+  //       //       />
+  //       //     ),
+  //       //     cell: ({ row }) => (
+  //       //       <input
+  //       //         type="checkbox"
+  //       //         checked={row.getIsSelected()}
+  //       //         disabled={!row.getCanSelect()}
+  //       //         onChange={row.getToggleSelectedHandler()}
+  //       //       />
+  //       //     ),
+  //       //     enableSorting: false,
+  //       //   }
+  //       // }
+  //       const metadata = dataset.column_metadata ? dataset.column_metadata[c] : null;
+  //       // console.log("COLUMN", c, metadata)
+  //       return {
+  //         id: '' + i,
+  //         cell: (info) => {
+  //           const value = info.getValue();
+  //           let val = value;
+  //           let idx = info.row.getValue(lsIndexCol);
+  //           // If metadata specifies image, render as an image tag
+  //           if (metadata?.image) {
+  //             return (
+  //               <a href={value} target="_blank" rel="noreferrer">
+  //                 <img src={value} alt="" style={{ height: '100px' }} />
+  //               </a>
+  //             );
+  //           }
+  //           // If metadata specifies URL, render as a link
+  //           else if (metadata?.url) {
+  //             return (
+  //               <a href={value} target="_blank" rel="noopener noreferrer">
+  //                 url
+  //               </a>
+  //             );
+  //           }
+  //           // If type is "array", display the array's length
+  //           else if (metadata?.type === 'array') {
+  //             val = Array.isArray(value) ? `[${value.length}]` : '';
+  //           } else if (typeof value === 'object') {
+  //             val = JSON.stringify(value);
+  //           } else if (c === 'ls_similarity' && val) {
+  //             val = parseFloat(val).toFixed(4);
+  //           }
+  //           // if (c === 'tags') {
+  //           //   return (
+
+  //           //     {renderTags(tags, idx)}
+  //           //   );
+  //           // }
+  //           if (c === 'ls_cluster') {
+  //             return (
+  //               <div
+  //                 className="ls-cluster"
+  //                 onClick={(e) => {
+  //                   e.stopPropagation();
+  //                   e.preventDefault();
+  //                 }}
+  //               >
+  //                 {scope ? (
+  //                   <select
+  //                     value={value?.cluster}
+  //                     onChange={(e) => {
+  //                       e.stopPropagation();
+  //                       e.preventDefault();
+  //                       console.log('was cluster', value);
+  //                       console.log('updating to cluster', e.target.value);
+  //                       fetch(`${apiUrl}/bulk/change-cluster`, {
+  //                         method: 'POST',
+  //                         headers: {
+  //                           'Content-Type': 'application/json',
+  //                         },
+  //                         body: JSON.stringify({
+  //                           dataset_id: dataset.id,
+  //                           scope_id: scope.id,
+  //                           row_ids: [idx],
+  //                           new_cluster: e.target.value,
+  //                         }),
+  //                       })
+  //                         .then((response) => response.json())
+  //                         .then((data) => {
+  //                           onScope();
+  //                         });
+  //                     }}
+  //                   >
+  //                     {clusterLabels.map((c, i) => {
+  //                       return (
+  //                         <option key={i} value={c.cluster}>
+  //                           {c.cluster}: {c.label}
+  //                         </option>
+  //                       );
+  //                     })}
+  //                   </select>
+  //                 ) : (
+  //                   <span>{value}</span>
+  //                 )}
+  //               </div>
+  //             );
+  //             // return <span>{value.cluster}: {value.label}</span>
+  //           }
+  //           if (c === 'ls_embedding') {
+  //             return (
+  //               <div>
+  //                 {showDifference ? (
+  //                   <EmbeddingVis
+  //                     embedding={value}
+  //                     minValues={embeddingMinValues}
+  //                     maxValues={embeddingMaxValues}
+  //                     height={64}
+  //                     spacing={0}
+  //                     difference={showDifference}
+  //                   />
+  //                 ) : (
+  //                   <EmbeddingVis
+  //                     embedding={value}
+  //                     minValues={embeddingMinValues}
+  //                     maxValues={embeddingMaxValues}
+  //                     height={64}
+  //                     spacing={0}
+  //                   />
+  //                 )}
+  //               </div>
+  //             );
+  //           }
+  //           if (c === 'ls_features') {
+  //             let featIdx = 0;
+  //             if (feature >= 0) {
+  //               featIdx = value.top_indices.findIndex((i) => i === feature);
+  //             }
+  //             return (
+  //               <div>
+  //                 {value.top_acts?.[featIdx]?.toFixed(3)} ({value.top_indices?.[featIdx]})
+  //               </div>
+  //             );
+  //           }
+
+  //           // Default text rendering
+  //           return (
+  //             <div
+  //               style={{
+  //                 display: '-webkit-box',
+  //                 WebkitBoxOrient: 'vertical',
+  //                 WebkitLineClamp: 3,
+  //                 overflow: 'hidden',
+  //                 maxWidth: c == dataset.text_column ? '480px' : '200px',
+  //                 width: c == dataset.text_column ? '480px' : '',
+  //                 fontWeight: c == dataset.text_column ? '300' : '',
+  //                 // maxHeight: '3em',
+  //                 textOverflow: 'ellipsis',
+  //                 whiteSpace: 'normal',
+  //               }}
+  //               title={val?.toString() || ''} // Shows the full text on hover
+  //               onClick={() => navigator.clipboard.writeText(val)} // Copies the text to clipboard on click
+  //             >
+  //               {val}
+  //             </div>
+  //           );
+  //         },
+  //         header: c,
+  //         accessorKey: c,
+  //         footer: (props) => props.column.id,
+  //       };
+  //     });
+  //     // console.log("COLUMNS", columns, columnDefs)
+  //     setColumns(columnDefs);
+  //   }
+  //   hydrateIndices(indices);
+  // }, [
+  //   dataset,
+  //   indices,
+  //   distances,
+  //   tags,
+  //   scope,
+  //   tagset,
+  //   currentPage,
+  //   clusterMap,
+  //   clusterLabels,
+  //   showEmbeddings,
+  //   embeddingMinValues,
+  //   embeddingMaxValues,
+  //   showDifference,
+  // ]);
 
   const [columnFilters, setColumnFilters] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -638,7 +775,7 @@ function FilterDataTable({
         style={{ flexGrow: 1, overflowY: 'auto' }}
         ref={bodyRef}
       >
-        <DataGrid rows={tableData} columns={formattedColumns} />
+        <DataGrid rows={tableData} columns={formattedColumns} rowGetter={(i) => rows[i]} />
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">
