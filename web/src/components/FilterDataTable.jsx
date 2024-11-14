@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
 import EmbeddingVis from './EmbeddingVis';
+import 'react-data-grid/lib/styles.css';
+
+import DataGrid from 'react-data-grid';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -269,8 +272,33 @@ function FilterDataTable({
     [dataset, distances, clusterMap, currentPage, showEmbeddings, sae_id]
   );
 
+  // Convert simple column names to React Data Grid format
+  const formattedColumns = useMemo(
+    () =>
+      dataset.columns.map((col) => {
+        if (col === dataset.text_column) {
+          return {
+            key: col,
+            name: col,
+            width: 500,
+          };
+        }
+        return {
+          key: col,
+          name: col,
+        };
+      }),
+    [dataset.columns]
+  );
+
+  console.log({ formattedColumns, tableData: rows });
+
   useEffect(() => {
     if (dataset) {
+      // adapt this to use react-data-grid
+      // https://github.com/adazzle/react-data-grid
+      console.log({ columns: dataset.columns });
+
       console.log('======= SETTING COLUMNS =======');
       let columns = ['ls_index'];
       if (distances && distances.length) columns.push('ls_similarity');
@@ -496,8 +524,10 @@ function FilterDataTable({
   const [columnFilters, setColumnFilters] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
 
+  const tableData = useMemo(() => rows.slice(0, 100), [rows]);
+
   const table = useReactTable({
-    data: rows,
+    data: tableData,
     columns,
     filterFns: {
       fuzzy: fuzzyFilter,
@@ -593,60 +623,22 @@ function FilterDataTable({
     };
   }, []);
 
+  console.log({ tableData, columns });
+
   return (
     <div
       className="filter-data-table"
       style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Fixed Header */}
-      <div
-        className="filter-data-table-fixed-header"
-        style={{ flexShrink: 0, paddingRight: `${scrollbarWidth}px` }}
-        ref={headerRef}
-      >
-        <table>
-          <TableHeader table={table} highlightColumn={highlightColumn} columns={columns} />
-          {/* the hidden table body to make sure header rows are proper size */}
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} row={row} collapse={true} lsIndexCol={lsIndexCol} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+
       {/* Scrollable Table Body */}
       <div
         className="filter-table-scrollable-body table-body"
         style={{ flexGrow: 1, overflowY: 'auto' }}
         ref={bodyRef}
       >
-        <table style={{ width: '100%' }}>
-          {/* Invisible header mimicking the real header for column width synchronization */}
-          <thead style={{ visibility: 'collapse' }}>
-            <tr>
-              {columns.map((column, index) => (
-                <th key={index} style={{ textAlign: 'left', paddingLeft: '6px' }}>
-                  {column.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => {
-              const deleted = deletedIndices.includes(row.getValue(lsIndexCol));
-              return (
-                <TableRow
-                  key={row.id}
-                  row={row}
-                  onHover={onHover}
-                  onClick={onClick}
-                  lsIndexCol={lsIndexCol}
-                  collapse={deleted}
-                />
-              );
-            })}
-          </tbody>
-        </table>
+        <DataGrid rows={tableData} columns={formattedColumns} />
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">

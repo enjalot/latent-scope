@@ -243,9 +243,9 @@ def query():
     if len(indices):
         rows = rows.loc[indices]
 
-    # only get the first 5 columns
-    cols = 5
-    rows = rows.iloc[:, :cols]
+    # # only get the first 5 columns
+    # cols = 5
+    # rows = rows.iloc[:, :cols]
 
     if embedding_id:
         embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
@@ -282,8 +282,8 @@ def query():
     rows_json = json.loads(rows[page*per_page:page*per_page+per_page].to_json(orient="records"))
 
     # only send back the first per_page rows
-    per_page = 10
-    rows_json = rows_json[:per_page]
+    # per_page = 100
+    # rows_json = rows_json[:per_page]
     # print("ROWS JSON", rows_json)
 
     # send back the rows as json

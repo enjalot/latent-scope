@@ -22,6 +22,7 @@
     "flubber": "^0.4.2",
     "hyparquet": "^1.5.0",
     "react": "^18.2.0",
+    "react-data-grid": "^7.0.0-beta.47",
     "react-dom": "^18.2.0",
     "react-element-forge": "^0.0.11",
     "react-router-dom": "^6.20.1",
