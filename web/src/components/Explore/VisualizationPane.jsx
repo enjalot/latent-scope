@@ -61,15 +61,15 @@ function VisualizationPane({
         // Use window dimensions in fullscreen mode
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
-        setSize([windowWidth, windowHeight - 60]);
+        setSize([windowWidth - 50, windowHeight - 100]);
         setUmapOffset(80); // TODO: why is this the
       } else {
         const rect = containerRef.current.getBoundingClientRect();
+        const urect = umapRef.current.getBoundingClientRect();
         const width = rect.width;
         let swidth = width > 500 ? 500 : width - 50;
-        setSize([swidth, swidth]);
-        const { top } = umapRef.current.getBoundingClientRect();
-        setUmapOffset(top + 40); // 40 is the height of the top header
+        setSize([swidth, rect.height - urect.top + 30]);
+        setUmapOffset(urect.top + 40); // 40 is the height of the top header
       }
 
       // console.log("UMAP OFFSET", rect.top + top)
@@ -199,7 +199,7 @@ function VisualizationPane({
           className={styles['configToggle']}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           aria-label="Toggle configuration panel"
-          icon={isPanelOpen ? 'chevrons-left' : 'chevrons-right'}
+          icon={isPanelOpen ? 'x' : 'settings'}
           size="small"
           // color="#333"
         />

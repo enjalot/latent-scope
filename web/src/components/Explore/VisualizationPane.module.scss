@@ -19,6 +19,12 @@
   background-color: white;
 }
 
+.configToggleContainer {
+  position: absolute;
+  bottom: 0px;
+  left: 12px;
+}
+
 @mixin configToggle {
   position: absolute;
   width: 30px;
@@ -38,16 +44,15 @@
 }
 .configToggle {
   @include configToggle;
-  top: 10px;
+  bottom: 10px;
 }
 .fullscreenToggle {
   @include configToggle;
-  top: 50px;
+  bottom: 10px;
+  left: 40px;
 }
 
-.configToggleContainer {
-  position: absolute;
-}
+
 
 @media (prefers-color-scheme: light) {
   .configToggle,

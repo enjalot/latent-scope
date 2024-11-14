@@ -11,15 +11,14 @@ const ConfigurationPanel = ({
   updatePointSize,
   updatePointOpacity,
 }) => {
-  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } =
-    vizConfig;
+  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } = vizConfig;
 
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
       <div className={styles.header}>
         <h3>{title}</h3>
         <Button
-          color="primary"
+          className={styles.closeButton}
           variant="outline"
           onClick={onClose}
           aria-label="Close configuration panel"
