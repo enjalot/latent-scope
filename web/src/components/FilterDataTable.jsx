@@ -259,7 +259,7 @@ function FilterDataTable({
                 r['ls_similarity'] = distances[ri];
               });
             }
-
+            console.log('======= SETTING ROWS =======', rows);
             setRows(rows);
           });
       } else {
@@ -271,6 +271,7 @@ function FilterDataTable({
 
   useEffect(() => {
     if (dataset) {
+      console.log('======= SETTING COLUMNS =======');
       let columns = ['ls_index'];
       if (distances && distances.length) columns.push('ls_similarity');
       if (showEmbeddings) columns.push('ls_embedding');
