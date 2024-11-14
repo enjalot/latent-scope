@@ -385,12 +385,9 @@ function Explore() {
 
   const [bulkAction, setBulkAction] = useState(null);
 
-  const [delay, setDelay] = useState(200);
-  const [rows, setRows] = useState([]);
   const handleScopeChange = useCallback(
     (e) => {
       clearScope();
-      setDelay(2000);
       navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`);
     },
     [dataset, clearScope, navigate]
@@ -692,12 +689,10 @@ function Explore() {
                 fetchScopeMeta();
                 fetchScopeRows();
               }}
-              onHover={(index) => handleHover(index)}
+              onHover={handleHover}
               onClick={handleClicked}
-              onRows={setRows}
               editMode={true}
               showDifference={null}
-              filtersContainerRef={filtersContainerRef}
               // showDifference={showDifference ? searchEmbedding : null}
             />
           ) : (
