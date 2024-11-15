@@ -712,7 +712,12 @@ function FilterDataTable({
         style={{ flexGrow: 1, overflowY: 'auto' }}
         ref={bodyRef}
       >
-        <DataGrid rows={rows} columns={formattedColumns} rowGetter={(i) => rows[i]} />
+        <DataGrid
+          rows={rows}
+          columns={formattedColumns}
+          rowGetter={(i) => rows[i]}
+          style={{ height: '100%' }}
+        />
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">
