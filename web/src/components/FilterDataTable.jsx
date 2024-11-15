@@ -348,17 +348,7 @@ function FilterDataTable({
           renderCell: ({ row }) => <span>{`[${row[col].length}]`}</span>,
         };
       }
-      // } else if (typeof row[col] === 'object') {
-      //   return {
-      //     ...baseCol,
-      //     renderCell: ({ row }) => <span>{JSON.stringify(row[col])}</span>,
-      //   };
-      // } else if (col === 'ls_similarity' && row[col]) {
-      //   return {
-      //     ...baseCol,
-      //     renderCell: ({ row }) => <span>{parseFloat(row[col]).toFixed(4)}</span>,
-      //   };
-      // }
+
       if (col === 'ls_cluster') {
         return {
           ...baseCol,
@@ -402,9 +392,12 @@ function FilterDataTable({
         };
       }
 
+      console.log('======', dataset.text_column);
+
       if (col === dataset.text_column) {
         return {
           ...baseCol,
+          headerRenderer: () => <div style={{ color: 'red' }}>ID</div>,
           width: 500,
           renderCell: ({ row }) => <span title={row[col]}>{row[col]}</span>,
         };
@@ -428,11 +421,20 @@ function FilterDataTable({
         };
       }
 
-      // TODO: add more custom renderers here
-      // types: object
+      const renderCell = ({ row }) => {
+        if (typeof row[col] === 'object') {
+          return <span>{JSON.stringify(row[col])}</span>;
+        }
+        if (col === 'ls_similarity' && row[col]) {
+          return <span>{parseFloat(row[col]).toFixed(4)}</span>;
+        }
+
+        return <span title={row[col]}>{row[col]}</span>;
+      };
+
       return {
         ...baseCol,
-        formatter: ({ row }) => <span title={row[col]}>'hi'</span>,
+        renderCell,
       };
     });
     return columnDefs;
@@ -446,7 +448,7 @@ function FilterDataTable({
     hydrateIndices(indices);
   }, [indices]);
 
-  console.log({ formattedColumns, tableData: rows });
+  console.log('======= rerendering =======');
 
   // useEffect(() => {
   //   if (dataset) {
@@ -661,34 +663,7 @@ function FilterDataTable({
   const [columnFilters, setColumnFilters] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
 
-  const tableData = useMemo(() => rows.slice(0, 100), [rows]);
-
-  const table = useReactTable({
-    data: tableData,
-    columns,
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
-    state: {
-      columnFilters,
-      globalFilter,
-      rowSelection: {},
-    },
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: fuzzyFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
-    debugTable: false,
-    debugHeaders: false,
-    debugColumns: false,
-  });
-
+  // const tableData = useMemo(() => rows.slice(0, 100), [rows]);
   // React.useEffect(() => {
   //   if (table.getState().columnFilters[0]?.id === 'fullName') {
   //     if (table.getState().sorting[0]?.id !== 'fullName') {
@@ -760,22 +735,18 @@ function FilterDataTable({
     };
   }, []);
 
-  console.log({ tableData, columns });
-
   return (
     <div
       className="filter-data-table"
       style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}
     >
-      {/* Fixed Header */}
-
       {/* Scrollable Table Body */}
       <div
         className="filter-table-scrollable-body table-body"
         style={{ flexGrow: 1, overflowY: 'auto' }}
         ref={bodyRef}
       >
-        <DataGrid rows={tableData} columns={formattedColumns} rowGetter={(i) => rows[i]} />
+        <DataGrid rows={rows} columns={formattedColumns} rowGetter={(i) => rows[i]} />
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">
