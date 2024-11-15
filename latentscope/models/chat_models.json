@@ -48,5 +48,13 @@
         "params": {
             "max_tokens": 128000
         }
+    },
+    {
+        "provider": "ollama",
+        "name": "llama3.2",
+        "id": "llama3.2",
+        "params": {
+            "max_tokens": 128000
+        }
     }
 ]
