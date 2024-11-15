@@ -52,6 +52,11 @@
   opacity: 0.5;
 }
 
+.filter-data-table .text-column {
+  background-color: #d3d3d3;
+  font-weight: bold;
+  text-align: center;
+}
 
 @media (prefers-color-scheme: dark) {
   
@@ -62,4 +67,16 @@
   .filter-data-table .tag-inactive {
     background-color: #333;
   }
+  .filter-data-table .text-column {
+    color: rgb(17, 17, 17);
+  }
+}
+
+/* React-Data-Grid */
+.rdg-row {
+  cursor: pointer;
+}
+
+.rdg-row:hover {
+  background-color: var(--interactions---secondary-color-interaction-secondary-hover);
 }

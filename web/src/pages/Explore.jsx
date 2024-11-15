@@ -583,13 +583,13 @@ function Explore() {
             </div>
 
             {/* row 4: column filters */}
-            <ColumnFilter
+            {/* <ColumnFilter
               columnFilters={columnFilters}
               columnIndices={columnIndices}
               columnFiltersActive={columnFiltersActive}
               setColumnFiltersActive={setColumnFiltersActive}
               setColumnIndices={setColumnIndices}
-            />
+            /> */}
 
             <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
               <div className="filter-cell left filter-description">
