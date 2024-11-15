@@ -3,12 +3,11 @@ import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
 
-import DataGrid from 'react-data-grid';
+import DataGrid, { Row } from 'react-data-grid';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import './FilterDataTable.css';
-
 
 const renderTags = (tags, row, tagset, handleTagClick) => {
   const { ls_index } = row;
@@ -51,6 +50,23 @@ FilterDataTable.propTypes = {
 };
 
 const ROWS_PER_PAGE = 100;
+
+function RowWithHover({ key, props, onHover }) {
+  const { row } = props;
+  const { ls_index } = row;
+  return (
+    <Row
+      key={key}
+      {...props}
+      onMouseEnter={() => {
+        onHover(ls_index);
+      }}
+      onMouseLeave={() => {
+        onHover(null);
+      }}
+    />
+  );
+}
 
 function FilterDataTable({
   height,
@@ -600,6 +616,13 @@ function FilterDataTable({
     };
   }, []);
 
+  const renderRowWithHover = useCallback(
+    (key, props) => {
+      return <RowWithHover key={key} props={props} onHover={onHover} />;
+    },
+    [onHover]
+  );
+
   return (
     <div
       className="filter-data-table"
@@ -616,6 +639,7 @@ function FilterDataTable({
           columns={formattedColumns}
           rowGetter={(i) => rows[i]}
           style={{ height: '100%' }}
+          renderers={{ renderRow: renderRowWithHover }}
         />
       </div>
       {showNavigation && (
