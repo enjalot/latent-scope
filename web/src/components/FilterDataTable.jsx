@@ -9,78 +9,6 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 import './FilterDataTable.css';
 
-const fuzzyFilter = (row, columnId, value, addMeta) => {
-  // Rank the item
-  const itemRank = rankItem(row.getValue(columnId), value);
-  // Store the itemRank info
-  addMeta({
-    itemRank,
-  });
-  // Return if the item should be filtered in/out
-  return itemRank.passed;
-};
-
-const fuzzySort = (rowA, rowB, columnId) => {
-  let dir = 0;
-  // Only sort by rank if the column has ranking information
-  if (rowA.columnFiltersMeta[columnId]) {
-    dir = compareItems(
-      rowA.columnFiltersMeta[columnId]?.itemRank,
-      rowB.columnFiltersMeta[columnId]?.itemRank
-    );
-  }
-  // Provide an alphanumeric fallback for when the item ranks are equal
-  return dir === 0 ? sortingFns.alphanumeric(rowA, rowB, columnId) : dir;
-};
-
-const TableHeader = memo(
-  ({ table, highlightColumn, columns }) => {
-    return (
-      <thead>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <tr key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <th
-                key={header.id}
-                colSpan={header.colSpan}
-                style={{
-                  backgroundColor:
-                    header.column.columnDef.accessorKey === highlightColumn ? '#d3d3d3' : '',
-                }}
-              >
-                {header.isPlaceholder ? null : (
-                  <div
-                    className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{
-                      asc: ' 🔼',
-                      desc: ' 🔽',
-                    }[header.column.getIsSorted()] ?? null}
-                  </div>
-                )}
-              </th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-    );
-  },
-  (prevProps, nextProps) => {
-    return (
-      prevProps.highlightColumn === nextProps.highlightColumn &&
-      prevProps.columns === nextProps.columns
-    );
-  }
-);
-TableHeader.displayName = 'TableHeader';
-
-// Memoized TableCell component
-const TableCell = memo(({ cell }) => {
-  return <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>;
-});
-TableCell.displayName = 'TableCell';
 
 const renderTags = (tags, row, tagset, handleTagClick) => {
   const { ls_index } = row;
@@ -263,7 +191,7 @@ function FilterDataTable({
     if (showEmbeddings) columns.push('ls_embedding');
     if (sae_id) columns.push('ls_features');
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
-    if (tagset && Object.keys(tagset).length) columns.push('tags');
+    // if (tagset && Object.keys(tagset).length) columns.push('tags');
 
     columns.push(dataset.text_column);
     columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
@@ -278,13 +206,14 @@ function FilterDataTable({
         className: 'filter-data-table-row',
       };
 
-      if (col === 'tags') {
-        return {
-          ...baseCol,
-          width: 100,
-          renderCell: ({ row }) => renderTags(tags, row, tagset, handleTagClick),
-        };
-      }
+      // dropping tag support for now.
+      // if (col === 'tags') {
+      //   return {
+      //     ...baseCol,
+      //     width: 100,
+      //     renderCell: ({ row }) => renderTags(tags, row, tagset, handleTagClick),
+      //   };
+      // }
 
       if (metadata?.image) {
         return {
@@ -314,50 +243,16 @@ function FilterDataTable({
       if (col === 'ls_cluster') {
         return {
           ...baseCol,
-          width: 250,
-          renderCell({ row, onRowChange }) {
-            const { ls_index, ls_cluster } = row;
-            return (
-              <select
-                value={ls_cluster?.cluster}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                }}
-                onChange={(event) => {
-                  console.log('===== changing cluster ======', row, event.target.value);
-                  const cluster_idx = event.target.value;
-                  const cluster = clusterMap[cluster_idx];
-                  console.log('===== cluster ======', cluster);
-                  onRowChange({ ...row, ls_cluster: cluster }, true);
-                  event.stopPropagation();
-                  event.preventDefault();
+          width: 200,
+          renderCell({ row }) {
+            const ls_cluster = row.ls_cluster;
+            const cluster = clusterMap[ls_cluster.cluster];
+            const { cluster: cluster_id, label } = cluster;
 
-                  // fetch(`${apiUrl}/bulk/change-cluster`, {
-                  //   method: 'POST',
-                  //   headers: {
-                  //     'Content-Type': 'application/json',
-                  //   },
-                  //   body: JSON.stringify({
-                  //     dataset_id: dataset.id,
-                  //     scope_id: scope.id,
-                  //     row_ids: [ls_index],
-                  //     new_cluster: event.target.value,
-                  //   }),
-                  // })
-                  //   .then((response) => response.json())
-                  //   .then((data) => {
-                  //     console.log('===== changed cluster ======', data);
-                  //     onScope();
-                  //   });
-                }}
-              >
-                {clusterLabels.map((c, i) => (
-                  <option key={i} value={c.cluster}>
-                    {c.cluster}: {c.label}
-                  </option>
-                ))}
-              </select>
+            return (
+              <span>
+                {cluster_id}: {label}
+              </span>
             );
           },
         };
@@ -419,8 +314,6 @@ function FilterDataTable({
     const indicesToUse = indices.filter((i) => !deletedIndices.includes(i));
     hydrateIndices(indicesToUse);
   }, [indices, currentPage]);
-
-  console.log('======= rerendering =======');
 
   // useEffect(() => {
   //   if (dataset) {
