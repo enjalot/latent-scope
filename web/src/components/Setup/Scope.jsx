@@ -144,10 +144,11 @@ function Scope() {
         if (!s) s = scopes[scopes.length - 1];
         setScope(s);
         setSavedScope(s);
-        navigate(`/datasets/${dataset.id}/setup/${s?.id}`);
+        // navigate(`/datasets/${dataset.id}/setup/${s?.id}`);
+        navigate(`/datasets/${dataset.id}/explore/${s?.id}`);
       });
     }
-  }, [scopeJob, dataset, navigate, setScope, setSavedScope]);
+  }, [scopeJob, dataset, navigate, setScope, setSavedScope, setScopes]);
 
   const handleSaveScope = useCallback(
     (event) => {
@@ -411,7 +412,7 @@ function Scope() {
         <div className={styles['setup-scope-preview']}>
           <div className={styles['preview']}>
             <div className={styles['scope-actions']}>
-              <div className={styles['action-card']}>
+              <div className={styles['action-card'] + ' ' + styles['action-card-explore']}>
                 <h3>
                   <Link
                     to={`/datasets/${dataset?.id}/explore/${scope?.id}`}
