@@ -261,10 +261,9 @@ function FilterDataTable({
           ...baseCol,
           width: 200,
           renderCell({ row }) {
-            const ls_cluster = row.ls_cluster;
-            const cluster = clusterMap[ls_cluster.cluster];
+            const ls_index = row.ls_index;
+            const cluster = clusterMap[ls_index];
             const { cluster: cluster_id, label } = cluster;
-
             return (
               <span>
                 {cluster_id}: {label}
