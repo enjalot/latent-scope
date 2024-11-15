@@ -392,14 +392,14 @@ function FilterDataTable({
         };
       }
 
-      console.log('======', dataset.text_column);
-
       if (col === dataset.text_column) {
         return {
           ...baseCol,
-          headerRenderer: () => <div style={{ color: 'red' }}>ID</div>,
           width: 500,
-          renderCell: ({ row }) => <span title={row[col]}>{row[col]}</span>,
+          renderHeaderCell: () => <div className="text-column">{dataset.text_column}</div>,
+          renderCell: ({ row }) => {
+            return <span title={row[col]}>{row[col]}</span>;
+          },
         };
       }
 
@@ -445,7 +445,8 @@ function FilterDataTable({
   }, [formattedColumns]);
 
   useEffect(() => {
-    hydrateIndices(indices);
+    const indicesToUse = indices.filter((i) => !deletedIndices.includes(i));
+    hydrateIndices(indicesToUse);
   }, [indices]);
 
   console.log('======= rerendering =======');
