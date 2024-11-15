@@ -122,6 +122,8 @@ FilterDataTable.propTypes = {
   onClick: PropTypes.func,
 };
 
+const ROWS_PER_PAGE = 100;
+
 function FilterDataTable({
   height,
   dataset,
@@ -148,6 +150,8 @@ function FilterDataTable({
   const [rows, setRows] = useState([]);
   const [pageCount, setPageCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+
+  // add a pageIndices state
 
   // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
   const [highlightColumn, setHighlightColumn] = useState(null);
@@ -276,6 +280,7 @@ function FilterDataTable({
       if (col === 'tags') {
         return {
           ...baseCol,
+          width: 100,
           renderCell: ({ row }) => renderTags(tags, row, tagset, handleTagClick),
         };
       }
@@ -407,7 +412,7 @@ function FilterDataTable({
   useEffect(() => {
     const indicesToUse = indices.filter((i) => !deletedIndices.includes(i));
     hydrateIndices(indicesToUse);
-  }, [indices]);
+  }, [indices, currentPage]);
 
   console.log('======= rerendering =======');
 
