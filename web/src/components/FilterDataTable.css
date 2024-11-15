@@ -71,3 +71,12 @@
     color: rgb(17, 17, 17);
   }
 }
+
+/* React-Data-Grid */
+.rdg-row {
+  cursor: pointer;
+}
+
+.rdg-row:hover {
+  background-color: var(--interactions---secondary-color-interaction-secondary-hover);
+}

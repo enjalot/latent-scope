@@ -275,6 +275,7 @@ function FilterDataTable({
         key: col,
         name: col,
         resizable: true,
+        className: 'filter-data-table-row',
       };
 
       if (col === 'tags') {
