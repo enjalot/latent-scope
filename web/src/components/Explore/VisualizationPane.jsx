@@ -47,7 +47,8 @@ function VisualizationPane({
     [setXDomain, setYDomain]
   );
 
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  // const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(true);
   const [size, setSize] = useState([500, 500]);
   const umapRef = useRef(null);
   const [umapOffset, setUmapOffset] = useState(0);
@@ -206,8 +207,8 @@ function VisualizationPane({
   }, [vizConfig.pointOpacity]);
 
   return (
-    <div className="umap-container" ref={umapRef}>
-      <div className={styles.configToggleContainer}>
+    <div style={{ width, height }} ref={umapRef}>
+      {/* <div className={styles.configToggleContainer}>
         <Button
           className={styles['configToggle']}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
@@ -235,7 +236,7 @@ function VisualizationPane({
           updatePointSize={updatePointSize}
           updatePointOpacity={updatePointOpacity}
         />
-      </div>
+      </div> */}
 
       <div
         className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
@@ -271,19 +272,19 @@ function VisualizationPane({
         )}
 
         {/* show all the hulls */}
-        {vizConfig.showClusterOutlines && hulls.length && (
+        {/* {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
             stroke="#8d7d7d"
             fill="none"
             duration={200}
-            strokeWidth={0.5}
+            strokeWidth={0.1}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
-        )}
+        )} */}
 
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot

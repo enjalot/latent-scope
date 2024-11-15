@@ -650,7 +650,7 @@ function FilterDataTable({
           rows={rows}
           columns={formattedColumns}
           rowGetter={(i) => rows[i]}
-          style={{ height: '100%' }}
+          style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
       </div>

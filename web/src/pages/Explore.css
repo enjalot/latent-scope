@@ -190,6 +190,11 @@
   width: 358px;
 }
 
+.clusters-select {
+  display: flex;
+  gap: 4px;
+}
+
 .filters-container .clusters-select select {
   width: 310px;
 }
@@ -395,6 +400,23 @@
     height: auto;
     margin-top: 40px;
   }
+}
 
+/* Fullscreen */
+.visualization-pane-container {
+  width: 100%;
+  height: 100%;
+}
 
+.full-screen-explore-container {
+  position: relative;
+}
+
+.filter-table-container {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  z-index: 100;
+  width: 33%;
+  height: 100%
 }

@@ -2,6 +2,7 @@
     background-color: var(--neutrals-color-neutral-1);
     border-bottom: 1px solid #e5e5e5;
     padding: 0 10px;
+    z-index: 100;
 }
 
 .tabsContainer {
