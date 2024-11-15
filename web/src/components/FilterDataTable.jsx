@@ -324,26 +324,31 @@ function FilterDataTable({
                   event.preventDefault();
                 }}
                 onChange={(event) => {
+                  console.log('===== changing cluster ======', row, event.target.value);
+                  const cluster_idx = event.target.value;
+                  const cluster = clusterMap[cluster_idx];
+                  console.log('===== cluster ======', cluster);
+                  onRowChange({ ...row, ls_cluster: cluster }, true);
                   event.stopPropagation();
                   event.preventDefault();
 
-                  fetch(`${apiUrl}/bulk/change-cluster`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      dataset_id: dataset.id,
-                      scope_id: scope.id,
-                      row_ids: [ls_index],
-                      new_cluster: event.target.value,
-                    }),
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      onScope();
-                    });
-                  onRowChange({ ...row, cluster: event.target.value }, true);
+                  // fetch(`${apiUrl}/bulk/change-cluster`, {
+                  //   method: 'POST',
+                  //   headers: {
+                  //     'Content-Type': 'application/json',
+                  //   },
+                  //   body: JSON.stringify({
+                  //     dataset_id: dataset.id,
+                  //     scope_id: scope.id,
+                  //     row_ids: [ls_index],
+                  //     new_cluster: event.target.value,
+                  //   }),
+                  // })
+                  //   .then((response) => response.json())
+                  //   .then((data) => {
+                  //     console.log('===== changed cluster ======', data);
+                  //     onScope();
+                  //   });
                 }}
               >
                 {clusterLabels.map((c, i) => (
@@ -403,7 +408,7 @@ function FilterDataTable({
       };
     });
     return columnDefs;
-  }, [dataset.columns, tags, tagset]);
+  }, [dataset, tags, tagset]);
 
   useEffect(() => {
     setColumns(formattedColumns);

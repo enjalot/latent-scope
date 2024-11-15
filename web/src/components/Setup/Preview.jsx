@@ -368,7 +368,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         )}
       </div>
       <div className={styles['table-container']}>
-        {tableHeight > 0 ? (
+        {tableHeight > 0 && dataset ? (
           <FilterDataTable
             dataset={dataset}
             indices={dataIndices}
