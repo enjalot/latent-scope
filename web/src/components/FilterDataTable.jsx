@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
-import EmbeddingVis from './EmbeddingVis';
 import 'react-data-grid/lib/styles.css';
 
 import DataGrid from 'react-data-grid';
@@ -9,27 +8,6 @@ import DataGrid from 'react-data-grid';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 import './FilterDataTable.css';
-
-import {
-  //   Column,
-  //   ColumnFiltersState,
-  //   FilterFn,
-  //   SortingFn,
-  // Table,
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getFacetedMinMaxValues,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  // getPaginationRowModel,
-  getSortedRowModel,
-  sortingFns,
-  useReactTable,
-} from '@tanstack/react-table';
-
-import { rankItem, compareItems } from '@tanstack/match-sorter-utils';
 
 const fuzzyFilter = (row, columnId, value, addMeta) => {
   // Rank the item
@@ -128,28 +106,6 @@ const renderTags = (tags, row, tagset, handleTagClick) => {
     </div>
   );
 };
-
-// Memoized TableRow component
-const TableRow = memo(({ row, onHover, onClick, collapse = false, lsIndexCol }) => {
-  return (
-    <tr
-      style={{ visibility: collapse ? 'collapse' : '' }}
-      key={row.id}
-      onMouseEnter={() => {
-        onHover && onHover(row.getValue(lsIndexCol));
-      }}
-      onMouseLeave={() => {
-        onHover && onHover(null);
-      }}
-      onClick={() => onClick && onClick(row.getValue(lsIndexCol))}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id} cell={cell} />
-      ))}
-    </tr>
-  );
-});
-TableRow.displayName = 'TableRow';
 
 FilterDataTable.propTypes = {
   height: PropTypes.string,
@@ -358,6 +314,10 @@ function FilterDataTable({
             return (
               <select
                 value={ls_cluster?.cluster}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  event.preventDefault();
+                }}
                 onChange={(event) => {
                   event.stopPropagation();
                   event.preventDefault();
@@ -378,7 +338,7 @@ function FilterDataTable({
                     .then((data) => {
                       onScope();
                     });
-                  // onRowChange({ ...row, cluster: event.target.value }, true);
+                  onRowChange({ ...row, cluster: event.target.value }, true);
                 }}
               >
                 {clusterLabels.map((c, i) => (
