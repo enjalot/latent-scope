@@ -207,7 +207,7 @@ function VisualizationPane({
 
   return (
     // <div style={{ width, height }} ref={umapRef}>
-    <div ref={umapRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
       {/* <div className={styles.configToggleContainer}>
         <Button
           className={styles['configToggle']}
@@ -238,10 +238,7 @@ function VisualizationPane({
         />
       </div> */}
 
-      <div
-      // className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
-      // style={{ width, height }}
-      >
+      <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
         {!isIOS() && scope ? (
           <Scatter
             points={drawingPoints}
@@ -275,10 +272,11 @@ function VisualizationPane({
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
-            stroke="#8d7d7d"
+            // stroke="#E7C7AA"
+            stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
             fill="none"
             duration={200}
-            strokeWidth={0.25}
+            strokeWidth={0.15}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
@@ -289,8 +287,8 @@ function VisualizationPane({
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            fill="lightgray"
-            stroke="gray"
+            fill="#DCAD82"
+            stroke="#FDCFC9"
             strokeWidth={2}
             opacity={0.25}
             duration={0}
@@ -301,11 +299,12 @@ function VisualizationPane({
           />
         )}
 
+        {/* Cluster is selected via filter */}
         {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={clusterHulls}
-            fill="darkgray"
-            stroke="gray"
+            fill="#D3965E"
+            stroke="#C77C37"
             strokeWidth={2}
             opacity={0.35}
             duration={0}
@@ -346,7 +345,7 @@ function VisualizationPane({
         <div
           data-tooltip-id="featureTooltip"
           style={{
-            position: 'absolute',
+            // position: 'absolute',
             left: tooltipPosition.x,
             top: tooltipPosition.y,
             pointerEvents: 'none',
@@ -362,7 +361,7 @@ function VisualizationPane({
           delayUpdate={0}
           className="tooltip-area"
           style={{
-            position: 'absolute',
+            // position: 'absolute',
             left: tooltipPosition.x,
             top: tooltipPosition.y,
             pointerEvents: 'none',
@@ -371,7 +370,6 @@ function VisualizationPane({
           }}
         >
           <div className="tooltip-content">
-            {/* {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null} */}
             {hoveredCluster && (
               <span>
                 <span className="key">Cluster {hoveredCluster.cluster}: </span>

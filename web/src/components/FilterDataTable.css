@@ -41,6 +41,11 @@
   gap: 2px;
 }
 
+.filter-data-table-scrollable-body:hover {
+  overflow-y: auto;
+}
+
+
 .filter-data-table .tag-active {
   background-color: #fff;
   border: 1px solid gray;
@@ -80,3 +85,19 @@
 .rdg-row:hover {
   background-color: var(--interactions---secondary-color-interaction-secondary-hover);
 }
+
+.rdg-cell {
+  border-inline-end: 0 !important;
+  border-block-end: 0.5px solid #ededed !important;
+}
+
+.rdg {
+  border: 0px solid #ededed !important;
+  /* overflow-y: hidden; */
+}
+
+.rdg:hover {
+  /* overflow-y: auto; */
+}
+
+

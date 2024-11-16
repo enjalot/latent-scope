@@ -145,64 +145,70 @@ function ScatterPlot ({
   useEffect(() => {
     const scatterplot = scatterplotRef.current;
     const prevPoints = prevPointsRef.current;
-    if(scatterplot && points && points.length){
-
+    if (scatterplot && points && points.length) {
       const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
       // console.log("point size", pointSize, opacity)
-      let pointColor = [250/255, 128/255, 114/255, 1] //salmon
+      // let pointColor = [250/255, 128/255, 114/255, 1] //salmon
+      let pointColor = [122 / 255, 217 / 255, 255 / 255, 1]; //salmon
+      // let pointColor = '#7AD9FF';
 
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
-      if(colorScaleType === "categorical") {
-        let uniques = colorDomain
-        if(!uniques){
-          uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
+      console.log({ colorScaleType, colorDomain, colorRange });
+
+      if (colorScaleType === 'categorical') {
+        let uniques = colorDomain;
+        if (!uniques) {
+          uniques = groups(
+            points.map((d) => d[2]),
+            (d) => d
+          )
+            .map((d) => d[0])
+            .sort((a, b) => a - b);
         }
-        let domain = extent(uniques).reverse()
-        if(!colorRange) {
-          const colorScale = scaleSequential(colorInterpolator)
-            .domain(domain);
-          pointColor = range(uniques).map(u => rgb(colorScale(u)).hex())
+        let domain = extent(uniques).reverse();
+        if (!colorRange) {
+          const colorScale = scaleSequential(colorInterpolator).domain(domain);
+          pointColor = range(uniques).map((u) => rgb(colorScale(u)).hex());
         } else {
-          pointColor = colorRange
+          pointColor = colorRange;
         }
-      } else if(colorScaleType === "continuous") {
-        let r = range(0, 100)
-        const colorScale = scaleSequential(colorInterpolator)
-          .domain([0, 100]);
-        pointColor = r.map(i => rgb(colorScale(i)).hex())
+      } else if (colorScaleType === 'continuous') {
+        let r = range(0, 100);
+        const colorScale = scaleSequential(colorInterpolator).domain([0, 100]);
+        pointColor = r.map((i) => rgb(colorScale(i)).hex());
       }
 
-      if(colorScaleType){
-        scatterplot.set({colorBy: 'valueA'});
+      if (colorScaleType) {
+        scatterplot.set({ colorBy: 'valueA' });
       }
-      if(opacityBy) {
+      if (opacityBy) {
         scatterplot.set({
           opacityBy,
           sizeBy: opacityBy,
-          opacity: opacityRange || [0.1, .2, .3, .4, .5,  1],
-          pointSize: pointSizeRange || [2, 4, 5, 6,  pointSize]
-        })
+          opacity: opacityRange || [0.1, 0.2, 0.3, 0.4, 0.5, 1],
+          pointSize: pointSizeRange || [2, 4, 5, 6, pointSize],
+        });
       } else {
         scatterplot.set({
           opacity: opacity,
           pointSize: pointSize,
-        })
+        });
       }
       if (prevPoints && prevPoints.length === points.length) {
-        scatterplot.draw(points, { transition: true, transitionDuration: duration}).then(() => {
+        scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
           // don't color till after
           scatterplot.set({
             pointColor: pointColor,
-          })
+          });
           scatterplot.draw(points, { transition: false });
-        })
+        });
       } else {
         // console.log("fresh draw scatterplot")
         scatterplot.set({
           pointColor: pointColor,
-        })
+        });
         scatterplot.draw(points, { transition: false });
       }
       prevPointsRef.current = points;

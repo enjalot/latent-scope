@@ -1,0 +1,5 @@
+.left-pane-container {
+  border-right: 1px solid lightgray;
+  background: var(--neutrals-color-neutral-1);
+  flex-grow: 0;
+}

@@ -7,16 +7,17 @@
 .scatters {
   position: relative;
   // border: 1px solid gray;
-  border-radius: 5px;
-  padding: 6px;
+  // border-radius: 5px;
+  // padding: 6px;
+  // box-sizing: border-box;
 }
 .fullScreen {
-  position: fixed;
-  top: 40px;
-  left: 12px;
+  // position: fixed;
+  // top: 93px;
+  // left: 12px;
   z-index: 10;
   width: 100%;
-  background-color: white;
+  // background-color: white;
 }
 
 .configToggleContainer {

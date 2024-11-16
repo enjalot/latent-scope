@@ -11,6 +11,7 @@ import { saeAvailable } from '../lib/SAE';
 import { apiUrl } from '../lib/apiService';
 
 import SubNav from '../components/SubNav';
+import LeftPane from '../components/Explore/LeftPane';
 import ScopeHeader from '../components/Explore/ScopeHeader';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import NearestNeighbor from '../components/Explore/NearestNeighbor';
@@ -104,26 +105,6 @@ function Explore() {
     },
     [dataset, datasetId]
   );
-
-  // ====================================================================================================
-  // Fullscreen related logic
-  // ====================================================================================================
-  const [size, setSize] = useState([500, 500]);
-
-  const xOffset = 50;
-  const yOffset = 100;
-
-  // let's fill the container and update the width and height if window resizes
-  useEffect(() => {
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    setSize([windowWidth - xOffset, windowHeight - yOffset]);
-    // window.addEventListener('resize', updateSize);
-    // updateSize();
-    // return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  const [width, height] = size;
 
   // ====================================================================================================
   // Scatterplot related logic
@@ -452,6 +433,28 @@ function Explore() {
     };
   }, []);
 
+  // ====================================================================================================
+  // Fullscreen related logic
+  // ====================================================================================================
+  const [size, setSize] = useState([500, 500]);
+
+  const xOffset = 50;
+  const yOffset = 100;
+
+  // let's fill the container and update the width and height if window resizes
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    const windowWidth = node.clientWidth;
+    const windowHeight = node.clientHeight;
+    setSize([windowWidth - xOffset, windowHeight - yOffset]);
+    // window.addEventListener('resize', updateSize);
+    // updateSize();
+    // return () => window.removeEventListener('resize', updateSize);
+  }, [containerRef]);
+
+  const [width, height] = size;
+
   if (!dataset)
     return (
       <>
@@ -463,79 +466,103 @@ function Explore() {
   return (
     <>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
-      {/* full-screen-explore-container is a grid with 33% for the filter table and 67% for the scatter plot */}
-      <div ref={containerRef} className="full-screen-explore-container" style={{ width, height }}>
-        <div className="filter-table-container">
-          <ClusterFilter
-            clusterLabels={clusterLabels}
-            slide={slide}
-            slideAnnotations={slideAnnotations}
-            setSlide={setSlide}
-            clusterLabel={clusterLabel}
-            setClusterLabel={setClusterLabel}
-            handleLabelUpdate={handleLabelUpdate}
-            newClusterLabel={newClusterLabel}
-            setNewClusterLabel={setNewClusterLabel}
-            handleNewCluster={handleNewCluster}
-          />
-          <div style={{ height: '80%' }}>
-            {intersectedIndices.length > 0 ? (
-              <FilterDataTable
-                height={tableHeight}
-                dataset={dataset}
-                scope={scope}
-                indices={intersectedIndices}
-                deletedIndices={deletedIndices}
-                distances={distances}
-                clusterMap={clusterMap}
-                clusterLabels={clusterLabels}
-                tagset={tagset}
-                sae_id={sae?.id}
-                feature={feature}
-                onTagset={fetchTagSet}
-                onScope={() => {
-                  fetchScopeMeta();
-                  fetchScopeRows();
-                }}
-                onHover={handleHover}
-                onClick={handleClicked}
-                editMode={true}
-                showDifference={null}
-                // showDifference={showDifference ? searchEmbedding : null}
-              />
-            ) : (
-              <div className="filter-table no-data">Select a filter to display rows</div>
-            )}
-          </div>
-        </div>
-        <div
-          className="visualization-pane-container"
-          onMouseLeave={() => {
-            setHoveredIndex(null);
-            setHoveredCluster(null);
-            setHoverAnnotations([]);
-            setHovered(null);
-          }}
-        >
-          {scopeRows?.length ? (
-            <VisualizationPane
-              scopeRows={scopeRows}
+      <div style={{ display: 'flex', gap: '4px', height: '100%' }}>
+        <LeftPane />
+        {/* full-screen-explore-container is a grid with 33% for the filter table and 67% for the scatter plot */}
+        <div ref={containerRef} className="full-screen-explore-container">
+          <div className="filter-table-container">
+            <ClusterFilter
               clusterLabels={clusterLabels}
-              hoveredIndex={hoveredIndex}
-              hoverAnnotations={hoverAnnotations}
-              intersectedIndices={intersectedIndices}
-              hoveredCluster={hoveredCluster}
               slide={slide}
-              scope={scope}
-              containerRef={containerRef}
-              onScatter={setScatter}
-              onSelect={handleSelected}
-              onHover={handleHover}
-              hovered={hovered}
-              dataset={dataset}
-              deletedIndices={deletedIndices}
+              slideAnnotations={slideAnnotations}
+              setSlide={setSlide}
+              clusterLabel={clusterLabel}
+              setClusterLabel={setClusterLabel}
+              handleLabelUpdate={handleLabelUpdate}
+              newClusterLabel={newClusterLabel}
+              setNewClusterLabel={setNewClusterLabel}
+              handleNewCluster={handleNewCluster}
             />
-          ) : null}
+            <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
+              <div className="filter-cell left filter-description">
+                Shift+Drag on the map to filter by points.
+              </div>
+              <div className="filter-cell middle">
+                {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
+                {selectedIndices?.length > 0 ? (
+                  <button
+                    className="deselect"
+                    onClick={() => {
+                      setSelectedIndices([]);
+                      scatter?.select([]);
+                      // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                    }}
+                  >
+                    X
+                  </button>
+                ) : null}
+              </div>
+              <div className="filter-cell right"></div>
+            </div>
+            <div style={{ height: '80%', maxHeight: 650, maxWidth: 800 }}>
+              {intersectedIndices.length > 0 ? (
+                <FilterDataTable
+                  height={tableHeight}
+                  dataset={dataset}
+                  scope={scope}
+                  indices={intersectedIndices}
+                  deletedIndices={deletedIndices}
+                  distances={distances}
+                  clusterMap={clusterMap}
+                  clusterLabels={clusterLabels}
+                  tagset={tagset}
+                  sae_id={sae?.id}
+                  feature={feature}
+                  onTagset={fetchTagSet}
+                  onScope={() => {
+                    fetchScopeMeta();
+                    fetchScopeRows();
+                  }}
+                  onHover={handleHover}
+                  onClick={handleClicked}
+                  editMode={true}
+                  showDifference={null}
+                  // showDifference={showDifference ? searchEmbedding : null}
+                />
+              ) : (
+                <div className="filter-table no-data">Select a filter to display rows</div>
+              )}
+            </div>
+          </div>
+          <div
+            className="visualization-pane-container"
+            onMouseLeave={() => {
+              setHoveredIndex(null);
+              setHoveredCluster(null);
+              setHoverAnnotations([]);
+              setHovered(null);
+            }}
+          >
+            {scopeRows?.length ? (
+              <VisualizationPane
+                scopeRows={scopeRows}
+                clusterLabels={clusterLabels}
+                hoveredIndex={hoveredIndex}
+                hoverAnnotations={hoverAnnotations}
+                intersectedIndices={intersectedIndices}
+                hoveredCluster={hoveredCluster}
+                slide={slide}
+                scope={scope}
+                containerRef={containerRef}
+                onScatter={setScatter}
+                onSelect={handleSelected}
+                onHover={handleHover}
+                hovered={hovered}
+                dataset={dataset}
+                deletedIndices={deletedIndices}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </>
