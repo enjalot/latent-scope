@@ -410,13 +410,15 @@
 
 .full-screen-explore-container {
   position: relative;
+  display: grid;
+  grid-template-columns: 33% 1fr;
 }
 
-.filter-table-container {
+/* .filter-table-container {
   position: absolute;
   top: 5%;
   left: 5%;
   z-index: 100;
   width: 33%;
   height: 100%
-}
+} */

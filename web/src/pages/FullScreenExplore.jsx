@@ -463,36 +463,8 @@ function Explore() {
   return (
     <>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
+      {/* full-screen-explore-container is a grid with 33% for the filter table and 67% for the scatter plot */}
       <div ref={containerRef} className="full-screen-explore-container" style={{ width, height }}>
-        {scopeRows?.length ? (
-          <div
-            className="visualization-pane-container"
-            onMouseLeave={() => {
-              setHoveredIndex(null);
-              setHoveredCluster(null);
-              setHoverAnnotations([]);
-              setHovered(null);
-            }}
-          >
-            <VisualizationPane
-              scopeRows={scopeRows}
-              clusterLabels={clusterLabels}
-              hoveredIndex={hoveredIndex}
-              hoverAnnotations={hoverAnnotations}
-              intersectedIndices={intersectedIndices}
-              hoveredCluster={hoveredCluster}
-              slide={slide}
-              scope={scope}
-              containerRef={containerRef}
-              onScatter={setScatter}
-              onSelect={handleSelected}
-              onHover={handleHover}
-              hovered={hovered}
-              dataset={dataset}
-              deletedIndices={deletedIndices}
-            />
-          </div>
-        ) : null}
         <div className="filter-table-container">
           <ClusterFilter
             clusterLabels={clusterLabels}
@@ -535,6 +507,35 @@ function Explore() {
               <div className="filter-table no-data">Select a filter to display rows</div>
             )}
           </div>
+        </div>
+        <div
+          className="visualization-pane-container"
+          onMouseLeave={() => {
+            setHoveredIndex(null);
+            setHoveredCluster(null);
+            setHoverAnnotations([]);
+            setHovered(null);
+          }}
+        >
+          {scopeRows?.length ? (
+            <VisualizationPane
+              scopeRows={scopeRows}
+              clusterLabels={clusterLabels}
+              hoveredIndex={hoveredIndex}
+              hoverAnnotations={hoverAnnotations}
+              intersectedIndices={intersectedIndices}
+              hoveredCluster={hoveredCluster}
+              slide={slide}
+              scope={scope}
+              containerRef={containerRef}
+              onScatter={setScatter}
+              onSelect={handleSelected}
+              onHover={handleHover}
+              hovered={hovered}
+              dataset={dataset}
+              deletedIndices={deletedIndices}
+            />
+          ) : null}
         </div>
       </div>
     </>

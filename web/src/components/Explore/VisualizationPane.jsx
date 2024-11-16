@@ -59,11 +59,10 @@ function VisualizationPane({
       if (!containerRef.current) return;
 
       if (isFullScreen) {
-        // Use window dimensions in fullscreen mode
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        setSize([windowWidth - 50, windowHeight - 100]);
-        setUmapOffset(80); // TODO: why is this the
+        const rect = umapRef.current.getBoundingClientRect();
+        // debugger;
+        setSize([rect.width, rect.height]);
+        setUmapOffset(rect.top + 40); // 40 is the height of the top header
       } else {
         const rect = containerRef.current.getBoundingClientRect();
         const urect = umapRef.current.getBoundingClientRect();
@@ -207,7 +206,8 @@ function VisualizationPane({
   }, [vizConfig.pointOpacity]);
 
   return (
-    <div style={{ width, height }} ref={umapRef}>
+    // <div style={{ width, height }} ref={umapRef}>
+    <div ref={umapRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
       {/* <div className={styles.configToggleContainer}>
         <Button
           className={styles['configToggle']}
@@ -239,8 +239,8 @@ function VisualizationPane({
       </div> */}
 
       <div
-        className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
-        style={{ width, height }}
+      // className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
+      // style={{ width, height }}
       >
         {!isIOS() && scope ? (
           <Scatter
@@ -272,19 +272,19 @@ function VisualizationPane({
         )}
 
         {/* show all the hulls */}
-        {/* {vizConfig.showClusterOutlines && hulls.length && (
+        {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
             stroke="#8d7d7d"
             fill="none"
             duration={200}
-            strokeWidth={0.1}
+            strokeWidth={0.25}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
-        )} */}
+        )}
 
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
@@ -323,8 +323,8 @@ function VisualizationPane({
           size="16"
           xDomain={xDomain}
           yDomain={yDomain}
-          width={width}
-          height={height}
+          width={'100%'}
+          height={'100%'}
         />
 
         {vizConfig.showHeatMap && tiles?.length > 1 && (
