@@ -85,6 +85,7 @@ def run_job(dataset, job_id, command):
 
 @jobs_bp.route('/job')
 def get_job():
+    print("get_job", request.args)
     dataset = request.args.get('dataset')
     job_id = request.args.get('job_id')
     progress_file = os.path.join(DATA_DIR, dataset, "jobs", f"{job_id}.json")
@@ -463,3 +464,25 @@ def run_plot():
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
+@jobs_write_bp.route('/download_dataset')
+def download_dataset():
+    dataset_repo = request.args.get('dataset_repo')
+    dataset_name = request.args.get('dataset_name')
+
+    job_id = str(uuid.uuid4())
+    command = f'python latentscope/scripts/download_dataset.py "{dataset_repo}" "{dataset_name}" "{DATA_DIR}"'
+    threading.Thread(target=run_job, args=(dataset_name, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+@jobs_write_bp.route('/upload_dataset')
+def upload_dataset():
+    dataset = request.args.get('dataset')
+    hf_dataset = request.args.get('hf_dataset')
+    main_parquet = request.args.get('main_parquet')
+    private = request.args.get('private')
+
+    job_id = str(uuid.uuid4())
+    path = os.path.join(DATA_DIR, dataset)
+    command = f'python latentscope/scripts/upload_dataset.py "{path}" "{hf_dataset}" --main-parquet="{main_parquet}" --private={private}'
+    threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})

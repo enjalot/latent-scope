@@ -1,10 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import SubNav from '../components/SubNav';
-import { apiService } from '../lib/apiService';
-
-const apiUrl = import.meta.env.VITE_API_URL;
-const readonly = import.meta.env.MODE == 'read_only';
+import { apiService, apiUrl } from '../lib/apiService';
+import HFUpload from '../components/HFUpload';
 
 import styles from './Export.module.css';
 
@@ -24,39 +22,32 @@ function Export() {
   const navigate = useNavigate();
   const { dataset: datasetId, scope: scopeId } = useParams();
 
+  const [hasHFKey, setHasHFKey] = useState(false);
+
   useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
-      .then((response) => response.json())
-      .then(setDataset)
-      .catch(console.error);
+    apiService.fetchDataset(datasetId).then(setDataset).catch(console.error);
   }, [datasetId, setDataset]);
 
   const [scope, setScope] = useState(null);
   useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('scope', data);
-        setScope(data);
-      })
-      .catch(console.error);
+    apiService.fetchScope(datasetId, scopeId).then(setScope).catch(console.error);
   }, [datasetId, scopeId, setScope]);
 
   const [datasetFiles, setDatasetFiles] = useState([]);
   useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/export/list`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('export list', data);
-        setDatasetFiles(data);
-      })
-      .catch(console.error);
+    apiService.fetchExportList(datasetId).then(setDatasetFiles).catch(console.error);
   }, [datasetId]);
 
-  // TODO: get all scopes for dataset
   useEffect(() => {
     apiService.fetchScopes(datasetId).then(setScopes);
   }, [datasetId]);
+
+  useEffect(() => {
+    apiService.fetchSettings().then((settings) => {
+      console.log('settings', settings);
+      setHasHFKey(settings.api_keys.indexOf('HUGGINGFACE_TOKEN') >= 0);
+    });
+  }, []);
 
   const fileLink = useCallback(
     (d, i) => {
@@ -82,6 +73,17 @@ function Export() {
         <h2>
           Export Data for {dataset?.id} {scopeId}
         </h2>
+        <p>
+          {hasHFKey ? (
+            <div>
+              <HFUpload dataset={dataset} scope={scope} />
+            </div>
+          ) : (
+            <div>
+              <Link to="/settings">Setup Hugging Face API Key</Link>
+            </div>
+          )}
+        </p>
         {/* <Link to={`/datasets/${datasetId}/setup/${scopeId}`}>
           Setup {dataset?.id} {scopeId}
         </Link>

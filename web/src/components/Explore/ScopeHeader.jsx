@@ -6,16 +6,9 @@ import { compareVersions } from 'compare-versions';
 import { apiService } from '../../lib/apiService';
 import { isMobileDevice } from '../../utils';
 
-const readonly = import.meta.env.MODE == "read_only"
+const readonly = import.meta.env.MODE == 'read_only';
 
-function DatasetHeader({
-  dataset,
-  scope,
-  scopes,
-  onScopeChange,
-  tags,
-  deletedIndices
-}) {
+function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedIndices }) {
   if (!dataset) return null;
 
   const [lsVersion, setLsVersion] = useState(null);
@@ -137,7 +130,7 @@ DatasetHeader.propTypes = {
   scopes: PropTypes.array.isRequired,
   onScopeChange: PropTypes.func.isRequired,
   isMobileDevice: PropTypes.bool,
-  tags: PropTypes.array.isRequired
+  tags: PropTypes.array.isRequired,
 };
 
-export default DatasetHeader; 
+export default DatasetHeader;

@@ -9,3 +9,4 @@ testenv-prod
 dist
 build
 *.egg-info
+*.un~
