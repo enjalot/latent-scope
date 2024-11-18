@@ -1,3 +1,7 @@
+"""
+python latentscope/scripts/upload_scope.py ~/latent-scope-demo/datavis-misunderstood "ls-datavis-misunderstood" --main-parquet="scopes/scopes-001-input.parquet" --private=False
+"""
+
 from datasets import Dataset
 from pathlib import Path
 from huggingface_hub import login, HfApi
@@ -6,6 +10,14 @@ import argparse
 import shutil
 import tempfile
 from latentscope.util import get_key
+
+def get_human_readable_size(size_in_bytes):
+    """Convert bytes to human readable format."""
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_in_bytes < 1024.0:
+            return f"{size_in_bytes:.1f} {unit}"
+        size_in_bytes /= 1024.0
+    return f"{size_in_bytes:.1f} PB"
 
 def upload_to_huggingface(directory_path, dataset_name, main_parquet_path=None, token=None, private=True):
     """
@@ -67,6 +79,15 @@ def upload_to_huggingface(directory_path, dataset_name, main_parquet_path=None, 
         data_dir = temp_path / "data"
         data_dir.mkdir(exist_ok=True)
         
+        # Calculate total size before copying files
+        total_size = 0
+        for root, _, filenames in os.walk(directory):
+            for filename in filenames:
+                file_path = Path(root) / filename
+                total_size += file_path.stat().st_size
+        
+        human_readable_size = get_human_readable_size(total_size)
+        
         # Copy all files to the data directory while preserving structure
         for root, _, filenames in os.walk(directory):
             for filename in filenames:
@@ -108,6 +129,8 @@ tags:
 This dataset contains the files necessary to view in [latentscope](https://github.com/enjalot/latent-scope).
 The files in the `latentscope` are used by the app to view. You can also preview the scope TODO
 
+Total size of dataset files: {human_readable_size}
+
 TODO: download script inside latentscope
 """
         readme_path = temp_path / "README.md"
@@ -121,8 +144,7 @@ TODO: download script inside latentscope
             path_in_repo="README.md",
             repo_type="dataset",
         )
-        print("README UPLOADED")
-        print("ALL DONE")
+        print(f"uploaded to: {username}/{dataset_name}")
 
 def main():
     parser = argparse.ArgumentParser(description='Upload a directory with files to Hugging Face datasets')

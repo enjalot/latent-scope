@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import Select from 'react-select'
+import Select from 'react-select';
 
-import { format } from 'd3-format'
+import { format } from 'd3-format';
 
-const intf = format(",d")
+const intf = format(',d');
 
 const groupStyles = {
   display: 'flex',
@@ -45,11 +45,11 @@ const providerStyle = {
 
 function ModelSelect({
   defaultValue,
+  placeholder = 'Select or search for model...',
   options,
   onChange,
   onInputChange,
 }) {
-
   // const [defaultModel, setDefaultModel] = useState(defaultValue);
   // Add a state to track the input value
   const [inputValue, setInputValue] = useState('');
@@ -57,7 +57,7 @@ function ModelSelect({
   const handleInputChange = (newValue) => {
     setInputValue(newValue);
     onInputChange(newValue);
-    return newValue
+    return newValue;
   };
   const customFilterOption = (option, inputValue) => {
     const { provider, name } = option.data;
@@ -71,35 +71,39 @@ function ModelSelect({
       <div>
         <span style={providerStyle}>{option.provider} </span>
         <span>{option.name} </span>
-        {option.downloads ? <span style={downloadsStyle}>downloads: {intf(+option.downloads)}</span> : null}
+        {option.size ? <span style={downloadsStyle}>size: {option.size}</span> : null}
+        {option.downloads ? (
+          <span style={downloadsStyle}>downloads: {intf(+option.downloads)}</span>
+        ) : null}
       </div>
     );
   }, []);
   const formatGroupLabel = useCallback((option) => {
     return (
       <div style={groupStyles}>
-        {option.label == "🤗" ? <span>🤗 Sentence Transformers</span> : <span>{option.label}</span>}
-        {option.options.length ? <span style={groupBadgeStyles}>{option.options.length}</span> : null}
+        {option.label == '🤗' ? <span>🤗 Sentence Transformers</span> : <span>{option.label}</span>}
+        {option.options.length ? (
+          <span style={groupBadgeStyles}>{option.options.length}</span>
+        ) : null}
       </div>
     );
-  }, []); 
+  }, []);
 
   return (
-    <Select 
-      placeholder="Select or search for model..."
-      options={options} 
-      formatOptionLabel={formatOptionLabel} 
+    <Select
+      placeholder={placeholder}
+      options={options}
+      formatOptionLabel={formatOptionLabel}
       formatGroupLabel={formatGroupLabel}
       onInputChange={handleInputChange}
-      inputValue={inputValue} 
+      inputValue={inputValue}
       filterOption={customFilterOption}
-      getOptionValue={(option) => option.id} 
+      getOptionValue={(option) => option.id}
       onChange={onChange}
       value={defaultValue}
       // menuIsOpen={true}
     />
-
-  )
+  );
 }
 
-export default ModelSelect
+export default ModelSelect;

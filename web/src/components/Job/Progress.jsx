@@ -22,7 +22,7 @@ function JobProgress({ job, allwaysOnlyLast, clearJob, rerunJob, killJob }) {
     if (job?.status == 'error' && !allwaysOnlyLast) {
       setOnlyLast(false);
     }
-  }, [job]);
+  }, [job, allwaysOnlyLast]);
 
   const secondsSinceLastUpdate = Math.round((+new Date() - +new Date(job?.last_update)) / 1000);
   const totalTime = Math.round((+new Date(job?.last_update) - +new Date(job?.times[0])) / 1000);

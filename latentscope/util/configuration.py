@@ -45,7 +45,8 @@ def get_supported_api_keys():
         "VOYAGE_API_KEY",
         "TOGETHER_API_KEY",
         "COHERE_API_KEY",
-        "MISTRAL_API_KEY"
+        "MISTRAL_API_KEY",
+        "HUGGINGFACE_TOKEN"
     ]
 
 def set_openai_key(openai_key, env_file=".env"):

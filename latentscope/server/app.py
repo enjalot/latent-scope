@@ -307,17 +307,20 @@ if not READ_ONLY:
     @app.route('/api/settings', methods=['GET'])
     def get_settings():
         config = dotenv_values(".env")  # Assuming the .env file is in the root directory
+        supported_api_keys = get_supported_api_keys()
         settings = {
             "data_dir": config["LATENT_SCOPE_DATA"],
-            "api_keys": [key for key in config if "_API_KEY" in key ],
-            "supported_api_keys": get_supported_api_keys(),
+            "api_keys": [key for key in config if key in supported_api_keys],
+            "supported_api_keys": supported_api_keys,
             "env_file": os.path.abspath(".env")
         }
         return jsonify(settings)
 
 @app.route('/api/version', methods=['GET'])
 def get_version():
+    print("GET VERSION", __version__)
     return __version__
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')

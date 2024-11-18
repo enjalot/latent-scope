@@ -4,6 +4,12 @@
   height: 100%;
 }
 
+.home .new {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+}
+
 .home .section {
   margin: 12px 24px;
 }
@@ -24,6 +30,16 @@
   border: 2px dashed #ccc;
   background-color: #f9f9f9;
   cursor: pointer;
+}
+
+.home .hf-downloader {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+  gap: 10px;
+  margin: 0 24px;
+  padding: 12px;
+  box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
 }
 
 
