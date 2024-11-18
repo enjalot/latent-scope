@@ -229,6 +229,7 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: hidden;
 }
 
 a {
@@ -246,7 +247,7 @@ body {
   /* place-items: center; */
   min-width: 320px;
   min-height: 100vh;
-  overflow-y: scroll;
+  overflow-y: hidden;
   scrollbar-width: none; /* For Firefox */
   -ms-overflow-style: none; /* For Internet Explorer and Edge */
   

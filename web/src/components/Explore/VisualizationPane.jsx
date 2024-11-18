@@ -164,10 +164,23 @@ function VisualizationPane({
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [vizConfig, setVizConfig] = useState({
     showHeatMap: false,
-    showClusterOutlines: false,
+    showClusterOutlines: true,
     pointSize: 1,
     pointOpacity: 1,
   });
+
+  useEffect(() => {
+    console.log('scopeRows', scopeRows);
+    if (scopeRows?.length <= 1000) {
+      setVizConfig((prev) => ({ ...prev, pointSize: 2 }));
+    } else if (scopeRows?.length <= 10000) {
+      setVizConfig((prev) => ({ ...prev, pointSize: 1 }));
+    } else if (scopeRows?.length <= 100000) {
+      setVizConfig((prev) => ({ ...prev, pointSize: 0.5 }));
+    } else {
+      setVizConfig((prev) => ({ ...prev, pointSize: 0.25 }));
+    }
+  }, [scopeRows]);
 
   const toggleShowHeatMap = useCallback(() => {
     setVizConfig((prev) => ({ ...prev, showHeatMap: !prev.showHeatMap }));
@@ -261,7 +274,7 @@ function VisualizationPane({
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
-            stroke="#9d9d9d"
+            stroke="#8d7d7d"
             fill="none"
             duration={200}
             strokeWidth={0.5}

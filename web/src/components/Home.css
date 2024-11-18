@@ -1,5 +1,7 @@
 .home {
   padding: 12px 12px;
+  overflow-y: scroll;
+  height: 100%;
 }
 
 .home .section {

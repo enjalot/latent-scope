@@ -265,9 +265,10 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
           d.indices.forEach((i) => {
             ci[i] = d.index;
             cl[i] = d.label;
-            cm[i] = d.index;
+            cm[i] = { cluster: d.index, label: d.label };
           });
         });
+        console.log('clusterMap', cm, cl, ci);
         setClusterIndices(ci);
         setClusterLabels(cl);
         setClusterMap(cm);
@@ -416,9 +417,9 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
                   <br />
                 </span>
               ) : null}
-              {clusterMap[hoveredIndex] >= 0 ? (
+              {clusterMap[hoveredIndex]?.cluster >= 0 ? (
                 <span>
-                  {clusterLabels[hoveredIndex]}
+                  {clusterMap[hoveredIndex].label}
                   <br />
                 </span>
               ) : null}

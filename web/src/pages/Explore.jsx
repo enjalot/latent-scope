@@ -17,7 +17,6 @@ import NearestNeighbor from '../components/Explore/NearestNeighbor';
 import ClusterFilter from '../components/Explore/ClusterFilter';
 import ColumnFilter from '../components/Explore/ColumnFilter';
 import BulkActions from '../components/Explore/BulkActions';
-import ConfigurationPanel from '../components/Explore/ConfigurationPanel';
 
 import FilterDataTable from '../components/FilterDataTable';
 
@@ -509,7 +508,7 @@ function Explore() {
             />
 
             {/* row 3: tags */}
-            <div
+            {/* <div
               className={`filter-row tags-box ${
                 filterTagIndices(tagset[tag] || [])?.length ? 'active' : ''
               }`}
@@ -580,16 +579,16 @@ function Explore() {
                   </form>
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* row 4: column filters */}
-            {/* <ColumnFilter
+            <ColumnFilter
               columnFilters={columnFilters}
               columnIndices={columnIndices}
               columnFiltersActive={columnFiltersActive}
               setColumnFiltersActive={setColumnFiltersActive}
               setColumnIndices={setColumnIndices}
-            /> */}
+            />
 
             <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
               <div className="filter-cell left filter-description">
@@ -676,6 +675,7 @@ function Explore() {
               height={tableHeight}
               dataset={dataset}
               scope={scope}
+              scopeRows={scopeRows}
               indices={intersectedIndices}
               deletedIndices={deletedIndices}
               distances={distances}

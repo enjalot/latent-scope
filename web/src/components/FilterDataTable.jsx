@@ -51,12 +51,12 @@ FilterDataTable.propTypes = {
 
 const ROWS_PER_PAGE = 100;
 
-function RowWithHover({ key, props, onHover }) {
+function RowWithHover({ props, onHover }) {
   const { row } = props;
   const { ls_index } = row;
   return (
     <Row
-      key={key}
+      key={ls_index}
       {...props}
       onMouseEnter={() => {
         onHover(ls_index);
@@ -72,6 +72,7 @@ function FilterDataTable({
   height,
   dataset,
   scope,
+  // scopeRows,
   indices = [],
   distances = [],
   clusterMap = {},
@@ -184,6 +185,15 @@ function FilterDataTable({
                 }
               });
             }
+            // if (scopeRows?.length) {
+            //   rows.forEach((r) => {
+            //     let ri = r['ls_index'];
+            //     let sr = scopeRows[ri];
+            //     if (sr) {
+            //       r['ls_cluster'] = { cluster: sr.cluster, label: sr.label };
+            //     }
+            //   });
+            // }
 
             if (distances && distances.length) {
               rows.forEach((r) => {
@@ -203,13 +213,15 @@ function FilterDataTable({
 
   const formattedColumns = useMemo(() => {
     let columns = ['ls_index'];
+    // Text column is always the first column (after index)
+    columns.push(dataset.text_column);
+
     if (distances && distances.length) columns.push('ls_similarity');
     if (showEmbeddings) columns.push('ls_embedding');
     if (sae_id) columns.push('ls_features');
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
     // if (tagset && Object.keys(tagset).length) columns.push('tags');
 
-    columns.push(dataset.text_column);
     columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
 
     let columnDefs = columns.map((col) => {
@@ -262,12 +274,12 @@ function FilterDataTable({
           width: 200,
           renderCell({ row }) {
             const ls_cluster = row.ls_cluster;
-            const cluster = clusterMap[ls_cluster.cluster];
-            const { cluster: cluster_id, label } = cluster;
+            // const cluster = clusterMap[ls_cluster.cluster];
+            // const { cluster: cluster_id, label } = cluster;
 
             return (
               <span>
-                {cluster_id}: {label}
+                {ls_cluster.cluster}: {ls_cluster.label}
               </span>
             );
           },

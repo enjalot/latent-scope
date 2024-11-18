@@ -262,6 +262,8 @@
   flex-grow: 1;
   padding: 4px;
   text-align: left;
+  display: flex;
+  gap: 6px;
 }
 
 .filters-container .filter-cell.left,
