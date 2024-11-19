@@ -31,6 +31,7 @@ function VisualizationPane({
   hoveredCluster,
   slide,
   scope,
+  hoveredIndex,
   onScatter,
   onSelect,
   onHover,
@@ -83,9 +84,18 @@ function VisualizationPane({
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
+      if (hoveredIndex !== null) {
+        if (i === hoveredIndex) {
+          return [p.x, p.y, mapSelectionKey.hovered];
+        } else {
+          return [p.x, p.y, mapSelectionKey.notSelected];
+        }
+      }
       // if (deletedIndices?.includes(i)) {
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
+      } else if (hoveredIndex === i) {
+        return [p.x, p.y, mapSelectionKey.hovered];
       } else if (intersectedIndices?.includes(i)) {
         return [p.x, p.y, mapSelectionKey.selected];
       } else if (intersectedIndices?.length) {
@@ -94,7 +104,7 @@ function VisualizationPane({
         return [p.x, p.y, mapSelectionKey.normal];
       }
     });
-  }, [scopeRows, intersectedIndices]);
+  }, [scopeRows, intersectedIndices, hoveredIndex]);
 
   const points = useMemo(() => {
     return scopeRows
@@ -205,6 +215,15 @@ function VisualizationPane({
     return mapSelectionOpacity.map((d) => d * vizConfig.pointOpacity);
   }, [vizConfig.pointOpacity]);
 
+  console.log({
+    hoveredCluster,
+    hoverAnnotations,
+    intersectedIndices,
+    slide,
+    hovered,
+    hoveredIndex,
+  });
+
   return (
     // <div style={{ width, height }} ref={umapRef}>
     <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
@@ -273,7 +292,8 @@ function VisualizationPane({
           <HullPlot
             hulls={hulls}
             // stroke="#E7C7AA"
-            stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
+            // stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
+            stroke="#d4b297"
             fill="none"
             duration={200}
             strokeWidth={0.15}
@@ -287,7 +307,8 @@ function VisualizationPane({
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            fill="#DCAD82"
+            // fill="#DCAD82"
+            fill="none"
             stroke="#FDCFC9"
             strokeWidth={2}
             opacity={0.25}
@@ -300,7 +321,7 @@ function VisualizationPane({
         )}
 
         {/* Cluster is selected via filter */}
-        {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
+        {/* {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={clusterHulls}
             fill="#D3965E"
@@ -313,12 +334,12 @@ function VisualizationPane({
             width={width}
             height={height}
           />
-        )}
+        )} */}
 
         <AnnotationPlot
           points={hoverAnnotations}
           stroke="black"
-          fill="orange"
+          fill="purple"
           size="16"
           xDomain={xDomain}
           yDomain={yDomain}
@@ -341,7 +362,7 @@ function VisualizationPane({
       </div>
 
       {/* Hover information display */}
-      {hovered && (
+      {/* {hovered && (
         <div
           data-tooltip-id="featureTooltip"
           style={{
@@ -381,7 +402,7 @@ function VisualizationPane({
             <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
           </div>
         </Tooltip>
-      )}
+      )} */}
 
       {/* {!isMobileDevice() && (
               <div className="hovered-point">
