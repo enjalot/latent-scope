@@ -69,60 +69,49 @@ function Export() {
   return (
     <div className={styles['page']}>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={navigateToScope} />
-      <div className={styles['header']}>
-        <h2>
-          Export Data for {dataset?.id} {scopeId}
-        </h2>
-        <p>
-          {hasHFKey ? (
-            <div>
-              <HFUpload dataset={dataset} scope={scope} />
-            </div>
-          ) : (
-            <div>
-              <Link to="/settings">Setup Hugging Face API Key</Link>
-            </div>
-          )}
-        </p>
-        {/* <Link to={`/datasets/${datasetId}/setup/${scopeId}`}>
-          Setup {dataset?.id} {scopeId}
-        </Link>
-        {scopeId ? (
-          <Link to={`/datasets/${datasetId}/explore/${scopeId}`}>
-            Explore {dataset?.id} {scopeId}
-          </Link>
-        ) : null}
-        {scopeId ? (
-          <Link to={`/datasets/${datasetId}/plot/${scopeId}`}>
-            Export Plot {dataset?.id} {scopeId}
-          </Link>
-        ) : null} */}
-      </div>
-      <div className={styles['scope-files']}>
-        <h3>Scope {scopeId}</h3>
-        <p className={styles['description']}>
-          These files combine the data from each step into a single parquet (x,y from UMAP, cluster
-          and label from clustering and labeling) and the metadata into a single JSON.
-        </p>
-        <ul>
-          {datasetFiles
-            .filter((d) => d[0].indexOf(scopeId) == 0 && d[0].indexOf('transactions') < 0)
-            .map(fileLink)}
-        </ul>
-      </div>
-      <div className={styles['dataset-files']}>
-        <h3>Dataset</h3>
-        <ul>{datasetFiles.filter((d) => d[1] == '.').map(fileLink)}</ul>
-        <h3>Embeddings</h3>
-        <ul>{datasetFiles.filter((d) => d[1] == 'embeddings').map(fileLink)}</ul>
-        <h3>Umaps</h3>
-        <ul>{datasetFiles.filter((d) => d[1] == 'umaps').map(fileLink)}</ul>
-        <h3>Clusters</h3>
-        <ul>{datasetFiles.filter((d) => d[1] == 'clusters').map(fileLink)}</ul>
-        <h3>Scopes</h3>
-        <ul>{datasetFiles.filter((d) => d[1] == 'scopes').map(fileLink)}</ul>
-        <h3>tags</h3>
-        <ul>{datasetFiles.filter((d) => d[1] == 'tags').map(fileLink)}</ul>
+      <div className={styles['content']}>
+        <div className={styles['header']}>
+          <h2>
+            Export Data for {dataset?.id} {scopeId}
+          </h2>
+          <p>
+            {hasHFKey ? (
+              <div>
+                <HFUpload dataset={dataset} scope={scope} />
+              </div>
+            ) : (
+              <div>
+                <Link to="/settings">Setup Hugging Face API Key</Link>
+              </div>
+            )}
+          </p>
+        </div>
+        <div className={styles['scope-files']}>
+          <h3>Scope {scopeId}</h3>
+          <p className={styles['description']}>
+            These files combine the data from each step into a single parquet (x,y from UMAP,
+            cluster and label from clustering and labeling) and the metadata into a single JSON.
+          </p>
+          <ul>
+            {datasetFiles
+              .filter((d) => d[0].indexOf(scopeId) == 0 && d[0].indexOf('transactions') < 0)
+              .map(fileLink)}
+          </ul>
+        </div>
+        <div className={styles['dataset-files']}>
+          <h3>Dataset</h3>
+          <ul>{datasetFiles.filter((d) => d[1] == '.').map(fileLink)}</ul>
+          <h3>Embeddings</h3>
+          <ul>{datasetFiles.filter((d) => d[1] == 'embeddings').map(fileLink)}</ul>
+          <h3>Umaps</h3>
+          <ul>{datasetFiles.filter((d) => d[1] == 'umaps').map(fileLink)}</ul>
+          <h3>Clusters</h3>
+          <ul>{datasetFiles.filter((d) => d[1] == 'clusters').map(fileLink)}</ul>
+          <h3>Scopes</h3>
+          <ul>{datasetFiles.filter((d) => d[1] == 'scopes').map(fileLink)}</ul>
+          <h3>tags</h3>
+          <ul>{datasetFiles.filter((d) => d[1] == 'tags').map(fileLink)}</ul>
+        </div>
       </div>
     </div>
   );
