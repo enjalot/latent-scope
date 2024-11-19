@@ -73,6 +73,9 @@ function Umap({}) {
         }
         // onNew(umps, ump)
         setUmap(ump);
+        setTimeout(() => {
+          setUmapJob(null);
+        }, 500);
       });
     }
   }, [umapJob, dataset, setUmaps]);

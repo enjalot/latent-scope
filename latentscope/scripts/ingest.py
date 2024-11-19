@@ -116,7 +116,7 @@ def ingest(dataset_id, df, text_column = None):
             "type": column_type,
             "unique_values_count": unique_values_count
         }
-        if column_type == "string" and unique_values_count <= 20:
+        if column_type == "string" and unique_values_count <= 100:
             categories = df[column].value_counts().index.tolist()
             column_metadata[column]["categories"] = categories
             column_metadata[column]["counts"] = df[column].value_counts().to_dict()

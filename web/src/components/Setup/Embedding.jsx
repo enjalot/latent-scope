@@ -90,7 +90,7 @@ function Embedding() {
       apiService.fetchEmbeddings(dataset?.id).then((embs) => setEmbeddings(embs));
       apiService.fetchUmaps(dataset?.id).then((ums) => setUmaps(ums));
       apiService.fetchClusters(dataset?.id).then((cls) => setClusters(cls));
-      apiService.fetchSaes(dataset?.id).then((saes) => setSaes(saes));
+      // apiService.fetchSaes(dataset?.id).then((saes) => setSaes(saes));
       setTextColumn(dataset?.text_column);
     }
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
@@ -191,6 +191,7 @@ function Embedding() {
         console.log('new embedding', emb);
         setEmbedding(emb);
         fetchRecentModels();
+        setEmbeddingsJob(null);
       });
     }
   }, [embeddingsJob, datasetId, setEmbeddings, fetchRecentModels]);
@@ -227,25 +228,34 @@ function Embedding() {
   useEffect(() => {
     // check that the job is for the importer and if its complete remove the potential embedding
     if (
+      dataset &&
       embeddingsJob &&
       embeddingsJob.status === 'completed' &&
       embeddingsJob.job_name === 'embed-importer'
     ) {
       // we need to split our command to get the name of the embedding
       let commandParts = embeddingsJob.command.match(/(?:[^\s"']+|["'][^"']*["'])+/g);
-      let pe = commandParts[2].replace(/['"]+/g, '').filter((d) => d !== pe);
+      console.log('command parts', commandParts);
+      console.log('sup', commandParts[2].replace(/['"]+/g, ''));
+      let pe = commandParts[2].replace(/['"]+/g, '');
+      let peList = dataset.potential_embeddings.filter((d) => d !== pe);
+      console.log('dataset', dataset);
+      console.log('potential embedding', peList);
       apiService
-        .updateDataset(datasetId, 'potential_embeddings', pe)
+        .updateDataset(dataset.id, 'potential_embeddings', JSON.stringify(peList))
         .then((data) => setDataset(data));
     }
-  }, [embeddingsJob, datasetId, setDataset]);
+  }, [embeddingsJob, dataset, setDataset]);
 
   const handleDenyPotentialEmbedding = useCallback(
     (e, pe) => {
       e.preventDefault();
-      apiService.updateDataset(datasetId, 'potential_embeddings', pe);
+      let peList = dataset.potential_embeddings.filter((d) => d !== pe);
+      apiService
+        .updateDataset(dataset.id, 'potential_embeddings', JSON.stringify(peList))
+        .then((data) => setDataset(data));
     },
-    [datasetId]
+    [dataset, setDataset]
   );
 
   const handleNewEmbedding = useCallback(
@@ -372,20 +382,18 @@ function Embedding() {
                       </select>
                     </label>
                     <div className={styles['pe-buttons']}>
-                      <span
+                      <Button
                         className={`${styles['button']} button`}
-                        style={{ borderColor: 'green' }}
+                        color="secondary"
                         onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}
-                      >
-                        ✅ Yes
-                      </span>
-                      <span
+                        text="✅ Yes"
+                      />
+                      <Button
                         className={`${styles['button']} button`}
-                        style={{ borderColor: 'red' }}
+                        color="secondary"
                         onClick={(e) => handleDenyPotentialEmbedding(e, pe)}
-                      >
-                        ❌ No thanks
-                      </span>
+                        text="❌ No thanks"
+                      />
                     </div>
                   </form>
                 );

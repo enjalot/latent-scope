@@ -122,9 +122,10 @@ function ClusterLabels() {
   const [allOptionsGrouped, setAllOptionsGrouped] = useState([]);
   const [defaultModel, setDefaultModel] = useState(null);
   useEffect(() => {
-    const am = recentModels
+    const am = [presetModels[0]]
+      .concat(recentModels)
       .concat(HFModels)
-      .concat(presetModels)
+      .concat(presetModels.slice(1))
       .filter((d) => !!d);
     let allOptions = am
       .map((m) => {
@@ -216,6 +217,9 @@ function ClusterLabels() {
       if (!found) {
         setSelected('default');
       }
+      setTimeout(() => {
+        setClusterLabelsJob(null);
+      }, 500);
     }
   }, [clusterLabelsJob, clusterLabelSets, setSelected]);
 
@@ -304,7 +308,7 @@ function ClusterLabels() {
               <input
                 type="number"
                 name="samples"
-                value={10}
+                defaultValue={10}
                 min={0}
                 disabled={!!clusterLabelsJob || !cluster}
               />
@@ -321,8 +325,8 @@ function ClusterLabels() {
               <input
                 type="number"
                 name="max_tokens"
-                value={chatModel?.params?.max_tokens || 8192}
-                min={0}
+                defaultValue={chatModel?.params?.max_tokens || 8192}
+                min={-1}
                 disabled={!!clusterLabelsJob || !cluster}
               />
               <span className="tooltip" data-tooltip-id="max_tokens">
