@@ -123,7 +123,7 @@ function Explore() {
       const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
       setSelectedIndices(nonDeletedIndices);
       // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-      // scatter?.zoomToPoints(nonDeletedIndices, { transition: true })
+      scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
     },
     [setSelectedIndices]
   );
@@ -220,10 +220,17 @@ function Explore() {
     if (slide) {
       const annots = scopeRows.filter((d) => d.cluster == slide.cluster);
       setSlideAnnotations(annots);
+      scatter?.zoomToPoints(
+        annots.map((d) => d.ls_index),
+        { transition: true, transitionDuration: 1500, padding: 1.5 }
+      );
     } else {
+      console.log('==== no slide', scatter);
       setSlideAnnotations([]);
-      if (scatter && scatter.config) {
-        // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+      if (scatter && scatter.zoomToOrigin) {
+        console.log('==== zoom to origin', scatter.zoomToOrigin);
+        // scatter?.zoomToLocation([0, 0], 1);
+        scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
       }
     }
   }, [slide, scopeRows, scatter, setSlideAnnotations]);
@@ -254,11 +261,14 @@ function Explore() {
   // Handlers for responding to individual data points
   const handleClicked = useCallback(
     (index) => {
-      scatter?.zoomToPoints([index], {
-        transition: true,
-        padding: 0.9,
-        transitionDuration: 1500,
-      });
+      console.log('====clicked====', index);
+      // if (scatter && scatter.zoomToPoints) {
+      //   scatter?.zoomToPoints([index], {
+      //     transition: true,
+      //     padding: 0.9,
+      //     transitionDuration: 1500,
+      //   });
+      // }
     },
     [scatter]
   );

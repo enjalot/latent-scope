@@ -352,7 +352,7 @@ function VisualizationPane({
           }}
         ></div>
       )}
-      {hovered && (
+      {/* {hovered && (
         <Tooltip
           id="featureTooltip"
           isOpen={hovered !== null}
@@ -381,7 +381,7 @@ function VisualizationPane({
             <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
           </div>
         </Tooltip>
-      )}
+      )} */}
 
       {/* {!isMobileDevice() && (
               <div className="hovered-point">
