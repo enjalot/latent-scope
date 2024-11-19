@@ -84,7 +84,7 @@ function VisualizationPane({
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
-      if (hoveredIndex === null) {
+      if (hoveredIndex !== null) {
         if (hoveredIndex === i) {
           return [p.x, p.y, mapSelectionKey.hovered];
         } else {
@@ -280,22 +280,22 @@ function VisualizationPane({
         )}
 
         {/* show all the hulls */}
-        {vizConfig.showClusterOutlines && hulls.length && (
+        {/* {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
             // stroke="#8d7d7d"
             stroke="#d4b297"
             fill="none"
             duration={200}
-            strokeWidth={0.5}
+            strokeWidth={0.35}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
-        )}
+        )} */}
 
-        {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
+        {/* {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
             // fill="lightgray"
@@ -311,7 +311,7 @@ function VisualizationPane({
             width={width}
             height={height}
           />
-        )}
+        )} */}
 
         {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
@@ -320,8 +320,8 @@ function VisualizationPane({
             // stroke="gray"
             fill="#d28440"
             stroke="#CC5500"
-            strokeWidth={2.5}
-            opacity={0.5}
+            strokeWidth={0.5}
+            opacity={0.35}
             duration={0}
             xDomain={xDomain}
             yDomain={yDomain}
@@ -356,7 +356,7 @@ function VisualizationPane({
       </div>
 
       {/* Hover information display */}
-      {hovered && (
+      {/* {hovered && (
         <div
           data-tooltip-id="featureTooltip"
           style={{
@@ -385,7 +385,6 @@ function VisualizationPane({
           }}
         >
           <div className="tooltip-content">
-            {/* {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null} */}
             {hoveredCluster && (
               <span>
                 <span className="key">Cluster {hoveredCluster.cluster}: </span>
@@ -397,7 +396,7 @@ function VisualizationPane({
             <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
           </div>
         </Tooltip>
-      )}
+      )} */}
 
       {/* {!isMobileDevice() && (
               <div className="hovered-point">

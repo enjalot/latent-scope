@@ -30,6 +30,6 @@ export const mapPointSizeRange = [
   3, // normal
   6, // selected
   3, // not selected
-  100, // hovered
+  10, // hovered
   0, // hidden
 ];
