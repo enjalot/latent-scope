@@ -413,7 +413,8 @@
 .full-screen-explore-container {
   position: relative;
   display: grid;
-  grid-template-columns: 33% 1fr;
+  /* grid-template-columns: 66% 1fr; */
+  grid-template-columns: 50% 1fr;
   background: #fefefe;
   flex-grow: 1;
 }
