@@ -17,6 +17,7 @@ import {
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
+import useDebounce from '../../hooks/useDebounce';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -214,6 +215,18 @@ function VisualizationPane({
     return mapSelectionOpacity.map((d) => d * vizConfig.pointOpacity);
   }, [vizConfig.pointOpacity]);
 
+  // Create a debounced tooltip state
+  const tooltipData = hovered
+    ? {
+        hovered,
+        hoveredCluster,
+        scope,
+        tooltipPosition,
+      }
+    : null;
+
+  const debouncedTooltipData = useDebounce(tooltipData, 5);
+
   return (
     <div className="umap-container" ref={umapRef}>
       <div className={styles.configToggleContainer}>
@@ -359,47 +372,49 @@ function VisualizationPane({
       </div>
 
       {/* Hover information display */}
-      {/* {hovered && (
+      {debouncedTooltipData && (
         <div
           data-tooltip-id="featureTooltip"
           style={{
             position: 'absolute',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
+            left: debouncedTooltipData.tooltipPosition.x,
+            top: debouncedTooltipData.tooltipPosition.y - 10,
             pointerEvents: 'none',
           }}
         ></div>
       )}
-      {hovered && (
+      {debouncedTooltipData && (
         <Tooltip
           id="featureTooltip"
-          isOpen={hovered !== null}
+          isOpen={debouncedTooltipData !== null}
           delayShow={0}
           delayHide={0}
           delayUpdate={0}
           className="tooltip-area"
           style={{
             position: 'absolute',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
+            left: debouncedTooltipData.tooltipPosition.x,
+            top: debouncedTooltipData.tooltipPosition.y,
             pointerEvents: 'none',
             maxWidth: '400px',
-            backgroundColor: hovered?.ls_search_index >= 0 ? '#111' : '#666',
+            backgroundColor: debouncedTooltipData.hovered?.ls_search_index >= 0 ? '#111' : '#666',
           }}
         >
           <div className="tooltip-content">
-            {hoveredCluster && (
+            {debouncedTooltipData.hoveredCluster && (
               <span>
-                <span className="key">Cluster {hoveredCluster.cluster}: </span>
-                <span className="value">{hoveredCluster.label}</span>
+                <span className="key">Cluster {debouncedTooltipData.hoveredCluster.cluster}: </span>
+                <span className="value">{debouncedTooltipData.hoveredCluster.label}</span>
               </span>
             )}
             <br></br>
-            <span>Index: {hovered.index}</span>
-            <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
+            <span>Index: {debouncedTooltipData.hovered.index}</span>
+            <p className="tooltip-text">
+              {debouncedTooltipData.hovered[debouncedTooltipData.scope?.embedding?.text_column]}
+            </p>
           </div>
         </Tooltip>
-      )} */}
+      )}
 
       {/* {!isMobileDevice() && (
               <div className="hovered-point">

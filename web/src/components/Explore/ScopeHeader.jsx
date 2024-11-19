@@ -8,7 +8,7 @@ import { isMobileDevice } from '../../utils';
 
 const readonly = import.meta.env.MODE == 'read_only';
 
-function DatasetHeader({ hoveredCluster, hovered, dataset, scope, tags, deletedIndices }) {
+function DatasetHeader({ dataset, scope, tags, deletedIndices }) {
   if (!dataset) return null;
 
   const [lsVersion, setLsVersion] = useState(null);
@@ -16,24 +16,6 @@ function DatasetHeader({ hoveredCluster, hovered, dataset, scope, tags, deletedI
   useEffect(() => {
     apiService.fetchVersion().then(setLsVersion);
   }, []);
-
-  if (hoveredCluster && hovered) {
-    return (
-      <div className="summary" style={{ height: '192px' }}>
-        <div className="scope-card">
-          {hoveredCluster && (
-            <span>
-              <span className="key">Cluster {hoveredCluster.cluster}: </span>
-              <span className="value">{hoveredCluster.label}</span>
-            </span>
-          )}
-          <br></br>
-          <span>Index: {hovered.index}</span>
-          <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="summary">

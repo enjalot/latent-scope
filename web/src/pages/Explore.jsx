@@ -449,8 +449,6 @@ function Explore() {
             tags={tags}
             scope={scope}
             deletedIndices={deletedIndices}
-            hoveredCluster={hoveredCluster}
-            hovered={hovered}
           />
 
           {scopeRows?.length ? (
