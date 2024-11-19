@@ -448,9 +448,9 @@ function Explore() {
             dataset={dataset}
             tags={tags}
             scope={scope}
-            scopes={scopes}
             deletedIndices={deletedIndices}
-            onScopeChange={handleScopeChange}
+            hoveredCluster={hoveredCluster}
+            hovered={hovered}
           />
 
           {scopeRows?.length ? (

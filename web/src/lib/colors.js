@@ -14,13 +14,13 @@ export const mapSelectionKey = {
 // ]
 export const mapSelectionColorsLight = [
   '#b87333', // 0, normal
-  '#945e2b', // 1, selected
-  '#945e2b', // 2, selected. opacity is lower
-  '#945e2b', // 3, hovered
+  '#b87333', // 1, selected
+  '#b87333', // 2, not selected
+  '#b87333', // 3, hovered
   '#fcfbfd', // 99, hidden
 ];
 export const mapSelectionOpacity = [
-  0.1, // normal
+  0.33, // normal
   0.85, // selected
   0.1, // not selected
   1, // hovered

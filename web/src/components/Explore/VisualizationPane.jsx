@@ -280,7 +280,7 @@ function VisualizationPane({
         )}
 
         {/* show all the hulls */}
-        {/* {vizConfig.showClusterOutlines && hulls.length && (
+        {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
             // stroke="#8d7d7d"
@@ -288,30 +288,32 @@ function VisualizationPane({
             fill="none"
             duration={200}
             strokeWidth={0.35}
+            strokeOpacity={0.35}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
-        )} */}
+        )}
 
-        {/* {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
+        {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
             // fill="lightgray"
             fill="#d28440"
-            stroke="#CC5500"
-            strokeWidth={2.5}
+            stroke="#FF8C00"
+            strokeWidth={0.35}
             // if there are selected indices already, that means other points will be less visible
             // so we can make the hull a bit more transparent
-            opacity={intersectedIndices?.length ? 0.15 : 0.5}
+            opacity={intersectedIndices?.length ? 0.15 : 0.35}
+            strokeOpacity={1}
             duration={0}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
-        )} */}
+        )}
 
         {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
@@ -321,6 +323,7 @@ function VisualizationPane({
             fill="#d28440"
             stroke="#CC5500"
             strokeWidth={0.5}
+            strokeOpacity={1}
             opacity={0.35}
             duration={0}
             xDomain={xDomain}

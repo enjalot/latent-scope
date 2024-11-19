@@ -18,11 +18,11 @@ const HullPlot = ({
   duration = 2000,
   strokeWidth,
   opacity = 0.75,
-  symbol,
+  strokeOpacity = 1,
   xDomain,
   yDomain,
   width,
-  height
+  height,
 }) => {
   const svgRef = useRef();
   const prevPoints = useRef();
@@ -33,10 +33,12 @@ const HullPlot = ({
     if (!xDomain || !yDomain || !hulls.length) return;
 
     // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
-    const hullsChanged = !prevHulls.current || (JSON.stringify(hulls.slice(0, 10)) !== JSON.stringify(prevHulls.current.slice(0, 10)))
+    const hullsChanged =
+      !prevHulls.current ||
+      JSON.stringify(hulls.slice(0, 10)) !== JSON.stringify(prevHulls.current.slice(0, 10));
     // const pointsChanged = !prevPoints.current || (JSON.stringify(points[0]) !== JSON.stringify(prevPoints.current[0]))
 
-    if(!hullsChanged) return;
+    if (!hullsChanged) return;
     // if(!hullsChanged || !pointsChanged) {
     //   return
     // }
@@ -49,133 +51,132 @@ const HullPlot = ({
 
     // Calculate translation to center the drawing at (0,0)
     // This centers the view at (0,0) and accounts for the SVG's inverted y-axis
-    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0]) / 2);
-    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0]) / 2);
+    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0])) / 2;
+    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0])) / 2;
 
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    const g = svg.select("g.hull-container");
-    g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
+    const g = svg.select('g.hull-container');
+    g.attr(
+      'transform',
+      `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
+    );
 
     const draw = line()
-      .x(d => d?.[0])
-      .y(d => -d?.[1])
+      .x((d) => d?.[0])
+      .y((d) => -d?.[1])
       // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
-    let sel = g.selectAll("path.hull")
-      .data(hulls)
-    
-    const exit = sel.exit()
+    let sel = g.selectAll('path.hull').data(hulls);
+
+    const exit = sel
+      .exit()
       // .transition()
       // .duration(duration)
       // .delay(delay)
       // .ease(easeExpOut)
       // .style("opacity", 0)
-        .remove()
+      .remove();
 
-    const enter = sel.enter()
-      .append("path")
-        .classed("hull", true)
-        .attr("d", draw)
-        .style("fill", fill)
-        .style("stroke", stroke)
-        .style("stroke-width", scaledStrokeWidth)
-        .style("opacity", 0.)
-        // .transition()
-        //   .delay(delay + 100)
-        //   .duration(duration - 100)
-        //   .ease(easeExpOut)
-          .style("opacity", opacity)
+    const enter = sel
+      .enter()
+      .append('path')
+      .classed('hull', true)
+      .attr('d', draw)
+      .style('fill', fill)
+      .style('stroke', stroke)
+      .style('stroke-width', scaledStrokeWidth)
+      .style('stroke-opacity', strokeOpacity)
+      .style('opacity', opacity);
 
     const update = sel
-      // .transition() 
+      // .transition()
       // .duration(duration)
       // .delay(delay)
       // .ease(easeCubicInOut)
-      .style("opacity", opacity)
-      .attr("d", draw)
-      // .attrTween("d", function(d,i) {
-      //   // console.log("d,i", d, i)
-      //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
-      //   const prev = prevHulls.current ? prevHulls.current[i] : null
-      //   // console.log(d, prev)
-      //   if(!prev) return () => draw(d)
-      //   const inter = interpolate(
-      //     draw(prev),
-      //     draw(d)
-      //   );
-      //   return function(t) {
-      //     return inter(t)
-      //   }
-      // })
-
+      .style('opacity', opacity)
+      .style('stroke-opacity', strokeOpacity)
+      .attr('d', draw);
+    // .attrTween("d", function(d,i) {
+    //   // console.log("d,i", d, i)
+    //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
+    //   const prev = prevHulls.current ? prevHulls.current[i] : null
+    //   // console.log(d, prev)
+    //   if(!prev) return () => draw(d)
+    //   const inter = interpolate(
+    //     draw(prev),
+    //     draw(d)
+    //   );
+    //   return function(t) {
+    //     return inter(t)
+    //   }
+    // })
 
     setTimeout(() => {
-      prevHulls.current = hulls
+      prevHulls.current = hulls;
       // prevHulls.current = mod
       // prevPoints.current = points
-    }, duration)
-
-  }, [hulls])
+    }, duration);
+  }, [hulls]);
 
   // This effect will rerender instantly when the fill, stroke, strokeWidth, or domain changes
   useEffect(() => {
-    if (!xDomain || !yDomain || !hulls.length ) return;
+    if (!xDomain || !yDomain || !hulls.length) return;
     const svg = select(svgRef.current);
 
     // Calculate scale factors
-     // The scale factors are calculated to fit the -1 to 1 domain within the current xDomain and yDomain
+    // The scale factors are calculated to fit the -1 to 1 domain within the current xDomain and yDomain
     const xScaleFactor = width / (xDomain[1] - xDomain[0]);
     const yScaleFactor = height / (yDomain[1] - yDomain[0]);
 
     // Calculate translation to center the drawing at (0,0)
     // This centers the view at (0,0) and accounts for the SVG's inverted y-axis
-    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0]) / 2);
-    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0]) / 2);
+    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0])) / 2;
+    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0])) / 2;
 
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    const g = svg.select("g.hull-container");
-    g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
+    const g = svg.select('g.hull-container');
+    g.attr(
+      'transform',
+      `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
+    );
 
     const draw = line()
-      .x(d => d?.[0])
-      .y(d => -d?.[1])
+      .x((d) => d?.[0])
+      .y((d) => -d?.[1])
       // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
     // Draw hulls
-    let sel = g.selectAll("path.hull")
-      .data(hulls)
-    sel.enter()
-      .append("path")
-        .classed("hull", true)
-        .attr("d", draw)
-        .style("fill", fill)
-        .style("stroke", stroke)
-        .attr("stroke-width", scaledStrokeWidth)
-        .style("opacity", opacity)
+    let sel = g.selectAll('path.hull').data(hulls);
+    sel
+      .enter()
+      .append('path')
+      .classed('hull', true)
+      .attr('d', draw)
+      .style('fill', fill)
+      .style('stroke', stroke)
+      .attr('stroke-width', scaledStrokeWidth)
+      .style('opacity', opacity);
 
-    sel.exit().remove()
+    sel.exit().remove();
 
-    sel.attr("d", draw)
-      .style("fill", fill)
-      .style("stroke", stroke)
-      .attr("stroke-width", scaledStrokeWidth)
-      .style("opacity", opacity)
-
-  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height])
+    sel
+      .attr('d', draw)
+      .style('fill', fill)
+      .style('stroke', stroke)
+      .attr('stroke-width', scaledStrokeWidth)
+      .style('opacity', opacity);
+  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height]);
 
   return (
-    <svg
-      ref={svgRef}
-      className="hull-plot"
-      width={width}
-      height={height}
-    ><g className="hull-container"></g></svg>
+    <svg ref={svgRef} className="hull-plot" width={width} height={height}>
+      <g className="hull-container"></g>
+    </svg>
   );
 };
 

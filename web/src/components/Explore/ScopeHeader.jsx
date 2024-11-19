@@ -8,7 +8,7 @@ import { isMobileDevice } from '../../utils';
 
 const readonly = import.meta.env.MODE == 'read_only';
 
-function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedIndices }) {
+function DatasetHeader({ hoveredCluster, hovered, dataset, scope, tags, deletedIndices }) {
   if (!dataset) return null;
 
   const [lsVersion, setLsVersion] = useState(null);
@@ -17,33 +17,27 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
     apiService.fetchVersion().then(setLsVersion);
   }, []);
 
+  if (hoveredCluster && hovered) {
+    return (
+      <div className="summary" style={{ height: '192px' }}>
+        <div className="scope-card">
+          {hoveredCluster && (
+            <span>
+              <span className="key">Cluster {hoveredCluster.cluster}: </span>
+              <span className="value">{hoveredCluster.label}</span>
+            </span>
+          )}
+          <br></br>
+          <span>Index: {hovered.index}</span>
+          <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="summary">
       <div className="scope-card">
-        {/* <div className="heading">
-          <span>{dataset?.id} &gt; </span>
-          <select
-            className="scope-selector"
-            onChange={(e) => onScopeChange(e.target.value)}
-            value={scope?.id}
-          >
-            {scopes.map((scopeOption) => (
-              <option key={scopeOption.id} value={scopeOption.id}>
-                {scopeOption.label} ({scopeOption.id})
-              </option>
-            ))}
-          </select>
-
-          {/* {!readonly && (
-            <>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-              <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>
-              <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>
-              </div>
-            </>
-          )}
-        </div> */}
-
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
 
         {scope?.ls_version ? (
