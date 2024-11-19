@@ -5,6 +5,7 @@ import sys
 import json
 import time
 import argparse
+from datetime import datetime
 
 try:
     # Check if the runtime environment is a Jupyter notebook
@@ -42,14 +43,15 @@ def main():
     parser.add_argument('samples', type=int, help='Number to sample from each cluster (default: 0 for all)', default=0)
     parser.add_argument('context', type=str, help='Additional context for labeling model', default="")
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
+    parser.add_argument('--max_tokens', type=int, help='Max tokens for the model', default=-1)
 
     # Parse arguments
     args = parser.parse_args()
 
-    labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.samples, args.context, args.rerun)
+    labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.samples, args.context, args.rerun, args.max_tokens)
 
 
-def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", samples=0, context="", rerun=""):
+def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", samples=0, context="", rerun="", max_tokens=-1):
     import numpy as np
     import pandas as pd
     DATA_DIR = get_data_dir()
@@ -82,33 +84,28 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
         else:
             next_label_number = 1
         label_id = f"{cluster_id}-labels-{next_label_number:03d}"
+
+    # track history of model_id used
+    history_file_path = os.path.join(DATA_DIR, "chat_model_history.csv")
+    try:
+        with open(history_file_path, 'a') as history_file:
+            history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
+    except FileNotFoundError:
+        with open(history_file_path, 'w') as history_file:
+            history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
+
     tqdm.write(f"RUNNING: {label_id}")
 
+    tqdm.write(f"Loading model {model_id} (may take a while if first time downloading from HF)")
     model = get_chat_model(model_id)
     model.load_model()
     enc = model.encoder
+    tqdm.write(f"Model loaded")
 
     # unescape the context
     context = context.replace('\\"', '"')
 
-    system_prompt = {"role":"system", "content": f"""You're job is to summarize lists of items with a short label of no more than 4 words. The items are part of a cluster and the label will be used to distinguish this cluster from others, so pay attention to what makes this group of similar items distinct.
-{context}
-The user will submit a list of items in the format:
-<ListItem>...</ListItem>
-<ListItem>...</ListItem>
-...
-
-You should choose a label that best summarizes the theme of the list so that someone browsing the labels will have a good idea of what is in the list. 
-Do not use punctuation, Do not explain yourself, respond with only a few words that summarize the list."""}
-
-    # TODO: why the extra 50 for openai?
-    max_tokens = model.params["max_tokens"] - len(enc.encode(system_prompt["content"])) - 50
-
     # Create the lists of items we will send for summarization
-    # Current looks like:
-    # 1. item 1
-    # 2. item 2
-    # ...
     # we truncate the list based on tokens and we also remove items that have too many duplicate words
     extracts = []
     for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
@@ -117,18 +114,37 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
         if samples > 0 and samples < len(items):
             items = items.sample(samples)
         items = items.drop_duplicates()
+        tokens = 0
+        keep_items = []
+        if max_tokens > 0:
+            while tokens < max_tokens:
+                for item in items:
+                    if item is None:
+                        continue
+                    encoded_item = enc.encode(item)
+                    if tokens + len(encoded_item) > max_tokens:
+                        break
+                    keep_items.append(item)
+                    tokens += len(encoded_item)
+                break
+        else:
+            keep_items = items
+        keep_items = [item for item in keep_items if item is not None]
+        extracts.append(keep_items)
+
         # text = '\n'.join([f"{i+1}. {t}" for i, t in enumerate(items) if not too_many_duplicates(t)])
-        text = '\n'.join([f"<ListItem>{t}</ListItem>" for i, t in enumerate(items) if not too_many_duplicates(t)])
-        encoded_text = enc.encode(text)
-        if len(encoded_text) > max_tokens:
-            encoded_text = encoded_text[:max_tokens]
-        extract = enc.decode(encoded_text)
-        extracts.append(extract)
+        # text = '\n'.join([f"<ListItem>{t}</ListItem>" for i, t in enumerate(items) if not too_many_duplicates(t)])
+        # encoded_text = enc.encode(text)
+        # if len(encoded_text) > max_tokens:
+        #     encoded_text = encoded_text[:max_tokens]
+        # extract = enc.decode(encoded_text)
+        # extracts.append(extract)
+
     # TODO we arent really batching these
+    # each "batch" is the items for a single cluster
     batch_size = 1
     labels = []
     clean_labels = []
-
 
     for i,batch in enumerate(tqdm(chunked_iterable(extracts, batch_size),  total=len(extracts)//batch_size)):
         # tqdm.write(batch[0])
@@ -140,10 +156,8 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
 
         try:
             time.sleep(0.01)
-            messages=[
-                system_prompt, {"role":"user", "content": "Here is a list of items, please summarize the list into a label using only a few words:\n" + batch[0]} # TODO hardcoded batch size
-            ]
-            label = model.chat(messages)
+            # tqdm.write(f"Summarizing {batch[0]}")
+            label = model.summarize(batch[0], context)
             labels.append(label)
             
             # do some cleanup of the labels when the model doesn't follow instructions
@@ -188,7 +202,7 @@ Do not use punctuation, Do not explain yourself, respond with only a few words t
             "text_column": text_column,
             "samples": samples,
             "context": context,
-            "system_prompt": system_prompt,
+            # "system_prompt": system_prompt,
             "max_tokens": max_tokens,
         }, f, indent=2)
     f.close()

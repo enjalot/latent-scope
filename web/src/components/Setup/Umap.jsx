@@ -183,7 +183,19 @@ function Umap({}) {
             </label>
             <label>
               <span className={styles['umap-form-label']}>Seed: </span>
-              <input type="text" name="seed" defaultValue="-1" disabled={!!umapJob} />
+              <input type="text" name="seed" defaultValue="42" disabled={!!umapJob} />
+              <span className="tooltip" data-tooltip-id="seed">
+                🤔
+              </span>
+              <Tooltip
+                id="seed"
+                place="top"
+                effect="solid"
+                className={`${styles['tooltip']} tooltip-area`}
+              >
+                The seed used to make the UMAP deterministic. Choose -1 for faster (parallel
+                computation) non-deterministic results.
+              </Tooltip>
             </label>
 
             <div className={styles['umap-form-align']}>

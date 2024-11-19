@@ -1,52 +1,43 @@
 [
-    {
-        "provider": "nltk",
-        "name": "top-words",
-        "id": "nltk-top-words",
-        "params": {
-            "max_tokens": 128000,
-            "top_words": 3
-        }
-    },
-    {
-        "provider": "openai",
-        "name": "gpt-4o",
-        "id": "openai-gpt-4o",
-        "params": {
-            "max_tokens": 128000
-        }
-    },
-    {
-        "provider": "openai",
-        "name": "gpt-4o-mini",
-        "id": "openai-gpt-4o-mini",
-        "params": {
-            "max_tokens": 128000
-        }
-    },
-    {
-        "provider": "openai",
-        "name": "gpt-4-turbo",
-        "id": "openai-gpt-4-turbo",
-        "params": {
-            "max_tokens": 128000
-        }
-    },
-    {
-        "provider": "openai",
-        "name": "gpt-4",
-        "id": "openai-gpt-4",
-        "params": {
-            "max_tokens": 8192
-        }
-    },    
-    {
-        "provider": "transformers",
-        "name": "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        "sanitized_name": "meta-llama___Meta-Llama-3.1-8B-Instruct",
-        "id": "transformers-meta-llama___Meta-Llama-3.1-8B-Instruct",
-        "params": {
-            "max_tokens": 128000
-        }
+  {
+    "provider": "nltk",
+    "name": "top-words",
+    "id": "nltk-top-words",
+    "params": {
+      "max_tokens": -1,
+      "top_words": 3
     }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-4o",
+    "id": "openai-gpt-4o",
+    "params": {
+      "max_tokens": 128000
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-4o-mini",
+    "id": "openai-gpt-4o-mini",
+    "params": {
+      "max_tokens": 128000
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-4-turbo",
+    "id": "openai-gpt-4-turbo",
+    "params": {
+      "max_tokens": 128000
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-4",
+    "id": "openai-gpt-4",
+    "params": {
+      "max_tokens": 8192
+    }
+  }
 ]

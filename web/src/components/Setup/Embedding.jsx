@@ -11,20 +11,12 @@ import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
 import { saeAvailable } from '../../lib/SAE';
+import { debounce } from '../../utils';
 
 import Sae from './Sae';
 import Preview from './Preview';
 
 import styles from './Embedding.module.scss';
-
-// Debounce function without importing all of lodash
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
-};
 
 function Embedding() {
   const {
@@ -106,7 +98,7 @@ function Embedding() {
   const [HFModels, setHFModels] = useState([]);
   const searchHFModels = useCallback((query) => {
     debounce(
-      apiService.searchHFModels(query).then((hfm) => {
+      apiService.searchHFSTModels(query).then((hfm) => {
         setHFModels(hfm);
       }),
       300
@@ -125,7 +117,7 @@ function Embedding() {
 
   const [recentModels, setRecentModels] = useState([]);
   const fetchRecentModels = useCallback(() => {
-    apiService.getRecentModels().then((data) => {
+    apiService.getRecentEmbeddingModels().then((data) => {
       setRecentModels(data?.slice(0, 3) || []);
     });
   }, []);

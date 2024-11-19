@@ -45,8 +45,11 @@ class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
         from openai import OpenAI
         import tiktoken
+        import outlines
         self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
         self.encoder = tiktoken.encoding_for_model(self.name)
+        self.model = outlines.models.openai(self.name, api_key=get_key("OPENAI_API_KEY"))
+        self.generator = outlines.generate.text(self.model)
 
 
     def chat(self, messages):
@@ -55,3 +58,8 @@ class OpenAIChatProvider(ChatModelProvider):
             messages=messages
         )
         return response.choices[0].message.content
+
+    def summarize(self, items, context=""):
+        from .prompts import summarize
+        prompt = summarize(items, context)
+        return self.generator(prompt)

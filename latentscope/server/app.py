@@ -90,7 +90,14 @@ def get_chat_models():
 
 @app.route('/api/embedding_models/recent', methods=['GET'])
 def get_recent_embedding_models():
-    recent_models_path = os.path.join(DATA_DIR, "embedding_model_history.csv")
+    return get_recent_models("embedding")
+
+@app.route('/api/chat_models/recent', methods=['GET'])
+def get_recent_chat_models():
+    return get_recent_models("chat")
+
+def get_recent_models(model_type="embedding"):
+    recent_models_path = os.path.join(DATA_DIR, f"{model_type}_model_history.csv")
     if not os.path.exists(recent_models_path):
         return jsonify([])
 

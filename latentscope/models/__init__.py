@@ -82,9 +82,22 @@ def get_chat_model_dict(id):
 
 def get_chat_model(id):
     """Returns a ModelProvider instance for the given model id."""
-    model = get_chat_model_dict(id)
+    # For backwards compatibility with the old preset transformers models
+    if id.startswith("transformers-"):
+        id = id.replace("transformers-", "🤗-")
+    if id.startswith("🤗-"):
+        # If the model id is a HF model, we get the model name
+        # by replacing "/" with "___"
+        model_name = id.split("🤗-")[1].replace("___", "/")
+        model = {
+            "provider": "🤗",
+            "name": model_name,
+            "params": {}
+        }
+    else:
+        model = get_chat_model_dict(id)
     
-    if model['provider'] == "transformers":
+    if model['provider'] == "🤗":
         return TransformersChatProvider(model['name'], model['params'])
     if model['provider'] == "openai":
         return OpenAIChatProvider(model['name'], model['params'])
