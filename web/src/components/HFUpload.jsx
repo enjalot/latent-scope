@@ -15,7 +15,7 @@ function HFUpload({ dataset, scope }) {
   );
 
   const [hfDataset, setHfDataset] = useState('');
-  const [isPrivate, setIsPrivate] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleUpload = useCallback(() => {
     const mainParquet = scope ? `scopes/${scope.id}-input.parquet` : 'input.parquet';
