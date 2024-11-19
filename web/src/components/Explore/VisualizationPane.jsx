@@ -274,7 +274,8 @@ function VisualizationPane({
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
-            stroke="#8d7d7d"
+            // stroke="#8d7d7d"
+            stroke="#d4b297"
             fill="none"
             duration={200}
             strokeWidth={0.5}

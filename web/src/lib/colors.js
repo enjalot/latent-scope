@@ -14,8 +14,7 @@ export const mapSelectionKey = {
 export const mapSelectionColorsLight = [
   '#b87333', // 0, normal
   '#945e2b', // 1, selected
-  '#997e7b', // 1, selected
-  // '#f9debe', // 2, not selected
+  '#997e7b', // 2, not selected
   '#fcfbfd', // 99, hidden
 ];
 export const mapSelectionOpacity = [
