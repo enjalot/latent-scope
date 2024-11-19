@@ -34,6 +34,7 @@ function VisualizationPane({
   onScatter,
   onSelect,
   onHover,
+  hoveredIndex,
   hovered,
   containerRef,
 }) {
@@ -83,6 +84,14 @@ function VisualizationPane({
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
+      if (hoveredIndex === null) {
+        if (hoveredIndex === i) {
+          return [p.x, p.y, mapSelectionKey.hovered];
+        } else {
+          return [p.x, p.y, mapSelectionKey.notSelected];
+        }
+      }
+
       // if (deletedIndices?.includes(i)) {
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
@@ -94,7 +103,7 @@ function VisualizationPane({
         return [p.x, p.y, mapSelectionKey.normal];
       }
     });
-  }, [scopeRows, intersectedIndices]);
+  }, [scopeRows, intersectedIndices, hoveredIndex]);
 
   const points = useMemo(() => {
     return scopeRows
