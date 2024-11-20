@@ -6,12 +6,14 @@ import { useStartJobPolling } from '../Job/Run';
 import { apiService, apiUrl } from '../../lib/apiService';
 import { debounce } from '../../utils';
 import { useSetup } from '../../contexts/SetupContext';
-import { Button, Select } from 'react-element-forge';
+import { Button, Modal } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
 
 import ModelSelect from '../ModelSelect';
 import JobProgress from '../Job/Progress';
 import DataTable from '../DataTable';
+import Settings from '../../pages/Settings';
+import SettingsModal from '../SettingsModal';
 import styles from './ClusterLabels.module.scss';
 
 function labelName(labelId) {
@@ -145,11 +147,11 @@ function ClusterLabels() {
     setAllModels(am);
 
     // we don't set a default option, so it's a more explicit choice of model
-    // const defaultOption = allOptions.find(option => option.name.indexOf("all-MiniLM-L6-v2") > -1);
-    // if (defaultOption && !defaultModel) {
-    //   setDefaultModel(defaultOption);
-    //   setChatModel(defaultOption.id);
-    // }
+    const defaultOption = allOptions.find((option) => option.id == 'nltk-top-words');
+    if (defaultOption && !defaultModel) {
+      setDefaultModel(defaultOption);
+      setChatModel(defaultOption.id);
+    }
   }, [presetModels, HFModels, recentModels, defaultModel]);
 
   const handleModelSelectChange = useCallback(
@@ -284,24 +286,15 @@ function ClusterLabels() {
           <form onSubmit={handleNewLabels}>
             <label>
               <span className={styles['cluster-labels-form-label']}>Chat Model:</span>
-              {/* <Select
-                id="chatModel"
-                disabled={!!clusterLabelsJob}
-                options={chatModels
-                  .filter((d) => clusterLabelSets?.indexOf(d.id) < 0)
-                  .map((model) => ({
-                    label: `${model.provider} - ${model.name}`,
-                    value: model.id,
-                  }))}
-                value={chatModel}
-                onChange={(e) => setChatModel(e.target.value)}
-              /> */}
               <ModelSelect
                 options={allOptionsGrouped}
                 defaultValue={defaultModel}
                 onChange={handleModelSelectChange}
                 onInputChange={searchHFModels}
               />
+            </label>
+            <label>
+              <SettingsModal tooltip="Configure API keys for 3rd party models or add custom models via URL." />
             </label>
             <label>
               <span className={styles['cluster-labels-form-label']}>Samples:</span>
@@ -417,7 +410,6 @@ function ClusterLabels() {
               ))}
         </div>
       </div>
-
       {cluster && (
         <div className={styles['cluster-labels-preview']}>
           <div className={styles['preview']}>

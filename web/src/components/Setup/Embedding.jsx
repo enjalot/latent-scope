@@ -12,6 +12,7 @@ import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
 import { saeAvailable } from '../../lib/SAE';
 import { debounce } from '../../utils';
+import SettingsModal from '../SettingsModal';
 
 import Sae from './Sae';
 import Preview from './Preview';
@@ -421,6 +422,7 @@ function Embedding() {
               onInputChange={searchHFModels}
             />
           </div>
+          <SettingsModal tooltip="Configure API keys for 3rd party models" />
 
           {/* The form for creating a new embedding */}
           <form onSubmit={handleNewEmbedding}>
