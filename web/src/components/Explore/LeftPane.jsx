@@ -2,20 +2,41 @@ import React from 'react';
 import './LeftPane.css';
 import { Icon, Button } from 'react-element-forge';
 
+
+
 export default function LeftPane() {
-  const filterIcon = <Icon name="filter" color="black" />;
-
-  const infoIcon = <Icon name="info" color="black" />;
-
-  const editIcon = <Icon name="edit" color="green" />;
-
   return (
     <div className="left-pane-container">
-      {infoIcon}
-      {filterIcon}
-      {editIcon}
-      {/* <Button icon={infoIcon} color="secondary" />
-      <Button icon={filterIcon} color="secondary" /> */}
+      <Button
+        className="left-pane-button"
+        size="small"
+        icon="info"
+        color="secondary"
+        title="View scope metadata"
+      />
+      <Button
+        className="left-pane-button"
+        size="small"
+        icon="filter"
+        color="secondary"
+        title="Filter data points"
+      />
+      <Button
+        className="left-pane-button disabled"
+        size="small"
+        icon="pen-tool"
+        color="#efefef"
+        title="Annotate"
+        disabled
+      />
+      <Button
+        className="left-pane-button disabled"
+        size="small"
+        icon="edit"
+        color="#efefef"
+        title="Edit data points"
+        disabled
+      />
     </div>
   );
 }

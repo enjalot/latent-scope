@@ -1,10 +1,39 @@
 .left-pane-container {
-  border-right: 1px solid var(--borders-color-border-1);
-  background: var(--neutrals-color-neutral-1);
-  flex-grow: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1rem 0.5rem;
+    border-right: 1px solid var(--borders-color-border-1);
+    background: var(--neutrals-color-neutral-1);
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 0.5rem;
+}
+
+.left-pane-button {
+    background-color: #f9f9f9 !important;
+    /* color: #525151 !important; */
+    border-radius: 4px !important;
+    /* border: 1px solid #5e5d5d !important; */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    width: 30px;
+    height: 30px;
+    padding: 2px !important;
+    font-size: 12px !important;
+}
+
+/* Hover state */
+.left-pane-button:hover:not(.disabled) {
+  background: "green";
+}
+
+/* Selected state - Option 1: Background color */
+.left-pane-button.selected {
+  background: var(--selected-bg, #e3f2fd);
+  color: var(--selected-color, #1976d2);
+}
+
+/* Disabled state */
+.left-pane-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

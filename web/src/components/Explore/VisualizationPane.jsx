@@ -171,7 +171,7 @@ function VisualizationPane({
   // ====================================================================================================
   // Configuration Panel
   // ====================================================================================================
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [vizConfig, setVizConfig] = useState({
     showHeatMap: false,
     showClusterOutlines: true,
@@ -227,20 +227,12 @@ function VisualizationPane({
   return (
     // <div style={{ width, height }} ref={umapRef}>
     <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
-      {/* <div className={styles.configToggleContainer}>
+      <div className={styles.configToggleContainer}>
         <Button
           className={styles['configToggle']}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           aria-label="Toggle configuration panel"
           icon={isPanelOpen ? 'x' : 'settings'}
-          size="small"
-          // color="#333"
-        />
-        <Button
-          className={styles['fullscreenToggle']}
-          onClick={() => setIsFullScreen(!isFullScreen)}
-          aria-label="Toggle full screen"
-          icon={isFullScreen ? 'minimize' : 'maximize'}
           size="small"
           // color="#333"
         />
@@ -255,7 +247,7 @@ function VisualizationPane({
           updatePointSize={updatePointSize}
           updatePointOpacity={updatePointOpacity}
         />
-      </div> */}
+      </div>
 
       <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
         {!isIOS() && scope ? (
@@ -368,8 +360,8 @@ function VisualizationPane({
           data-tooltip-id="featureTooltip"
           style={{
             position: 'absolute',
-            left: 200,
-            bottom: 0,
+            left: 250,
+            top: 0,
             pointerEvents: 'none',
           }}
         ></div>
