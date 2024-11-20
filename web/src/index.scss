@@ -341,7 +341,9 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+ 
 }
+
 
 
 ::-webkit-scrollbar {
@@ -350,7 +352,7 @@ button:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--neutrals-color-neutral-1);
+  // background-color: var(--neutrals-color-neutral-1);
   border-radius: 2px;
   border: none; /* Ensures there are no borders on the scrollbar thumb */
 }
@@ -358,4 +360,11 @@ button:focus-visible {
 ::-webkit-scrollbar-track {
   background: transparent;
   border: none; /* Ensures there are no borders on the scrollbar track */
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    // background-color: var(--borders-color-border-3);
+    background-color: #555;
+  }
 }
