@@ -95,8 +95,9 @@
   /* overflow-y: hidden; */
 }
 
-.rdg:hover {
-  /* overflow-y: auto; */
+@media (prefers-color-scheme: dark) {
+  .rdg-row:hover {
+     background-color: #555;
+  }
 }
-
 
