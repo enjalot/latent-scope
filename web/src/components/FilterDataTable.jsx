@@ -635,12 +635,10 @@ function FilterDataTable({
     [onHover]
   );
 
-  console.log('===FDT: ', { height });
-
   return (
     <div
       className="filter-data-table"
-      style={{ height: '80%', visibility: indices.length ? 'visible' : 'hidden' }}
+      style={{ height: '50%', visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}
       <div

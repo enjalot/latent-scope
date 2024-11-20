@@ -410,7 +410,7 @@ function Explore() {
   const [filtersHeight, setFiltersHeight] = useState(250);
   const FILTERS_PADDING = 62;
   const tableHeight = useMemo(
-    () => `calc(80% - ${filtersHeight + FILTERS_PADDING}px)`,
+    () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
     [filtersHeight]
   );
 
@@ -442,6 +442,8 @@ function Explore() {
       }
     };
   }, []);
+
+  console.log('===FULLSCREEN: ', { filtersHeight });
 
   // ====================================================================================================
   // Fullscreen related logic
@@ -478,43 +480,45 @@ function Explore() {
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
       <div style={{ display: 'flex', gap: '4px', height: '100%' }}>
         <LeftPane />
-        {/* full-screen-explore-container is a grid with 33% for the filter table and 67% for the scatter plot */}
+        {/* full-screen-explore-container is a grid with 50% for the filter table and 50% for the scatter plot */}
         <div ref={containerRef} className="full-screen-explore-container">
           <div className="filter-table-container">
-            <ClusterFilter
-              clusterLabels={clusterLabels}
-              slide={slide}
-              slideAnnotations={slideAnnotations}
-              setSlide={setSlide}
-              clusterLabel={clusterLabel}
-              setClusterLabel={setClusterLabel}
-              handleLabelUpdate={handleLabelUpdate}
-              newClusterLabel={newClusterLabel}
-              setNewClusterLabel={setNewClusterLabel}
-              handleNewCluster={handleNewCluster}
-            />
-            <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
-              <div className="filter-cell left filter-description">
-                Shift+Drag on the map to filter by points.
+            <div ref={filtersContainerRef}>
+              <ClusterFilter
+                clusterLabels={clusterLabels}
+                slide={slide}
+                slideAnnotations={slideAnnotations}
+                setSlide={setSlide}
+                clusterLabel={clusterLabel}
+                setClusterLabel={setClusterLabel}
+                handleLabelUpdate={handleLabelUpdate}
+                newClusterLabel={newClusterLabel}
+                setNewClusterLabel={setNewClusterLabel}
+                handleNewCluster={handleNewCluster}
+              />
+              <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
+                <div className="filter-cell left filter-description">
+                  Shift+Drag on the map to filter by points.
+                </div>
+                <div className="filter-cell middle">
+                  {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
+                  {selectedIndices?.length > 0 ? (
+                    <button
+                      className="deselect"
+                      onClick={() => {
+                        setSelectedIndices([]);
+                        scatter?.select([]);
+                        // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
+                      }}
+                    >
+                      X
+                    </button>
+                  ) : null}
+                </div>
+                <div className="filter-cell right"></div>
               </div>
-              <div className="filter-cell middle">
-                {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
-                {selectedIndices?.length > 0 ? (
-                  <button
-                    className="deselect"
-                    onClick={() => {
-                      setSelectedIndices([]);
-                      scatter?.select([]);
-                      // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                    }}
-                  >
-                    X
-                  </button>
-                ) : null}
-              </div>
-              <div className="filter-cell right"></div>
             </div>
-            <div style={{ height }}>
+            <div style={{ height: tableHeight }}>
               {intersectedIndices.length > 0 ? (
                 <FilterDataTable
                   height={tableHeight}
