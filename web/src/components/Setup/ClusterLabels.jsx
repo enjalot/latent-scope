@@ -312,9 +312,8 @@ function ClusterLabels() {
             </label>
             <label>
               <SettingsModal
-                tooltip="Configure API keys for 3rd party models or add custom models via URL!!"
+                tooltip="Configure API keys for 3rd party models or add custom models via URL."
                 color="primary"
-                test={() => console.log('WTF')}
                 onClose={() => handleSettingsClose()}
               />
             </label>

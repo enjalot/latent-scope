@@ -8,16 +8,12 @@ const SettingsModal = ({
   tooltip = '',
   color = 'primary',
   variant = 'outline',
-  test = () => {},
   onClose = () => {}, // Provide a no-op default function
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const handleClose = useCallback(() => {
     setShowSettings(false);
-    console.log('ON CLOSE', onClose);
     if (onClose) onClose();
-    console.log('TESTING', test);
-    test();
   }, [setShowSettings, onClose]);
 
   return (
