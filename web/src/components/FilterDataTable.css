@@ -55,7 +55,7 @@
 }
 
 .filter-data-table .text-column {
-  background-color: #d3d3d3;
+  background-color: var(--neutrals-color-neutral-2);
   font-weight: bold;
   text-align: center;
 }
