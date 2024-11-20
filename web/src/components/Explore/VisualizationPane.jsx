@@ -182,13 +182,13 @@ function VisualizationPane({
   useEffect(() => {
     console.log('scopeRows', scopeRows);
     if (scopeRows?.length <= 1000) {
-      setVizConfig((prev) => ({ ...prev, pointSize: 2 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 2.25 }));
     } else if (scopeRows?.length <= 10000) {
-      setVizConfig((prev) => ({ ...prev, pointSize: 1 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 1.25 }));
     } else if (scopeRows?.length <= 100000) {
-      setVizConfig((prev) => ({ ...prev, pointSize: 0.5 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 0.75 }));
     } else {
-      setVizConfig((prev) => ({ ...prev, pointSize: 0.25 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 0.5 }));
     }
   }, [scopeRows]);
 
@@ -308,8 +308,8 @@ function VisualizationPane({
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            // fill="#DCAD82"
-            fill="none"
+            fill="#DCAD82"
+            // fill="none"
             stroke="#FDCFC9"
             strokeWidth={2}
             opacity={0.25}
@@ -322,20 +322,20 @@ function VisualizationPane({
         )}
 
         {/* Cluster is selected via filter */}
-        {/* {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
+        {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={clusterHulls}
             fill="#D3965E"
             stroke="#C77C37"
-            strokeWidth={2}
-            opacity={0.35}
+            strokeWidth={3}
+            opacity={0.25}
             duration={0}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
-        )} */}
+        )}
 
         <AnnotationPlot
           points={hoverAnnotations}
