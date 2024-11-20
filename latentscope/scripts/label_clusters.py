@@ -163,6 +163,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
             # do some cleanup of the labels when the model doesn't follow instructions
             clean_label = label.replace("\n", " ")
             clean_label = clean_label.replace("<|eot_id|>", "")
+            clean_label = clean_label.replace('*', '')
             clean_label = clean_label.replace('"', '')
             clean_label = clean_label.replace("'", '')
             # clean_label = clean_label.replace("-", '')
