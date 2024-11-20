@@ -293,8 +293,8 @@ function VisualizationPane({
             hulls={hulls}
             // stroke="#E7C7AA"
             // stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
-            // stroke="#d4b297"
-            stroke={'#E0EFFF'}
+            stroke="#d4b297"
+            // stroke={'#E0EFFF'}
             fill="none"
             duration={200}
             strokeWidth={0.15}
