@@ -638,7 +638,7 @@ function FilterDataTable({
   return (
     <div
       className="filter-data-table"
-      style={{ height: '50%', visibility: indices.length ? 'visible' : 'hidden' }}
+      style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}
       <div

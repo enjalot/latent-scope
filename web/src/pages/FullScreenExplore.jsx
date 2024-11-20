@@ -123,7 +123,7 @@ function Explore() {
       const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
       setSelectedIndices(nonDeletedIndices);
       // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-      scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
+      // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
     },
     [setSelectedIndices]
   );
@@ -220,18 +220,18 @@ function Explore() {
     if (slide) {
       const annots = scopeRows.filter((d) => d.cluster == slide.cluster);
       setSlideAnnotations(annots);
-      scatter?.zoomToPoints(
-        annots.map((d) => d.ls_index),
-        { transition: true, transitionDuration: 1500, padding: 1.5 }
-      );
+      // scatter?.zoomToPoints(
+      //   annots.map((d) => d.ls_index),
+      //   { transition: true, transitionDuration: 1500, padding: 1.5 }
+      // );
     } else {
       console.log('==== no slide', scatter);
       setSlideAnnotations([]);
-      if (scatter && scatter.zoomToOrigin) {
-        console.log('==== zoom to origin', scatter.zoomToOrigin);
-        // scatter?.zoomToLocation([0, 0], 1);
-        scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
-      }
+      // if (scatter && scatter.zoomToOrigin) {
+      //   console.log('==== zoom to origin', scatter.zoomToOrigin);
+      //   // scatter?.zoomToLocation([0, 0], 1);
+      //   scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
+      // }
     }
   }, [slide, scopeRows, scatter, setSlideAnnotations]);
 
@@ -518,8 +518,16 @@ function Explore() {
                 <div className="filter-cell right"></div>
               </div>
             </div>
-            <div style={{ height: tableHeight }}>
-              {intersectedIndices.length > 0 ? (
+
+            {intersectedIndices.length > 0 ? (
+              <div
+                style={{
+                  height: tableHeight,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 <FilterDataTable
                   height={tableHeight}
                   dataset={dataset}
@@ -543,10 +551,10 @@ function Explore() {
                   showDifference={null}
                   // showDifference={showDifference ? searchEmbedding : null}
                 />
-              ) : (
-                <div className="filter-table no-data">Select a filter to display rows</div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="filter-table no-data">Select a filter to display rows</div>
+            )}
           </div>
           <div
             className="visualization-pane-container"
