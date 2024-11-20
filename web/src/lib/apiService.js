@@ -122,10 +122,8 @@ export const apiService = {
     return fetch(url)
       .then((response) => response.json())
       .then((data) => {
-        console.log('DATASET SEARCH DATA', data);
         return data.map((d) => {
           let size = d.description.match(/Total size of dataset files: (\d+\.\d+ [A-Za-z]+)/)?.[1];
-          console.log('size', size);
           return {
             id: d.id,
             name: d.id,

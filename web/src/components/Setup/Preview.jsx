@@ -268,13 +268,29 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             cm[i] = { cluster: d.index, label: d.label };
           });
         });
-        console.log('clusterMap', cm, cl, ci);
         setClusterIndices(ci);
         setClusterLabels(cl);
         setClusterMap(cm);
       });
     }
   }, [datasetId, cluster, drawPoints, labelId]);
+
+  const [pointSize, setPointSize] = useState(0.25);
+  useEffect(() => {
+    if (drawPoints?.length <= 1000) {
+      setPointSize(2);
+    } else if (drawPoints?.length <= 10000) {
+      setPointSize(1);
+    } else if (drawPoints?.length <= 100000) {
+      setPointSize(0.5);
+    } else {
+      setPointSize(0.25);
+    }
+  }, [drawPoints]);
+
+  const pointSizeRange = useMemo(() => {
+    return mapPointSizeRange.map((d) => d * pointSize);
+  }, [pointSize]);
 
   return (
     <div className={styles['preview']}>
@@ -329,7 +345,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             colorRange={mapSelectionColorsLight}
             colorDomain={mapSelectionDomain}
             opacityRange={mapSelectionOpacity}
-            pointSizeRange={mapPointSizeRange}
+            pointSizeRange={pointSizeRange}
             opacityBy="valueA"
             onScatter={setScatter}
             onView={handleView}
@@ -375,6 +391,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             indices={dataIndices}
             distances={distances}
             clusterMap={clusterMap}
+            clusterLabels={clusterLabels}
             height={tableHeight}
             showNavigation={false}
             onHover={(index) => handleHovered(index)}

@@ -80,3 +80,20 @@
 .rdg-row:hover {
   background-color: var(--interactions---secondary-color-interaction-secondary-hover);
 }
+
+.feature-cell {
+  padding: 4px;
+}
+
+.feature-cell.expanded {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 8px;
+  height: 100%;
+  overflow-y: auto;
+}
+.minimize-btn {
+  margin-bottom: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
