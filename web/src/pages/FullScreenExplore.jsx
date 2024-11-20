@@ -497,9 +497,9 @@ function Explore() {
                 handleNewCluster={handleNewCluster}
               />
               <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
-                <div className="filter-cell left filter-description">
+                {/* <div className="filter-cell left filter-description">
                   Shift+Drag on the map to filter by points.
-                </div>
+                </div> */}
                 <div className="filter-cell middle">
                   {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
                   {selectedIndices?.length > 0 ? (
