@@ -106,6 +106,14 @@ function ClusterLabels() {
       .catch(console.error);
   }, [setPresetModels]);
 
+  const [customModels, setCustomModels] = useState([]);
+  useEffect(() => {
+    apiService.fetchCustomModels().then((data) => {
+      console.log('custom models', data);
+      setCustomModels(data);
+    });
+  }, [setCustomModels]);
+
   const [recentModels, setRecentModels] = useState([]);
   const fetchRecentModels = useCallback(() => {
     apiService.getRecentChatModels().then((data) => {
@@ -126,6 +134,7 @@ function ClusterLabels() {
   useEffect(() => {
     const am = [presetModels[0]]
       .concat(recentModels)
+      .concat(customModels)
       .concat(HFModels)
       .concat(presetModels.slice(1))
       .filter((d) => !!d);
@@ -152,7 +161,7 @@ function ClusterLabels() {
       setDefaultModel(defaultOption);
       setChatModel(defaultOption.id);
     }
-  }, [presetModels, HFModels, recentModels, defaultModel]);
+  }, [presetModels, HFModels, recentModels, defaultModel, customModels]);
 
   const handleModelSelectChange = useCallback(
     (selectedOption) => {
@@ -274,6 +283,14 @@ function ClusterLabels() {
     goToNextStep();
   }, [updateScope, goToNextStep, selected, savedScope, cluster]);
 
+  const handleSettingsClose = useCallback(() => {
+    console.log('CLOSING SETTINGS');
+    apiService.fetchCustomModels().then((data) => {
+      console.log('FETCHED CUSTOM MODELS', data);
+      setCustomModels(data);
+    });
+  }, [setCustomModels]);
+
   return (
     <div className={styles['cluster-labels']}>
       <div className={styles['cluster-labels-setup']}>
@@ -283,7 +300,7 @@ function ClusterLabels() {
             {cluster ? ` in ${cluster.id}` : ''} using a chat model. For quickest CPU based results
             use nltk top-words.
           </p>
-          <form onSubmit={handleNewLabels}>
+          <form>
             <label>
               <span className={styles['cluster-labels-form-label']}>Chat Model:</span>
               <ModelSelect
@@ -294,8 +311,15 @@ function ClusterLabels() {
               />
             </label>
             <label>
-              <SettingsModal tooltip="Configure API keys for 3rd party models or add custom models via URL." />
+              <SettingsModal
+                tooltip="Configure API keys for 3rd party models or add custom models via URL!!"
+                color="primary"
+                test={() => console.log('WTF')}
+                onClose={() => handleSettingsClose()}
+              />
             </label>
+          </form>
+          <form onSubmit={handleNewLabels}>
             <label>
               <span className={styles['cluster-labels-form-label']}>Samples:</span>
               <input

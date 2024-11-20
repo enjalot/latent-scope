@@ -486,7 +486,7 @@ def download_dataset():
     dataset_name = request.args.get('dataset_name')
 
     job_id = str(uuid.uuid4())
-    command = f'python latentscope/scripts/download_dataset.py "{dataset_repo}" "{dataset_name}" "{DATA_DIR}"'
+    command = f'ls-download-dataset "{dataset_repo}" "{dataset_name}" "{DATA_DIR}"'
     threading.Thread(target=run_job, args=(dataset_name, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -499,6 +499,6 @@ def upload_dataset():
 
     job_id = str(uuid.uuid4())
     path = os.path.join(DATA_DIR, dataset)
-    command = f'python latentscope/scripts/upload_dataset.py "{path}" "{hf_dataset}" --main-parquet="{main_parquet}" --private={private}'
+    command = f'ls-upload-dataset "{path}" "{hf_dataset}" --main-parquet="{main_parquet}" --private={private}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})

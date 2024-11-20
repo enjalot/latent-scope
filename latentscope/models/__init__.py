@@ -94,6 +94,20 @@ def get_chat_model(id):
             "name": model_name,
             "params": {}
         }
+    elif id.startswith("custom-"):
+        # Get custom model from custom_models.json
+        import os
+        from latentscope.util import get_data_dir
+        DATA_DIR = get_data_dir()
+        custom_models_path = os.path.join(DATA_DIR, "custom_models.json")
+        if os.path.exists(custom_models_path):
+            with open(custom_models_path, "r") as f:
+                custom_models = json.load(f)
+            model = next((m for m in custom_models if m["id"] == id), None)
+            if model is None:
+                raise ValueError(f"Custom model {id} not found")
+        else:
+            raise ValueError("No custom models found")
     else:
         model = get_chat_model_dict(id)
     
@@ -101,6 +115,8 @@ def get_chat_model(id):
         return TransformersChatProvider(model['name'], model['params'])
     if model['provider'] == "openai":
         return OpenAIChatProvider(model['name'], model['params'])
+    if model['provider'] == "custom":
+        return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
     if model['provider'] == "mistralai":
         return MistralAIChatProvider(model['name'], model['params'])
     if model['provider'] == "nltk":

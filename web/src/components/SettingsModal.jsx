@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button, Modal } from 'react-element-forge';
 import Settings from '../pages/Settings';
 import { Tooltip } from 'react-tooltip';
 import styles from './SettingsModal.module.scss';
 
-const SettingsModal = ({ tooltip = '', color = 'primary', variant = 'outline' }) => {
+const SettingsModal = ({
+  tooltip = '',
+  color = 'primary',
+  variant = 'outline',
+  test = () => {},
+  onClose = () => {}, // Provide a no-op default function
+}) => {
   const [showSettings, setShowSettings] = useState(false);
+  const handleClose = useCallback(() => {
+    setShowSettings(false);
+    console.log('ON CLOSE', onClose);
+    if (onClose) onClose();
+    console.log('TESTING', test);
+    test();
+  }, [setShowSettings, onClose]);
 
   return (
     <>
@@ -27,19 +40,10 @@ const SettingsModal = ({ tooltip = '', color = 'primary', variant = 'outline' })
       )}
 
       {showSettings && (
-        <Modal
-          isVisible={showSettings}
-          onClose={() => setShowSettings(false)}
-          className={styles.modal}
-        >
+        <Modal isVisible={showSettings} onClose={handleClose} className={styles.modal}>
           <div className={styles.modalContent}>
             <div className={styles.modalClose}>
-              <Button
-                onClick={() => setShowSettings(false)}
-                icon="x"
-                color="primary"
-                variant="outline"
-              />
+              <Button onClick={handleClose} icon="x" color="primary" variant="outline" />
             </div>
             <Settings />
           </div>

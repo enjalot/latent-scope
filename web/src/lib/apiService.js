@@ -61,13 +61,13 @@ export const apiService = {
       });
   },
   getEmbeddingModels: async () => {
-    return fetch(`${apiUrl}/embedding_models`).then((response) => response.json());
+    return fetch(`${apiUrl}/models/embedding_models`).then((response) => response.json());
   },
   getRecentEmbeddingModels: async () => {
-    return fetch(`${apiUrl}/embedding_models/recent`).then((response) => response.json());
+    return fetch(`${apiUrl}/models/embedding_models/recent`).then((response) => response.json());
   },
   getRecentChatModels: async () => {
-    return fetch(`${apiUrl}/chat_models/recent`).then((response) => response.json());
+    return fetch(`${apiUrl}/models/chat_models/recent`).then((response) => response.json());
   },
   searchHFSTModels: async (query) => {
     let limit = query ? 5 : 5; // TODO: could change this
@@ -205,7 +205,7 @@ export const apiService = {
       });
   },
   fetchChatModels: async () => {
-    return fetch(`${apiUrl}/chat_models`).then((response) => response.json());
+    return fetch(`${apiUrl}/models/chat_models`).then((response) => response.json());
   },
   killJob: async (datasetId, jobId) => {
     return fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${jobId}`).then((response) =>
@@ -236,5 +236,22 @@ export const apiService = {
   },
   fetchDatasets: async () => {
     return fetch(`${apiUrl}/datasets`).then((response) => response.json());
+  },
+  fetchCustomModels: async () => {
+    return fetch(`${apiUrl}/models/custom-models`).then((response) => response.json());
+  },
+  addCustomModel: async (modelData) => {
+    return fetch(`${apiUrl}/models/custom-models`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(modelData),
+    }).then((response) => response.json());
+  },
+  deleteCustomModel: async (modelId) => {
+    return fetch(`${apiUrl}/models/custom-models/${modelId}`, {
+      method: 'DELETE',
+    }).then((response) => response.json());
   },
 };

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiService, apiUrl } from '../lib/apiService';
 const readonly = import.meta.env.MODE == 'read_only';
 
+import CustomModels from '../components/CustomModels';
+
 import styles from './Settings.module.css';
 
 const Settings = () => {
@@ -79,6 +81,15 @@ const Settings = () => {
             </span>
           );
         })}
+      </div>
+      <div className={styles['custom-models']}>
+        <h3>Custom Models</h3>
+        <div>
+          Add a custom model to use for embeddings. Saved in:
+          <code>{envSettings.data_dir}/custom_models.json</code>
+        </div>
+
+        <CustomModels />
       </div>
     </div>
   );
