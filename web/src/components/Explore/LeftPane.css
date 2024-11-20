@@ -1,5 +1,10 @@
 .left-pane-container {
-  border-right: 1px solid lightgray;
+  border-right: 1px solid var(--borders-color-border-1);
   background: var(--neutrals-color-neutral-1);
   flex-grow: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0.5rem;
 }
