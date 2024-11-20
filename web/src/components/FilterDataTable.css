@@ -12,9 +12,10 @@
   margin-top: 0px;
   display: flex;
   justify-content: center;
-    align-items: center;
-    gap: 4px;
+  align-items: center;
+  gap: 4px;
   flex-shrink: 0;
+  font-size: 14px;
 }
 
 .filter-data-table table {
