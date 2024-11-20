@@ -643,7 +643,7 @@ function FilterDataTable({
       {/* Scrollable Table Body */}
       <div
         className="filter-table-scrollable-body table-body"
-        style={{ flexGrow: 1, overflowY: 'auto' }}
+        style={{ overflowY: 'auto' }}
         ref={bodyRef}
       >
         <DataGrid

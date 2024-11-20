@@ -232,7 +232,7 @@ function VisualizationPane({
           className={styles['configToggle']}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           aria-label="Toggle configuration panel"
-          icon={isPanelOpen ? 'x' : 'settings'}
+          icon={'settings'}
           size="small"
           // color="#333"
         />

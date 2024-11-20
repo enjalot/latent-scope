@@ -21,8 +21,8 @@ const ConfigurationPanel = ({
           className={styles.closeButton}
           variant="outline"
           onClick={onClose}
-          aria-label="Close configuration panel"
-          icon={'x'}
+          aria-label="Minimize configuration panel"
+          icon="minus"
         />
       </div>
 

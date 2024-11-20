@@ -224,7 +224,8 @@
 
 .clusters-select {
   display: flex;
-  gap: 4px;
+  gap: .5rem;
+  align-items: center;
 }
 
 .filters-container .clusters-select select {
