@@ -12,24 +12,38 @@ export const mapSelectionKey = {
 //   "#b6b5d8", // 2, not selected
 //   "#fcfbfd", // 99, hidden
 // ]
+
+const baseColor = '#b87333';
+const baseColorDark = '#E0EFFF';
+
+// export const mapSelectionColorsLight = [
+//   baseColor,
+//   baseColor,
+//   baseColor,
+//   baseColor,
+//   '#fcfbfd', // 99, hidden
+// ];
+
 export const mapSelectionColorsLight = [
-  '#b87333', // 0, normal
-  '#945e2b', // 1, selected
-  '#945e2b', // 2, selected. opacity is lower
-  '#945e2b', // 3, hovered
+  baseColorDark,
+  baseColorDark,
+  baseColorDark,
+  baseColorDark,
   '#fcfbfd', // 99, hidden
 ];
+
+
 export const mapSelectionOpacity = [
-  0.75, // normal
+  0.33, // normal
   0.85, // selected
   0.1, // not selected
   1, // hovered
   0, // hidden
 ];
 export const mapPointSizeRange = [
-  4, // normal
+  3, // normal
   6, // selected
   3, // not selected
-  10, // hovered
+  12.5, // hovered
   0, // hidden
 ];

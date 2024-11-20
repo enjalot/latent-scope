@@ -410,7 +410,7 @@ function Explore() {
   const [filtersHeight, setFiltersHeight] = useState(250);
   const FILTERS_PADDING = 62;
   const tableHeight = useMemo(
-    () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
+    () => `calc(80% - ${filtersHeight + FILTERS_PADDING}px)`,
     [filtersHeight]
   );
 
@@ -514,7 +514,7 @@ function Explore() {
               </div>
               <div className="filter-cell right"></div>
             </div>
-            <div style={{ height: '80%', maxHeight: 650, maxWidth: 800 }}>
+            <div style={{ height }}>
               {intersectedIndices.length > 0 ? (
                 <FilterDataTable
                   height={tableHeight}

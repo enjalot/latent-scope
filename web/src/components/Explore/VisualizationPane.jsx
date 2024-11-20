@@ -293,7 +293,8 @@ function VisualizationPane({
             hulls={hulls}
             // stroke="#E7C7AA"
             // stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
-            stroke="#d4b297"
+            // stroke="#d4b297"
+            stroke={'#E0EFFF'}
             fill="none"
             duration={200}
             strokeWidth={0.15}
@@ -362,13 +363,13 @@ function VisualizationPane({
       </div>
 
       {/* Hover information display */}
-      {/* {hovered && (
+      {hovered && (
         <div
           data-tooltip-id="featureTooltip"
           style={{
-            // position: 'absolute',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
+            position: 'absolute',
+            left: 200,
+            bottom: 0,
             pointerEvents: 'none',
           }}
         ></div>
@@ -380,13 +381,16 @@ function VisualizationPane({
           delayShow={0}
           delayHide={0}
           delayUpdate={0}
+          noArrow={true}
           className="tooltip-area"
           style={{
-            // position: 'absolute',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
+            position: 'absolute',
+            left: 0,
+            top: 0,
             pointerEvents: 'none',
-            maxWidth: '400px',
+            height: '200px',
+            width: '400px',
+            // maxWidth: '400px',
             backgroundColor: hovered?.ls_search_index >= 0 ? '#111' : '#666',
           }}
         >
@@ -402,7 +406,7 @@ function VisualizationPane({
             <p className="tooltip-text">{hovered[scope?.embedding?.text_column]}</p>
           </div>
         </Tooltip>
-      )} */}
+      )}
 
       {/* {!isMobileDevice() && (
               <div className="hovered-point">

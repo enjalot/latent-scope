@@ -408,6 +408,7 @@
   height: 100%;
   border-left: 1px solid lightgray;
   box-sizing: border-box;
+  position: relative;
 }
 
 .full-screen-explore-container {

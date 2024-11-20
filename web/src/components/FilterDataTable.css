@@ -64,7 +64,6 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  
   .filter-data-table .tag-active {
     background-color: #111;
     border: 1px solid gray;
