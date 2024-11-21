@@ -1,20 +1,8 @@
 import React, { useState } from 'react';
 import './FilterActions.css';
-import { Icon, Button } from 'react-element-forge';
+import { Button } from 'react-element-forge';
 import ClusterFilter from './ClusterFilter';
 import NearestNeighbor from './NearestNeighbor';
-
-function FilterComponent({ searchOpen, filterOpen, selectOpen }) {
-  if (searchOpen) {
-    return <div>Search</div>;
-  }
-
-  if (selectOpen) {
-    return <div>Select</div>;
-  }
-
-  return null;
-}
 
 const SEARCH = 'search';
 const FILTER = 'filter';
@@ -100,25 +88,28 @@ export default function FilterActions({
       <div className="filter-actions-container">
         <Button
           onClick={toggleFilter}
-          className={`filter-actions-button ${activeFilter === FILTER ? 'active' : ''}`}
+          className={`filter-actions-button ${activeFilter === FILTER ? 'active' : 'not-active'}`}
           size="small"
           icon="filter"
+          text="Filter"
           color="secondary"
           title="Filter data points"
         />
         <Button
           onClick={toggleSearch}
-          className={`filter-actions-button ${activeFilter === SEARCH ? 'active' : ''}`}
+          className={`filter-actions-button ${activeFilter === SEARCH ? 'active' : 'not-active'}`}
           size="small"
           icon="search"
+          text="Search"
           color="secondary"
           title="Search"
         />
         <Button
           onClick={toggleSelect}
-          className={`filter-actions-button ${activeFilter === SELECT ? 'active' : ''}`}
+          className={`filter-actions-button ${activeFilter === SELECT ? 'active' : 'not-active'}`}
           size="small"
           icon="crosshair"
+          text="Select"
           color="secondary"
           title="Annotate"
         />

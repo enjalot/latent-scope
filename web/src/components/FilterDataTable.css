@@ -2,7 +2,7 @@
   width: calc(100% - 2px);
   display: flex;
   flex-direction: column;
-  padding-top: 12px;
+  padding-top: 1.5rem;
   margin-top: 8px;
   /* border: 1px solid #ccc; */
   border-radius: 5px;

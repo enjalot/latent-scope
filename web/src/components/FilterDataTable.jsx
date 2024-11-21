@@ -667,7 +667,7 @@ function FilterDataTable({
           />
         )}
       </div>
-      {showNavigation && (
+      {showNavigation && indices.length > 0 && (
         <div className="filter-data-table-page-controls">
           <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
             First

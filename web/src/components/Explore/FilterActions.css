@@ -13,6 +13,22 @@
 
 .filter-actions-button {
   border-radius: 4px !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+.filter-actions-button.active {
+  background-color: var(--interactions---primary-color-interaction-primary) !important;
+  color: white !important;
+}
+
+.filter-actions-button:focus {
+  outline: none !important;
+}
+
+.filter-actions-button.not-active {
+  background-color: transparent !important;
+  color: var(--text-color-text-primary) !important;
+  opacity: 0.75;
 }
 
 .filter-actions-button:hover {

@@ -13,6 +13,8 @@ const ConfigurationPanel = ({
 }) => {
   const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } = vizConfig;
 
+  console.log({ showHeatMap, showClusterOutlines, pointSize, pointOpacity });
+
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
       <div className={styles.header}>
@@ -64,6 +66,7 @@ const ConfigurationPanel = ({
         <Switch
           value={showClusterOutlines}
           onChange={toggleShowClusterOutlines}
+          defaultState={showClusterOutlines}
           color="secondary"
           label="Show Cluster Outlines"
         />
