@@ -10,6 +10,7 @@ import useColumnFilter from '../hooks/useColumnFilter';
 import { saeAvailable } from '../lib/SAE';
 import { apiUrl } from '../lib/apiService';
 
+import FilterActions from '../components/Explore/FilterActions';
 import SubNav from '../components/SubNav';
 import LeftPane from '../components/Explore/LeftPane';
 import ScopeHeader from '../components/Explore/ScopeHeader';
@@ -312,6 +313,8 @@ function Explore() {
   const clearFilters = useCallback(() => {
     setSelectedIndices([]);
     setSearchIndices([]);
+    setIntersectedIndices([]);
+    setSlide(null);
     setTag(null);
     setColumnIndices([]);
   }, [setSelectedIndices, setSearchIndices, setTag, setColumnIndices]);
@@ -484,22 +487,32 @@ function Explore() {
         <div ref={containerRef} className="full-screen-explore-container">
           <div className="filter-table-container">
             <div ref={filtersContainerRef}>
+              <FilterActions
+                clusterLabels={clusterLabels}
+                slide={slide}
+                slideAnnotations={slideAnnotations}
+                setSlide={setSlide}
+                searchIndices={searchIndices}
+                searchLoading={searchLoading}
+                setSearchText={setSearchText}
+                clearSearch={clearSearch}
+                selectedIndices={selectedIndices}
+                setSelectedIndices={setSelectedIndices}
+                scatter={scatter}
+                clearFilters={clearFilters}
+              />
+            </div>
+            {/* <div ref={filtersContainerRef}>
               <ClusterFilter
                 clusterLabels={clusterLabels}
                 slide={slide}
                 slideAnnotations={slideAnnotations}
                 setSlide={setSlide}
-                clusterLabel={clusterLabel}
-                setClusterLabel={setClusterLabel}
-                handleLabelUpdate={handleLabelUpdate}
-                newClusterLabel={newClusterLabel}
-                setNewClusterLabel={setNewClusterLabel}
-                handleNewCluster={handleNewCluster}
               />
               <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
-                {/* <div className="filter-cell left filter-description">
+                <div className="filter-cell left filter-description">
                   Shift+Drag on the map to filter by points.
-                </div> */}
+                </div>
                 <div className="filter-cell middle">
                   {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
                   {selectedIndices?.length > 0 ? (
@@ -517,44 +530,40 @@ function Explore() {
                 </div>
                 <div className="filter-cell right"></div>
               </div>
-            </div>
+            </div> */}
 
-            {intersectedIndices.length > 0 ? (
-              <div
-                style={{
-                  height: tableHeight,
-                  overflowY: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
+            <div
+              style={{
+                height: tableHeight,
+                overflowY: 'auto',
+                display: 'flex',
+                // alignItems: 'center',
+              }}
+            >
+              <FilterDataTable
+                height={tableHeight}
+                dataset={dataset}
+                scope={scope}
+                indices={intersectedIndices}
+                deletedIndices={deletedIndices}
+                distances={distances}
+                clusterMap={clusterMap}
+                clusterLabels={clusterLabels}
+                tagset={tagset}
+                sae_id={sae?.id}
+                feature={feature}
+                onTagset={fetchTagSet}
+                onScope={() => {
+                  fetchScopeMeta();
+                  fetchScopeRows();
                 }}
-              >
-                <FilterDataTable
-                  height={tableHeight}
-                  dataset={dataset}
-                  scope={scope}
-                  indices={intersectedIndices}
-                  deletedIndices={deletedIndices}
-                  distances={distances}
-                  clusterMap={clusterMap}
-                  clusterLabels={clusterLabels}
-                  tagset={tagset}
-                  sae_id={sae?.id}
-                  feature={feature}
-                  onTagset={fetchTagSet}
-                  onScope={() => {
-                    fetchScopeMeta();
-                    fetchScopeRows();
-                  }}
-                  onHover={handleHover}
-                  onClick={handleClicked}
-                  editMode={true}
-                  showDifference={null}
-                  // showDifference={showDifference ? searchEmbedding : null}
-                />
-              </div>
-            ) : (
-              <div className="filter-table no-data">Select a filter to display rows</div>
-            )}
+                onHover={handleHover}
+                onClick={handleClicked}
+                editMode={true}
+                showDifference={null}
+                // showDifference={showDifference ? searchEmbedding : null}
+              />
+            </div>
           </div>
           <div
             className="visualization-pane-container"

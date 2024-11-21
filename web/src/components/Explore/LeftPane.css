@@ -21,10 +21,6 @@
     font-size: 12px !important;
 }
 
-/* Hover state */
-.left-pane-button:hover:not(.disabled) {
-  background: "green";
-}
 
 /* Selected state - Option 1: Background color */
 .left-pane-button.selected {
@@ -34,6 +30,7 @@
 
 /* Disabled state */
 .left-pane-button.disabled {
-    opacity: 0.5;
+    /* opacity: 0.5; */
+    color: var(--semantic-color-semantic-neutral-disabled) !important;
     cursor: not-allowed;
 }

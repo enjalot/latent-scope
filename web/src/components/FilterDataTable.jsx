@@ -635,10 +635,12 @@ function FilterDataTable({
     [onHover]
   );
 
+  console.log({ indices, rows });
+
   return (
     <div
       className="filter-data-table"
-      style={{ visibility: indices.length ? 'visible' : 'hidden' }}
+      // style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}
       <div
@@ -646,13 +648,24 @@ function FilterDataTable({
         style={{ overflowY: 'auto' }}
         ref={bodyRef}
       >
-        <DataGrid
-          rows={rows}
-          columns={formattedColumns}
-          rowGetter={(i) => rows[i]}
-          style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
-          renderers={{ renderRow: renderRowWithHover }}
-        />
+        {indices.length > 0 ? (
+          <DataGrid
+            rows={rows}
+            columns={formattedColumns}
+            rowGetter={(i) => rows[i]}
+            style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
+            renderers={{ renderRow: renderRowWithHover }}
+          />
+        ) : (
+          <DataGrid
+            rowGetter={(i) => rows[i]}
+            rows={[]}
+            columns={formattedColumns}
+            headerRowHeight={35}
+            rowHeight={0}
+            style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
+          />
+        )}
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">

@@ -1,8 +1,6 @@
 import React from 'react';
 import './LeftPane.css';
-import { Icon, Button } from 'react-element-forge';
-
-
+import { Button } from 'react-element-forge';
 
 export default function LeftPane() {
   return (
@@ -17,7 +15,7 @@ export default function LeftPane() {
       <Button
         className="left-pane-button"
         size="small"
-        icon="filter"
+        icon="table"
         color="secondary"
         title="Filter data points"
       />
@@ -25,7 +23,7 @@ export default function LeftPane() {
         className="left-pane-button disabled"
         size="small"
         icon="pen-tool"
-        color="#efefef"
+        color="secondary"
         title="Annotate"
         disabled
       />
@@ -33,7 +31,7 @@ export default function LeftPane() {
         className="left-pane-button disabled"
         size="small"
         icon="edit"
-        color="#efefef"
+        color="secondary"
         title="Edit data points"
         disabled
       />

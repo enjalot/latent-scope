@@ -18,37 +18,30 @@ export default function NearestNeighbor({
     };
 
     return (
-        <div className={`filter-row search-box ${searchIndices.length ? "active" : ""}`}>
-            <div className="filter-cell left">
-                <form onSubmit={handleSubmit}>
-                    <input
-                        type="text"
-                        id="searchBox"
-                        placeholder="Filter by nearest neighbors to search query..."
-                    />
-                    {searchLoading ? (
-                        "Querying..."
-                    ) : (
-                        <button type="submit">🔍</button>
-                    )}
-                </form>
-            </div>
-            <div className="filter-cell middle">
-                <span>
-                    {searchIndices.length ? (
-                        <span>{searchIndices.length} rows</span>
-                    ) : null}
-                    {searchIndices.length > 0 ? (
-                        <button
-                            className="deselect"
-                            onClick={handleClear}
-                        >
-                            X
-                        </button>
-                    ) : null}
-                </span>
-            </div>
-            <div className="filter-cell right" />
+      <div
+        className={`clusters-select filter-row search-box ${searchIndices.length ? 'active' : ''}`}
+      >
+        <div className="filter-cell left">
+          <form onSubmit={handleSubmit}>
+            <input
+              type="text"
+              id="searchBox"
+              placeholder="Filter by nearest neighbors to search query..."
+            />
+            {searchLoading ? 'Querying...' : <button type="submit">🔍</button>}
+          </form>
         </div>
+        <div className="filter-cell middle">
+          <span>
+            {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
+            {searchIndices.length > 0 ? (
+              <button className="deselect" onClick={handleClear}>
+                X
+              </button>
+            ) : null}
+          </span>
+        </div>
+        <div className="filter-cell right" />
+      </div>
     );
 }

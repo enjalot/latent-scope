@@ -1,17 +1,6 @@
 import React from 'react';
 
-export default function ClusterFilter({
-    clusterLabels,
-    slide,
-    slideAnnotations,
-    setSlide,
-    clusterLabel,
-    setClusterLabel,
-    handleLabelUpdate,
-    newClusterLabel,
-    setNewClusterLabel,
-    handleNewCluster
-}) {
+export default function ClusterFilter({ clusterLabels, slide, slideAnnotations, setSlide }) {
   const handleSlideChange = (e) => {
     if (e.target.value === '-1') {
       setSlide(null);
@@ -41,35 +30,20 @@ export default function ClusterFilter({
               X
             </button>
           </span>
-        ) : null}
+        ) : (
+          <span>
+            0 rows
+            <button
+              style={{ visibility: 'hidden' }}
+              className="deselect"
+              disabled
+              onClick={() => setSlide(null)}
+            >
+              X
+            </button>
+          </span>
+        )}
       </div>
-      {/* <div className="filter-cell right">
-                {slide ? (
-                    <form onSubmit={handleUpdateLabelSubmit}>
-                        <input
-                            className="update-cluster-label"
-                            type="text"
-                            id="update-label"
-                            value={clusterLabel}
-                            onChange={(e) => setClusterLabel(e.target.value)}
-                        />
-                        <button type="submit">✍️</button>
-                    </form>
-                ) : (
-                    <form onSubmit={handleNewLabelSubmit}>
-                        <input
-                            type="text"
-                            id="new-label"
-                            name="new-label"
-                            className="new-cluster-label"
-                            value={newClusterLabel}
-                            onChange={(e) => setNewClusterLabel(e.target.value)}
-                            placeholder="New Cluster"
-                        />
-                        <button type="submit">➕️ Cluster</button>
-                    </form>
-                )}
-            </div> */}
     </div>
   );
 }
