@@ -482,7 +482,14 @@ function Explore() {
     <>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
       <div style={{ display: 'flex', gap: '4px', height: '100%' }}>
-        <LeftPane />
+        <LeftPane
+          dataset={dataset}
+          scope={scope}
+          scopes={scopes}
+          deletedIndices={deletedIndices}
+          tags={tags}
+          onScopeChange={handleScopeChange}
+        />
         {/* full-screen-explore-container is a grid with 50% for the filter table and 50% for the scatter plot */}
         <div ref={containerRef} className="full-screen-explore-container">
           <div className="filter-table-container">

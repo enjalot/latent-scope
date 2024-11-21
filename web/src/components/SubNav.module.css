@@ -43,7 +43,7 @@
 
 .tab {
     text-decoration: none;
-    color: var(--text-color-text-neutral);
+    color: var(--neutrals-color-neutral-3);
     padding: 8px 12px;
     border-bottom: 2px solid transparent;
     transition: border-color 0.2s;
@@ -52,11 +52,12 @@
 
 .tab:hover {
     border-bottom-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-color-text-neutral-1);
 }
 
 .activeTab {
-    border-bottom-color: var(--semantic-color-semantic-primary);
-    color: var(--semantic-color-semantic-primary);
+    border-bottom-color: var(--text-color-text-primary);
+    color: var(--text-color-text-primary);
 }
 
 .disabledTab {
