@@ -1,0 +1,48 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.content {
+  padding: 20px;
+  flex-grow: 1;
+  overflow: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.job {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.job-name {
+  font-weight: bold;
+}
+
+.job-status {
+  font-weight: bold;
+  padding: 5px;
+}
+
+.job-id {
+  font-size: 10px;
+  padding: 5px;
+  color: #666;
+}

@@ -60,7 +60,7 @@ function HFUpload({ dataset, scope }) {
       <div className={styles.form}>
         <Input
           label="Hugging Face Dataset Name"
-          placeholder={`ls-${dataset.id}`}
+          placeholder={`ls-${dataset?.id}`}
           value={hfDataset}
           onChange={(e) => setHfDataset(e.target.value)}
           disabled={!!uploadJob}

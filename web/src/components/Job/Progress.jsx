@@ -11,9 +11,16 @@ JobProgress.propTypes = {
   killJob: PropTypes.func,
 };
 
-function JobProgress({ job, allwaysOnlyLast, clearJob, rerunJob, killJob }) {
+function JobProgress({
+  job,
+  overrideOnlyLast = true,
+  allwaysOnlyLast = false,
+  clearJob,
+  rerunJob,
+  killJob,
+}) {
   const preRef = useRef(null);
-  const [onlyLast, setOnlyLast] = useState(true);
+  const [onlyLast, setOnlyLast] = useState(overrideOnlyLast);
 
   useEffect(() => {
     if (preRef.current) {
