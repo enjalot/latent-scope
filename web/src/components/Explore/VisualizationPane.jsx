@@ -300,11 +300,13 @@ function VisualizationPane({
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            fill="#DCAD82"
-            // fill="none"
-            stroke="#FDCFC9"
-            strokeWidth={2}
-            opacity={0.25}
+            // fill="lightgray"
+            fill="#d28440"
+            stroke="#CC5500"
+            strokeWidth={2.5}
+            // if there are selected indices already, that means other points will be less visible
+            // so we can make the hull a bit more transparent
+            opacity={intersectedIndices?.length ? 0.15 : 0.5}
             duration={0}
             xDomain={xDomain}
             yDomain={yDomain}

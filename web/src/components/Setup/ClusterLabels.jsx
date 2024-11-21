@@ -1,14 +1,19 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback } from 'react';
+import { groups } from 'd3-array';
+
 import { useStartJobPolling } from '../Job/Run';
 import { apiService, apiUrl } from '../../lib/apiService';
+import { debounce } from '../../utils';
 import { useSetup } from '../../contexts/SetupContext';
-import { Button, Select } from 'react-element-forge';
+import { Button, Modal } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
 
+import ModelSelect from '../ModelSelect';
 import JobProgress from '../Job/Progress';
 import DataTable from '../DataTable';
-
+import Settings from '../../pages/Settings';
+import SettingsModal from '../SettingsModal';
 import styles from './ClusterLabels.module.scss';
 
 function labelName(labelId) {
@@ -79,19 +84,92 @@ function ClusterLabels() {
     }
   }, [dataset]);
 
-  const [chatModels, setChatModels] = useState([]);
+  const [HFModels, setHFModels] = useState([]);
+  const searchHFModels = useCallback((query) => {
+    debounce(
+      apiService.searchHFChatModels(query).then((hfm) => {
+        console.log('hf chat models', hfm);
+        setHFModels(hfm);
+      }),
+      300
+    );
+  }, []);
+
+  const [presetModels, setPresetModels] = useState([]);
   useEffect(() => {
     apiService
       .fetchChatModels()
       .then((data) => {
-        setChatModels(data);
-        setChatModel(data[0]?.id);
+        console.log('preset chat models', data);
+        setPresetModels(data);
       })
-      .catch((err) => {
-        console.log(err);
-        setChatModels([]);
-      });
+      .catch(console.error);
+  }, [setPresetModels]);
+
+  const [customModels, setCustomModels] = useState([]);
+  useEffect(() => {
+    apiService.fetchCustomModels().then((data) => {
+      console.log('custom models', data);
+      setCustomModels(data);
+    });
+  }, [setCustomModels]);
+
+  const [recentModels, setRecentModels] = useState([]);
+  const fetchRecentModels = useCallback(() => {
+    apiService.getRecentChatModels().then((data) => {
+      console.log('recent chat models', data);
+      setRecentModels(data?.slice(0, 3) || []);
+    });
   }, []);
+
+  useEffect(() => {
+    fetchRecentModels();
+    searchHFModels();
+  }, [fetchRecentModels, searchHFModels]);
+
+  // Build up the list of options for the Dropdown
+  const [allModels, setAllModels] = useState([]);
+  const [allOptionsGrouped, setAllOptionsGrouped] = useState([]);
+  const [defaultModel, setDefaultModel] = useState(null);
+  useEffect(() => {
+    const am = [presetModels[0]]
+      .concat(recentModels)
+      .concat(customModels)
+      .concat(HFModels)
+      .concat(presetModels.slice(1))
+      .filter((d) => !!d);
+    let allOptions = am
+      .map((m) => {
+        return {
+          ...m,
+          group: m.group || m.provider,
+        };
+      })
+      .filter((f) => !!f);
+
+    const grouped = groups(allOptions, (f) => f.group)
+      .map((d) => ({ label: d[0], options: d[1] }))
+      .filter((d) => d.options.length);
+
+    // console.log("all options grouped", grouped)
+    setAllOptionsGrouped(grouped);
+    setAllModels(am);
+
+    // we don't set a default option, so it's a more explicit choice of model
+    const defaultOption = allOptions.find((option) => option.id == 'nltk-top-words');
+    if (defaultOption && !defaultModel) {
+      setDefaultModel(defaultOption);
+      setChatModel(defaultOption.id);
+    }
+  }, [presetModels, HFModels, recentModels, defaultModel, customModels]);
+
+  const handleModelSelectChange = useCallback(
+    (selectedOption) => {
+      setDefaultModel(selectedOption);
+      setChatModel(selectedOption);
+    },
+    [setDefaultModel, setChatModel]
+  );
 
   useEffect(() => {
     if (datasetId && cluster && selected) {
@@ -150,6 +228,9 @@ function ClusterLabels() {
       if (!found) {
         setSelected('default');
       }
+      setTimeout(() => {
+        setClusterLabelsJob(null);
+      }, 500);
     }
   }, [clusterLabelsJob, clusterLabelSets, setSelected]);
 
@@ -158,17 +239,19 @@ function ClusterLabels() {
       e.preventDefault();
       const form = e.target;
       const data = new FormData(form);
-      const model = chatModel;
+      const model = chatModel?.id;
       const text_column = embedding.text_column;
       const cluster_id = cluster.id;
       const context = data.get('context');
       const samples = data.get('samples');
+      const max_tokens = data.get('max_tokens');
       startClusterLabelsJob({
         chat_id: model,
         cluster_id: cluster_id,
         text_column,
         context,
         samples,
+        max_tokens,
       });
     },
     [cluster, embedding, chatModel, startClusterLabelsJob]
@@ -200,6 +283,14 @@ function ClusterLabels() {
     goToNextStep();
   }, [updateScope, goToNextStep, selected, savedScope, cluster]);
 
+  const handleSettingsClose = useCallback(() => {
+    console.log('CLOSING SETTINGS');
+    apiService.fetchCustomModels().then((data) => {
+      console.log('FETCHED CUSTOM MODELS', data);
+      setCustomModels(data);
+    });
+  }, [setCustomModels]);
+
   return (
     <div className={styles['cluster-labels']}>
       <div className={styles['cluster-labels-setup']}>
@@ -209,28 +300,31 @@ function ClusterLabels() {
             {cluster ? ` in ${cluster.id}` : ''} using a chat model. For quickest CPU based results
             use nltk top-words.
           </p>
-          <form onSubmit={handleNewLabels}>
+          <form>
             <label>
               <span className={styles['cluster-labels-form-label']}>Chat Model:</span>
-              <Select
-                id="chatModel"
-                disabled={!!clusterLabelsJob}
-                options={chatModels
-                  .filter((d) => clusterLabelSets?.indexOf(d.id) < 0)
-                  .map((model) => ({
-                    label: `${model.provider} - ${model.name}`,
-                    value: model.id,
-                  }))}
-                value={chatModel}
-                onChange={(e) => setChatModel(e.target.value)}
+              <ModelSelect
+                options={allOptionsGrouped}
+                defaultValue={defaultModel}
+                onChange={handleModelSelectChange}
+                onInputChange={searchHFModels}
               />
             </label>
+            <label>
+              <SettingsModal
+                tooltip="Configure API keys for 3rd party models or add custom models via URL."
+                color="primary"
+                onClose={() => handleSettingsClose()}
+              />
+            </label>
+          </form>
+          <form onSubmit={handleNewLabels}>
             <label>
               <span className={styles['cluster-labels-form-label']}>Samples:</span>
               <input
                 type="number"
                 name="samples"
-                value={10}
+                defaultValue={10}
                 min={0}
                 disabled={!!clusterLabelsJob || !cluster}
               />
@@ -240,6 +334,22 @@ function ClusterLabels() {
               <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
                 The number of samples to use from each cluster for summarization. Set to 0 to use
                 all samples.
+              </Tooltip>
+            </label>
+            <label>
+              <span className={styles['cluster-labels-form-label']}>Max Tokens:</span>
+              <input
+                type="number"
+                name="max_tokens"
+                defaultValue={chatModel?.params?.max_tokens || 8192}
+                min={-1}
+                disabled={!!clusterLabelsJob || !cluster}
+              />
+              <span className="tooltip" data-tooltip-id="max_tokens">
+                🤔
+              </span>
+              <Tooltip id="max_tokens" place="top" effect="solid" className="tooltip-area">
+                The maximum number of tokens to use for the model. Set to -1 to ignore limits.
               </Tooltip>
             </label>
             <textarea
@@ -323,7 +433,6 @@ function ClusterLabels() {
               ))}
         </div>
       </div>
-
       {cluster && (
         <div className={styles['cluster-labels-preview']}>
           <div className={styles['preview']}>

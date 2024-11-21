@@ -82,6 +82,9 @@ function Cluster() {
         }
         setCluster(cls);
         setClusters(clstrs);
+        setTimeout(() => {
+          setClusterJob(null);
+        }, 500);
       });
     }
   }, [clusterJob, dataset]);

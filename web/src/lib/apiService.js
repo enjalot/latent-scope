@@ -61,14 +61,39 @@ export const apiService = {
       });
   },
   getEmbeddingModels: async () => {
-    return fetch(`${apiUrl}/embedding_models`).then((response) => response.json());
+    return fetch(`${apiUrl}/models/embedding_models`).then((response) => response.json());
   },
-  getRecentModels: async () => {
-    return fetch(`${apiUrl}/embedding_models/recent`).then((response) => response.json());
+  getRecentEmbeddingModels: async () => {
+    return fetch(`${apiUrl}/models/embedding_models/recent`).then((response) => response.json());
   },
-  searchHFModels: async (query) => {
+  getRecentChatModels: async () => {
+    return fetch(`${apiUrl}/models/chat_models/recent`).then((response) => response.json());
+  },
+  searchHFSTModels: async (query) => {
     let limit = query ? 5 : 5; // TODO: could change this
     let url = `https://huggingface.co/api/models?filter=sentence-transformers&sort=downloads&limit=${limit}&full=false&config=false`;
+    if (query) {
+      url += `&search=${query}`;
+    }
+    return fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        // convert the HF data format to ours
+        const hfm = data.map((d) => {
+          return {
+            id: '🤗-' + d.id.replace('/', '___'),
+            name: d.id,
+            provider: '🤗',
+            downloads: d.downloads,
+            params: {},
+          };
+        });
+        return hfm;
+      });
+  },
+  searchHFChatModels: async (query) => {
+    let limit = query ? 5 : 5; // TODO: could change this
+    let url = `https://huggingface.co/api/models?pipeline_tag=text-generation&filter=transformers&library=transformers,safetensors&other=conversational,text-generation-inference&sort=downloads&limit=${limit}&full=false&config=false`;
     if (query) {
       url += `&search=${query}`;
     }
@@ -97,10 +122,8 @@ export const apiService = {
     return fetch(url)
       .then((response) => response.json())
       .then((data) => {
-        console.log('DATASET SEARCH DATA', data);
         return data.map((d) => {
           let size = d.description.match(/Total size of dataset files: (\d+\.\d+ [A-Za-z]+)/)?.[1];
-          console.log('size', size);
           return {
             id: d.id,
             name: d.id,
@@ -180,7 +203,7 @@ export const apiService = {
       });
   },
   fetchChatModels: async () => {
-    return fetch(`${apiUrl}/chat_models`).then((response) => response.json());
+    return fetch(`${apiUrl}/models/chat_models`).then((response) => response.json());
   },
   killJob: async (datasetId, jobId) => {
     return fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${jobId}`).then((response) =>
@@ -211,5 +234,22 @@ export const apiService = {
   },
   fetchDatasets: async () => {
     return fetch(`${apiUrl}/datasets`).then((response) => response.json());
+  },
+  fetchCustomModels: async () => {
+    return fetch(`${apiUrl}/models/custom-models`).then((response) => response.json());
+  },
+  addCustomModel: async (modelData) => {
+    return fetch(`${apiUrl}/models/custom-models`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(modelData),
+    }).then((response) => response.json());
+  },
+  deleteCustomModel: async (modelId) => {
+    return fetch(`${apiUrl}/models/custom-models/${modelId}`, {
+      method: 'DELETE',
+    }).then((response) => response.json());
   },
 };

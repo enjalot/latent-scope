@@ -684,6 +684,7 @@ function Explore() {
               tagset={tagset}
               sae_id={sae?.id}
               feature={feature}
+              features={features}
               onTagset={fetchTagSet}
               onScope={() => {
                 fetchScopeMeta();

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 
 import './Progress.css';
@@ -11,9 +11,16 @@ JobProgress.propTypes = {
   killJob: PropTypes.func,
 };
 
-function JobProgress({ job, allwaysOnlyLast, clearJob, rerunJob, killJob }) {
+function JobProgress({
+  job,
+  overrideOnlyLast = true,
+  allwaysOnlyLast = false,
+  clearJob,
+  rerunJob,
+  killJob,
+}) {
   const preRef = useRef(null);
-  const [onlyLast, setOnlyLast] = useState(true);
+  const [onlyLast, setOnlyLast] = useState(overrideOnlyLast);
 
   useEffect(() => {
     if (preRef.current) {
@@ -23,6 +30,10 @@ function JobProgress({ job, allwaysOnlyLast, clearJob, rerunJob, killJob }) {
       setOnlyLast(false);
     }
   }, [job, allwaysOnlyLast]);
+
+  const history = useMemo(() => {
+    return job?.progress.filter((d) => !!d);
+  }, [job]);
 
   const secondsSinceLastUpdate = Math.round((+new Date() - +new Date(job?.last_update)) / 1000);
   const totalTime = Math.round((+new Date(job?.last_update) - +new Date(job?.times[0])) / 1000);
@@ -34,9 +45,7 @@ function JobProgress({ job, allwaysOnlyLast, clearJob, rerunJob, killJob }) {
           Running <b>{job.job_name}</b>
           <br />
           <code>{job.command}</code>
-          <pre ref={preRef}>
-            {onlyLast ? job.progress[job.progress.length - 1] : job.progress.join('\n')}
-          </pre>
+          <pre ref={preRef}>{onlyLast ? history[history.length - 1] : history.join('\n')}</pre>
           {clearJob && job.status == 'completed' ? (
             <button onClick={clearJob}>👍 Dismiss</button>
           ) : null}

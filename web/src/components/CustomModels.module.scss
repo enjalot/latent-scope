@@ -1,0 +1,74 @@
+.custom-models {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1rem;
+
+  &-setup {
+    display: flex;
+    gap: 2rem;
+  }
+
+  &-form {
+    flex: 1;
+    
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+      max-width: 400px;
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      input {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      .form-label {
+        font-weight: 500;
+      }
+    }
+  }
+
+  &-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+
+      &-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      &-name {
+        font-weight: 500;
+      }
+
+      &-url, &-model {
+        font-size: 0.9rem;
+        color: #666;
+      }
+
+      .delete {
+        padding: 0.5rem;
+      }
+    }
+  }
+}

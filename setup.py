@@ -93,6 +93,8 @@ setup(
             'ls-export-plot=latentscope.scripts.export_plot:main',
             'ls-update-embedding-stats=latentscope.scripts.embed:update_embedding_stats',
             'ls-sae=latentscope.scripts.sae:main',
+            'ls-download-dataset=latentscope.scripts.download_dataset:main',
+            'ls-upload-dataset=latentscope.scripts.upload_dataset:main',
         ],
     },
     include_package_data=True,

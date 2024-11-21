@@ -15,7 +15,7 @@ function HFUpload({ dataset, scope }) {
   );
 
   const [hfDataset, setHfDataset] = useState('');
-  const [isPrivate, setIsPrivate] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleUpload = useCallback(() => {
     const mainParquet = scope ? `scopes/${scope.id}-input.parquet` : 'input.parquet';
@@ -60,7 +60,7 @@ function HFUpload({ dataset, scope }) {
       <div className={styles.form}>
         <Input
           label="Hugging Face Dataset Name"
-          placeholder={`ls-${dataset.id}`}
+          placeholder={`ls-${dataset?.id}`}
           value={hfDataset}
           onChange={(e) => setHfDataset(e.target.value)}
           disabled={!!uploadJob}

@@ -43,10 +43,21 @@ class OpenAIEmbedProvider(EmbedModelProvider):
 
 class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
-        from openai import OpenAI
+        from openai import OpenAI, AsyncOpenAI
         import tiktoken
-        self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
-        self.encoder = tiktoken.encoding_for_model(self.name)
+        import outlines
+        from outlines.models.openai import OpenAIConfig
+        if self.base_url is None:
+            self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"))
+            self.encoder = tiktoken.encoding_for_model(self.name)
+        else:
+            self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"), base_url=self.base_url)
+            self.encoder = None
+        print("BASE URL", self.base_url)
+        print("MODEL", self.name)
+        config = OpenAIConfig(self.name)
+        self.model = outlines.models.openai(self.client, config)
+        self.generator = outlines.generate.text(self.model)
 
 
     def chat(self, messages):
@@ -55,3 +66,8 @@ class OpenAIChatProvider(ChatModelProvider):
             messages=messages
         )
         return response.choices[0].message.content
+
+    def summarize(self, items, context=""):
+        from .prompts import summarize
+        prompt = summarize(items, context)
+        return self.generator(prompt)

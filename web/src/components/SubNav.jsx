@@ -102,7 +102,9 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
             </Link>
           )}
           <Link
-            to={`/datasets/${dataset?.id}/jobs`}
+            to={
+              scope ? `/datasets/${dataset?.id}/jobs/${scope?.id}` : `/datasets/${dataset?.id}/jobs`
+            }
             className={`${styles.tab} ${location.pathname.includes('/jobs') ? styles.activeTab : ''}`}
           >
             Job History

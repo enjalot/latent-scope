@@ -48,7 +48,7 @@ function App() {
           <Route path="/datasets/:dataset/setup" element={<Setup />} />
           <Route path="/datasets/:dataset/setup/:scope" element={<Setup />} />
           <Route path="/datasets/:dataset/jobs" element={<Jobs />} />
-          <Route path="/datasets/:dataset/jobs/:job" element={<Job />} />
+          <Route path="/datasets/:dataset/jobs/:scope" element={<Jobs />} />
         </Routes>
       </div>
     </Router>

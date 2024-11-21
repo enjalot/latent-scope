@@ -40,8 +40,20 @@ def run_job(dataset, job_id, command):
     with open(progress_file, 'w') as f:
         json.dump(job, f)
 
+    # bufsize 1 flushes the stdout faster 
+    env = os.environ.copy()
+    env['PYTHONUNBUFFERED'] = '1'
     # TODO: need to watch for exploits in command if using shell=True for security reasons
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True, encoding="utf-8")
+    process = subprocess.Popen(
+        command, 
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.STDOUT, 
+        text=True, 
+        shell=True, 
+        encoding="utf-8",
+        env=env,
+        bufsize=1
+    )
     PROCESSES[job_id] = process
 
     last_output_time = time.time()  # Initialize with the current time
@@ -305,10 +317,13 @@ def delete_umap(dataset, umap_id):
     clusters_to_delete = []
     for file in os.listdir(cluster_dir):
         if file.endswith(".json"):
-            with open(os.path.join(cluster_dir, file), 'r') as f:
-                cluster_data = json.load(f)
-            if cluster_data.get('umap_id') == umap_id:
-                clusters_to_delete.append(file.replace('.json', ''))
+            try:
+                with open(os.path.join(cluster_dir, file), 'r') as f:
+                    cluster_data = json.load(f)
+                if cluster_data.get('umap_id') == umap_id:
+                    clusters_to_delete.append(file.replace('.json', ''))
+            except Exception as e:
+                print("ERROR LOADING CLUSTER", file)
     
 
     job_id = str(uuid.uuid4())
@@ -394,7 +409,8 @@ def run_cluster_label():
     cluster_id = request.args.get('cluster_id')
     context = request.args.get('context')
     samples = request.args.get('samples')
-    print("run cluster label", dataset, chat_id, text_column, cluster_id, samples)
+    max_tokens = request.args.get('max_tokens')
+    print("run cluster label", dataset, chat_id, text_column, cluster_id, samples, max_tokens)
     if context:
         context = context.replace('"', '\\"')
     print("context", context)
@@ -470,7 +486,7 @@ def download_dataset():
     dataset_name = request.args.get('dataset_name')
 
     job_id = str(uuid.uuid4())
-    command = f'python latentscope/scripts/download_dataset.py "{dataset_repo}" "{dataset_name}" "{DATA_DIR}"'
+    command = f'ls-download-dataset "{dataset_repo}" "{dataset_name}" "{DATA_DIR}"'
     threading.Thread(target=run_job, args=(dataset_name, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -483,6 +499,6 @@ def upload_dataset():
 
     job_id = str(uuid.uuid4())
     path = os.path.join(DATA_DIR, dataset)
-    command = f'python latentscope/scripts/upload_dataset.py "{path}" "{hf_dataset}" --main-parquet="{main_parquet}" --private={private}'
+    command = f'ls-upload-dataset "{path}" "{hf_dataset}" --main-parquet="{main_parquet}" --private={private}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
