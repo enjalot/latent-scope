@@ -13,14 +13,7 @@ import { apiUrl } from '../lib/apiService';
 import FilterActions from '../components/Explore/FilterActions';
 import SubNav from '../components/SubNav';
 import LeftPane from '../components/Explore/LeftPane';
-import ScopeHeader from '../components/Explore/ScopeHeader';
 import VisualizationPane from '../components/Explore/VisualizationPane';
-import NearestNeighbor from '../components/Explore/NearestNeighbor';
-import ClusterFilter from '../components/Explore/ClusterFilter';
-import ColumnFilter from '../components/Explore/ColumnFilter';
-import BulkActions from '../components/Explore/BulkActions';
-import ConfigurationPanel from '../components/Explore/ConfigurationPanel';
-
 import FilterDataTable from '../components/FilterDataTable';
 
 function Explore() {
@@ -83,8 +76,10 @@ function Explore() {
     }
   }, [scope, sae, embeddings]);
 
+  // fectches a set of indexes from the server, and updates some state with the results
+  // used to render points in the table after a user clicks on a point in the scatterplot
   const hydrateIndices = useCallback(
-    (indices, setter, distances = []) => {
+    (indices, setter) => {
       fetch(`${apiUrl}/indexed`, {
         method: 'POST',
         headers: {
@@ -167,24 +162,6 @@ function Explore() {
   }, [hoveredIndex, scopeRows]);
 
   // ====================================================================================================
-  // Tags
-  // ====================================================================================================
-
-  const [tag, setTag] = useState(tags[0]);
-  const [tagAnnotations, setTagAnnotations] = useState([]);
-  useEffect(() => {
-    if (tagset[tag]) {
-      const annots = tagset[tag].map((index) => [scopeRows[index].x, scopeRows[index].y]);
-      setTagAnnotations(annots);
-    } else {
-      setTagAnnotations([]);
-      if (scatter && scatter.config) {
-        // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-      }
-    }
-  }, [tagset, tag, scopeRows, scatter, setTagAnnotations]);
-
-  // ====================================================================================================
   // NN Search
   // ====================================================================================================
   // indices of items in a chosen slide
@@ -236,29 +213,6 @@ function Explore() {
     }
   }, [slide, scopeRows, scatter, setSlideAnnotations]);
 
-  const [clusterLabel, setClusterLabel] = useState(slide?.label || '');
-  const [newClusterLabel, setNewClusterLabel] = useState('');
-  useEffect(() => {
-    setNewClusterLabel('');
-  }, [slide]);
-
-  const handleNewCluster = useCallback(
-    (label) => {
-      console.log('new cluster', label);
-      fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scope.id}/new-cluster?label=${label}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('what happened?', data);
-          fetchScopeMeta();
-        });
-    },
-    [datasetId, scope, fetchScopeMeta]
-  );
-
-  useEffect(() => {
-    setClusterLabel(slide?.label || '');
-  }, [slide]);
-
   // Handlers for responding to individual data points
   const handleClicked = useCallback(
     (index) => {
@@ -281,43 +235,16 @@ function Explore() {
     [setHoveredIndex]
   );
 
-  const handleLabelUpdate = useCallback(
-    (cluster, label) => {
-      console.log('update label', cluster, label);
-      fetch(
-        `${apiUrl}/bulk/change-cluster-name?dataset_id=${datasetId}&scope_id=${scope.id}&cluster=${cluster}&new_label=${label}`
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('got new labels', data);
-          fetchScopeMeta();
-        });
-    },
-    [datasetId, scope]
-  );
-
   const clearScope = useCallback(() => {
     setSlide(null);
-    // setClusterLabels([])
-    // setPoints([])
   }, []);
-
-  const {
-    columnIndices,
-    setColumnIndices,
-    columnFiltersActive,
-    setColumnFiltersActive,
-    columnFilters,
-  } = useColumnFilter(apiUrl, dataset, datasetId);
 
   const clearFilters = useCallback(() => {
     setSelectedIndices([]);
     setSearchIndices([]);
     setIntersectedIndices([]);
     setSlide(null);
-    setTag(null);
-    setColumnIndices([]);
-  }, [setSelectedIndices, setSearchIndices, setTag, setColumnIndices]);
+  }, [setSelectedIndices, setSearchIndices]);
 
   function intersectMultipleArrays(filterMode, ...arrays) {
     arrays = arrays.filter((d) => d.length > 0);
@@ -340,25 +267,6 @@ function Explore() {
     }
   }
 
-  // ==== FILTER SELECT MODE ====
-  const [filterMode, setFilterMode] = useState('all');
-  const handleFilterModeChange = useCallback(
-    (mode) => {
-      setFilterMode(mode);
-    },
-    [setFilterMode]
-  );
-
-  // Tag indices are set on the original dataset, which may have rows deleted
-  // so we need to filter them here to make sure we are working with all valid rows
-  // in the current scope
-  const filterTagIndices = useCallback(
-    (indices) => {
-      return indices.filter((d) => !deletedIndices.includes(d));
-    },
-    [deletedIndices]
-  );
-
   const [intersectedIndices, setIntersectedIndices] = useState([]);
   // intersect the indices from the various filters
   useEffect(() => {
@@ -371,33 +279,18 @@ function Explore() {
     const filteredClusterIndices = scopeRows
       .filter((d) => d.cluster == slide?.cluster)
       .map((d) => d.ls_index);
-    const filteredTagset = filterTagIndices(tagset[tag] || []);
     let indices = intersectMultipleArrays(
-      filterMode,
+      'all',
       selectedIndices || [],
       searchIndices || [],
-      filteredClusterIndices || [],
-      filteredTagset || [],
-      columnIndices || []
+      filteredClusterIndices || []
     );
     // if (indices.length == 0 && selectedIndices.length > 0) {
     //   indices = selectedIndices;
     // }
     // console.log("indices!", indices)
     setIntersectedIndices(indices);
-  }, [
-    scopeRows,
-    selectedIndices,
-    searchIndices,
-    slide,
-    tagset,
-    tag,
-    columnIndices,
-    filterMode,
-    filterTagIndices,
-  ]);
-
-  const [bulkAction, setBulkAction] = useState(null);
+  }, [scopeRows, selectedIndices, searchIndices, slide, tagset]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -445,8 +338,6 @@ function Explore() {
       }
     };
   }, []);
-
-  console.log('===FULLSCREEN: ', { filtersHeight });
 
   // ====================================================================================================
   // Fullscreen related logic
@@ -509,36 +400,6 @@ function Explore() {
                 clearFilters={clearFilters}
               />
             </div>
-            {/* <div ref={filtersContainerRef}>
-              <ClusterFilter
-                clusterLabels={clusterLabels}
-                slide={slide}
-                slideAnnotations={slideAnnotations}
-                setSlide={setSlide}
-              />
-              <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
-                <div className="filter-cell left filter-description">
-                  Shift+Drag on the map to filter by points.
-                </div>
-                <div className="filter-cell middle">
-                  {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
-                  {selectedIndices?.length > 0 ? (
-                    <button
-                      className="deselect"
-                      onClick={() => {
-                        setSelectedIndices([]);
-                        scatter?.select([]);
-                        // scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 })
-                      }}
-                    >
-                      X
-                    </button>
-                  ) : null}
-                </div>
-                <div className="filter-cell right"></div>
-              </div>
-            </div> */}
-
             <div
               style={{
                 height: tableHeight,
