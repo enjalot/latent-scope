@@ -99,6 +99,8 @@ function ScatterPlot ({
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
+    console.log('=== SCATTER ====', xDomain.current, yDomain.current);
+
     scatterplot.zoomToArea({
       x: xDomain.current[0],
       y: yDomain.current[0],

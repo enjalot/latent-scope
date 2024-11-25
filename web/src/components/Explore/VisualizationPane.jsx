@@ -37,6 +37,8 @@ function VisualizationPane({
   onHover,
   hovered,
   containerRef,
+  width,
+  height,
 }) {
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -50,37 +52,41 @@ function VisualizationPane({
 
   // const [isFullScreen, setIsFullScreen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(true);
-  const [size, setSize] = useState([500, 500]);
+  // const [size, setSize] = useState([initialWidth, initialHeight]);
   const umapRef = useRef(null);
   const [umapOffset, setUmapOffset] = useState(0);
 
-  // let's fill the container and update the width and height if window resizes
-  useEffect(() => {
-    function updateSize() {
-      if (!containerRef.current) return;
+  // // let's fill the container and update the width and height if window resizes
+  // useEffect(() => {
+  //   function updateSize() {
+  //     // console.log('updateSize', containerRef.current);
+  //     if (!containerRef.current) return;
 
-      if (isFullScreen) {
-        const rect = umapRef.current.getBoundingClientRect();
-        // debugger;
-        setSize([rect.width, rect.height]);
-        setUmapOffset(rect.top + 40); // 40 is the height of the top header
-      } else {
-        const rect = containerRef.current.getBoundingClientRect();
-        const urect = umapRef.current.getBoundingClientRect();
-        const width = rect.width;
-        let swidth = width > 500 ? 500 : width - 50;
-        setSize([swidth, rect.height - urect.top + 30]);
-        setUmapOffset(urect.top + 40); // 40 is the height of the top header
-      }
+  //     if (isFullScreen) {
+  //       const rect = umapRef.current.getBoundingClientRect();
+  //       debugger;
+  //       setSize([rect.width, rect.height]);
+  //       setUmapOffset(rect.top + 40); // 40 is the height of the top header
+  //     } else {
+  //       const rect = containerRef.current.getBoundingClientRect();
+  //       const urect = umapRef.current.getBoundingClientRect();
+  //       const width = rect.width;
+  //       let swidth = width > 500 ? 500 : width - 50;
+  //       setSize([swidth, rect.height - urect.top + 30]);
+  //       setUmapOffset(urect.top + 40); // 40 is the height of the top header
+  //     }
 
-      // console.log("UMAP OFFSET", rect.top + top)
-    }
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
-  }, [isFullScreen]);
+  //     // console.log("UMAP OFFSET", rect.top + top)
+  //   }
+  //   window.addEventListener('resize', updateSize);
+  //   updateSize();
+  //   return () => window.removeEventListener('resize', updateSize);
+  // }, [isFullScreen]);
 
-  const [width, height] = size;
+  // const [width, height] = size;
+  const size = [width, height];
+
+  console.log('=== VIZ PANE ====', width, height);
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
@@ -135,7 +141,7 @@ function VisualizationPane({
         });
       }
     }
-  }, [hovered, scopeRows, xDomain, yDomain, width, size, umapOffset]);
+  }, [hovered, scopeRows, xDomain, yDomain, width, height, umapOffset]);
 
   const hulls = useMemo(() => {
     return processHulls(clusterLabels, scopeRows, (d) => (d.deleted ? null : [d.x, d.y]));
@@ -215,14 +221,7 @@ function VisualizationPane({
     return mapSelectionOpacity.map((d) => d * vizConfig.pointOpacity);
   }, [vizConfig.pointOpacity]);
 
-  console.log({
-    hoveredCluster,
-    hoverAnnotations,
-    intersectedIndices,
-    slide,
-    hovered,
-    hoveredIndex,
-  });
+  console.log('=== VIZ PANE ====', width, height);
 
   return (
     // <div style={{ width, height }} ref={umapRef}>
@@ -254,6 +253,8 @@ function VisualizationPane({
           <Scatter
             points={drawingPoints}
             duration={2000}
+            // width={1505}
+            // height={778}
             width={width}
             height={height}
             colorScaleType="categorical"

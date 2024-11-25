@@ -343,23 +343,95 @@ function Explore() {
   // Fullscreen related logic
   // ====================================================================================================
   const [size, setSize] = useState([500, 500]);
+  const visualizationContainerRef = useRef(null);
+
+  // initial size
+  useEffect(() => {
+    const observer = new MutationObserver((mutations, obs) => {
+      if (containerRef.current && visualizationContainerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const vizRect = visualizationContainerRef.current.getBoundingClientRect();
+        setSize([vizRect.width, rect.height - vizRect.top + 30]);
+        console.log('=== INITIAL SIZE ====', vizRect.width, rect.height - vizRect.top + 30);
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const xOffset = 50;
   const yOffset = 100;
 
   // let's fill the container and update the width and height if window resizes
+  // useEffect(() => {
+  //   const node = containerRef.current;
+  //   if (!node) return;
+
+  //   const rect = containerRef.current.getBoundingClientRect();
+  //   const vizRect = visualizationContainerRef.current.getBoundingClientRect();
+  //   // const width = rect.width;
+  //   // let swidth = width > 500 ? 500 : width - 50;
+  //   setSize([vizRect.width, rect.height - vizRect.top + 30]);
+  //   // const windowWidth = node.clientWidth;
+  //   // const windowHeight = node.clientHeight;
+  //   // setSize([windowWidth - xOffset, windowHeight - yOffset]);
+  //   // window.addEventListener('resize', updateSize);
+  //   // updateSize();
+  //   // return () => window.removeEventListener('resize', updateSize);
+  // }, [containerRef]);
+
+  // let's fill the container and update the width and height if window resizes
   useEffect(() => {
-    const node = containerRef.current;
-    if (!node) return;
-    const windowWidth = node.clientWidth;
-    const windowHeight = node.clientHeight;
-    setSize([windowWidth - xOffset, windowHeight - yOffset]);
-    // window.addEventListener('resize', updateSize);
-    // updateSize();
-    // return () => window.removeEventListener('resize', updateSize);
+    function updateSize() {
+      // console.log('updateSize', containerRef.current);
+      if (!containerRef.current) return;
+
+      // if (isFullScreen) {
+      // const rect = visualizationContainerRef.current.getBoundingClientRect();
+      // setSize([rect.width, rect.height]);
+      // else {
+      const rect = containerRef.current.getBoundingClientRect();
+      const vizRect = visualizationContainerRef.current.getBoundingClientRect();
+      // const width = rect.width;
+      // let swidth = width > 500 ? 500 : width - 50;
+      setSize([vizRect.width, rect.height - vizRect.top + 30]);
+      // }
+
+      // console.log("UMAP OFFSET", rect.top + top)
+    }
+    window.addEventListener('resize', updateSize);
+    updateSize();
+    return () => window.removeEventListener('resize', updateSize);
   }, [containerRef]);
 
+  // // Create resize observer effect
+  // useEffect(() => {
+  //   const resizeObserver = new ResizeObserver((entries) => {
+  //     for (let entry of entries) {
+  //       const { width, height } = entry.contentRect;
+  //       // Update visualization size
+  //       setSize([width - xOffset, height - yOffset]);
+  //     }
+  //   });
+
+  //   if (visualizationContainerRef.current) {
+  //     resizeObserver.observe(visualizationContainerRef.current);
+  //   }
+
+  //   return () => {
+  //     if (visualizationContainerRef.current) {
+  //       resizeObserver.unobserve(visualizationContainerRef.current);
+  //     }
+  //   };
+  // }, [xOffset, yOffset]);
+
   const [width, height] = size;
+  console.log('=== SIZE ====', width, height);
 
   // ====================================================================================================
   // Draggable State
@@ -467,6 +539,7 @@ function Explore() {
             </div>
           </div>
           <div
+            ref={visualizationContainerRef}
             className="visualization-pane-container"
             onMouseLeave={() => {
               setHoveredIndex(null);
@@ -492,6 +565,8 @@ function Explore() {
                 hovered={hovered}
                 dataset={dataset}
                 deletedIndices={deletedIndices}
+                width={width}
+                height={height}
               />
             ) : null}
           </div>
