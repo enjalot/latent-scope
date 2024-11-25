@@ -361,6 +361,31 @@ function Explore() {
 
   const [width, height] = size;
 
+  // ====================================================================================================
+  // Draggable State
+  // ====================================================================================================
+  const [gridTemplate, setGridTemplate] = useState('50% 50%');
+
+  const startDragging = (e) => {
+    e.preventDefault();
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDragging);
+  };
+
+  const onDrag = (e) => {
+    if (containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      const newTemplate = `${Math.min(Math.max(percentage, 20), 80)}% 1fr`;
+      setGridTemplate(newTemplate);
+    }
+  };
+
+  const stopDragging = () => {
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDragging);
+  };
+
   if (!dataset)
     return (
       <>
@@ -382,8 +407,16 @@ function Explore() {
           onScopeChange={handleScopeChange}
         />
         {/* full-screen-explore-container is a grid with 50% for the filter table and 50% for the scatter plot */}
-        <div ref={containerRef} className="full-screen-explore-container">
-          <div className="filter-table-container">
+        <div
+          ref={containerRef}
+          className="full-screen-explore-container"
+          style={{ gridTemplateColumns: gridTemplate }}
+        >
+          <div
+            className="filter-table-container"
+            style={{ cursor: 'ew-resize' }}
+            onMouseDown={startDragging}
+          >
             <div ref={filtersContainerRef}>
               <FilterActions
                 clusterLabels={clusterLabels}
