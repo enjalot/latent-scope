@@ -70,6 +70,7 @@ function ScatterPlot ({
   onSelect,
   onHover,
 }) {
+  console.log({ points });
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -81,135 +82,159 @@ function ScatterPlot ({
 
   // setup the scatterplot on first render
   useEffect(() => {
+    console.log('===setting up scatterplot===');
     const xScale = scaleLinear()
       // .domain(xDomain.current)
-      .domain([-1, 1])
+      .domain([-1, 1]);
     const yScale = scaleLinear()
       // .domain(yDomain.current)
-      .domain([-1, 1])
-    const scatterSettings = { 
+      .domain([-1, 1]);
+    const scatterSettings = {
       canvas: container.current,
       width,
       height,
       pointColorHover: [0.1, 0.1, 0.1, 0.5],
       xScale,
       yScale,
-    }
+    };
+
     // console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
+    // center the view on the canvas
     scatterplot.zoomToArea({
-      x: xDomain.current[0],
-      y: yDomain.current[0],
-      width: xDomain.current[1] - xDomain.current[0],
-      height: yDomain.current[1] - yDomain.current[0],
-    })
-
-    onView && onView(xDomain.current, yDomain.current)
-    scatterplot.subscribe(
-      "view",
-      ({ camera, view, xScale: xs, yScale: ys }) => {
-        xDomain.current = xs.domain();
-        yDomain.current = ys.domain();
-        onView && onView(xDomain.current, yDomain.current)
-    }
-    );
-    scatterplot.subscribe("select", ({ points }) => {
-      onSelect && onSelect(points)
-    });
-    scatterplot.subscribe("deselect", () => {
-      onSelect && onSelect([])
-    });
-    scatterplot.subscribe("pointOver", (pointIndex) => {
-      onHover && onHover(pointIndex)
-    });
-    scatterplot.subscribe("pointOut", () => {
-      onHover && onHover(null)
+      x: -1,
+      y: -1,
+      width: 2,
+      height: 2,
     });
 
-    
+    onView && onView(xDomain.current, yDomain.current);
+    scatterplot.subscribe('view', ({ camera, view, xScale: xs, yScale: ys }) => {
+      xDomain.current = xs.domain();
+      yDomain.current = ys.domain();
+
+      onView && onView(xDomain.current, yDomain.current);
+    });
+    scatterplot.subscribe('select', ({ points }) => {
+      onSelect && onSelect(points);
+    });
+    scatterplot.subscribe('deselect', () => {
+      onSelect && onSelect([]);
+    });
+    scatterplot.subscribe('pointOver', (pointIndex) => {
+      onHover && onHover(pointIndex);
+    });
+    scatterplot.subscribe('pointOut', () => {
+      onHover && onHover(null);
+    });
+
     // const canvas = container.current;
     // canvas.addEventListener('mouseleave', handleMouseLeave);
 
-    onScatter && onScatter(scatterplot)
+    onScatter && onScatter(scatterplot);
 
     return () => {
       scatterplotRef.current = null;
       scatterplot.destroy();
       // canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [width, height, onScatter, onView, onSelect, onHover])
+  }, [width, height, onScatter, onView, onSelect, onHover]);
 
   const prevPointsRef = useRef();
   useEffect(() => {
     const scatterplot = scatterplotRef.current;
     const prevPoints = prevPointsRef.current;
-    if(scatterplot && points && points.length){
-
+    if (scatterplot && points && points.length) {
       const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
       // console.log("point size", pointSize, opacity)
-      let pointColor = [250/255, 128/255, 114/255, 1] //salmon
+      let pointColor = [250 / 255, 128 / 255, 114 / 255, 1]; //salmon
 
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
-      if(colorScaleType === "categorical") {
-        let uniques = colorDomain
-        if(!uniques){
-          uniques = groups(points.map(d => d[2]), d => d).map(d => d[0]).sort((a,b) => a - b)
+      if (colorScaleType === 'categorical') {
+        let uniques = colorDomain;
+        if (!uniques) {
+          uniques = groups(
+            points.map((d) => d[2]),
+            (d) => d
+          )
+            .map((d) => d[0])
+            .sort((a, b) => a - b);
         }
-        let domain = extent(uniques).reverse()
-        if(!colorRange) {
-          const colorScale = scaleSequential(colorInterpolator)
-            .domain(domain);
-          pointColor = range(uniques).map(u => rgb(colorScale(u)).hex())
+        let domain = extent(uniques).reverse();
+        if (!colorRange) {
+          const colorScale = scaleSequential(colorInterpolator).domain(domain);
+          pointColor = range(uniques).map((u) => rgb(colorScale(u)).hex());
         } else {
-          pointColor = colorRange
+          pointColor = colorRange;
         }
-      } else if(colorScaleType === "continuous") {
-        let r = range(0, 100)
-        const colorScale = scaleSequential(colorInterpolator)
-          .domain([0, 100]);
-        pointColor = r.map(i => rgb(colorScale(i)).hex())
+      } else if (colorScaleType === 'continuous') {
+        let r = range(0, 100);
+        const colorScale = scaleSequential(colorInterpolator).domain([0, 100]);
+        pointColor = r.map((i) => rgb(colorScale(i)).hex());
       }
 
-      if(colorScaleType){
-        scatterplot.set({colorBy: 'valueA'});
+      if (colorScaleType) {
+        scatterplot.set({ colorBy: 'valueA' });
       }
-      if(opacityBy) {
+      if (opacityBy) {
         scatterplot.set({
           opacityBy,
           sizeBy: opacityBy,
-          opacity: opacityRange || [0.1, .2, .3, .4, .5,  1],
-          pointSize: pointSizeRange || [2, 4, 5, 6,  pointSize]
-        })
+          opacity: opacityRange || [0.1, 0.2, 0.3, 0.4, 0.5, 1],
+          pointSize: pointSizeRange || [2, 4, 5, 6, pointSize],
+        });
       } else {
         scatterplot.set({
           opacity: opacity,
           pointSize: pointSize,
-        })
+        });
       }
       if (prevPoints && prevPoints.length === points.length) {
-        scatterplot.draw(points, { transition: true, transitionDuration: duration}).then(() => {
+        scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
           // don't color till after
           scatterplot.set({
             pointColor: pointColor,
-          })
+          });
           scatterplot.draw(points, { transition: false });
-        })
+          // scatterplot.zoomToArea({
+          //   x: [-1, 1],
+          //   y: [-1, 1],
+          //   width: 2,
+          //   height: 2,
+          // });
+        });
       } else {
-        // console.log("fresh draw scatterplot")
+        console.log('=== fresh draw scatterplot ===');
         scatterplot.set({
           pointColor: pointColor,
-        })
+        });
         scatterplot.draw(points, { transition: false });
+        scatterplot.zoomToArea({
+          x: [-1, 1],
+          y: [-1, 1],
+          width: 2,
+          height: 2,
+        });
       }
       prevPointsRef.current = points;
     }
-  }, [points, width, height, colorScaleType, colorInterpolator, duration, pointScale, opacityRange, pointSizeRange]);
+  }, [
+    points,
+    width,
+    height,
+    colorScaleType,
+    colorInterpolator,
+    duration,
+    pointScale,
+    opacityRange,
+    pointSizeRange,
+  ]);
 
-  return <canvas className={styles.scatter} ref={container} onMouseLeave={handleMouseLeave}/>;
+  return <canvas className={styles.scatter} ref={container} onMouseLeave={handleMouseLeave} />;
 }
 
 export default ScatterPlot;
