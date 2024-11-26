@@ -91,7 +91,7 @@ export default function FilterActions({
           className={`filter-actions-button ${activeFilter === FILTER ? 'active' : 'not-active'}`}
           size="small"
           icon="filter"
-          text="Filter"
+          text={`Filter (${clusterAnnotations.length})`}
           color="secondary"
           title="Filter data points"
         />
