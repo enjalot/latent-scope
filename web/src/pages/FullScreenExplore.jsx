@@ -270,12 +270,6 @@ function Explore() {
   const [intersectedIndices, setIntersectedIndices] = useState([]);
   // intersect the indices from the various filters
   useEffect(() => {
-    // console.log("selectedIndices", selectedIndices)
-    // console.log("searchIndices", searchIndices)
-    // console.log("tag", tag)
-    // console.log("tagset", tagset[tag])
-
-    // these are all in the original scope space
     const filteredClusterIndices = scopeRows
       .filter((d) => d.cluster == slide?.cluster)
       .map((d) => d.ls_index);
@@ -285,10 +279,6 @@ function Explore() {
       searchIndices || [],
       filteredClusterIndices || []
     );
-    // if (indices.length == 0 && selectedIndices.length > 0) {
-    //   indices = selectedIndices;
-    // }
-    // console.log("indices!", indices)
     setIntersectedIndices(indices);
   }, [scopeRows, selectedIndices, searchIndices, slide, tagset]);
 
@@ -471,7 +461,6 @@ function Explore() {
               }}
             >
               <FilterDataTable
-                height={tableHeight}
                 dataset={dataset}
                 scope={scope}
                 indices={intersectedIndices}
@@ -489,13 +478,17 @@ function Explore() {
                 }}
                 onHover={handleHover}
                 onClick={handleClicked}
-                editMode={true}
-                showDifference={null}
-                // showDifference={showDifference ? searchEmbedding : null}
               />
             </div>
           </div>
-          <div ref={visualizationContainerRef} className="visualization-pane-container">
+          <div
+            ref={visualizationContainerRef}
+            className="visualization-pane-container"
+            onMouseLeave={() => {
+              setHoveredIndex(null);
+              setHovered(null);
+            }}
+          >
             {scopeRows?.length ? (
               <VisualizationPane
                 scopeRows={scopeRows}

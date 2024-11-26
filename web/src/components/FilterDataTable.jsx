@@ -70,25 +70,18 @@ function RowWithHover({ props, onHover }) {
 }
 
 function FilterDataTable({
-  height,
   dataset,
-  // scope,
-  // scopeRows,
   indices = [],
   distances = [],
   clusterMap = {},
-  // clusterLabels,
   tagset,
   showEmbeddings = null,
-  // showDifference = null,
   showNavigation = true,
   sae_id = null,
   feature = -1,
   features = [],
   onTagset,
-  onScope,
   onHover,
-  onClick,
   deletedIndices = [],
 }) {
   const lsIndexCol = '0';

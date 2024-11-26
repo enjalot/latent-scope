@@ -65,8 +65,6 @@ function ScatterPlot({
   onSelect,
   onHover,
 }) {
-  console.log('=== SCATTER COMPONENT ====', { width, height });
-
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
