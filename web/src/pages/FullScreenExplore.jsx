@@ -345,13 +345,17 @@ function Explore() {
   const [size, setSize] = useState([500, 500]);
   const visualizationContainerRef = useRef(null);
 
+  function updateSize() {
+    if (visualizationContainerRef.current) {
+      const vizRect = visualizationContainerRef.current.getBoundingClientRect();
+      setSize([vizRect.width, vizRect.height]);
+    }
+  }
+
   // initial size
   useEffect(() => {
     const observer = new MutationObserver((mutations, obs) => {
-      if (containerRef.current && visualizationContainerRef.current) {
-        const vizRect = visualizationContainerRef.current.getBoundingClientRect();
-        setSize([vizRect.width, vizRect.height]);
-      }
+      updateSize();
     });
 
     observer.observe(document.body, {
@@ -362,68 +366,12 @@ function Explore() {
     return () => observer.disconnect();
   }, []);
 
-  const xOffset = 50;
-  const yOffset = 100;
-
-  // let's fill the container and update the width and height if window resizes
-  // useEffect(() => {
-  //   const node = containerRef.current;
-  //   if (!node) return;
-
-  //   const rect = containerRef.current.getBoundingClientRect();
-  //   const vizRect = visualizationContainerRef.current.getBoundingClientRect();
-  //   // const width = rect.width;
-  //   // let swidth = width > 500 ? 500 : width - 50;
-  //   setSize([vizRect.width, rect.height - vizRect.top + 30]);
-  //   // const windowWidth = node.clientWidth;
-  //   // const windowHeight = node.clientHeight;
-  //   // setSize([windowWidth - xOffset, windowHeight - yOffset]);
-  //   // window.addEventListener('resize', updateSize);
-  //   // updateSize();
-  //   // return () => window.removeEventListener('resize', updateSize);
-  // }, [containerRef]);
-
   // let's fill the container and update the width and height if window resizes
   useEffect(() => {
-    function updateSize() {
-      // console.log('updateSize', containerRef.current);
-      if (!containerRef.current) return;
-
-      // if (isFullScreen) {
-      // const rect = visualizationContainerRef.current.getBoundingClientRect();
-      // setSize([rect.width, rect.height]);
-      // else {
-      const vizRect = visualizationContainerRef.current.getBoundingClientRect();
-      setSize([vizRect.width, vizRect.height]);
-      // }
-
-      // console.log("UMAP OFFSET", rect.top + top)
-    }
     window.addEventListener('resize', updateSize);
     updateSize();
     return () => window.removeEventListener('resize', updateSize);
-  }, [containerRef]);
-
-  // // Create resize observer effect
-  // useEffect(() => {
-  //   const resizeObserver = new ResizeObserver((entries) => {
-  //     for (let entry of entries) {
-  //       const { width, height } = entry.contentRect;
-  //       // Update visualization size
-  //       setSize([width - xOffset, height - yOffset]);
-  //     }
-  //   });
-
-  //   if (visualizationContainerRef.current) {
-  //     resizeObserver.observe(visualizationContainerRef.current);
-  //   }
-
-  //   return () => {
-  //     if (visualizationContainerRef.current) {
-  //       resizeObserver.unobserve(visualizationContainerRef.current);
-  //     }
-  //   };
-  // }, [xOffset, yOffset]);
+  }, [visualizationContainerRef, containerRef]);
 
   const [width, height] = size;
   console.log('=== SIZE ====', width, height);

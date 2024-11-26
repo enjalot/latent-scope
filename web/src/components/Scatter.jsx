@@ -96,12 +96,15 @@ function ScatterPlot({
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
+    // padding around the points and the border of the canvas
+    const padding = 0.05;
+
     // center the view on the canvas
     scatterplot.zoomToArea({
-      x: -1,
-      y: -1,
-      width: 2,
-      height: 2,
+      x: -1 - padding,
+      y: -1 - padding,
+      width: 2 + padding * 2,
+      height: 2 + padding * 2,
     });
 
     onView && onView(xDomain.current, yDomain.current);
