@@ -349,10 +349,8 @@ function Explore() {
   useEffect(() => {
     const observer = new MutationObserver((mutations, obs) => {
       if (containerRef.current && visualizationContainerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
         const vizRect = visualizationContainerRef.current.getBoundingClientRect();
-        setSize([vizRect.width, rect.height - vizRect.top + 30]);
-        console.log('=== INITIAL SIZE ====', vizRect.width, rect.height - vizRect.top + 30);
+        setSize([vizRect.width, vizRect.height]);
       }
     });
 
@@ -395,11 +393,8 @@ function Explore() {
       // const rect = visualizationContainerRef.current.getBoundingClientRect();
       // setSize([rect.width, rect.height]);
       // else {
-      const rect = containerRef.current.getBoundingClientRect();
       const vizRect = visualizationContainerRef.current.getBoundingClientRect();
-      // const width = rect.width;
-      // let swidth = width > 500 ? 500 : width - 50;
-      setSize([vizRect.width, rect.height - vizRect.top + 30]);
+      setSize([vizRect.width, vizRect.height]);
       // }
 
       // console.log("UMAP OFFSET", rect.top + top)

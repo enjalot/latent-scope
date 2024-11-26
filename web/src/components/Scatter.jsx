@@ -5,16 +5,15 @@ import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
 import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
 
-import styles from  "./Scatter.module.css"
-
+import styles from './Scatter.module.css';
 
 import PropTypes from 'prop-types';
 ScatterPlot.propTypes = {
-  points: PropTypes.array.isRequired,   // an array of [x,y] points
+  points: PropTypes.array.isRequired, // an array of [x,y] points
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
-  colorScaleType: PropTypes.oneOf(["categorical", "continuous"]),
+  colorScaleType: PropTypes.oneOf(['categorical', 'continuous']),
   colorDomain: PropTypes.array,
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
@@ -30,20 +29,17 @@ ScatterPlot.propTypes = {
 
 const calculatePointSize = (numPoints) => {
   const minPoints = 100; // Minimum number of points to start scaling
-  const maxPoints = 1000000
+  const maxPoints = 1000000;
   const minSize = 6; // Minimum size of points
   const maxSize = 1; // Maximum size of points when number of points is very large
-  const scale = scaleLog()
-    .domain([minPoints, maxPoints])
-    .range([minSize, maxSize])
-    .clamp(true);
+  const scale = scaleLog().domain([minPoints, maxPoints]).range([minSize, maxSize]).clamp(true);
   return scale(numPoints);
 };
 const calculatePointOpacity = (numPoints) => {
   const minPoints = 100; // Minimum number of points to start scaling
-  const maxPoints = 1000000
-  const minOpacity = 0.2; 
-  const maxOpacity = 0.7; 
+  const maxPoints = 1000000;
+  const minOpacity = 0.2;
+  const maxOpacity = 0.7;
   const scale = scaleLog()
     .domain([minPoints, maxPoints])
     .range([maxOpacity, minOpacity])
@@ -51,11 +47,10 @@ const calculatePointOpacity = (numPoints) => {
   return scale(numPoints);
 };
 
-
-function ScatterPlot ({ 
-  points, 
-  width, 
-  height, 
+function ScatterPlot({
+  points,
+  width,
+  height,
   duration = 0,
   pointScale = 1,
   colorScaleType = null,
@@ -70,6 +65,8 @@ function ScatterPlot ({
   onSelect,
   onHover,
 }) {
+  console.log('=== SCATTER COMPONENT ====', { width, height });
+
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -83,65 +80,60 @@ function ScatterPlot ({
   useEffect(() => {
     const xScale = scaleLinear()
       // .domain(xDomain.current)
-      .domain([-1, 1])
+      .domain([-1, 1]);
     const yScale = scaleLinear()
       // .domain(yDomain.current)
-      .domain([-1, 1])
-    const scatterSettings = { 
+      .domain([-1, 1]);
+    const scatterSettings = {
       canvas: container.current,
       width,
       height,
       pointColorHover: [0.1, 0.1, 0.1, 0.5],
       xScale,
       yScale,
-    }
+    };
     // console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
-    console.log('=== SCATTER ====', xDomain.current, yDomain.current);
-
+    // center the view on the canvas
     scatterplot.zoomToArea({
-      x: xDomain.current[0],
-      y: yDomain.current[0],
-      width: xDomain.current[1] - xDomain.current[0],
-      height: yDomain.current[1] - yDomain.current[0],
-    })
-
-    onView && onView(xDomain.current, yDomain.current)
-    scatterplot.subscribe(
-      "view",
-      ({ camera, view, xScale: xs, yScale: ys }) => {
-        xDomain.current = xs.domain();
-        yDomain.current = ys.domain();
-        onView && onView(xDomain.current, yDomain.current)
-    }
-    );
-    scatterplot.subscribe("select", ({ points }) => {
-      onSelect && onSelect(points)
-    });
-    scatterplot.subscribe("deselect", () => {
-      onSelect && onSelect([])
-    });
-    scatterplot.subscribe("pointOver", (pointIndex) => {
-      onHover && onHover(pointIndex)
-    });
-    scatterplot.subscribe("pointOut", () => {
-      onHover && onHover(null)
+      x: -1,
+      y: -1,
+      width: 2,
+      height: 2,
     });
 
-    
+    onView && onView(xDomain.current, yDomain.current);
+    scatterplot.subscribe('view', ({ camera, view, xScale: xs, yScale: ys }) => {
+      xDomain.current = xs.domain();
+      yDomain.current = ys.domain();
+      onView && onView(xDomain.current, yDomain.current);
+    });
+    scatterplot.subscribe('select', ({ points }) => {
+      onSelect && onSelect(points);
+    });
+    scatterplot.subscribe('deselect', () => {
+      onSelect && onSelect([]);
+    });
+    scatterplot.subscribe('pointOver', (pointIndex) => {
+      onHover && onHover(pointIndex);
+    });
+    scatterplot.subscribe('pointOut', () => {
+      onHover && onHover(null);
+    });
+
     // const canvas = container.current;
     // canvas.addEventListener('mouseleave', handleMouseLeave);
 
-    onScatter && onScatter(scatterplot)
+    onScatter && onScatter(scatterplot);
 
     return () => {
       scatterplotRef.current = null;
       scatterplot.destroy();
       // canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [width, height, onScatter, onView, onSelect, onHover])
+  }, [onScatter, onView, onSelect, onHover, width, height]);
 
   const prevPointsRef = useRef();
   useEffect(() => {
@@ -211,13 +203,30 @@ function ScatterPlot ({
         scatterplot.set({
           pointColor: pointColor,
         });
-        scatterplot.draw(points, { transition: false });
       }
-      prevPointsRef.current = points;
+      scatterplot.draw(points, { transition: false });
     }
-  }, [points, width, height, colorScaleType, colorInterpolator, duration, pointScale, opacityRange, pointSizeRange]);
+    prevPointsRef.current = points;
+  }, [
+    points,
+    width,
+    height,
+    colorScaleType,
+    duration,
+    colorInterpolator,
+    pointScale,
+    opacityRange,
+    pointSizeRange,
+  ]);
 
-  return <canvas className={styles.scatter} ref={container} onMouseLeave={handleMouseLeave}/>;
+  return (
+    <canvas
+      style={{ width, height }}
+      className={styles.scatter}
+      ref={container}
+      onMouseLeave={handleMouseLeave}
+    />
+  );
 }
 
 export default ScatterPlot;
