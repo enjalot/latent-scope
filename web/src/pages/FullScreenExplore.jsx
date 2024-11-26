@@ -453,6 +453,24 @@ function Explore() {
     document.removeEventListener('mouseup', stopDragging);
   };
 
+  // Add this CSS-in-JS style object near the top of the component
+  const styles = {
+    dragHandle: {
+      position: 'absolute',
+      right: -4,
+      top: 0,
+      bottom: 0,
+      width: 8,
+      cursor: 'ew-resize',
+      backgroundColor: 'transparent',
+      transition: 'background-color 0.2s',
+      '&:hover': {
+        backgroundColor: '#e0e0e0',
+      },
+      zIndex: 10,
+    },
+  };
+
   if (!dataset)
     return (
       <>
@@ -479,11 +497,8 @@ function Explore() {
           className="full-screen-explore-container"
           style={{ gridTemplateColumns: gridTemplate }}
         >
-          <div
-            className="filter-table-container"
-            style={{ cursor: 'ew-resize' }}
-            onMouseDown={startDragging}
-          >
+          <div className="filter-table-container" style={{ position: 'relative' }}>
+            <div style={styles.dragHandle} onMouseDown={startDragging} />
             <div ref={filtersContainerRef}>
               <FilterActions
                 clusterLabels={clusterLabels}
@@ -505,7 +520,6 @@ function Explore() {
                 height: tableHeight,
                 overflowY: 'auto',
                 display: 'flex',
-                // alignItems: 'center',
               }}
             >
               <FilterDataTable
@@ -533,16 +547,7 @@ function Explore() {
               />
             </div>
           </div>
-          <div
-            ref={visualizationContainerRef}
-            className="visualization-pane-container"
-            onMouseLeave={() => {
-              setHoveredIndex(null);
-              setHoveredCluster(null);
-              setHoverAnnotations([]);
-              setHovered(null);
-            }}
-          >
+          <div ref={visualizationContainerRef} className="visualization-pane-container">
             {scopeRows?.length ? (
               <VisualizationPane
                 scopeRows={scopeRows}

@@ -221,8 +221,6 @@ function VisualizationPane({
     return mapSelectionOpacity.map((d) => d * vizConfig.pointOpacity);
   }, [vizConfig.pointOpacity]);
 
-  console.log('=== VIZ PANE ====', width, height);
-
   return (
     // <div style={{ width, height }} ref={umapRef}>
     <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
