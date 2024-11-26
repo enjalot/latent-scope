@@ -10,9 +10,9 @@ const SELECT = 'select';
 
 export default function FilterActions({
   clusterLabels,
-  slide,
-  slideAnnotations,
-  setSlide,
+  cluster,
+  clusterAnnotations,
+  setCluster,
   searchIndices,
   searchLoading,
   setSearchText,
@@ -44,9 +44,9 @@ export default function FilterActions({
     filterComponent = (
       <ClusterFilter
         clusterLabels={clusterLabels}
-        slide={slide}
-        slideAnnotations={slideAnnotations}
-        setSlide={setSlide}
+        cluster={cluster}
+        clusterAnnotations={clusterAnnotations}
+        setCluster={setCluster}
       />
     );
   } else if (activeFilter === SELECT) {

@@ -1,19 +1,19 @@
 import React from 'react';
 
-export default function ClusterFilter({ clusterLabels, slide, slideAnnotations, setSlide }) {
-  const handleSlideChange = (e) => {
+export default function ClusterFilter({ clusterLabels, cluster, clusterAnnotations, setCluster }) {
+  const handleClusterChange = (e) => {
     if (e.target.value === '-1') {
-      setSlide(null);
+      setCluster(null);
       return;
     }
     const cl = clusterLabels.find((cluster) => cluster.cluster === +e.target.value);
-    if (cl) setSlide(cl);
+    if (cl) setCluster(cl);
   };
 
   return (
-    <div className={`clusters-select filter-row ${slideAnnotations.length ? 'active' : ''}`}>
+    <div className={`clusters-select filter-row ${clusterAnnotations.length ? 'active' : ''}`}>
       <div className="filter-cell left">
-        <select onChange={handleSlideChange} value={slide?.cluster >= 0 ? slide.cluster : -1}>
+        <select onChange={handleClusterChange} value={cluster?.cluster >= 0 ? cluster.cluster : -1}>
           <option value="-1">Filter by cluster</option>
           {clusterLabels?.map((cluster, index) => (
             <option key={index} value={cluster.cluster}>
@@ -23,10 +23,10 @@ export default function ClusterFilter({ clusterLabels, slide, slideAnnotations, 
         </select>
       </div>
       <div className="filter-cell middle">
-        {slideAnnotations.length ? (
+        {clusterAnnotations.length ? (
           <span>
-            {slideAnnotations.length} rows
-            <button className="deselect" onClick={() => setSlide(null)}>
+            {clusterAnnotations.length} rows
+            <button className="deselect" onClick={() => setCluster(null)}>
               X
             </button>
           </span>
@@ -37,7 +37,7 @@ export default function ClusterFilter({ clusterLabels, slide, slideAnnotations, 
               style={{ visibility: 'hidden' }}
               className="deselect"
               disabled
-              onClick={() => setSlide(null)}
+              onClick={() => setCluster(null)}
             >
               X
             </button>

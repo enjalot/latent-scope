@@ -16,6 +16,27 @@ import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/FilterDataTable';
 
+function intersectMultipleArrays(filterMode, ...arrays) {
+  arrays = arrays.filter((d) => d.length > 0);
+  if (arrays.length === 0) return [];
+  if (arrays.length == 1) return arrays[0];
+
+  if (filterMode === 'all') {
+    // AND mode - intersection
+    return arrays.reduce((acc, curr) => {
+      const currSet = new Set(curr);
+      return acc.filter((x) => currSet.has(x));
+    });
+  } else {
+    // ANY mode - union
+    const unionSet = new Set();
+    arrays.forEach((arr) => {
+      arr.forEach((x) => unionSet.add(x));
+    });
+    return Array.from(unionSet);
+  }
+}
+
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
   const navigate = useNavigate();
@@ -185,8 +206,8 @@ function Explore() {
   // Clusters
   // ====================================================================================================
   // indices of items in a chosen slide
-  const [slide, setSlide] = useState(null);
-  const [slideAnnotations, setSlideAnnotations] = useState([]);
+  const [cluster, setCluster] = useState(null);
+  const [clusterAnnotations, setClusterAnnotations] = useState([]);
 
   useEffect(() => {
     if (scope) {
@@ -194,24 +215,31 @@ function Explore() {
     }
   }, [fetchScopeRows, scope, embeddings, setClusterLabels]);
 
+  // automatically set the first cluster filter when the scope rows are loaded
   useEffect(() => {
-    if (slide) {
-      const annots = scopeRows.filter((d) => d.cluster == slide.cluster);
-      setSlideAnnotations(annots);
+    if (clusterMap) {
+      setCluster(clusterMap[0]);
+    }
+  }, [clusterMap]);
+
+  useEffect(() => {
+    if (cluster) {
+      const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
+      setClusterAnnotations(annots);
       // scatter?.zoomToPoints(
       //   annots.map((d) => d.ls_index),
       //   { transition: true, transitionDuration: 1500, padding: 1.5 }
       // );
     } else {
       console.log('==== no slide', scatter);
-      setSlideAnnotations([]);
+      setClusterAnnotations([]);
       // if (scatter && scatter.zoomToOrigin) {
       //   console.log('==== zoom to origin', scatter.zoomToOrigin);
       //   // scatter?.zoomToLocation([0, 0], 1);
       //   scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
       // }
     }
-  }, [slide, scopeRows, scatter, setSlideAnnotations]);
+  }, [cluster, scopeRows, scatter, setClusterAnnotations]);
 
   // Handlers for responding to individual data points
   const handleClicked = useCallback(
@@ -236,42 +264,21 @@ function Explore() {
   );
 
   const clearScope = useCallback(() => {
-    setSlide(null);
+    setCluster(null);
   }, []);
 
   const clearFilters = useCallback(() => {
     setSelectedIndices([]);
     setSearchIndices([]);
     setIntersectedIndices([]);
-    setSlide(null);
+    setCluster(null);
   }, [setSelectedIndices, setSearchIndices]);
-
-  function intersectMultipleArrays(filterMode, ...arrays) {
-    arrays = arrays.filter((d) => d.length > 0);
-    if (arrays.length === 0) return [];
-    if (arrays.length == 1) return arrays[0];
-
-    if (filterMode === 'all') {
-      // AND mode - intersection
-      return arrays.reduce((acc, curr) => {
-        const currSet = new Set(curr);
-        return acc.filter((x) => currSet.has(x));
-      });
-    } else {
-      // ANY mode - union
-      const unionSet = new Set();
-      arrays.forEach((arr) => {
-        arr.forEach((x) => unionSet.add(x));
-      });
-      return Array.from(unionSet);
-    }
-  }
 
   const [intersectedIndices, setIntersectedIndices] = useState([]);
   // intersect the indices from the various filters
   useEffect(() => {
     const filteredClusterIndices = scopeRows
-      .filter((d) => d.cluster == slide?.cluster)
+      .filter((d) => d.cluster == cluster?.cluster)
       .map((d) => d.ls_index);
     let indices = intersectMultipleArrays(
       'all',
@@ -280,7 +287,7 @@ function Explore() {
       filteredClusterIndices || []
     );
     setIntersectedIndices(indices);
-  }, [scopeRows, selectedIndices, searchIndices, slide, tagset]);
+  }, [scopeRows, selectedIndices, searchIndices, cluster, tagset]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -440,9 +447,9 @@ function Explore() {
             <div ref={filtersContainerRef}>
               <FilterActions
                 clusterLabels={clusterLabels}
-                slide={slide}
-                slideAnnotations={slideAnnotations}
-                setSlide={setSlide}
+                slide={cluster}
+                clusterAnnotations={clusterAnnotations}
+                setCluster={setCluster}
                 searchIndices={searchIndices}
                 searchLoading={searchLoading}
                 setSearchText={setSearchText}
@@ -497,7 +504,7 @@ function Explore() {
                 hoverAnnotations={hoverAnnotations}
                 intersectedIndices={intersectedIndices}
                 hoveredCluster={hoveredCluster}
-                slide={slide}
+                slide={cluster}
                 scope={scope}
                 containerRef={containerRef}
                 onScatter={setScatter}
