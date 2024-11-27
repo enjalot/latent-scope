@@ -95,6 +95,7 @@ function ScatterPlot({
     scatterplotRef.current = scatterplot;
 
     // padding around the points and the border of the canvas
+    // TODO: if padding is set here, then the hull plot will need to be updated to use the same padding
     const padding = 0.05;
 
     // center the view on the canvas

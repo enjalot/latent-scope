@@ -243,7 +243,6 @@ function VisualizationPane({
             yDomain={yDomain}
           />
         )}
-
         {/* show all the hulls */}
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
@@ -261,7 +260,6 @@ function VisualizationPane({
             height={height}
           />
         )}
-
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
@@ -279,7 +277,6 @@ function VisualizationPane({
             height={height}
           />
         )}
-
         {/* Cluster is selected via filter */}
         {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
@@ -293,9 +290,9 @@ function VisualizationPane({
             yDomain={yDomain}
             width={width}
             height={height}
+            label={scope.cluster_labels_lookup[slide.cluster]}
           />
         )}
-
         <AnnotationPlot
           points={hoverAnnotations}
           stroke="black"
@@ -306,7 +303,6 @@ function VisualizationPane({
           width={'100%'}
           height={'100%'}
         />
-
         {vizConfig.showHeatMap && tiles?.length > 1 && (
           <TilePlot
             tiles={tiles}

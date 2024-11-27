@@ -10,7 +10,6 @@ import "./HullPlot.css"
 
 
 const HullPlot = ({
-  // points,
   hulls,
   fill,
   stroke,
@@ -18,17 +17,41 @@ const HullPlot = ({
   duration = 2000,
   strokeWidth,
   opacity = 0.75,
-  symbol,
   xDomain,
   yDomain,
   width,
   height,
-  label,
+  label = undefined,
 }) => {
   const svgRef = useRef();
   const prevPoints = useRef();
   const prevHulls = useRef();
   const prevMod = useRef();
+
+  console.log('=== hulls ===', hulls);
+
+  const hasLabel = label !== undefined;
+  let labelToShow = label;
+  if (hasLabel) {
+    labelToShow = label.label;
+  }
+
+  // Add this helper function to the component
+  const hullToSvgCoordinate = (point, xDomain, yDomain, width, height) => {
+    // Calculate scale factors
+    const xScaleFactor = width / (xDomain[1] - xDomain[0]);
+    const yScaleFactor = height / (yDomain[1] - yDomain[0]);
+
+    // Calculate offsets to center the visualization
+    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0])) / 2;
+    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0])) / 2;
+
+    // Convert the point
+    return {
+      x: point[0] * xScaleFactor + xOffset,
+      y: -point[1] * yScaleFactor + yOffset, // Negate y to flip coordinate system
+    };
+  };
 
   useEffect(() => {
     if (!xDomain || !yDomain || !hulls.length) return;
@@ -67,10 +90,13 @@ const HullPlot = ({
     const draw = line()
       .x((d) => d?.[0])
       .y((d) => -d?.[1])
-      // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
     let sel = g.selectAll('path.hull').data(hulls);
+
+    // Add base font size calculation
+    const baseFontSize = 12;
+    const scaledFontSize = baseFontSize / Math.sqrt(xScaleFactor * yScaleFactor);
 
     const exit = sel
       .exit()
@@ -118,6 +144,28 @@ const HullPlot = ({
     //   }
     // })
 
+    // Handle hull labels
+    let labelSel = svg.selectAll('text.hull-label').data(hulls);
+
+    labelSel.exit().remove();
+
+    if (label) {
+      labelSel
+        .enter()
+        .append('text')
+        .attr('class', 'hull-label')
+        .merge(labelSel)
+        .attr('dx', 5)
+        .attr('dy', 5)
+        .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
+        .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
+        .attr('text-anchor', 'end')
+        .attr('fill', 'white')
+        .attr('alignment-baseline', 'middle')
+        .attr('font-size', 12)
+        .text(label.label);
+    }
+
     setTimeout(() => {
       prevHulls.current = hulls;
       // prevHulls.current = mod
@@ -143,9 +191,35 @@ const HullPlot = ({
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
+    const baseFontSize = 12;
+    const fontSize = baseFontSize / Math.sqrt(xScaleFactor * yScaleFactor);
+
+    // Update labels
+    // let labelSel = svg.selectAll('text.hull-label').data(hulls);
+
+    // if (label) {
+    //   labelSel
+    //     .enter()
+    //     .append('text')
+    //     .attr('class', 'hull-label')
+    //     .merge(labelSel)
+    //     .attr('x', (d) => {
+    //       return d?.[0]?.[0] * xScaleFactor;
+    //     })
+    //     .attr('y', (d) => d?.[0]?.[1] * yScaleFactor)
+    //     .attr('text-anchor', 'start')
+    //     .attr('alignment-baseline', 'middle')
+    //     .attr('font-family', 'monospace')
+    //     .attr('font-weight', 'bold')
+    //     .attr('font-size', 12)
+    //     .attr('fill', 'white')
+    //     .text(label.label);
+    // }
+
     const g = svg.select('g.hull-container');
     g.attr(
       'transform',
+      // `translate(${xOffset}, ${yOffset})`
       `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
     );
 
@@ -175,6 +249,8 @@ const HullPlot = ({
       .style('stroke', stroke)
       .attr('stroke-width', scaledStrokeWidth)
       .style('opacity', opacity);
+
+    // labelSel.exit().remove();
   }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height]);
 
   return (
