@@ -7,6 +7,7 @@ export default function useNearestNeighborsSearch({
   embeddings,
   onSearchEmbedding,
   deletedIndices,
+  setFilteredIndices,
 }) {
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
@@ -42,6 +43,7 @@ export default function useNearestNeighborsSearch({
         setDistances(dists);
         // TODO: make the # of results configurable
         setSearchIndices(inds.slice(0, 20));
+        setFilteredIndices(inds.slice(0, 20));
         onSearchEmbedding?.(data.search_embedding[0]);
       } catch (error) {
         console.error('Search failed:', error);

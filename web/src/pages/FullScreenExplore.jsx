@@ -182,6 +182,9 @@ function Explore() {
     }
   }, [hoveredIndex, scopeRows]);
 
+  // indices of items in the current filter. default to cluster indices to start
+  const [filteredIndices, setFilteredIndices] = useState([]);
+
   // ====================================================================================================
   // NN Search
   // ====================================================================================================
@@ -200,6 +203,7 @@ function Explore() {
     scope,
     embeddings,
     deletedIndices,
+    setFilteredIndices,
   });
 
   // ====================================================================================================
@@ -272,7 +276,6 @@ function Explore() {
   const clearFilters = useCallback(() => {
     setSelectedIndices([]);
     setSearchIndices([]);
-    setIntersectedIndices([]);
     setCluster(null);
   }, [setSelectedIndices, setSearchIndices]);
 
@@ -288,24 +291,6 @@ function Explore() {
       setFilteredIndices([]);
     }
   }, [cluster, clusterMap]);
-
-  // const [intersectedIndices, setIntersectedIndices] = useState([]);
-  // // intersect the indices from the various filters
-  // useEffect(() => {
-  //   const filteredClusterIndices = scopeRows
-  //     .filter((d) => d.cluster == cluster?.cluster)
-  //     .map((d) => d.ls_index);
-  //   let indices = intersectMultipleArrays(
-  //     'all',
-  //     selectedIndices || [],
-  //     searchIndices || [],
-  //     filteredClusterIndices || []
-  //   );
-  //   setIntersectedIndices(indices);
-  // }, [scopeRows, selectedIndices, searchIndices, cluster, tagset]);
-
-  // indices of items in the current filter. default to cluster indices to start
-  const [filteredIndices, setFilteredIndices] = useState([]);
 
   console.log('===== FILTERED INDICES =====', filteredIndices);
 

@@ -83,6 +83,7 @@ export default function FilterActions({
       <NearestNeighbor
         searchIndices={searchIndices}
         searchLoading={searchLoading}
+        setFilteredIndices={setFilteredIndices}
         setSearchText={setSearchText}
         clearSearch={clearSearch}
       />
