@@ -1,6 +1,12 @@
 import React from 'react';
 
-export default function ClusterFilter({ clusterLabels, cluster, clusterIndices, setCluster }) {
+export default function ClusterFilter({
+  setFilteredIndices,
+  clusterLabels,
+  cluster,
+  clusterIndices,
+  setCluster,
+}) {
   const handleClusterChange = (e) => {
     if (e.target.value === '-1') {
       setCluster(null);
@@ -26,7 +32,13 @@ export default function ClusterFilter({ clusterLabels, cluster, clusterIndices, 
         {clusterIndices?.length ? (
           <span>
             {clusterIndices.length} rows
-            <button className="deselect" onClick={() => setCluster(null)}>
+            <button
+              className="deselect"
+              onClick={() => {
+                setCluster(null);
+                setFilteredIndices([]);
+              }}
+            >
               X
             </button>
           </span>

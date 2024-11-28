@@ -138,6 +138,7 @@ function Explore() {
       // console.log("handle selected", indices)
       const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
       setSelectedIndices(nonDeletedIndices);
+      setFilteredIndices(nonDeletedIndices);
       // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
       // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
     },
@@ -233,7 +234,6 @@ function Explore() {
       //   { transition: true, transitionDuration: 1500, padding: 1.5 }
       // );
     } else {
-      console.log('==== no slide', scatter);
       setClusterAnnotations([]);
       // if (scatter && scatter.zoomToOrigin) {
       //   console.log('==== zoom to origin', scatter.zoomToOrigin);
@@ -279,11 +279,13 @@ function Explore() {
   const [clusterIndices, setClusterIndices] = useState([]);
   useEffect(() => {
     if (cluster) {
-      console.log('===== CLUSTER ANNOTATIONS =====', clusterAnnotations);
       const indices = clusterAnnotations.map((d) => d.ls_index);
       setClusterIndices(indices);
     } else {
       setClusterIndices([]);
+      // clear the filtered indices when the cluster is clearedS
+      // this should only happen when the cluster filter is the active filter.
+      setFilteredIndices([]);
     }
   }, [cluster, clusterMap]);
 
@@ -389,7 +391,6 @@ function Explore() {
   }, [visualizationContainerRef, containerRef]);
 
   const [width, height] = size;
-  console.log('=== SIZE ====', width, height);
 
   // ====================================================================================================
   // Draggable State
@@ -475,7 +476,6 @@ function Explore() {
                 selectedIndices={selectedIndices}
                 setSelectedIndices={setSelectedIndices}
                 scatter={scatter}
-                clearFilters={clearFilters}
                 setFilteredIndices={setFilteredIndices}
               />
             </div>

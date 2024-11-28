@@ -28,8 +28,6 @@ const HullPlot = ({
   const prevHulls = useRef();
   const prevMod = useRef();
 
-  console.log('=== hulls ===', hulls);
-
   const hasLabel = label !== undefined;
   let labelToShow = label;
   if (hasLabel) {

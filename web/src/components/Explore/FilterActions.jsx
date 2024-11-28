@@ -51,6 +51,7 @@ export default function FilterActions({
         cluster={cluster}
         clusterIndices={clusterIndices}
         setCluster={setCluster}
+        setFilteredIndices={setFilteredIndices}
       />
     );
   } else if (activeFilter === SELECT) {
@@ -66,6 +67,7 @@ export default function FilterActions({
               className="deselect"
               onClick={() => {
                 setSelectedIndices([]);
+                setFilteredIndices([]);
                 scatter?.select([]);
               }}
             >
