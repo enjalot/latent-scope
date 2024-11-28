@@ -84,7 +84,7 @@ function FilterDataTable({
   onHover,
   deletedIndices = [],
 }) {
-  const lsIndexCol = '0';
+  console.log('===== FILTER DATA TABLE =====', { indices });
 
   const [columns, setColumns] = useState([]);
   const [rows, setRows] = useState([]);

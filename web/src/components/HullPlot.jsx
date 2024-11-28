@@ -191,30 +191,30 @@ const HullPlot = ({
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
+    // TODO: should we make this scale with xDomain and yDomain?
     const baseFontSize = 12;
-    const fontSize = baseFontSize / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    // Update labels
-    // let labelSel = svg.selectAll('text.hull-label').data(hulls);
+    // Handle hull labels
+    let labelSel = svg.selectAll('text.hull-label').data(hulls);
 
-    // if (label) {
-    //   labelSel
-    //     .enter()
-    //     .append('text')
-    //     .attr('class', 'hull-label')
-    //     .merge(labelSel)
-    //     .attr('x', (d) => {
-    //       return d?.[0]?.[0] * xScaleFactor;
-    //     })
-    //     .attr('y', (d) => d?.[0]?.[1] * yScaleFactor)
-    //     .attr('text-anchor', 'start')
-    //     .attr('alignment-baseline', 'middle')
-    //     .attr('font-family', 'monospace')
-    //     .attr('font-weight', 'bold')
-    //     .attr('font-size', 12)
-    //     .attr('fill', 'white')
-    //     .text(label.label);
-    // }
+    labelSel.exit().remove();
+
+    if (label) {
+      labelSel
+        .enter()
+        .append('text')
+        .attr('class', 'hull-label')
+        .merge(labelSel)
+        .attr('dx', 5)
+        .attr('dy', 5)
+        .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
+        .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
+        .attr('text-anchor', 'end')
+        .attr('fill', 'white')
+        .attr('alignment-baseline', 'middle')
+        .attr('font-size', baseFontSize)
+        .text(label.label);
+    }
 
     const g = svg.select('g.hull-container');
     g.attr(

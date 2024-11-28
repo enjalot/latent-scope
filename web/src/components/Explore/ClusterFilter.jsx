@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ClusterFilter({ clusterLabels, cluster, clusterAnnotations, setCluster }) {
+export default function ClusterFilter({ clusterLabels, cluster, clusterIndices, setCluster }) {
   const handleClusterChange = (e) => {
     if (e.target.value === '-1') {
       setCluster(null);
@@ -11,7 +11,7 @@ export default function ClusterFilter({ clusterLabels, cluster, clusterAnnotatio
   };
 
   return (
-    <div className={`clusters-select filter-row ${clusterAnnotations.length ? 'active' : ''}`}>
+    <div className={`clusters-select filter-row ${clusterIndices?.length ? 'active' : ''}`}>
       <div className="filter-cell left">
         <select onChange={handleClusterChange} value={cluster?.cluster >= 0 ? cluster.cluster : -1}>
           <option value="-1">Filter by cluster</option>
@@ -23,9 +23,9 @@ export default function ClusterFilter({ clusterLabels, cluster, clusterAnnotatio
         </select>
       </div>
       <div className="filter-cell middle">
-        {clusterAnnotations.length ? (
+        {clusterIndices?.length ? (
           <span>
-            {clusterAnnotations.length} rows
+            {clusterIndices.length} rows
             <button className="deselect" onClick={() => setCluster(null)}>
               X
             </button>

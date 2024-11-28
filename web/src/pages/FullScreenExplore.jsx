@@ -6,7 +6,6 @@ import './Explore.css';
 import useCurrentScope from '../hooks/useCurrentScope';
 import useNearestNeighborsSearch from '../hooks/useNearestNeighborsSearch';
 import useScopeData from '../hooks/useScopeData';
-import useColumnFilter from '../hooks/useColumnFilter';
 import { saeAvailable } from '../lib/SAE';
 import { apiUrl } from '../lib/apiService';
 
@@ -226,6 +225,9 @@ function Explore() {
     if (cluster) {
       const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
       setClusterAnnotations(annots);
+      const indices = annots.map((d) => d.ls_index);
+      setClusterIndices(indices);
+      setFilteredIndices(indices);
       // scatter?.zoomToPoints(
       //   annots.map((d) => d.ls_index),
       //   { transition: true, transitionDuration: 1500, padding: 1.5 }
@@ -274,20 +276,36 @@ function Explore() {
     setCluster(null);
   }, [setSelectedIndices, setSearchIndices]);
 
-  const [intersectedIndices, setIntersectedIndices] = useState([]);
-  // intersect the indices from the various filters
+  const [clusterIndices, setClusterIndices] = useState([]);
   useEffect(() => {
-    const filteredClusterIndices = scopeRows
-      .filter((d) => d.cluster == cluster?.cluster)
-      .map((d) => d.ls_index);
-    let indices = intersectMultipleArrays(
-      'all',
-      selectedIndices || [],
-      searchIndices || [],
-      filteredClusterIndices || []
-    );
-    setIntersectedIndices(indices);
-  }, [scopeRows, selectedIndices, searchIndices, cluster, tagset]);
+    if (cluster) {
+      console.log('===== CLUSTER ANNOTATIONS =====', clusterAnnotations);
+      const indices = clusterAnnotations.map((d) => d.ls_index);
+      setClusterIndices(indices);
+    } else {
+      setClusterIndices([]);
+    }
+  }, [cluster, clusterMap]);
+
+  // const [intersectedIndices, setIntersectedIndices] = useState([]);
+  // // intersect the indices from the various filters
+  // useEffect(() => {
+  //   const filteredClusterIndices = scopeRows
+  //     .filter((d) => d.cluster == cluster?.cluster)
+  //     .map((d) => d.ls_index);
+  //   let indices = intersectMultipleArrays(
+  //     'all',
+  //     selectedIndices || [],
+  //     searchIndices || [],
+  //     filteredClusterIndices || []
+  //   );
+  //   setIntersectedIndices(indices);
+  // }, [scopeRows, selectedIndices, searchIndices, cluster, tagset]);
+
+  // indices of items in the current filter. default to cluster indices to start
+  const [filteredIndices, setFilteredIndices] = useState([]);
+
+  console.log('===== FILTERED INDICES =====', filteredIndices);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -448,8 +466,8 @@ function Explore() {
               <FilterActions
                 clusterLabels={clusterLabels}
                 slide={cluster}
-                clusterAnnotations={clusterAnnotations}
                 setCluster={setCluster}
+                clusterIndices={clusterIndices}
                 searchIndices={searchIndices}
                 searchLoading={searchLoading}
                 setSearchText={setSearchText}
@@ -458,6 +476,7 @@ function Explore() {
                 setSelectedIndices={setSelectedIndices}
                 scatter={scatter}
                 clearFilters={clearFilters}
+                setFilteredIndices={setFilteredIndices}
               />
             </div>
             <div
@@ -470,7 +489,7 @@ function Explore() {
               <FilterDataTable
                 dataset={dataset}
                 scope={scope}
-                indices={intersectedIndices}
+                indices={filteredIndices}
                 deletedIndices={deletedIndices}
                 distances={distances}
                 clusterMap={clusterMap}
@@ -502,7 +521,7 @@ function Explore() {
                 clusterLabels={clusterLabels}
                 hoveredIndex={hoveredIndex}
                 hoverAnnotations={hoverAnnotations}
-                intersectedIndices={intersectedIndices}
+                intersectedIndices={filteredIndices}
                 hoveredCluster={hoveredCluster}
                 slide={cluster}
                 scope={scope}

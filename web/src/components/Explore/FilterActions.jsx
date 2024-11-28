@@ -11,32 +11,36 @@ const SELECT = 'select';
 export default function FilterActions({
   clusterLabels,
   cluster,
-  clusterAnnotations,
   setCluster,
+  clusterIndices,
   searchIndices,
   searchLoading,
   setSearchText,
   clearSearch,
   selectedIndices,
   setSelectedIndices,
+  setFilteredIndices,
   clearFilters,
   scatter,
 }) {
   const [activeFilter, setActiveFilter] = useState(FILTER);
 
   const toggleSearch = () => {
-    clearFilters();
+    // clearFilters();
     setActiveFilter(SEARCH);
+    setFilteredIndices(searchIndices);
   };
 
   const toggleFilter = () => {
-    clearFilters();
+    // clearFilters();
     setActiveFilter(FILTER);
+    setFilteredIndices(clusterIndices);
   };
 
   const toggleSelect = () => {
-    clearFilters();
+    // clearFilters();
     setActiveFilter(SELECT);
+    setFilteredIndices(selectedIndices);
   };
 
   let filterComponent = null;
@@ -45,7 +49,7 @@ export default function FilterActions({
       <ClusterFilter
         clusterLabels={clusterLabels}
         cluster={cluster}
-        clusterAnnotations={clusterAnnotations}
+        clusterIndices={clusterIndices}
         setCluster={setCluster}
       />
     );
@@ -91,7 +95,7 @@ export default function FilterActions({
           className={`filter-actions-button ${activeFilter === FILTER ? 'active' : 'not-active'}`}
           size="small"
           icon="filter"
-          text={`Filter (${clusterAnnotations.length})`}
+          text={`Filter (${clusterIndices?.length})`}
           color="secondary"
           title="Filter data points"
         />
@@ -100,7 +104,7 @@ export default function FilterActions({
           className={`filter-actions-button ${activeFilter === SEARCH ? 'active' : 'not-active'}`}
           size="small"
           icon="search"
-          text="Search"
+          text={`Search (${searchIndices?.length})`}
           color="secondary"
           title="Search"
         />
@@ -109,7 +113,7 @@ export default function FilterActions({
           className={`filter-actions-button ${activeFilter === SELECT ? 'active' : 'not-active'}`}
           size="small"
           icon="crosshair"
-          text="Select"
+          text={`Select (${selectedIndices?.length})`}
           color="secondary"
           title="Annotate"
         />
