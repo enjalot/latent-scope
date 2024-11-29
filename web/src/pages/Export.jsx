@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import SubNav from '../components/SubNav';
 import { apiService, apiUrl } from '../lib/apiService';
@@ -49,6 +49,24 @@ function Export() {
     });
   }, []);
 
+  const scopeFiles = useMemo(() => {
+    return datasetFiles.filter(
+      (d) => d[0].indexOf(scopeId) == 0 && d[0].indexOf('transactions') < 0
+    );
+  }, [datasetFiles, scopeId]);
+
+  const scopeSubFiles = useMemo(() => {
+    console.log('datasetfiles', datasetFiles, scope);
+    if (!datasetFiles?.length || !scope) return [];
+    let files = {
+      embeddings: datasetFiles.filter((d) => d[0].indexOf(scope.embedding_id) >= 0),
+      umaps: datasetFiles.filter((d) => d[0].indexOf(scope.umap_id) >= 0),
+      clusters: datasetFiles.filter((d) => d[0].indexOf(scope.cluster_id) >= 0),
+    };
+    console.log('files', files);
+    return files;
+  }, [scope, datasetFiles]);
+
   const fileLink = useCallback(
     (d, i) => {
       return (
@@ -92,12 +110,27 @@ function Export() {
             These files combine the data from each step into a single parquet (x,y from UMAP,
             cluster and label from clustering and labeling) and the metadata into a single JSON.
           </p>
-          <ul>
-            {datasetFiles
-              .filter((d) => d[0].indexOf(scopeId) == 0 && d[0].indexOf('transactions') < 0)
-              .map(fileLink)}
-          </ul>
+          <ul>{scopeFiles.map(fileLink)}</ul>
         </div>
+        {scopeId ? (
+          <div className={styles['code-snippets']}>
+            <h3>Python code snippets</h3>
+            <p className={styles['description']}>
+              These snippets can be used to load the data and embeddings in python.
+            </p>
+            {/* prettier-ignore */}
+            <code>
+            import h5py<br/>
+            import numpy as np<br/>
+            import pandas as pd<br/>
+            <br/>
+            df = pd.read_parquet({scopeFiles[1]?.[3]})<br/>
+            with h5py.File({scopeSubFiles.embeddings?.[0]?.[3]}, 'r') as emb_file:<br/>
+            &nbsp;&nbsp;embeddings = np.array(emb_file["embeddings"])<br/>
+            </code>
+          </div>
+        ) : null}
+
         <div className={styles['dataset-files']}>
           <h3>Dataset</h3>
           <ul>{datasetFiles.filter((d) => d[1] == '.').map(fileLink)}</ul>
