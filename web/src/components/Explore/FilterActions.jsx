@@ -3,10 +3,7 @@ import './FilterActions.css';
 import { Button } from 'react-element-forge';
 import ClusterFilter from './ClusterFilter';
 import NearestNeighbor from './NearestNeighbor';
-
-const SEARCH = 'search';
-const FILTER = 'filter';
-const SELECT = 'select';
+import { SEARCH, FILTER, SELECT } from '../../pages/FullScreenExplore';
 
 export default function FilterActions({
   clusterLabels,
@@ -21,26 +18,13 @@ export default function FilterActions({
   setSelectedIndices,
   setFilteredIndices,
   scatter,
+  activeFilterTab,
+  toggleSearch,
+  toggleFilter,
+  toggleSelect,
 }) {
-  const [activeFilter, setActiveFilter] = useState(FILTER);
-
-  const toggleSearch = () => {
-    setActiveFilter(SEARCH);
-    setFilteredIndices(searchIndices);
-  };
-
-  const toggleFilter = () => {
-    setActiveFilter(FILTER);
-    setFilteredIndices(clusterIndices);
-  };
-
-  const toggleSelect = () => {
-    setActiveFilter(SELECT);
-    setFilteredIndices(selectedIndices);
-  };
-
   let filterComponent = null;
-  if (activeFilter === FILTER) {
+  if (activeFilterTab === FILTER) {
     filterComponent = (
       <ClusterFilter
         clusterLabels={clusterLabels}
@@ -50,7 +34,7 @@ export default function FilterActions({
         setFilteredIndices={setFilteredIndices}
       />
     );
-  } else if (activeFilter === SELECT) {
+  } else if (activeFilterTab === SELECT) {
     filterComponent = (
       <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
         <div className="filter-cell left filter-description">
@@ -74,7 +58,7 @@ export default function FilterActions({
         <div className="filter-cell right"></div>
       </div>
     );
-  } else if (activeFilter === SEARCH) {
+  } else if (activeFilterTab === SEARCH) {
     filterComponent = (
       <NearestNeighbor
         searchIndices={searchIndices}
@@ -91,7 +75,7 @@ export default function FilterActions({
       <div className="filter-actions-container">
         <Button
           onClick={toggleFilter}
-          className={`filter-actions-button ${activeFilter === FILTER ? 'active' : 'not-active'}`}
+          className={`filter-actions-button ${activeFilterTab === FILTER ? 'active' : 'not-active'}`}
           size="small"
           icon="filter"
           text={`Filter (${clusterIndices?.length})`}
@@ -100,7 +84,7 @@ export default function FilterActions({
         />
         <Button
           onClick={toggleSearch}
-          className={`filter-actions-button ${activeFilter === SEARCH ? 'active' : 'not-active'}`}
+          className={`filter-actions-button ${activeFilterTab === SEARCH ? 'active' : 'not-active'}`}
           size="small"
           icon="search"
           text={`Search (${searchIndices?.length})`}
@@ -109,7 +93,7 @@ export default function FilterActions({
         />
         <Button
           onClick={toggleSelect}
-          className={`filter-actions-button ${activeFilter === SELECT ? 'active' : 'not-active'}`}
+          className={`filter-actions-button ${activeFilterTab === SELECT ? 'active' : 'not-active'}`}
           size="small"
           icon="crosshair"
           text={`Select (${selectedIndices?.length})`}

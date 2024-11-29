@@ -36,9 +36,9 @@ function VisualizationPane({
   onSelect,
   onHover,
   hovered,
-  containerRef,
   width,
   height,
+  showHull,
 }) {
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -275,10 +275,11 @@ function VisualizationPane({
             yDomain={yDomain}
             width={width}
             height={height}
+            label={scope.cluster_labels_lookup[hoveredCluster.cluster]}
           />
         )}
         {/* Cluster is selected via filter */}
-        {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
+        {showHull && slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={clusterHulls}
             fill="#D3965E"

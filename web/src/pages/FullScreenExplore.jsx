@@ -15,6 +15,9 @@ import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/FilterDataTable';
 
+export const SEARCH = 'search';
+export const FILTER = 'filter';
+export const SELECT = 'select';
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -162,7 +165,27 @@ function Explore() {
     }
   }, [hoveredIndex, scopeRows]);
 
+  // ====================================================================================================
+  // Filtering
+  // ====================================================================================================
   // indices of items in the current filter. default to cluster indices to start
+  const [activeFilterTab, setActiveFilterTab] = useState(FILTER);
+
+  const toggleSearch = () => {
+    setActiveFilterTab(SEARCH);
+    setFilteredIndices(searchIndices);
+  };
+
+  const toggleFilter = () => {
+    setActiveFilterTab(FILTER);
+    setFilteredIndices(clusterIndices);
+  };
+
+  const toggleSelect = () => {
+    setActiveFilterTab(SELECT);
+    setFilteredIndices(selectedIndices);
+  };
+
   const [filteredIndices, setFilteredIndices] = useState([]);
 
   // ====================================================================================================
@@ -253,12 +276,6 @@ function Explore() {
     setCluster(null);
   }, []);
 
-  const clearFilters = useCallback(() => {
-    setSelectedIndices([]);
-    setSearchIndices([]);
-    setCluster(null);
-  }, [setSelectedIndices, setSearchIndices]);
-
   const [clusterIndices, setClusterIndices] = useState([]);
   useEffect(() => {
     if (cluster) {
@@ -271,8 +288,6 @@ function Explore() {
       setFilteredIndices([]);
     }
   }, [cluster, clusterMap]);
-
-  console.log('===== FILTERED INDICES =====', filteredIndices);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -442,6 +457,10 @@ function Explore() {
                 setSelectedIndices={setSelectedIndices}
                 scatter={scatter}
                 setFilteredIndices={setFilteredIndices}
+                activeFilterTab={activeFilterTab}
+                toggleSearch={toggleSearch}
+                toggleFilter={toggleFilter}
+                toggleSelect={toggleSelect}
               />
             </div>
             <div
@@ -499,6 +518,7 @@ function Explore() {
                 deletedIndices={deletedIndices}
                 width={width}
                 height={height}
+                showHull={activeFilterTab === FILTER}
               />
             ) : null}
           </div>
