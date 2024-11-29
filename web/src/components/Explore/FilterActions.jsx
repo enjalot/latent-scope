@@ -20,25 +20,21 @@ export default function FilterActions({
   selectedIndices,
   setSelectedIndices,
   setFilteredIndices,
-  clearFilters,
   scatter,
 }) {
   const [activeFilter, setActiveFilter] = useState(FILTER);
 
   const toggleSearch = () => {
-    // clearFilters();
     setActiveFilter(SEARCH);
     setFilteredIndices(searchIndices);
   };
 
   const toggleFilter = () => {
-    // clearFilters();
     setActiveFilter(FILTER);
     setFilteredIndices(clusterIndices);
   };
 
   const toggleSelect = () => {
-    // clearFilters();
     setActiveFilter(SELECT);
     setFilteredIndices(selectedIndices);
   };

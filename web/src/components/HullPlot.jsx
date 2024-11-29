@@ -158,7 +158,7 @@ const HullPlot = ({
         .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
         .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
         .attr('text-anchor', 'end')
-        .attr('fill', 'white')
+        .attr('fill', 'black')
         .attr('alignment-baseline', 'middle')
         .attr('font-size', 12)
         .text(label.label);
@@ -208,7 +208,7 @@ const HullPlot = ({
         .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
         .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
         .attr('text-anchor', 'end')
-        .attr('fill', 'white')
+        .attr('fill', 'black')
         .attr('alignment-baseline', 'middle')
         .attr('font-size', baseFontSize)
         .text(label.label);

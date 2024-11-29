@@ -15,26 +15,6 @@ import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/FilterDataTable';
 
-function intersectMultipleArrays(filterMode, ...arrays) {
-  arrays = arrays.filter((d) => d.length > 0);
-  if (arrays.length === 0) return [];
-  if (arrays.length == 1) return arrays[0];
-
-  if (filterMode === 'all') {
-    // AND mode - intersection
-    return arrays.reduce((acc, curr) => {
-      const currSet = new Set(curr);
-      return acc.filter((x) => currSet.has(x));
-    });
-  } else {
-    // ANY mode - union
-    const unionSet = new Set();
-    arrays.forEach((arr) => {
-      arr.forEach((x) => unionSet.add(x));
-    });
-    return Array.from(unionSet);
-  }
-}
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
