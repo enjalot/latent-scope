@@ -108,6 +108,13 @@ def get_chat_model(id):
                 raise ValueError(f"Custom model {id} not found")
         else:
             raise ValueError("No custom models found")
+    elif id.startswith("ollama-"):
+        model = {
+            "provider": "ollama",
+            "name": id.split("ollama-")[1],
+            "url": "http://localhost:11434/v1", # TODO: this should be passed in somehow?
+            "params": {}
+        }
     else:
         model = get_chat_model_dict(id)
     
@@ -116,6 +123,8 @@ def get_chat_model(id):
     if model['provider'] == "openai":
         return OpenAIChatProvider(model['name'], model['params'])
     if model['provider'] == "custom":
+        return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
+    if model['provider'] == "ollama":
         return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
     if model['provider'] == "mistralai":
         return MistralAIChatProvider(model['name'], model['params'])

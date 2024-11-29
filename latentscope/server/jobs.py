@@ -56,11 +56,27 @@ def run_job(dataset, job_id, command):
     )
     PROCESSES[job_id] = process
 
-    last_output_time = time.time()  # Initialize with the current time
+    last_output_time = time.time()
+
+    # Create thread to handle stderr separately
+    # def handle_stderr():
+    #     for line in iter(process.stderr.readline, ''):
+    #         print("stderr:", line.strip())
+    #         job["progress"].append(line.strip())
+    #         job["times"].append(str(datetime.now()))
+    #         job["last_update"] = str(datetime.now())
+    #         with open(progress_file, 'w') as f:
+    #             json.dump(job, f)
+    #         nonlocal last_output_time
+    #         last_output_time = time.time()
+
+    # stderr_thread = threading.Thread(target=handle_stderr)
+    # stderr_thread.daemon = True
+    # stderr_thread.start()
 
     while True:
         output = process.stdout.readline()
-        current_time = time.time()  # Update current time on each iteration
+        current_time = time.time()
         print(current_time, current_time - last_output_time, TIMEOUT)
         print("output", output)
 
@@ -85,6 +101,8 @@ def run_job(dataset, job_id, command):
             job["progress"].append(f"Timeout: No output for more than {TIMEOUT} seconds.")
             job["status"] = "error"
             break  # Break the loop
+
+    # stderr_thread.join(timeout=1)  # Wait for stderr thread to finish
 
     if process.returncode != 0:
         job["status"] = "error"
