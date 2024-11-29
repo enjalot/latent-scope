@@ -5,16 +5,15 @@ import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
 import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
 
-import styles from  "./Scatter.module.css"
-
+import styles from './Scatter.module.css';
 
 import PropTypes from 'prop-types';
 ScatterPlot.propTypes = {
-  points: PropTypes.array.isRequired,   // an array of [x,y] points
+  points: PropTypes.array.isRequired, // an array of [x,y] points
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
-  colorScaleType: PropTypes.oneOf(["categorical", "continuous"]),
+  colorScaleType: PropTypes.oneOf(['categorical', 'continuous']),
   colorDomain: PropTypes.array,
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
@@ -30,20 +29,17 @@ ScatterPlot.propTypes = {
 
 const calculatePointSize = (numPoints) => {
   const minPoints = 100; // Minimum number of points to start scaling
-  const maxPoints = 1000000
+  const maxPoints = 1000000;
   const minSize = 6; // Minimum size of points
   const maxSize = 1; // Maximum size of points when number of points is very large
-  const scale = scaleLog()
-    .domain([minPoints, maxPoints])
-    .range([minSize, maxSize])
-    .clamp(true);
+  const scale = scaleLog().domain([minPoints, maxPoints]).range([minSize, maxSize]).clamp(true);
   return scale(numPoints);
 };
 const calculatePointOpacity = (numPoints) => {
   const minPoints = 100; // Minimum number of points to start scaling
-  const maxPoints = 1000000
-  const minOpacity = 0.2; 
-  const maxOpacity = 0.7; 
+  const maxPoints = 1000000;
+  const minOpacity = 0.2;
+  const maxOpacity = 0.7;
   const scale = scaleLog()
     .domain([minPoints, maxPoints])
     .range([maxOpacity, minOpacity])
@@ -51,11 +47,10 @@ const calculatePointOpacity = (numPoints) => {
   return scale(numPoints);
 };
 
-
-function ScatterPlot ({ 
-  points, 
-  width, 
-  height, 
+function ScatterPlot({
+  points,
+  width,
+  height,
   duration = 0,
   pointScale = 1,
   colorScaleType = null,
@@ -70,7 +65,6 @@ function ScatterPlot ({
   onSelect,
   onHover,
 }) {
-  console.log({ points });
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -82,7 +76,7 @@ function ScatterPlot ({
 
   // setup the scatterplot on first render
   useEffect(() => {
-    console.log('===setting up scatterplot===');
+    // console.log('===setting up scatterplot===');
     const xScale = scaleLinear()
       // .domain(xDomain.current)
       .domain([-1, 1]);

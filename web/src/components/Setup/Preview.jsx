@@ -85,11 +85,27 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [height, setHeight] = useState(300);
   const [width, setWidth] = useState(300);
   const heightOffset = 200; // 90px for the header, 50px for search 42px for the row info
-  const umapHeight = useMemo(() => (height > 700 ? height / 2 : height), [height]);
-  const tableHeight = useMemo(
-    () => (!umap ? height : height > 700 ? height / 2 - 6 : 0),
-    [umap, height]
-  );
+  const [viewMode, setViewMode] = useState('both');
+
+  const umapHeight = useMemo(() => {
+    if (height <= 700) {
+      return viewMode === 'table' ? 0 : height;
+    }
+    return height / 2;
+  }, [height, viewMode]);
+
+  const tableHeight = useMemo(() => {
+    if (!umap) return height;
+    if (height <= 700) {
+      return viewMode === 'umap' ? 0 : height - 56;
+    }
+    return height / 2 - 6;
+  }, [umap, height, viewMode]);
+
+  useEffect(() => {
+    console.log('viewMode', viewMode);
+  }, [viewMode]);
+
   // const heightPx = useMemo(() => `${height}px`, [height])
   // const widthPx = useMemo(() => `${width}px`, [width])
 
@@ -103,6 +119,11 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         const newHeight = windowHeight - previewRect.top - heightOffset;
         const newWidth = windowWidth - previewRect.left - 36;
         console.log('newHeight', newHeight, 'newWidth', newWidth);
+        if (newHeight > 700) {
+          setViewMode('both');
+        } else {
+          setViewMode('umap');
+        }
         setHeight(newHeight);
         setWidth(newWidth);
       }
@@ -115,7 +136,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
     }, 100);
 
     return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  }, [setViewMode, setHeight, setWidth]);
 
   useEffect(() => {
     console.log('SCOPE', scope);
@@ -334,7 +355,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         </div>
       </div>
 
-      {drawPoints.length ? (
+      {drawPoints.length && umapHeight > 0 ? (
         <div className={styles['scatter-container']} style={{ width: width, height: umapHeight }}>
           <Scatter
             points={drawPoints}
@@ -369,23 +390,26 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         </div>
       ) : null}
 
-      <div className={styles['row-information']}>
-        {selectedIndices.length ? (
-          <div>
+      {viewMode == 'table' && (
+        <div className={styles['row-information']}>
+          {selectedIndices.length ? (
+            <div>
+              <span>
+                Selected {selectedIndices?.length} of {dataset?.length} rows
+              </span>
+              <Button color="secondary" icon="x" onClick={() => clearSelection()}></Button>
+              {/* <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button> */}
+            </div>
+          ) : (
             <span>
-              Selected {selectedIndices?.length} of {dataset?.length} rows
+              Showing {dataIndices?.length} of {dataset?.length} rows
             </span>
-            <Button color="secondary" icon="x" onClick={() => clearSelection()}></Button>
-            {/* <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button> */}
-          </div>
-        ) : (
-          <span>
-            Showing {dataIndices?.length} of {dataset?.length} rows
-          </span>
-        )}
-      </div>
-      <div className={styles['table-container']}>
-        {tableHeight > 0 && dataset ? (
+          )}
+        </div>
+      )}
+
+      {tableHeight > 0 && viewMode !== 'umap' && dataset ? (
+        <div className={styles['table-container']}>
           <FilterDataTable
             dataset={dataset}
             indices={dataIndices}
@@ -396,10 +420,19 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             showNavigation={false}
             onHover={(index) => handleHovered(index)}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      {umap && (
+      {height <= 700 && umap && (
+        <Button
+          color="secondary"
+          className={styles['view-toggle']}
+          onClick={() => setViewMode(viewMode === 'umap' ? 'table' : 'umap')}
+          text={`Show ${viewMode === 'umap' ? 'Table' : 'UMAP'}`}
+        />
+      )}
+
+      {umap && viewMode !== 'table' && (
         <div
           data-tooltip-id="featureTooltip"
           style={{
@@ -410,7 +443,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
           }}
         ></div>
       )}
-      {umap && (
+      {umap && viewMode !== 'table' && (
         <Tooltip
           id="featureTooltip"
           isOpen={hoveredIndex !== null}
