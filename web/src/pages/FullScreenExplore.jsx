@@ -118,12 +118,16 @@ function Explore() {
 
   const handleSelected = useCallback(
     (indices) => {
-      // console.log("handle selected", indices)
-      const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-      setSelectedIndices(nonDeletedIndices);
-      setFilteredIndices(nonDeletedIndices);
-      // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-      // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
+      if (activeFilterTab === SELECT) {
+        // console.log("handle selected", indices)
+        const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
+        setSelectedIndices(nonDeletedIndices);
+        setFilteredIndices(nonDeletedIndices);
+        // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
+        // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
+      } else {
+        console.log('==== handle selected === ', indices);
+      }
     },
     [setSelectedIndices]
   );
@@ -230,7 +234,7 @@ function Explore() {
   }, [clusterMap]);
 
   useEffect(() => {
-    if (cluster) {
+    if (cluster && activeFilterTab === FILTER) {
       const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
       setClusterAnnotations(annots);
       const indices = annots.map((d) => d.ls_index);
@@ -248,7 +252,7 @@ function Explore() {
       //   scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
       // }
     }
-  }, [cluster, scopeRows, scatter, setClusterAnnotations]);
+  }, [cluster, scopeRows, setClusterAnnotations]);
 
   // Handlers for responding to individual data points
   const handleClicked = useCallback(
@@ -287,7 +291,7 @@ function Explore() {
       // this should only happen when the cluster filter is the active filter.
       setFilteredIndices([]);
     }
-  }, [cluster, clusterMap]);
+  }, [cluster, clusterMap, clusterAnnotations]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -446,7 +450,7 @@ function Explore() {
             <div ref={filtersContainerRef}>
               <FilterActions
                 clusterLabels={clusterLabels}
-                slide={cluster}
+                cluster={cluster}
                 setCluster={setCluster}
                 clusterIndices={clusterIndices}
                 searchIndices={searchIndices}
@@ -518,7 +522,7 @@ function Explore() {
                 deletedIndices={deletedIndices}
                 width={width}
                 height={height}
-                showHull={activeFilterTab === FILTER}
+                activeFilterTab={activeFilterTab}
               />
             ) : null}
           </div>

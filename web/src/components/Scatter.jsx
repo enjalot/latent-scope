@@ -4,6 +4,7 @@ import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
 import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
 import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
+import { SELECT } from '../pages/FullScreenExplore';
 
 import styles from './Scatter.module.css';
 
@@ -64,6 +65,7 @@ function ScatterPlot({
   onView,
   onSelect,
   onHover,
+  activeFilterTab,
 }) {
   const container = useRef();
   const xDomain = useRef([-1, 1]);
@@ -82,6 +84,9 @@ function ScatterPlot({
     const yScale = scaleLinear()
       // .domain(yDomain.current)
       .domain([-1, 1]);
+
+    const selectKeyMap = { alt: 'rotate', shift: 'lasso' };
+
     const scatterSettings = {
       canvas: container.current,
       width,
@@ -89,13 +94,13 @@ function ScatterPlot({
       pointColorHover: [0.1, 0.1, 0.1, 0.5],
       xScale,
       yScale,
+      keyMap: activeFilterTab === SELECT ? selectKeyMap : {},
     };
     // console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
     // padding around the points and the border of the canvas
-    // TODO: if padding is set here, then the hull plot will need to be updated to use the same padding
     const padding = 0.05;
 
     // center the view on the canvas
@@ -135,7 +140,7 @@ function ScatterPlot({
       scatterplot.destroy();
       // canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [onScatter, onView, onSelect, onHover, width, height]);
+  }, [onScatter, onView, onSelect, onHover, width, height, activeFilterTab]);
 
   const prevPointsRef = useRef();
   useEffect(() => {

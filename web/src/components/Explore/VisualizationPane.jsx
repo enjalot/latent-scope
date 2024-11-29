@@ -17,6 +17,7 @@ import {
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
+import { FILTER } from '../../pages/FullScreenExplore';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -38,8 +39,11 @@ function VisualizationPane({
   hovered,
   width,
   height,
-  showHull,
+  activeFilterTab,
 }) {
+  // only show the hull if we are filtering by cluster
+  const showHull = activeFilterTab === FILTER;
+
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
   const handleView = useCallback(
@@ -80,6 +84,9 @@ function VisualizationPane({
       }
     });
   }, [scopeRows, intersectedIndices, hoveredIndex]);
+
+  // console.log('===== DRAWING POINTS =====', drawingPoints);
+  console.log('===== FILTERED INDICES =====', intersectedIndices);
 
   const points = useMemo(() => {
     return scopeRows
@@ -231,6 +238,7 @@ function VisualizationPane({
             onView={handleView}
             onSelect={onSelect}
             onHover={onHover}
+            activeFilterTab={activeFilterTab}
           />
         ) : (
           <AnnotationPlot
