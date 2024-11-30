@@ -332,7 +332,7 @@ function VisualizationPane({
           data-tooltip-id="featureTooltip"
           style={{
             position: 'absolute',
-            right: 200,
+            right: 225,
             top: 0,
             pointerEvents: 'none',
           }}
@@ -352,10 +352,8 @@ function VisualizationPane({
             left: 0,
             top: 0,
             pointerEvents: 'none',
-            height: '200px',
             width: '400px',
-            // maxWidth: '400px',
-            backgroundColor: hovered?.ls_search_index >= 0 ? '#111' : '#666',
+            backgroundColor: '#D3965E',
           }}
         >
           <div className="tooltip-content">
