@@ -13,8 +13,8 @@ export const mapSelectionKey = {
 //   "#fcfbfd", // 99, hidden
 // ]
 
-const baseColor = '#b87333';
-const baseColorDark = '#E0EFFF';
+export const baseColor = '#b87333';
+export const baseColorDark = '#E0EFFF';
 
 export const mapSelectionColorsLight = [
   baseColor,
@@ -24,13 +24,13 @@ export const mapSelectionColorsLight = [
   '#fcfbfd', // 99, hidden
 ];
 
-// export const mapSelectionColorsLight = [
-//   baseColorDark,
-//   baseColorDark,
-//   baseColorDark,
-//   baseColorDark,
-//   '#fcfbfd', // 99, hidden
-// ];
+export const mapSelectionColorsDark = [
+  baseColorDark,
+  baseColorDark,
+  baseColorDark,
+  baseColorDark,
+  '#fcfbfd', // 99, hidden
+];
 
 
 export const mapSelectionOpacity = [

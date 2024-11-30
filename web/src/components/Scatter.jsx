@@ -154,6 +154,8 @@ function ScatterPlot({
       let pointColor = [122 / 255, 217 / 255, 255 / 255, 1]; //salmon
       // let pointColor = '#7AD9FF';
 
+      // 224, 239, 255
+
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
       console.log({ colorScaleType, colorDomain, colorRange });

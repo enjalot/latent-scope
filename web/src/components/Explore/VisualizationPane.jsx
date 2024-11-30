@@ -7,6 +7,7 @@ import HullPlot from '../HullPlot';
 import TilePlot from '../TilePlot';
 import { Tooltip } from 'react-tooltip';
 import { processHulls } from '../../utils';
+import { useColorMode } from '../../hooks/useColorMode';
 import {
   mapSelectionColorsLight,
   mapSelectionDomain,
@@ -43,6 +44,9 @@ function VisualizationPane({
 }) {
   // only show the hull if we are filtering by cluster
   const showHull = activeFilterTab === FILTER;
+
+  // get the color mode
+  const { isDark } = useColorMode();
 
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -84,9 +88,6 @@ function VisualizationPane({
       }
     });
   }, [scopeRows, intersectedIndices, hoveredIndex]);
-
-  // console.log('===== DRAWING POINTS =====', drawingPoints);
-  console.log('===== FILTERED INDICES =====', intersectedIndices);
 
   const points = useMemo(() => {
     return scopeRows
@@ -229,7 +230,7 @@ function VisualizationPane({
             width={width}
             height={height}
             colorScaleType="categorical"
-            colorRange={mapSelectionColorsLight}
+            colorRange={isDark ? mapSelectionColorsLight : mapSelectionColorsLight}
             colorDomain={mapSelectionDomain}
             opacityRange={pointOpacityRange}
             pointSizeRange={pointSizeRange}
@@ -257,6 +258,7 @@ function VisualizationPane({
             hulls={hulls}
             // stroke="#E7C7AA"
             // stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
+            // stroke={isDark ? '#E0EFFF' : '#d4b297'}
             stroke="#d4b297"
             // stroke={'#E0EFFF'}
             fill="none"
@@ -271,7 +273,6 @@ function VisualizationPane({
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            // fill="lightgray"
             fill="#d28440"
             stroke="#CC5500"
             strokeWidth={2.5}
@@ -284,6 +285,7 @@ function VisualizationPane({
             width={width}
             height={height}
             label={scope.cluster_labels_lookup[hoveredCluster.cluster]}
+            darkMode={isDark}
           />
         )}
         {/* Cluster is selected via filter */}
@@ -300,6 +302,7 @@ function VisualizationPane({
             width={width}
             height={height}
             label={scope.cluster_labels_lookup[slide.cluster]}
+            darkMode={isDark}
           />
         )}
         <AnnotationPlot

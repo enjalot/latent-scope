@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 // import { scaleLinear } from 'd3-scale';
 import { line, curveLinearClosed, curveCatmullRomClosed } from 'd3-shape';
 import { select } from 'd3-selection';
+import { baseColor, baseColorDark } from '../lib/colors';
 import { transition } from 'd3-transition';
-import { easeExpOut, easeExpIn, easeCubicInOut} from 'd3-ease';
+import { easeExpOut, easeExpIn, easeCubicInOut } from 'd3-ease';
 // import { interpolate } from 'flubber';
 
-import "./HullPlot.css"
-
+import './HullPlot.css';
 
 const HullPlot = ({
   hulls,
@@ -17,16 +17,21 @@ const HullPlot = ({
   duration = 2000,
   strokeWidth,
   opacity = 0.75,
+  darkMode = false,
   xDomain,
   yDomain,
   width,
   height,
   label = undefined,
 }) => {
+
+  console.log('DARK MODE', darkMode);
   const svgRef = useRef();
   const prevPoints = useRef();
   const prevHulls = useRef();
   const prevMod = useRef();
+
+  const textColor = darkMode ? baseColorDark : baseColor;
 
   const hasLabel = label !== undefined;
   let labelToShow = label;
@@ -158,7 +163,7 @@ const HullPlot = ({
         .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
         .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
         .attr('text-anchor', 'end')
-        .attr('fill', 'black')
+        .attr('fill', textColor)
         .attr('alignment-baseline', 'middle')
         .attr('font-size', 12)
         .text(label.label);
@@ -208,7 +213,7 @@ const HullPlot = ({
         .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
         .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
         .attr('text-anchor', 'end')
-        .attr('fill', 'black')
+        .attr('fill', textColor)
         .attr('alignment-baseline', 'middle')
         .attr('font-size', baseFontSize)
         .text(label.label);
