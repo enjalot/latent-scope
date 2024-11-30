@@ -41,7 +41,7 @@ export default function FilterActions({
           Click, or Shift+Drag on the map to filter by points.
         </div>
         <div className="filter-cell middle">
-          {selectedIndices?.length > 0 ? <span>{selectedIndices?.length} rows</span> : null}
+          <span>{selectedIndices?.length} rows</span>
           {selectedIndices?.length > 0 ? (
             <button
               className="deselect"
@@ -82,15 +82,7 @@ export default function FilterActions({
           color="secondary"
           title="Filter data points"
         />
-        <Button
-          onClick={toggleSearch}
-          className={`filter-actions-button ${activeFilterTab === SEARCH ? 'active' : 'not-active'}`}
-          size="small"
-          icon="search"
-          text={`Search (${searchIndices?.length})`}
-          color="secondary"
-          title="Search"
-        />
+
         <Button
           onClick={toggleSelect}
           className={`filter-actions-button ${activeFilterTab === SELECT ? 'active' : 'not-active'}`}
@@ -99,6 +91,15 @@ export default function FilterActions({
           text={`Select (${selectedIndices?.length})`}
           color="secondary"
           title="Annotate"
+        />
+        <Button
+          onClick={toggleSearch}
+          className={`filter-actions-button ${activeFilterTab === SEARCH ? 'active' : 'not-active'}`}
+          size="small"
+          icon="search"
+          text={`Search (${searchIndices?.length})`}
+          color="secondary"
+          title="Search"
         />
       </div>
       <div className="filter-actions-row">{filterComponent}</div>

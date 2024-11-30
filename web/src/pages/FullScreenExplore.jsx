@@ -112,26 +112,6 @@ function Explore() {
   // so we can do stuff like clear selections without re-rendering
   const [scatter, setScatter] = useState({});
 
-  // Selection via Scatterplot
-  // indices of items selected by the scatter plot
-  const [selectedIndices, setSelectedIndices] = useState([]);
-
-  const handleSelected = useCallback(
-    (indices) => {
-      if (activeFilterTab === SELECT) {
-        // console.log("handle selected", indices)
-        const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-        setSelectedIndices(nonDeletedIndices);
-        setFilteredIndices(nonDeletedIndices);
-        // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-        // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
-      } else {
-        console.log('==== handle selected === ', indices);
-      }
-    },
-    [setSelectedIndices]
-  );
-
   // Hover via scatterplot or tables
   // index of item being hovered over
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -172,8 +152,26 @@ function Explore() {
   // ====================================================================================================
   // Filtering
   // ====================================================================================================
+  // Selection via Scatterplot
+  // indices of items selected by the scatter plot
   // indices of items in the current filter. default to cluster indices to start
   const [activeFilterTab, setActiveFilterTab] = useState(FILTER);
+
+  const [selectedIndices, setSelectedIndices] = useState([]);
+
+  const handleSelected = useCallback(
+    (indices) => {
+      if (activeFilterTab === SELECT) {
+        // console.log("handle selected", indices)
+        const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
+        setSelectedIndices(nonDeletedIndices);
+        setFilteredIndices(nonDeletedIndices);
+        // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
+        // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
+      }
+    },
+    [activeFilterTab, setSelectedIndices]
+  );
 
   const toggleSearch = () => {
     setActiveFilterTab(SEARCH);
@@ -289,7 +287,9 @@ function Explore() {
       setClusterIndices([]);
       // clear the filtered indices when the cluster is clearedS
       // this should only happen when the cluster filter is the active filter.
-      setFilteredIndices([]);
+      if (activeFilterTab === FILTER) {
+        setFilteredIndices([]);
+      }
     }
   }, [cluster, clusterMap, clusterAnnotations]);
 
@@ -418,6 +418,13 @@ function Explore() {
       zIndex: 10,
     },
   };
+
+  console.log('==== indices state === ', {
+    clusterIndices,
+    searchIndices,
+    selectedIndices,
+    filteredIndices,
+  });
 
   if (!dataset)
     return (
