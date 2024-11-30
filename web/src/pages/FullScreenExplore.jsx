@@ -232,13 +232,6 @@ function Explore() {
     }
   }, [fetchScopeRows, scope, embeddings, setClusterLabels]);
 
-  // automatically set the first cluster filter when the scope rows are loaded
-  useEffect(() => {
-    if (clusterMap) {
-      setCluster(clusterMap[0]);
-    }
-  }, [clusterMap]);
-
   useEffect(() => {
     if (cluster && activeFilterTab === FILTER) {
       const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
