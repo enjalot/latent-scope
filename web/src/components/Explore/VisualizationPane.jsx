@@ -332,7 +332,7 @@ function VisualizationPane({
           data-tooltip-id="featureTooltip"
           style={{
             position: 'absolute',
-            left: 250,
+            right: 200,
             top: 0,
             pointerEvents: 'none',
           }}
