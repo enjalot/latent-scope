@@ -41,6 +41,7 @@ class TransformersChatProvider(ChatModelProvider):
         from transformers import AutoTokenizer
         self.model = self.outlines.models.transformers(self.name)
         self.generator = self.outlines.generate.text(self.model)
+        # TODO: this had an error. but also it would exclude foreign characters
         # self.generator = self.outlines.generate.regex(
         #     self.model
         #     , r"[a-zA-Z0-9 ]+"

@@ -43,7 +43,7 @@ def main():
     parser.add_argument('samples', type=int, help='Number to sample from each cluster (default: 0 for all)', default=0)
     parser.add_argument('context', type=str, help='Additional context for labeling model', default="")
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
-    parser.add_argument('--max_tokens', type=int, help='Max tokens for the model', default=-1)
+    parser.add_argument('--max_tokens', type=int, help='Max tokens per sample', default=-1)
 
     # Parse arguments
     args = parser.parse_args()
@@ -63,14 +63,24 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     # initialize the labeled property to false when loading default clusters
     clusters = clusters.copy()
     clusters['labeled'] = False
+    
+    cluster_rows = pd.read_parquet(os.path.join(cluster_dir, f"{cluster_id}.parquet"))
+    df["cluster"] = cluster_rows["cluster"]
+    df["raw_cluster"] = cluster_rows["raw_cluster"]
+
+    with open(os.path.join(cluster_dir, f"{cluster_id}.json"), 'r') as f:
+        cluster_meta = json.load(f)
+    umap_id = cluster_meta["umap_id"]
+    umap = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
+    df["x"] = umap["x"]
+    df["y"] = umap["y"]
 
     unlabeled_row = 0
     if rerun is not None:
         label_id = rerun
-        clusters = pd.read_parquet(os.path.join(cluster_dir, f"{label_id}.parquet"))
         # print(clusters.columns)
         # find the first row where labeled isnt True
-        unlabeled_row = clusters[~clusters['labeled']].first_valid_index()
+        unlabeled_row = cluster_rows[~cluster_rows['labeled']].first_valid_index()
         tqdm.write(f"First unlabeled row: {unlabeled_row}")
         
 
@@ -110,23 +120,44 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     extracts = []
     for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
         indices = row['indices']
-        items = df.loc[list(indices), text_column]
+        # items = df.loc[list(indices), text_column]
+        items = df.loc[list(indices)]
         if samples > 0 and samples < len(items):
-            items = items.sample(samples)
+            # first sample the items from cluster_rows where 'raw_cluster' matches the current cluster_id
+            cluster_items = items[items['raw_cluster'] == i]
+
+            if(len(cluster_items) < samples):
+                cluster_items = pd.concat([cluster_items, items[items['cluster'] == i]])
+
+            # Sort cluster items by distance from centroid
+            # Get x,y coordinates for items
+            coords = cluster_items[['x', 'y']].values
+            
+            # Calculate centroid
+            centroid = coords.mean(axis=0)
+            
+            # Calculate distances from centroid
+            distances = np.sqrt(np.sum((coords - centroid) ** 2, axis=1))
+            
+            # Add distances as column and sort
+            cluster_items = cluster_items.assign(centroid_dist=distances)
+            cluster_items = cluster_items.sort_values('centroid_dist')
+
+            items = cluster_items[0:samples]
+            # items = cluster_items.sample(samples)
+
         items = items.drop_duplicates()
-        tokens = 0
+        items = items[text_column]
+        
         keep_items = []
-        if max_tokens > 0 and enc is not None:
-            while tokens < max_tokens:
-                for item in items:
-                    if item is None:
-                        continue
-                    encoded_item = enc.encode(item)
-                    if tokens + len(encoded_item) > max_tokens:
-                        break
-                    keep_items.append(item)
-                    tokens += len(encoded_item)
-                break
+        if enc is not None:
+            for item in items:
+                if item is None:
+                    continue
+                encoded_item = enc.encode(item)
+                if max_tokens > 0 and len(encoded_item) > max_tokens:
+                    item = enc.decode(encoded_item[:max_tokens])
+                keep_items.append(item)
         else:
             keep_items = items
         keep_items = [item for item in keep_items if item is not None]
