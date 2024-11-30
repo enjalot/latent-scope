@@ -56,7 +56,7 @@ const HullPlot = ({
   const svgRef = useRef();
   const prevHulls = useRef();
 
-  const textColor = darkMode ? baseColorDark : baseColor;
+  const textColor = baseColor;
 
   const hasLabel = label !== undefined;
   let labelToShow = label;

@@ -45,8 +45,6 @@ function VisualizationPane({
   // only show the hull if we are filtering by cluster
   const showHull = activeFilterTab === FILTER;
 
-  // get the color mode
-  const { isDark } = useColorMode();
 
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -230,7 +228,7 @@ function VisualizationPane({
             width={width}
             height={height}
             colorScaleType="categorical"
-            colorRange={isDark ? mapSelectionColorsLight : mapSelectionColorsLight}
+            colorRange={mapSelectionColorsLight}
             colorDomain={mapSelectionDomain}
             opacityRange={pointOpacityRange}
             pointSizeRange={pointSizeRange}
@@ -285,7 +283,6 @@ function VisualizationPane({
             width={width}
             height={height}
             label={scope.cluster_labels_lookup[hoveredCluster.cluster]}
-            darkMode={isDark}
           />
         )}
         {/* Cluster is selected via filter */}
@@ -302,7 +299,6 @@ function VisualizationPane({
             width={width}
             height={height}
             label={scope.cluster_labels_lookup[slide.cluster]}
-            darkMode={isDark}
           />
         )}
         <AnnotationPlot
