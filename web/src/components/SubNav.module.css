@@ -70,3 +70,9 @@
     height: 34px;
     margin: 0 10px;
 }
+
+@media (prefers-color-scheme: dark) {
+    .subHeaderContainer {
+        background-color: #111;
+    }
+}
