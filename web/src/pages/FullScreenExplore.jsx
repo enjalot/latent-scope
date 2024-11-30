@@ -108,6 +108,18 @@ function Explore() {
   );
 
   // ====================================================================================================
+  // Default rows logic.
+  // ====================================================================================================
+  // Contains state for the default rows that are shown in the table when the page loads.
+  // These are the rows that are shown when there are no filters active.
+  // ====================================================================================================
+  const [page, setPage] = useState(0);
+
+  const PER_PAGE = 100;
+
+  const [defaultIndices, setDefaultIndices] = useState([]);
+
+  // ====================================================================================================
   // Scatterplot related logic
   // ====================================================================================================
   // this is a reference to the regl scatterplot instance
@@ -197,7 +209,7 @@ function Explore() {
     setFilteredIndices(selectedIndices);
   };
 
-  const [filteredIndices, setFilteredIndices] = useState([]);
+  const [filteredIndices, setFilteredIndices] = useState(defaultIndices);
 
   // ====================================================================================================
   // NN Search
@@ -431,6 +443,7 @@ function Explore() {
     selectedIndices,
     filteredIndices,
     columnFilterIndices,
+    defaultRows: defaultIndices,
   });
 
   if (!dataset)
