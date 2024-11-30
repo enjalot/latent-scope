@@ -14,6 +14,7 @@
 .filter-actions-button {
   border-radius: 4px !important;
   padding: 0.25rem 0.5rem !important;
+  font-size: 0.875rem !important;
 }
 
 .filter-actions-button.active {
@@ -37,4 +38,10 @@
 
 .filter-actions-button.active {
   background-color: var(--interactions---primary-color-interaction-primary-active);
+}
+
+@media (prefers-color-scheme: dark) {
+  .filter-actions-button {
+    border: .5px solid var(--neutrals-color-neutral-3) !important;
+  }
 }

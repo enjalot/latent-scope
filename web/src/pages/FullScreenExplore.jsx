@@ -435,10 +435,10 @@ function Explore() {
   const styles = {
     dragHandle: {
       position: 'absolute',
-      right: -4,
+      right: -8,
       top: 0,
       bottom: 0,
-      width: 8,
+      width: 30,
       cursor: 'ew-resize',
       backgroundColor: 'transparent',
       transition: 'background-color 0.2s',

@@ -59,6 +59,8 @@
 
 @media (prefers-color-scheme: dark) {
     .left-pane-container {
+        border-right: 1px solid var(--borders-color-border-3);
         background-color: #111;
     }
+
 }

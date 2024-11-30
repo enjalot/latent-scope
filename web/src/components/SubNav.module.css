@@ -74,5 +74,8 @@
 @media (prefers-color-scheme: dark) {
     .subHeaderContainer {
         background-color: #111;
+        border-bottom: 1px solid var(--borders-color-border-3);
     }
+
+
 }

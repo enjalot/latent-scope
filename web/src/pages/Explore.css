@@ -298,9 +298,9 @@
     background: #111
   }
 
-  /* .visualization-pane-container {
-    border-left: 1px solid #555;
-  } */
+  .visualization-pane-container {
+    border-left: 1px solid var(--borders-color-border-3);
+  }
 }
 
 
@@ -446,3 +446,4 @@
 .full-screen-explore-container {
   height: 100%;
 }
+
