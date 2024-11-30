@@ -153,7 +153,7 @@ function VisualizationPane({
   // ====================================================================================================
   // Configuration Panel
   // ====================================================================================================
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [vizConfig, setVizConfig] = useState({
     showHeatMap: false,
     showClusterOutlines: true,
