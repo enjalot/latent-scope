@@ -14,12 +14,13 @@ import SubNav from '../components/SubNav';
 import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/FilterDataTable';
-import useColumnFilter from '../hooks/useColumnFilter';
 
 export const SEARCH = 'search';
 export const FILTER = 'filter';
 export const SELECT = 'select';
 export const COLUMN = 'column';
+
+export const PER_PAGE = 100;
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -107,6 +108,12 @@ function Explore() {
     [dataset, datasetId]
   );
 
+  // the indices to show in the table when no other filters are active.
+  const [defaultIndices, setDefaultIndices] = useState([]);
+
+  // the indices to show in the table when other filters are active.
+  const [filteredIndices, setFilteredIndices] = useState([]);
+
   // ====================================================================================================
   // Default rows logic.
   // ====================================================================================================
@@ -114,10 +121,24 @@ function Explore() {
   // These are the rows that are shown when there are no filters active.
   // ====================================================================================================
   const [page, setPage] = useState(0);
+  const [pageCount, setPageCount] = useState(0);
 
-  const PER_PAGE = 100;
+  // Update defaultIndices when scopeRows changes
+  useEffect(() => {
+    if (scopeRows?.length) {
+      const start = page * PER_PAGE;
+      const end = start + PER_PAGE;
+      const indexes = scopeRows
+        .filter((row) => !deletedIndices.includes(row.ls_index))
+        .slice(start, end)
+        .map((row) => row.ls_index);
+      setDefaultIndices(indexes);
 
-  const [defaultIndices, setDefaultIndices] = useState([]);
+      // get the total number of pages available
+      setPageCount(Math.ceil(scopeRows.length / PER_PAGE));
+      console.log('==== PAGE COUNT ====', pageCount);
+    }
+  }, [scopeRows]);
 
   // ====================================================================================================
   // Scatterplot related logic
@@ -208,8 +229,6 @@ function Explore() {
     setActiveFilterTab(SELECT);
     setFilteredIndices(selectedIndices);
   };
-
-  const [filteredIndices, setFilteredIndices] = useState(defaultIndices);
 
   // ====================================================================================================
   // NN Search
@@ -506,10 +525,12 @@ function Explore() {
                 display: 'flex',
               }}
             >
+              {/* FilterDataTable renders rows by default if filteredIndices is empty */}
               <FilterDataTable
                 dataset={dataset}
                 scope={scope}
-                indices={filteredIndices}
+                scopeRows={scopeRows}
+                indices={filteredIndices.length ? filteredIndices : defaultIndices}
                 deletedIndices={deletedIndices}
                 distances={distances}
                 clusterMap={clusterMap}
@@ -524,6 +545,9 @@ function Explore() {
                 }}
                 onHover={handleHover}
                 onClick={handleClicked}
+                page={page}
+                setPage={setPage}
+                totalPages={pageCount}
               />
             </div>
           </div>

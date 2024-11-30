@@ -50,7 +50,6 @@ FilterDataTable.propTypes = {
   onClick: PropTypes.func,
 };
 
-const ROWS_PER_PAGE = 100;
 
 function RowWithHover({ props, onHover }) {
   const { row } = props;
@@ -80,25 +79,24 @@ function FilterDataTable({
   sae_id = null,
   feature = -1,
   features = [],
-  onTagset,
   onHover,
   deletedIndices = [],
+  page,
+  setPage,
+  totalPages, // the total number of pages available
 }) {
-  console.log('==== FILTER DATA TABLE =====', { indices });
-
-  const [columns, setColumns] = useState([]);
   const [rows, setRows] = useState([]);
-  const [pageCount, setPageCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
+
+  // page count is the total number of pages available
+  const [pageCount, setPageCount] = useState(totalPages);
+
+  useEffect(() => {
+    setPageCount(totalPages);
+  }, [totalPages]);
+
+  console.log('==== FILTER DATA TABLE =====', { totalPages });
 
   const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
-
-  // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
-  const [highlightColumn, setHighlightColumn] = useState(null);
-  useEffect(() => {
-    console.log('changed?', dataset);
-    setHighlightColumn(dataset?.text_column || null);
-  }, [dataset]);
 
   const [tags, setTags] = useState([]);
   useEffect(() => {
@@ -106,44 +104,6 @@ function FilterDataTable({
       setTags(Object.keys(tagset));
     }
   }, [tagset]);
-
-  const [embeddingMinValues, setEmbeddingMinValues] = useState([]);
-  const [embeddingMaxValues, setEmbeddingMaxValues] = useState([]);
-  useEffect(() => {
-    if (dataset && showEmbeddings) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/embeddings/${showEmbeddings}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('embedding stats', data);
-          setEmbeddingMinValues(data.min_values);
-          setEmbeddingMaxValues(data.max_values);
-        });
-    }
-  }, [dataset, showEmbeddings]);
-
-  function handleTagClick(tag, index) {
-    // console.log("tag", tag)
-    // console.log("index", index)
-    // console.log("tagset", tagset)
-    // console.log("tagset[tag]", tagset[tag])
-    if (tagset[tag].includes(index)) {
-      console.log('removing');
-      fetch(`${apiUrl}/tags/remove?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('removed', data);
-          onTagset();
-        });
-    } else {
-      console.log('adding');
-      fetch(`${apiUrl}/tags/add?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('added', data);
-          onTagset();
-        });
-    }
-  }
 
   const hydrateIndices = useCallback(
     (indices) => {
@@ -160,7 +120,7 @@ function FilterDataTable({
             dataset: dataset.id,
             indices: indices,
             embedding_id: showEmbeddings,
-            page: currentPage,
+            page,
             sae_id: sae_id,
           }),
         })
@@ -169,15 +129,16 @@ function FilterDataTable({
             let { rows, totalPages, total } = data;
             console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
-            setPageCount(totalPages);
+            // setPageCount(totalPages);
             console.log('======= SETTING ROWS =======', rows);
             setRows(rows);
           });
       } else {
         setRows([]);
+        setPageCount(totalPages);
       }
     },
-    [dataset, currentPage, showEmbeddings, sae_id]
+    [dataset, page, showEmbeddings, sae_id]
   );
 
   const formattedColumns = useMemo(() => {
@@ -351,7 +312,7 @@ function FilterDataTable({
   useEffect(() => {
     const indicesToUse = indices.filter((i) => !deletedIndices.includes(i));
     hydrateIndices(indicesToUse);
-  }, [indices, currentPage]);
+  }, [indices, page]);
 
   const [columnFilters, setColumnFilters] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -469,28 +430,22 @@ function FilterDataTable({
       </div>
       {showNavigation && indices.length > 0 && (
         <div className="filter-data-table-page-controls">
-          <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
+          <button onClick={() => setPage(0)} disabled={page === 0}>
             First
           </button>
-          <button
-            onClick={() => setCurrentPage((old) => Math.max(0, old - 1))}
-            disabled={currentPage === 0}
-          >
+          <button onClick={() => setPage((old) => Math.max(0, old - 1))} disabled={page === 0}>
             ←
           </button>
           <span>
-            Page {currentPage + 1} of {pageCount || 1}
+            Page {page + 1} of {pageCount || 1}
           </span>
           <button
-            onClick={() => setCurrentPage((old) => Math.min(pageCount - 1, old + 1))}
-            disabled={currentPage === pageCount - 1}
+            onClick={() => setPage((old) => Math.min(pageCount - 1, old + 1))}
+            disabled={page === pageCount - 1}
           >
             →
           </button>
-          <button
-            onClick={() => setCurrentPage(pageCount - 1)}
-            disabled={currentPage === pageCount - 1}
-          >
+          <button onClick={() => setPage(pageCount - 1)} disabled={page === pageCount - 1}>
             Last
           </button>
         </div>
