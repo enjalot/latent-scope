@@ -14,10 +14,12 @@ import SubNav from '../components/SubNav';
 import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/FilterDataTable';
+import useColumnFilter from '../hooks/useColumnFilter';
 
 export const SEARCH = 'search';
 export const FILTER = 'filter';
 export const SELECT = 'select';
+export const COLUMN = 'column';
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -159,6 +161,8 @@ function Explore() {
 
   const [selectedIndices, setSelectedIndices] = useState([]);
 
+  const [columnFilterIndices, setColumnFilterIndices] = useState([]);
+
   const handleSelected = useCallback(
     (indices) => {
       if (activeFilterTab === SELECT) {
@@ -176,6 +180,11 @@ function Explore() {
   const toggleSearch = () => {
     setActiveFilterTab(SEARCH);
     setFilteredIndices(searchIndices);
+  };
+
+  const toggleColumn = () => {
+    setActiveFilterTab(COLUMN);
+    setFilteredIndices(columnFilterIndices);
   };
 
   const toggleFilter = () => {
@@ -198,7 +207,6 @@ function Explore() {
   const {
     setSearchText,
     searchIndices,
-    setSearchIndices,
     distances,
     isLoading: searchLoading,
     clearSearch,
@@ -278,6 +286,8 @@ function Explore() {
     setCluster(null);
   }, []);
 
+  // ==== CLUSTERS ====
+
   const [clusterIndices, setClusterIndices] = useState([]);
   useEffect(() => {
     if (cluster) {
@@ -292,6 +302,8 @@ function Explore() {
       }
     }
   }, [cluster, clusterMap, clusterAnnotations]);
+
+  // ==== COLUMNS ====
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -425,6 +437,7 @@ function Explore() {
     searchIndices,
     selectedIndices,
     filteredIndices,
+    columnFilterIndices,
   });
 
   if (!dataset)
@@ -461,6 +474,8 @@ function Explore() {
                 cluster={cluster}
                 setCluster={setCluster}
                 clusterIndices={clusterIndices}
+                columnFilterIndices={columnFilterIndices}
+                setColumnFilterIndices={setColumnFilterIndices}
                 searchIndices={searchIndices}
                 searchLoading={searchLoading}
                 setSearchText={setSearchText}
@@ -471,8 +486,11 @@ function Explore() {
                 setFilteredIndices={setFilteredIndices}
                 activeFilterTab={activeFilterTab}
                 toggleSearch={toggleSearch}
+                toggleColumn={toggleColumn}
                 toggleFilter={toggleFilter}
                 toggleSelect={toggleSelect}
+                dataset={dataset}
+                datasetId={datasetId}
               />
             </div>
             <div

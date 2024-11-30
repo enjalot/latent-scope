@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import './FilterActions.css';
 import { Button } from 'react-element-forge';
 import ClusterFilter from './ClusterFilter';
+import ColumnFilter from './ColumnFilter';
 import NearestNeighbor from './NearestNeighbor';
-import { SEARCH, FILTER, SELECT } from '../../pages/FullScreenExplore';
+import { SEARCH, FILTER, SELECT, COLUMN } from '../../pages/FullScreenExplore';
+import useColumnFilter from '../../hooks/useColumnFilter';
+import { apiUrl } from '../../lib/apiService';
 
 export default function FilterActions({
   clusterLabels,
@@ -22,7 +25,20 @@ export default function FilterActions({
   toggleSearch,
   toggleFilter,
   toggleSelect,
+  toggleColumn,
+  columnFilterIndices,
+  setColumnFilterIndices,
+  datasetId,
+  dataset,
 }) {
+  const { columnFiltersActive, setColumnFiltersActive, columnFilters } = useColumnFilter(
+    apiUrl,
+    dataset,
+    datasetId,
+    setColumnFilterIndices,
+    setFilteredIndices
+  );
+
   let filterComponent = null;
   if (activeFilterTab === FILTER) {
     filterComponent = (
@@ -32,6 +48,16 @@ export default function FilterActions({
         clusterIndices={clusterIndices}
         setCluster={setCluster}
         setFilteredIndices={setFilteredIndices}
+      />
+    );
+  } else if (activeFilterTab === COLUMN) {
+    filterComponent = (
+      <ColumnFilter
+        columnFiltersActive={columnFiltersActive}
+        setColumnFiltersActive={setColumnFiltersActive}
+        columnFilters={columnFilters}
+        columnIndices={columnFilterIndices}
+        setColumnIndices={setColumnFilterIndices}
       />
     );
   } else if (activeFilterTab === SELECT) {
@@ -78,10 +104,22 @@ export default function FilterActions({
           className={`filter-actions-button ${activeFilterTab === FILTER ? 'active' : 'not-active'}`}
           size="small"
           icon="filter"
-          text={`Filter (${clusterIndices?.length})`}
+          text={`Filter by Cluster (${clusterIndices?.length})`}
           color="secondary"
-          title="Filter data points"
+          title="Filter data points by cluster"
         />
+
+        {columnFilters?.length > 0 && (
+          <Button
+            onClick={toggleColumn}
+            className={`filter-actions-button ${activeFilterTab === COLUMN ? 'active' : 'not-active'}`}
+            size="small"
+            icon="columns"
+            text={`Filter by Column (${columnFilterIndices?.length})`}
+            color="secondary"
+            title="Filter data points by column"
+          />
+        )}
 
         <Button
           onClick={toggleSelect}
