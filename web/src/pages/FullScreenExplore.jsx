@@ -393,6 +393,7 @@ function Explore() {
       const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
       const newTemplate = `${Math.min(Math.max(percentage, 20), 80)}% 1fr`;
       setGridTemplate(newTemplate);
+      updateSize();
     }
   };
 
