@@ -9,6 +9,35 @@ import { easeExpOut, easeExpIn, easeCubicInOut } from 'd3-ease';
 
 import './HullPlot.css';
 
+function calculateCentroid(points) {
+  if (!points || points.length === 0) {
+    return null;
+  }
+
+  let xSum = 0;
+  let ySum = 0;
+
+  points.forEach((point) => {
+    xSum += point[0];
+    ySum += point[1];
+  });
+
+  const centroidX = xSum / points.length;
+  const centroidY = ySum / points.length;
+
+  return [centroidX, centroidY];
+}
+
+function findHighestPoint(points) {
+  if (!points || points.length === 0) {
+    return null;
+  }
+
+  // Find the point with the maximum y-coordinate (points[1]), and then return the entire point
+  const y = Math.max(...points.map((point) => point[1]));
+  return points.find((point) => point[1] === y);
+}
+
 const HullPlot = ({
   hulls,
   fill,
@@ -24,12 +53,8 @@ const HullPlot = ({
   height,
   label = undefined,
 }) => {
-
-  console.log('DARK MODE', darkMode);
   const svgRef = useRef();
-  const prevPoints = useRef();
   const prevHulls = useRef();
-  const prevMod = useRef();
 
   const textColor = darkMode ? baseColorDark : baseColor;
 
@@ -54,6 +79,15 @@ const HullPlot = ({
       x: point[0] * xScaleFactor + xOffset,
       y: -point[1] * yScaleFactor + yOffset, // Negate y to flip coordinate system
     };
+  };
+
+  // Add this helper function near the top of the component
+  const calculateScaledFontSize = (width, height) => {
+    const baseFontSize = 12;
+    // Scale based on the smaller dimension to maintain readability
+    const FACTOR = 1000; // 800 is a reference size
+    const scaleFactor = Math.min(width, height) / FACTOR;
+    return Math.max(baseFontSize * scaleFactor, 8); // Ensure minimum font size of 8px
   };
 
   useEffect(() => {
@@ -158,14 +192,19 @@ const HullPlot = ({
         .append('text')
         .attr('class', 'hull-label')
         .merge(labelSel)
-        .attr('dx', 5)
-        .attr('dy', 5)
-        .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
-        .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
-        .attr('text-anchor', 'end')
+        .attr('dy', -5)
+        .attr(
+          'x',
+          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
+        )
+        .attr(
+          'y',
+          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
+        )
+        .attr('text-anchor', 'middle')
         .attr('fill', textColor)
-        .attr('alignment-baseline', 'middle')
-        .attr('font-size', 12)
+        .attr('alignment-baseline', 'auto')
+        .attr('font-size', calculateScaledFontSize(width, height))
         .text(label.label);
     }
 
@@ -194,9 +233,6 @@ const HullPlot = ({
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    // TODO: should we make this scale with xDomain and yDomain?
-    const baseFontSize = 12;
-
     // Handle hull labels
     let labelSel = svg.selectAll('text.hull-label').data(hulls);
 
@@ -208,14 +244,19 @@ const HullPlot = ({
         .append('text')
         .attr('class', 'hull-label')
         .merge(labelSel)
-        .attr('dx', 5)
-        .attr('dy', 5)
-        .attr('x', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).x)
-        .attr('y', (d) => hullToSvgCoordinate(d[0], xDomain, yDomain, width, height).y)
-        .attr('text-anchor', 'end')
+        .attr('dy', -5)
+        .attr(
+          'x',
+          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
+        )
+        .attr(
+          'y',
+          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
+        )
+        .attr('text-anchor', 'middle')
         .attr('fill', textColor)
-        .attr('alignment-baseline', 'middle')
-        .attr('font-size', baseFontSize)
+        .attr('alignment-baseline', 'auto')
+        .attr('font-size', calculateScaledFontSize(width, height))
         .text(label.label);
     }
 
