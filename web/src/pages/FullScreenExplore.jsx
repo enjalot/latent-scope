@@ -129,6 +129,7 @@ function Explore() {
         .filter((row) => !deletedIndices.includes(row.ls_index))
         .map((row) => row.ls_index);
       setDefaultIndices(indexes);
+      setFilteredIndices([]);
     }
   }, [scopeRows]);
 
