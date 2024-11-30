@@ -435,7 +435,7 @@ function Explore() {
   const styles = {
     dragHandle: {
       position: 'absolute',
-      right: -8,
+      right: -15,
       top: 0,
       bottom: 0,
       width: 30,
