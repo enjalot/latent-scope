@@ -6,6 +6,7 @@ const ColumnFilter = ({
   columnFiltersActive,
   setColumnFiltersActive,
   setColumnIndices,
+  setFilteredIndices,
 }) => {
   return columnFilters?.length ? (
     <div className={`filter-row column-filter ${columnIndices?.length ? 'active' : ''}`}>
@@ -39,6 +40,7 @@ const ColumnFilter = ({
             onClick={() => {
               setColumnFiltersActive({});
               setColumnIndices([]);
+              setFilteredIndices([]);
             }}
           >
             X

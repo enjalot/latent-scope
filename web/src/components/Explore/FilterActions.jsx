@@ -58,6 +58,7 @@ export default function FilterActions({
         columnFilters={columnFilters}
         columnIndices={columnFilterIndices}
         setColumnIndices={setColumnFilterIndices}
+        setFilteredIndices={setFilteredIndices}
       />
     );
   } else if (activeFilterTab === SELECT) {
