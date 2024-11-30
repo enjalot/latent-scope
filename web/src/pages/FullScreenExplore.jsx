@@ -126,19 +126,16 @@ function Explore() {
   // Update defaultIndices when scopeRows changes
   useEffect(() => {
     if (scopeRows?.length) {
-      const start = page * PER_PAGE;
-      const end = start + PER_PAGE;
       const indexes = scopeRows
         .filter((row) => !deletedIndices.includes(row.ls_index))
-        .slice(start, end)
         .map((row) => row.ls_index);
       setDefaultIndices(indexes);
 
       // get the total number of pages available
       setPageCount(Math.ceil(scopeRows.length / PER_PAGE));
-      console.log('==== PAGE COUNT ====', pageCount);
     }
   }, [scopeRows]);
+
 
   // ====================================================================================================
   // Scatterplot related logic

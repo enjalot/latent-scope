@@ -94,7 +94,7 @@ function FilterDataTable({
     setPageCount(totalPages);
   }, [totalPages]);
 
-  console.log('==== FILTER DATA TABLE =====', { totalPages });
+  console.log('==== FILTER DATA TABLE =====', { indices, page });
 
   const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
 
