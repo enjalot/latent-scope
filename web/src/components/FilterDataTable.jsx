@@ -10,36 +10,12 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 import './FilterDataTable.css';
 
-const renderTags = (tags, row, tagset, handleTagClick) => {
-  const { ls_index } = row;
-  return (
-    <div className="tags">
-      {tags.map((t) => {
-        let ti = tagset[t]?.indexOf(ls_index) >= 0;
-        return (
-          <button
-            title={`add ${t} tag`}
-            className={ti ? 'tag-active' : 'tag-inactive'}
-            key={t}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleTagClick(t, ls_index);
-            }}
-          >
-            {t}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
 FilterDataTable.propTypes = {
   height: PropTypes.string,
   dataset: PropTypes.object.isRequired,
   scope: PropTypes.object,
-  indices: PropTypes.array.isRequired,
+  filteredIndices: PropTypes.array.isRequired,
+  defaultIndices: PropTypes.array.isRequired,
   distances: PropTypes.array,
   clusterMap: PropTypes.object,
   // clusterLabels: PropTypes.array,
@@ -49,7 +25,6 @@ FilterDataTable.propTypes = {
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
-
 
 function RowWithHover({ props, onHover }) {
   const { row } = props;
@@ -70,7 +45,8 @@ function RowWithHover({ props, onHover }) {
 
 function FilterDataTable({
   dataset,
-  indices = [],
+  filteredIndices = [],
+  defaultIndices = [],
   distances = [],
   clusterMap = {},
   tagset,
@@ -83,18 +59,14 @@ function FilterDataTable({
   deletedIndices = [],
   page,
   setPage,
-  totalPages, // the total number of pages available
 }) {
   const [rows, setRows] = useState([]);
 
   // page count is the total number of pages available
-  const [pageCount, setPageCount] = useState(totalPages);
+  const [pageCount, setPageCount] = useState(0);
 
-  useEffect(() => {
-    setPageCount(totalPages);
-  }, [totalPages]);
-
-  console.log('==== FILTER DATA TABLE =====', { indices, page });
+  // when filteredIndices is empty, we use defaultIndices and show the pageCount as totalPages
+  // otherwise, we use filteredIndices and show the pageCount as the query result totalPages
 
   const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
 
@@ -129,16 +101,16 @@ function FilterDataTable({
             let { rows, totalPages, total } = data;
             console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
-            // setPageCount(totalPages);
+            setPageCount(totalPages);
             console.log('======= SETTING ROWS =======', rows);
             setRows(rows);
           });
       } else {
         setRows([]);
-        setPageCount(totalPages);
+        // setPageCount(totalPages);
       }
     },
-    [dataset, page, showEmbeddings, sae_id]
+    [dataset, page, showEmbeddings, sae_id, filteredIndices, defaultIndices]
   );
 
   const formattedColumns = useMemo(() => {
@@ -310,12 +282,14 @@ function FilterDataTable({
   }, [dataset, tags, tagset, clusterMap, distances, features, expandedFeatureRows]);
 
   useEffect(() => {
-    const indicesToUse = indices.filter((i) => !deletedIndices.includes(i));
+    let indicesToUse = [];
+    if (filteredIndices.length) {
+      indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
+    } else {
+      indicesToUse = defaultIndices;
+    }
     hydrateIndices(indicesToUse);
-  }, [indices, page]);
-
-  const [columnFilters, setColumnFilters] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  }, [filteredIndices, page, defaultIndices, deletedIndices]);
 
   const headerRef = useRef(null);
   const bodyRef = useRef(null);
@@ -397,6 +371,8 @@ function FilterDataTable({
     [expandedFeatureRows]
   );
 
+  console.log('==== FILTER DATA TABLE =====', { filteredIndices, defaultIndices, rows });
+
   return (
     <div
       className="filter-data-table"
@@ -408,27 +384,16 @@ function FilterDataTable({
         style={{ overflowY: 'auto' }}
         ref={bodyRef}
       >
-        {indices.length > 0 ? (
-          <DataGrid
-            rows={rows}
-            columns={formattedColumns}
-            rowGetter={(i) => rows[i]}
-            rowHeight={getRowHeight}
-            style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
-            renderers={{ renderRow: renderRowWithHover }}
-          />
-        ) : (
-          <DataGrid
-            rowGetter={(i) => rows[i]}
-            rows={[]}
-            columns={formattedColumns}
-            headerRowHeight={35}
-            rowHeight={0}
-            style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
-          />
-        )}
+        <DataGrid
+          rows={rows}
+          columns={formattedColumns}
+          rowGetter={(i) => rows[i]}
+          rowHeight={getRowHeight}
+          style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
+          renderers={{ renderRow: renderRowWithHover }}
+        />
       </div>
-      {showNavigation && indices.length > 0 && (
+      {showNavigation && (
         <div className="filter-data-table-page-controls">
           <button onClick={() => setPage(0)} disabled={page === 0}>
             First

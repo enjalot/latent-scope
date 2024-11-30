@@ -121,7 +121,6 @@ function Explore() {
   // These are the rows that are shown when there are no filters active.
   // ====================================================================================================
   const [page, setPage] = useState(0);
-  const [pageCount, setPageCount] = useState(0);
 
   // Update defaultIndices when scopeRows changes
   useEffect(() => {
@@ -130,12 +129,8 @@ function Explore() {
         .filter((row) => !deletedIndices.includes(row.ls_index))
         .map((row) => row.ls_index);
       setDefaultIndices(indexes);
-
-      // get the total number of pages available
-      setPageCount(Math.ceil(scopeRows.length / PER_PAGE));
     }
   }, [scopeRows]);
-
 
   // ====================================================================================================
   // Scatterplot related logic
@@ -522,12 +517,12 @@ function Explore() {
                 display: 'flex',
               }}
             >
-              {/* FilterDataTable renders rows by default if filteredIndices is empty */}
+              {/* FilterDataTable renders defaultIndices if filteredIndices is empty */}
               <FilterDataTable
                 dataset={dataset}
                 scope={scope}
-                scopeRows={scopeRows}
-                indices={filteredIndices.length ? filteredIndices : defaultIndices}
+                filteredIndices={filteredIndices}
+                defaultIndices={defaultIndices}
                 deletedIndices={deletedIndices}
                 distances={distances}
                 clusterMap={clusterMap}
@@ -544,7 +539,6 @@ function Explore() {
                 onClick={handleClicked}
                 page={page}
                 setPage={setPage}
-                totalPages={pageCount}
               />
             </div>
           </div>
