@@ -171,7 +171,11 @@ function ClusterLabels() {
       setDefaultModel(defaultOption);
       setChatModel(defaultOption.id);
     }
-  }, [presetModels, HFModels, recentModels, defaultModel, customModels]);
+  }, [presetModels, HFModels, recentModels, defaultModel, customModels, ollamaModels]);
+
+  useEffect(() => {
+    setChatModel(defaultModel);
+  }, [defaultModel]);
 
   const handleModelSelectChange = useCallback(
     (selectedOption) => {
@@ -254,14 +258,16 @@ function ClusterLabels() {
       const cluster_id = cluster.id;
       const context = data.get('context');
       const samples = data.get('samples');
-      const max_tokens = data.get('max_tokens');
+      const max_tokens_per_sample = data.get('max_tokens_per_sample');
+      const max_tokens_total = data.get('max_tokens_total');
       startClusterLabelsJob({
         chat_id: model,
         cluster_id: cluster_id,
         text_column,
         context,
         samples,
-        max_tokens,
+        max_tokens_per_sample,
+        max_tokens_total,
       });
     },
     [cluster, embedding, chatModel, startClusterLabelsJob]
@@ -347,20 +353,42 @@ function ClusterLabels() {
               </Tooltip>
             </label>
             <label>
-              <span className={styles['cluster-labels-form-label']}>Max Tokens:</span>
+              <span className={styles['cluster-labels-form-label']}>Max Tokens per Sample:</span>
               <input
                 type="number"
-                name="max_tokens"
+                name="max_tokens_per_sample"
                 defaultValue={scope?.embedding?.max_seq_length || 512}
                 min={-1}
                 disabled={!!clusterLabelsJob || !cluster}
               />
-              <span className="tooltip" data-tooltip-id="max_tokens">
+              <span className="tooltip" data-tooltip-id="max_tokens_per_sample">
                 🤔
               </span>
-              <Tooltip id="max_tokens" place="top" effect="solid" className="tooltip-area">
+              <Tooltip
+                id="max_tokens_per_sample"
+                place="top"
+                effect="solid"
+                className="tooltip-area"
+              >
                 The maximum number of tokens per sample to use, truncates long samples to max
                 tokens. Set to -1 to ignore limits.
+              </Tooltip>
+            </label>
+            <label>
+              <span className={styles['cluster-labels-form-label']}>Max Tokens Total:</span>
+              <input
+                type="number"
+                name="max_tokens_total"
+                defaultValue={chatModel?.params?.max_tokens || 8192}
+                min={-1}
+                disabled={!!clusterLabelsJob || !cluster}
+              />
+              <span className="tooltip" data-tooltip-id="max_tokens_total">
+                🤔
+              </span>
+              <Tooltip id="max_tokens_total" place="top" effect="solid" className="tooltip-area">
+                The maximum number of tokens to use for across all samples. Set to -1 to ignore
+                limits.
               </Tooltip>
             </label>
             <textarea

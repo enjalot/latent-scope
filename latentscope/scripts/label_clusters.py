@@ -43,15 +43,16 @@ def main():
     parser.add_argument('samples', type=int, help='Number to sample from each cluster (default: 0 for all)', default=0)
     parser.add_argument('context', type=str, help='Additional context for labeling model', default="")
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
-    parser.add_argument('--max_tokens', type=int, help='Max tokens per sample', default=-1)
+    parser.add_argument('--max_tokens_per_sample', type=int, help='Max tokens per sample', default=-1)
+    parser.add_argument('--max_tokens_total', type=int, help='Max tokens total', default=-1)
 
     # Parse arguments
     args = parser.parse_args()
 
-    labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.samples, args.context, args.rerun, args.max_tokens)
+    labeler(args.dataset_id, args.text_column, args.cluster_id, args.model_id, args.samples, args.context, args.rerun, args.max_tokens_per_sample, args.max_tokens_total)
 
 
-def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", samples=0, context="", rerun="", max_tokens=-1):
+def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="openai-gpt-3.5-turbo", samples=0, context="", rerun="", max_tokens_per_sample=-1, max_tokens_total=-1):
     import numpy as np
     import pandas as pd
     DATA_DIR = get_data_dir()
@@ -80,7 +81,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
         label_id = rerun
         # print(clusters.columns)
         # find the first row where labeled isnt True
-        unlabeled_row = cluster_rows[~cluster_rows['labeled']].first_valid_index()
+        unlabeled_row = clusters[~clusters['labeled']].first_valid_index()
         tqdm.write(f"First unlabeled row: {unlabeled_row}")
         
 
@@ -119,6 +120,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     # we truncate the list based on tokens and we also remove items that have too many duplicate words
     extracts = []
     for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
+    # for i, row in clusters.iterrows():
         indices = row['indices']
         # items = df.loc[list(indices), text_column]
         items = df.loc[list(indices)]
@@ -148,19 +150,28 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
 
         items = items.drop_duplicates()
         items = items[text_column]
+        # tqdm.write(f"{i} items: {len(items)}")
         
+        total_tokens = 0
         keep_items = []
         if enc is not None:
             for item in items:
                 if item is None:
                     continue
                 encoded_item = enc.encode(item)
-                if max_tokens > 0 and len(encoded_item) > max_tokens:
-                    item = enc.decode(encoded_item[:max_tokens])
+                if max_tokens_per_sample > 0 and len(encoded_item) > max_tokens_per_sample:
+                    item = enc.decode(encoded_item[:max_tokens_per_sample])
+                    total_tokens += max_tokens_per_sample
+                else:
+                    total_tokens += len(encoded_item)
+                if max_tokens_total > 0 and total_tokens > max_tokens_total:
+                    break
+                # tqdm.write(f"tokens: {len(encoded_item)}")
                 keep_items.append(item)
         else:
             keep_items = items
         keep_items = [item for item in keep_items if item is not None]
+        # tqdm.write(f"{i} total tokens: {total_tokens}, keep_items: {len(keep_items)}")
         extracts.append(keep_items)
 
         # text = '\n'.join([f"{i+1}. {t}" for i, t in enumerate(items) if not too_many_duplicates(t)])
@@ -236,7 +247,8 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
             "samples": samples,
             "context": context,
             # "system_prompt": system_prompt,
-            "max_tokens": max_tokens,
+            "max_tokens_per_sample": max_tokens_per_sample,
+            "max_tokens_total": max_tokens_total,
         }, f, indent=2)
     f.close()
     print("done with", label_id)

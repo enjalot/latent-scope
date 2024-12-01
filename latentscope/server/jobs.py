@@ -427,14 +427,19 @@ def run_cluster_label():
     cluster_id = request.args.get('cluster_id')
     context = request.args.get('context')
     samples = request.args.get('samples')
-    max_tokens = request.args.get('max_tokens')
-    print("run cluster label", dataset, chat_id, text_column, cluster_id, samples, max_tokens)
+    max_tokens_per_sample = request.args.get('max_tokens_per_sample')
+    max_tokens_total = request.args.get('max_tokens_total')
+    print("run cluster label", dataset, chat_id, text_column, cluster_id, samples, max_tokens_per_sample, max_tokens_total)
     if context:
         context = context.replace('"', '\\"')
     print("context", context)
 
     job_id = str(uuid.uuid4())
     command = f'ls-label "{dataset}" "{text_column}" "{cluster_id}" "{chat_id}" {samples} "{context}"'
+    if max_tokens_per_sample:
+        command += f' --max_tokens_per_sample={max_tokens_per_sample}'
+    if max_tokens_total:
+        command += f' --max_tokens_total={max_tokens_total}'
     threading.Thread(target=run_job, args=(dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
