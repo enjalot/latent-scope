@@ -1,4 +1,6 @@
-import React from 'react';
+import Select from 'react-select';
+import { Button } from 'react-element-forge';
+import styles from './ColumnFilter.module.scss';
 
 const ColumnFilter = ({
   columnFilters,
@@ -6,46 +8,54 @@ const ColumnFilter = ({
   columnFiltersActive,
   setColumnFiltersActive,
   setColumnIndices,
+  setFilteredIndices,
 }) => {
   return columnFilters?.length ? (
-    <div className={`filter-row column-filter ${columnIndices?.length ? 'active' : ''}`}>
-      <div className="filter-cell">
+    <div className={`${styles.container} ${columnIndices?.length ? styles.active : ''}`}>
+      <div className={styles.filterCell}>
         {columnFilters.map((column) => (
           <span key={column.column}>
-            {column.column}:
-            <select
-              onChange={(e) => {
+            <Select
+              value={
+                columnFiltersActive[column.column]
+                  ? {
+                      value: columnFiltersActive[column.column],
+                      label: `${columnFiltersActive[column.column]} (${
+                        column.counts[columnFiltersActive[column.column]]
+                      })`,
+                    }
+                  : null
+              }
+              onChange={(selectedOption) => {
                 let active = { ...columnFiltersActive };
-                active[column.column] = e.target.value;
+                active[column.column] = selectedOption ? selectedOption.value : '';
                 setColumnFiltersActive(active);
               }}
-              value={columnFiltersActive[column.column] || ''}
-            >
-              <option value="">Select a value</option>
-              {column.categories.map((c) => (
-                <option key={c} value={c}>
-                  {c} ({column.counts[c]})
-                </option>
-              ))}
-            </select>
+              options={column.categories.map((c) => ({
+                value: c,
+                label: `${c} (${column.counts[c]})`,
+              }))}
+              isClearable
+              placeholder={`Filter by ${column.column}`}
+              className={styles.columnSelect}
+            />
           </span>
         ))}
       </div>
-      <div className="filter-cell middle">
+      <div className={styles.count}>
         {columnIndices?.length ? <span>{columnIndices?.length} rows</span> : null}
         {columnIndices?.length ? (
-          <button
-            className="deselect"
+          <Button
             onClick={() => {
               setColumnFiltersActive({});
               setColumnIndices([]);
+              setFilteredIndices([]);
             }}
-          >
-            X
-          </button>
+            icon="x"
+            color="secondary"
+          />
         ) : null}
       </div>
-      <div className="filter-cell right"></div>
     </div>
   ) : null;
 };

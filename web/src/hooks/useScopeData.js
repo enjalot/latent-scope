@@ -32,6 +32,11 @@ const useScopeData = (apiUrl, datasetId, scope) => {
         let nonDeletedClusters = new Set();
         scopeRows.forEach((d) => {
           const cluster = scope.cluster_labels_lookup?.[d.cluster];
+          if (!cluster.count) {
+            cluster.count = 0;
+          }
+          cluster.count += 1;
+
           clusterMap[d.ls_index] = cluster;
           //   clusterMap[d.ls_index] = { cluster: d.cluster, label: d.label };
           if (!d.deleted) {

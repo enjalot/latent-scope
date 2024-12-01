@@ -2,6 +2,7 @@
     background-color: var(--neutrals-color-neutral-1);
     border-bottom: 1px solid #e5e5e5;
     padding: 0 10px;
+    z-index: 100;
 }
 
 .tabsContainer {
@@ -42,7 +43,7 @@
 
 .tab {
     text-decoration: none;
-    color: var(--text-color-text-neutral);
+    color: var(--neutrals-color-neutral-3);
     padding: 8px 12px;
     border-bottom: 2px solid transparent;
     transition: border-color 0.2s;
@@ -51,11 +52,12 @@
 
 .tab:hover {
     border-bottom-color: rgba(0, 0, 0, 0.2);
+    color: var(--text-color-text-neutral-1);
 }
 
 .activeTab {
-    border-bottom-color: var(--semantic-color-semantic-primary);
-    color: var(--semantic-color-semantic-primary);
+    border-bottom-color: var(--text-color-text-primary);
+    color: var(--text-color-text-primary);
 }
 
 .disabledTab {
@@ -67,4 +69,13 @@
     border-left: 2px solid #e5e5e5;
     height: 34px;
     margin: 0 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .subHeaderContainer {
+        background-color: #111;
+        border-bottom: 1px solid var(--borders-color-border-3);
+    }
+
+
 }

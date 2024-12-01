@@ -313,7 +313,7 @@ function Scope() {
             </span>
             {scope?.sae_id ? (
               <span className={savedScope?.sae_id !== scope?.sae_id ? styles['different'] : ''}>
-                <span className={styles['scope-form-label']}>Embedding: </span>
+                <span className={styles['scope-form-label']}>SAE: </span>
                 <span className={styles['scope-form-value']}>{scope?.sae_id}</span>
                 <br />
               </span>

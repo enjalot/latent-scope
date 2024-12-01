@@ -181,6 +181,17 @@ export const apiService = {
         };
       });
   },
+  searchSaeFeature: async (datasetId, saeId, featureId, topN) => {
+    const searchParams = new URLSearchParams({
+      dataset: datasetId,
+      sae_id: saeId,
+      feature_id: featureId,
+      top_n: topN,
+    });
+    return fetch(`${apiUrl}/search/feature?${searchParams.toString()}`).then((response) =>
+      response.json()
+    );
+  },
   fetchUmapPoints: async (datasetId, umapId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/umaps/${umapId}/points`).then((response) =>
       response.json()

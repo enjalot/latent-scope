@@ -2,15 +2,43 @@ import { useEffect, useRef } from 'react';
 // import { scaleLinear } from 'd3-scale';
 import { line, curveLinearClosed, curveCatmullRomClosed } from 'd3-shape';
 import { select } from 'd3-selection';
+import { baseColor, baseColorDark } from '../lib/colors';
 import { transition } from 'd3-transition';
-import { easeExpOut, easeExpIn, easeCubicInOut} from 'd3-ease';
+import { easeExpOut, easeExpIn, easeCubicInOut } from 'd3-ease';
 // import { interpolate } from 'flubber';
 
-import "./HullPlot.css"
+import './HullPlot.css';
 
+function calculateCentroid(points) {
+  if (!points || points.length === 0) {
+    return null;
+  }
+
+  let xSum = 0;
+  let ySum = 0;
+
+  points.forEach((point) => {
+    xSum += point[0];
+    ySum += point[1];
+  });
+
+  const centroidX = xSum / points.length;
+  const centroidY = ySum / points.length;
+
+  return [centroidX, centroidY];
+}
+
+function findHighestPoint(points) {
+  if (!points || points.length === 0) {
+    return null;
+  }
+
+  // Find the point with the maximum y-coordinate (points[1]), and then return the entire point
+  const y = Math.max(...points.map((point) => point[1]));
+  return points.find((point) => point[1] === y);
+}
 
 const HullPlot = ({
-  // points,
   hulls,
   fill,
   stroke,
@@ -18,25 +46,60 @@ const HullPlot = ({
   duration = 2000,
   strokeWidth,
   opacity = 0.75,
-  symbol,
+  darkMode = false,
   xDomain,
   yDomain,
   width,
-  height
+  height,
+  label = undefined,
 }) => {
   const svgRef = useRef();
-  const prevPoints = useRef();
   const prevHulls = useRef();
-  const prevMod = useRef();
+
+  const textColor = baseColor;
+
+  const hasLabel = label !== undefined;
+  let labelToShow = label;
+  if (hasLabel) {
+    labelToShow = label.label;
+  }
+
+  // Add this helper function to the component
+  const hullToSvgCoordinate = (point, xDomain, yDomain, width, height) => {
+    // Calculate scale factors
+    const xScaleFactor = width / (xDomain[1] - xDomain[0]);
+    const yScaleFactor = height / (yDomain[1] - yDomain[0]);
+
+    // Calculate offsets to center the visualization
+    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0])) / 2;
+    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0])) / 2;
+
+    // Convert the point
+    return {
+      x: point[0] * xScaleFactor + xOffset,
+      y: -point[1] * yScaleFactor + yOffset, // Negate y to flip coordinate system
+    };
+  };
+
+  // Add this helper function near the top of the component
+  const calculateScaledFontSize = (width, height) => {
+    const baseFontSize = 12;
+    // Scale based on the smaller dimension to maintain readability
+    const FACTOR = 1000; // 800 is a reference size
+    const scaleFactor = Math.min(width, height) / FACTOR;
+    return Math.max(baseFontSize * scaleFactor, 8); // Ensure minimum font size of 8px
+  };
 
   useEffect(() => {
     if (!xDomain || !yDomain || !hulls.length) return;
 
     // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
-    const hullsChanged = !prevHulls.current || (JSON.stringify(hulls.slice(0, 10)) !== JSON.stringify(prevHulls.current.slice(0, 10)))
+    const hullsChanged =
+      !prevHulls.current ||
+      JSON.stringify(hulls.slice(0, 10)) !== JSON.stringify(prevHulls.current.slice(0, 10));
     // const pointsChanged = !prevPoints.current || (JSON.stringify(points[0]) !== JSON.stringify(prevPoints.current[0]))
 
-    if(!hullsChanged) return;
+    if (!hullsChanged) return;
     // if(!hullsChanged || !pointsChanged) {
     //   return
     // }
@@ -49,133 +112,195 @@ const HullPlot = ({
 
     // Calculate translation to center the drawing at (0,0)
     // This centers the view at (0,0) and accounts for the SVG's inverted y-axis
-    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0]) / 2);
-    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0]) / 2);
+    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0])) / 2;
+    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0])) / 2;
 
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    const g = svg.select("g.hull-container");
-    g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
+    const g = svg.select('g.hull-container');
+    g.attr(
+      'transform',
+      `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
+    );
 
     const draw = line()
-      .x(d => d?.[0])
-      .y(d => -d?.[1])
-      // .curve(curveCatmullRomClosed);
+      .x((d) => d?.[0])
+      .y((d) => -d?.[1])
       .curve(curveLinearClosed);
 
-    let sel = g.selectAll("path.hull")
-      .data(hulls)
-    
-    const exit = sel.exit()
+    let sel = g.selectAll('path.hull').data(hulls);
+
+    // Add base font size calculation
+    const baseFontSize = 12;
+    const scaledFontSize = baseFontSize / Math.sqrt(xScaleFactor * yScaleFactor);
+
+    const exit = sel
+      .exit()
       // .transition()
       // .duration(duration)
       // .delay(delay)
       // .ease(easeExpOut)
       // .style("opacity", 0)
-        .remove()
+      .remove();
 
-    const enter = sel.enter()
-      .append("path")
-        .classed("hull", true)
-        .attr("d", draw)
-        .style("fill", fill)
-        .style("stroke", stroke)
-        .style("stroke-width", scaledStrokeWidth)
-        .style("opacity", 0.)
-        // .transition()
-        //   .delay(delay + 100)
-        //   .duration(duration - 100)
-        //   .ease(easeExpOut)
-          .style("opacity", opacity)
+    const enter = sel
+      .enter()
+      .append('path')
+      .classed('hull', true)
+      .attr('d', draw)
+      .style('fill', fill)
+      .style('stroke', stroke)
+      .style('stroke-width', scaledStrokeWidth)
+      .style('opacity', 0)
+      // .transition()
+      //   .delay(delay + 100)
+      //   .duration(duration - 100)
+      //   .ease(easeExpOut)
+      .style('opacity', opacity);
 
     const update = sel
-      // .transition() 
+      // .transition()
       // .duration(duration)
       // .delay(delay)
       // .ease(easeCubicInOut)
-      .style("opacity", opacity)
-      .attr("d", draw)
-      // .attrTween("d", function(d,i) {
-      //   // console.log("d,i", d, i)
-      //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
-      //   const prev = prevHulls.current ? prevHulls.current[i] : null
-      //   // console.log(d, prev)
-      //   if(!prev) return () => draw(d)
-      //   const inter = interpolate(
-      //     draw(prev),
-      //     draw(d)
-      //   );
-      //   return function(t) {
-      //     return inter(t)
-      //   }
-      // })
+      .style('opacity', opacity)
+      .attr('d', draw);
+    // .attrTween("d", function(d,i) {
+    //   // console.log("d,i", d, i)
+    //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
+    //   const prev = prevHulls.current ? prevHulls.current[i] : null
+    //   // console.log(d, prev)
+    //   if(!prev) return () => draw(d)
+    //   const inter = interpolate(
+    //     draw(prev),
+    //     draw(d)
+    //   );
+    //   return function(t) {
+    //     return inter(t)
+    //   }
+    // })
 
+    // Handle hull labels
+    let labelSel = svg.selectAll('text.hull-label').data(hulls);
+
+    labelSel.exit().remove();
+
+    if (label) {
+      labelSel
+        .enter()
+        .append('text')
+        .attr('class', 'hull-label')
+        .merge(labelSel)
+        .attr('dy', -5)
+        .attr(
+          'x',
+          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
+        )
+        .attr(
+          'y',
+          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
+        )
+        .attr('text-anchor', 'middle')
+        .attr('fill', textColor)
+        .attr('alignment-baseline', 'auto')
+        .attr('font-size', calculateScaledFontSize(width, height))
+        .text(label.label);
+    }
 
     setTimeout(() => {
-      prevHulls.current = hulls
+      prevHulls.current = hulls;
       // prevHulls.current = mod
       // prevPoints.current = points
-    }, duration)
-
-  }, [hulls])
+    }, duration);
+  }, [hulls]);
 
   // This effect will rerender instantly when the fill, stroke, strokeWidth, or domain changes
   useEffect(() => {
-    if (!xDomain || !yDomain || !hulls.length ) return;
+    if (!xDomain || !yDomain || !hulls.length) return;
     const svg = select(svgRef.current);
 
     // Calculate scale factors
-     // The scale factors are calculated to fit the -1 to 1 domain within the current xDomain and yDomain
+    // The scale factors are calculated to fit the -1 to 1 domain within the current xDomain and yDomain
     const xScaleFactor = width / (xDomain[1] - xDomain[0]);
     const yScaleFactor = height / (yDomain[1] - yDomain[0]);
 
     // Calculate translation to center the drawing at (0,0)
     // This centers the view at (0,0) and accounts for the SVG's inverted y-axis
-    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0]) / 2);
-    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0]) / 2);
+    const xOffset = width / 2 - (xScaleFactor * (xDomain[1] + xDomain[0])) / 2;
+    const yOffset = height / 2 + (yScaleFactor * (yDomain[1] + yDomain[0])) / 2;
 
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    const g = svg.select("g.hull-container");
-    g.attr('transform', `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`);
+    // Handle hull labels
+    let labelSel = svg.selectAll('text.hull-label').data(hulls);
+
+    labelSel.exit().remove();
+
+    if (label) {
+      labelSel
+        .enter()
+        .append('text')
+        .attr('class', 'hull-label')
+        .merge(labelSel)
+        .attr('dy', -5)
+        .attr(
+          'x',
+          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
+        )
+        .attr(
+          'y',
+          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
+        )
+        .attr('text-anchor', 'middle')
+        .attr('fill', textColor)
+        .attr('alignment-baseline', 'auto')
+        .attr('font-size', calculateScaledFontSize(width, height))
+        .text(label.label);
+    }
+
+    const g = svg.select('g.hull-container');
+    g.attr(
+      'transform',
+      // `translate(${xOffset}, ${yOffset})`
+      `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
+    );
 
     const draw = line()
-      .x(d => d?.[0])
-      .y(d => -d?.[1])
+      .x((d) => d?.[0])
+      .y((d) => -d?.[1])
       // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
     // Draw hulls
-    let sel = g.selectAll("path.hull")
-      .data(hulls)
-    sel.enter()
-      .append("path")
-        .classed("hull", true)
-        .attr("d", draw)
-        .style("fill", fill)
-        .style("stroke", stroke)
-        .attr("stroke-width", scaledStrokeWidth)
-        .style("opacity", opacity)
+    let sel = g.selectAll('path.hull').data(hulls);
+    sel
+      .enter()
+      .append('path')
+      .classed('hull', true)
+      .attr('d', draw)
+      .style('fill', fill)
+      .style('stroke', stroke)
+      .attr('stroke-width', scaledStrokeWidth)
+      .style('opacity', opacity);
 
-    sel.exit().remove()
+    sel.exit().remove();
 
-    sel.attr("d", draw)
-      .style("fill", fill)
-      .style("stroke", stroke)
-      .attr("stroke-width", scaledStrokeWidth)
-      .style("opacity", opacity)
+    sel
+      .attr('d', draw)
+      .style('fill', fill)
+      .style('stroke', stroke)
+      .attr('stroke-width', scaledStrokeWidth)
+      .style('opacity', opacity);
 
-  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height])
+    // labelSel.exit().remove();
+  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height]);
 
   return (
-    <svg
-      ref={svgRef}
-      className="hull-plot"
-      width={width}
-      height={height}
-    ><g className="hull-container"></g></svg>
+    <svg ref={svgRef} className="hull-plot" width={width} height={height}>
+      <g className="hull-container"></g>
+    </svg>
   );
 };
 

@@ -1,54 +1,54 @@
-import React from 'react';
-// import '../../pages/Explore.css';
+import { useState } from 'react';
+import { Input, Button } from 'react-element-forge';
+import styles from './NearestNeighbor.module.scss';
 
 export default function NearestNeighbor({
-    searchIndices,
-    searchLoading,
-    setSearchText,
-    clearSearch
+  searchIndices,
+  searchLoading,
+  setSearchText,
+  clearSearch,
 }) {
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setSearchText(e.target.elements.searchBox.value);
-    };
+  const [inputValue, setInputValue] = useState('');
 
-    const handleClear = () => {
-        clearSearch();
-        document.getElementById("searchBox").value = "";
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSearchText(e.target.elements.searchBox.value);
+  };
 
-    return (
-        <div className={`filter-row search-box ${searchIndices.length ? "active" : ""}`}>
-            <div className="filter-cell left">
-                <form onSubmit={handleSubmit}>
-                    <input
-                        type="text"
-                        id="searchBox"
-                        placeholder="Filter by nearest neighbors to search query..."
-                    />
-                    {searchLoading ? (
-                        "Querying..."
-                    ) : (
-                        <button type="submit">🔍</button>
-                    )}
-                </form>
-            </div>
-            <div className="filter-cell middle">
-                <span>
-                    {searchIndices.length ? (
-                        <span>{searchIndices.length} rows</span>
-                    ) : null}
-                    {searchIndices.length > 0 ? (
-                        <button
-                            className="deselect"
-                            onClick={handleClear}
-                        >
-                            X
-                        </button>
-                    ) : null}
-                </span>
-            </div>
-            <div className="filter-cell right" />
+  const handleClear = () => {
+    clearSearch();
+    setInputValue('');
+  };
+
+  return (
+    <div className={`${styles.container} ${searchIndices.length ? styles.active : ''}`}>
+      <div className={`${styles.searchInputContainer}`}>
+        <Input
+          className={styles.searchInput}
+          value={inputValue}
+          placeholder="Filter by nearest neighbors to search query..."
+          onChange={(e) => {
+            setInputValue(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !searchLoading) {
+              setSearchText(e.target.value);
+            }
+          }}
+        />
+        <div className={styles.searchButtonContainer}>
+          <Button
+            color="secondary"
+            className={styles.searchButton}
+            disabled={searchLoading}
+            onClick={() => (searchIndices.length ? handleClear() : null)}
+            icon={searchLoading ? 'pie-chart' : searchIndices.length ? 'x' : 'search'}
+          />
         </div>
-    );
+      </div>
+      <div className={`${styles.count}`}>
+        {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
+      </div>
+    </div>
+  );
 }

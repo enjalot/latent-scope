@@ -93,30 +93,40 @@ Get top row indices for a given feature
 """
 @search_bp.route('/feature', methods=['GET'])
 def feature():
-    data = request.get_json()
-    dataset = data['dataset']
-    sae_id = data.get('sae_id') # the id of the model / saved features
-    feature_id = data.get('feature_id') # the particular feature we want rows for (an index)
-    columns = data.get('columns')
-    top_n = data.get('top_n')
+    dataset = request.args.get('dataset')
+    sae_id = request.args.get('sae_id')
+    feature_id = request.args.get('feature_id')
+    top_n = request.args.get('top_n')
+    if top_n is not None:
+        top_n = int(top_n)
     if top_n is None:
         top_n = 100
 
     # load the saved features
-    sae_path = os.path.join(DATA_DIR, dataset, "sae", f"{sae_id}.h5")
+    sae_path = os.path.join(DATA_DIR, dataset, "saes", f"{sae_id}.h5")
     with h5py.File(sae_path, 'r') as f:
         all_top_indices = np.array(f["top_indices"])
         all_top_acts = np.array(f["top_acts"])
 
-    # Find the rows where the feature_index appears in top_indices
-    feature_mask = all_top_indices == feature_id
-    # Get the corresponding activations
-    feature_activations = np.where(feature_mask, all_top_acts, np.zeros_like(all_top_acts))
-    # Get the top_n row indices with highest activations
-    top_row_indices = np.argsort(feature_activations.max(dim=1)[0])[:top_n]
-    # Get the activation values for these top rows
-    top_activations = feature_activations[top_row_indices, :]
-    return jsonify(top_row_indices=top_row_indices.tolist(), top_activations=top_activations.tolist())
+    # Get max activation per row for the specific feature
+    feature_activations = np.zeros(len(all_top_indices))
+    for row_idx, (indices, acts) in enumerate(zip(all_top_indices, all_top_acts)):
+        feature_mask = indices == int(feature_id)
+        if np.any(feature_mask):
+            feature_activations[row_idx] = np.max(acts[feature_mask])
+        else:
+            feature_activations[row_idx] = 0
+
+    # Only get indices where there are non-zero activations
+    non_zero_mask = feature_activations > 0
+    if not np.any(non_zero_mask):
+        return jsonify(top_row_indices=[])  # Return empty list if no activations
+
+    # Get the indices of top_n highest activations from non-zero activations only
+    top_row_indices = np.argsort(feature_activations[non_zero_mask])[::-1]
+    actual_indices = np.where(non_zero_mask)[0][top_row_indices]
+    
+    return jsonify(top_row_indices=actual_indices.tolist())
 
 """
 Returns features for a given query string.

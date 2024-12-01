@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Button } from 'react-element-forge';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
@@ -10,36 +10,12 @@ const apiUrl = import.meta.env.VITE_API_URL;
 
 import './FilterDataTable.css';
 
-const renderTags = (tags, row, tagset, handleTagClick) => {
-  const { ls_index } = row;
-  return (
-    <div className="tags">
-      {tags.map((t) => {
-        let ti = tagset[t]?.indexOf(ls_index) >= 0;
-        return (
-          <button
-            title={`add ${t} tag`}
-            className={ti ? 'tag-active' : 'tag-inactive'}
-            key={t}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleTagClick(t, ls_index);
-            }}
-          >
-            {t}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
 FilterDataTable.propTypes = {
   height: PropTypes.string,
   dataset: PropTypes.object.isRequired,
   scope: PropTypes.object,
-  indices: PropTypes.array.isRequired,
+  filteredIndices: PropTypes.array.isRequired,
+  defaultIndices: PropTypes.array.isRequired,
   distances: PropTypes.array,
   clusterMap: PropTypes.object,
   // clusterLabels: PropTypes.array,
@@ -49,8 +25,6 @@ FilterDataTable.propTypes = {
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
-
-const ROWS_PER_PAGE = 100;
 
 function RowWithHover({ props, onHover }) {
   const { row } = props;
@@ -70,87 +44,38 @@ function RowWithHover({ props, onHover }) {
 }
 
 function FilterDataTable({
-  height,
   dataset,
-  // scope,
-  // scopeRows,
-  indices = [],
+  filteredIndices = [],
+  defaultIndices = [],
   distances = [],
   clusterMap = {},
-  // clusterLabels,
   tagset,
   showEmbeddings = null,
-  // showDifference = null,
   showNavigation = true,
   sae_id = null,
   feature = -1,
   features = [],
-  onTagset,
-  onScope,
   onHover,
-  onClick,
   deletedIndices = [],
+  page,
+  setPage,
 }) {
-  const lsIndexCol = '0';
-
-  const [columns, setColumns] = useState([]);
   const [rows, setRows] = useState([]);
+
+  // page count is the total number of pages available
   const [pageCount, setPageCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
+
+  // when filteredIndices is empty, we use defaultIndices and show the pageCount as totalPages
+  // otherwise, we use filteredIndices and show the pageCount as the query result totalPages
 
   const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
 
-  // const highlightColumn = useMemo(() => dataset?.text_column, [dataset])
-  const [highlightColumn, setHighlightColumn] = useState(null);
-  useEffect(() => {
-    console.log('changed?', dataset);
-    setHighlightColumn(dataset?.text_column || null);
-  }, [dataset]);
-
-  const [tags, setTags] = useState([]);
-  useEffect(() => {
-    if (tagset) {
-      setTags(Object.keys(tagset));
-    }
-  }, [tagset]);
-
-  const [embeddingMinValues, setEmbeddingMinValues] = useState([]);
-  const [embeddingMaxValues, setEmbeddingMaxValues] = useState([]);
-  useEffect(() => {
-    if (dataset && showEmbeddings) {
-      fetch(`${apiUrl}/datasets/${dataset.id}/embeddings/${showEmbeddings}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('embedding stats', data);
-          setEmbeddingMinValues(data.min_values);
-          setEmbeddingMaxValues(data.max_values);
-        });
-    }
-  }, [dataset, showEmbeddings]);
-
-  function handleTagClick(tag, index) {
-    // console.log("tag", tag)
-    // console.log("index", index)
-    // console.log("tagset", tagset)
-    // console.log("tagset[tag]", tagset[tag])
-    if (tagset[tag].includes(index)) {
-      console.log('removing');
-      fetch(`${apiUrl}/tags/remove?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('removed', data);
-          onTagset();
-        });
-    } else {
-      console.log('adding');
-      fetch(`${apiUrl}/tags/add?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('added', data);
-          onTagset();
-        });
-    }
-  }
+  // const [tags, setTags] = useState([]);
+  // useEffect(() => {
+  //   if (tagset) {
+  //     setTags(Object.keys(tagset));
+  //   }
+  // }, [tagset]);
 
   const hydrateIndices = useCallback(
     (indices) => {
@@ -167,7 +92,7 @@ function FilterDataTable({
             dataset: dataset.id,
             indices: indices,
             embedding_id: showEmbeddings,
-            page: currentPage,
+            page,
             sae_id: sae_id,
           }),
         })
@@ -182,9 +107,10 @@ function FilterDataTable({
           });
       } else {
         setRows([]);
+        // setPageCount(totalPages);
       }
     },
-    [dataset, currentPage, showEmbeddings, sae_id]
+    [dataset, page, showEmbeddings, sae_id]
   );
 
   const formattedColumns = useMemo(() => {
@@ -296,8 +222,11 @@ function FilterDataTable({
                       icon="minimize"
                     />
                     <div>
-                      {row.ls_features.top_indices.slice(0, topN).map((featIdx, i) => (
-                        <div key={i}>
+                      {row.ls_features.top_indices.map((featIdx, i) => (
+                        <div
+                          key={i}
+                          style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
+                        >
                           {featIdx}: {features?.[featIdx]?.label} (
                           {row.ls_features.top_acts?.[i]?.toFixed(3)})
                         </div>
@@ -319,7 +248,10 @@ function FilterDataTable({
                     {feature >= 0 ? (
                       <>
                         {feature}: {!!features?.length && features[feature]?.label} (
-                        {row.ls_features.top_acts?.[feature]?.toFixed(3)})
+                        {row.ls_features.top_acts?.[
+                          row.ls_features?.top_indices?.indexOf(feature)
+                        ]?.toFixed(3)}
+                        )
                       </>
                     ) : (
                       <>
@@ -353,15 +285,27 @@ function FilterDataTable({
       };
     });
     return columnDefs;
-  }, [dataset, tags, tagset, clusterMap, distances, features, expandedFeatureRows]);
+  }, [
+    dataset,
+    /*tags, tagset,*/
+    clusterMap,
+    distances,
+    features,
+    expandedFeatureRows,
+    feature,
+    sae_id,
+    showEmbeddings,
+  ]);
 
   useEffect(() => {
-    const indicesToUse = indices.filter((i) => !deletedIndices.includes(i));
+    let indicesToUse = [];
+    if (filteredIndices.length) {
+      indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
+    } else {
+      indicesToUse = defaultIndices;
+    }
     hydrateIndices(indicesToUse);
-  }, [indices, currentPage]);
-
-  const [columnFilters, setColumnFilters] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  }, [filteredIndices, page, defaultIndices, deletedIndices, hydrateIndices]);
 
   const headerRef = useRef(null);
   const bodyRef = useRef(null);
@@ -443,50 +387,46 @@ function FilterDataTable({
     [expandedFeatureRows]
   );
 
+  // console.log('==== FILTER DATA TABLE =====', { filteredIndices, defaultIndices, rows });
+
   return (
     <div
       className="filter-data-table"
-      style={{ height: height, visibility: indices.length ? 'visible' : 'hidden' }}
+      // style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}
       <div
         className="filter-table-scrollable-body table-body"
-        style={{ flexGrow: 1, overflowY: 'auto' }}
+        style={{ overflowY: 'auto' }}
         ref={bodyRef}
       >
         <DataGrid
           rows={rows}
           columns={formattedColumns}
           rowGetter={(i) => rows[i]}
-          style={{ height: '100%' }}
-          renderers={{ renderRow: renderRowWithHover }}
           rowHeight={getRowHeight}
+          style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
+          renderers={{ renderRow: renderRowWithHover }}
         />
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">
-          <button onClick={() => setCurrentPage(0)} disabled={currentPage === 0}>
+          <button onClick={() => setPage(0)} disabled={page === 0}>
             First
           </button>
-          <button
-            onClick={() => setCurrentPage((old) => Math.max(0, old - 1))}
-            disabled={currentPage === 0}
-          >
+          <button onClick={() => setPage((old) => Math.max(0, old - 1))} disabled={page === 0}>
             ←
           </button>
           <span>
-            Page {currentPage + 1} of {pageCount || 1}
+            Page {page + 1} of {pageCount || 1}
           </span>
           <button
-            onClick={() => setCurrentPage((old) => Math.min(pageCount - 1, old + 1))}
-            disabled={currentPage === pageCount - 1}
+            onClick={() => setPage((old) => Math.min(pageCount - 1, old + 1))}
+            disabled={page === pageCount - 1}
           >
             →
           </button>
-          <button
-            onClick={() => setCurrentPage(pageCount - 1)}
-            disabled={currentPage === pageCount - 1}
-          >
+          <button onClick={() => setPage(pageCount - 1)} disabled={page === pageCount - 1}>
             Last
           </button>
         </div>
@@ -494,4 +434,4 @@ function FilterDataTable({
     </div>
   );
 }
-export default FilterDataTable;
+export default memo(FilterDataTable);

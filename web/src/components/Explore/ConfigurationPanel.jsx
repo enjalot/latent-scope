@@ -21,8 +21,8 @@ const ConfigurationPanel = ({
           className={styles.closeButton}
           variant="outline"
           onClick={onClose}
-          aria-label="Close configuration panel"
-          icon={'x'}
+          aria-label="Minimize configuration panel"
+          icon="minus"
         />
       </div>
 
@@ -64,6 +64,7 @@ const ConfigurationPanel = ({
         <Switch
           value={showClusterOutlines}
           onChange={toggleShowClusterOutlines}
+          defaultState={showClusterOutlines}
           color="secondary"
           label="Show Cluster Outlines"
         />
