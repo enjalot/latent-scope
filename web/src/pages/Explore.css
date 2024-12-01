@@ -228,8 +228,24 @@
   align-items: center;
 }
 
-.filters-container .clusters-select select {
-  width: 310px;
+.cluster-react-select {
+  width: 400px;
+}
+
+.column-filter .filter-cell.columns {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.column-filter .column-react-select {
+  width: 250px;
+}
+
+.search-input-container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
 }
 
 .filters-container .new-cluster-label {

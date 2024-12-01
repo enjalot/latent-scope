@@ -1,4 +1,5 @@
 import React from 'react';
+import Select from 'react-select';
 
 export default function ClusterFilter({
   setFilteredIndices,
@@ -7,26 +8,40 @@ export default function ClusterFilter({
   clusterIndices,
   setCluster,
 }) {
-  const handleClusterChange = (e) => {
-    if (e.target.value === '-1') {
+  const selectOptions = clusterLabels?.map((cl) => ({
+    value: cl.cluster,
+    label: `${cl.cluster}: ${cl.label} (${cl.count})`,
+  }));
+  console.log('CLUSTER LABELS', clusterLabels);
+
+  const handleClusterChange = (selectedOption) => {
+    if (!selectedOption) {
       setCluster(null);
+      setFilteredIndices([]);
       return;
     }
-    const cl = clusterLabels.find((cluster) => cluster.cluster === +e.target.value);
+    const cl = clusterLabels.find((cluster) => cluster.cluster === selectedOption.value);
     if (cl) setCluster(cl);
   };
 
   return (
     <div className={`clusters-select filter-row ${clusterIndices?.length ? 'active' : ''}`}>
       <div className="filter-cell left">
-        <select onChange={handleClusterChange} value={cluster?.cluster >= 0 ? cluster.cluster : -1}>
-          <option value="-1">Filter by cluster</option>
-          {clusterLabels?.map((cluster, index) => (
-            <option key={index} value={cluster.cluster}>
-              {cluster.cluster}: {cluster.label}
-            </option>
-          ))}
-        </select>
+        <Select
+          value={
+            cluster
+              ? {
+                  value: cluster.cluster,
+                  label: `${cluster.cluster}: ${cluster.label}`,
+                }
+              : null
+          }
+          onChange={handleClusterChange}
+          options={selectOptions}
+          isClearable
+          placeholder="Filter by cluster"
+          className="cluster-react-select"
+        />
       </div>
       <div className="filter-cell middle">
         {clusterIndices?.length ? (

@@ -154,7 +154,7 @@ function ScatterPlot({
 
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
-      console.log({ colorScaleType, colorDomain, colorRange });
+      // console.log({ colorScaleType, colorDomain, colorRange });
 
       if (colorScaleType === 'categorical') {
         let uniques = colorDomain;

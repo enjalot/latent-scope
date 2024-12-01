@@ -371,7 +371,7 @@ function FilterDataTable({
     [expandedFeatureRows]
   );
 
-  console.log('==== FILTER DATA TABLE =====', { filteredIndices, defaultIndices, rows });
+  // console.log('==== FILTER DATA TABLE =====', { filteredIndices, defaultIndices, rows });
 
   return (
     <div

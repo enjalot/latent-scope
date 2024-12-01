@@ -1,4 +1,5 @@
 import React from 'react';
+import Select from 'react-select';
 
 const ColumnFilter = ({
   columnFilters,
@@ -10,25 +11,34 @@ const ColumnFilter = ({
 }) => {
   return columnFilters?.length ? (
     <div className={`filter-row column-filter ${columnIndices?.length ? 'active' : ''}`}>
-      <div className="filter-cell">
+      <div className="filter-cell columns">
         {columnFilters.map((column) => (
           <span key={column.column} style={{ marginRight: 8 }}>
-            {column.column}:
-            <select
-              onChange={(e) => {
+            {/* {column.column}: */}
+            <Select
+              value={
+                columnFiltersActive[column.column]
+                  ? {
+                      value: columnFiltersActive[column.column],
+                      label: `${columnFiltersActive[column.column]} (${
+                        column.counts[columnFiltersActive[column.column]]
+                      })`,
+                    }
+                  : null
+              }
+              onChange={(selectedOption) => {
                 let active = { ...columnFiltersActive };
-                active[column.column] = e.target.value;
+                active[column.column] = selectedOption ? selectedOption.value : '';
                 setColumnFiltersActive(active);
               }}
-              value={columnFiltersActive[column.column] || ''}
-            >
-              <option value="">Select a value</option>
-              {column.categories.map((c) => (
-                <option key={c} value={c}>
-                  {c} ({column.counts[c]})
-                </option>
-              ))}
-            </select>
+              options={column.categories.map((c) => ({
+                value: c,
+                label: `${c} (${column.counts[c]})`,
+              }))}
+              isClearable
+              placeholder={`Filter by ${column.column}`}
+              className="column-react-select"
+            />
           </span>
         ))}
       </div>

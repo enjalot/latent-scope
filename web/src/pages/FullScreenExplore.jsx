@@ -449,14 +449,14 @@ function Explore() {
     },
   };
 
-  console.log('==== indices state === ', {
-    clusterIndices,
-    searchIndices,
-    selectedIndices,
-    filteredIndices,
-    columnFilterIndices,
-    defaultRows: defaultIndices,
-  });
+  // console.log('==== indices state === ', {
+  //   clusterIndices,
+  //   searchIndices,
+  //   selectedIndices,
+  //   filteredIndices,
+  //   columnFilterIndices,
+  //   defaultRows: defaultIndices,
+  // });
 
   if (!dataset)
     return (

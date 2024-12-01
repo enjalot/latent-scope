@@ -1,0 +1,32 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 100%;
+}
+
+.searchInputContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.searchInput {
+  flex-grow: 1;
+}
+.searchButtonContainer {
+  padding-top: 6px;
+}
+.searchButton {
+  flex-grow: 0;
+}
+.searchButtonContainer {
+  padding-top: 6px;
+}
+.count {
+  min-width: 100px;
+  line-height: 56px;
+  height: 52px;
+  min-height: 52px;
+}

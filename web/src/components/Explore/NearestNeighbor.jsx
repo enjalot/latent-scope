@@ -1,5 +1,6 @@
-import React from 'react';
-// import '../../pages/Explore.css';
+import { useState } from 'react';
+import { Input, Button } from 'react-element-forge';
+import styles from './NearestNeighbor.module.scss';
 
 export default function NearestNeighbor({
   searchIndices,
@@ -8,6 +9,8 @@ export default function NearestNeighbor({
   clearSearch,
   setFilteredIndices,
 }) {
+  const [inputValue, setInputValue] = useState('');
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setSearchText(e.target.elements.searchBox.value);
@@ -15,35 +18,39 @@ export default function NearestNeighbor({
 
   const handleClear = () => {
     clearSearch();
-    document.getElementById('searchBox').value = '';
+    setInputValue('');
     setFilteredIndices([]);
   };
 
   return (
-    <div
-      className={`clusters-select filter-row search-box ${searchIndices.length ? 'active' : ''}`}
-    >
-      <div className="filter-cell left">
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            id="searchBox"
-            placeholder="Filter by nearest neighbors to search query..."
+    <div className={`${styles.container} ${searchIndices.length ? styles.active : ''}`}>
+      <div className={`${styles.searchInputContainer}`}>
+        <Input
+          className={styles.searchInput}
+          value={inputValue}
+          placeholder="Filter by nearest neighbors to search query..."
+          onChange={(e) => {
+            setInputValue(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !searchLoading) {
+              setSearchText(e.target.value);
+            }
+          }}
+        />
+        <div className={styles.searchButtonContainer}>
+          <Button
+            color="secondary"
+            className={styles.searchButton}
+            disabled={searchLoading}
+            onClick={() => (searchIndices.length ? handleClear() : null)}
+            icon={searchLoading ? 'pie-chart' : searchIndices.length ? 'x' : 'search'}
           />
-          {searchLoading ? 'Querying...' : <button type="submit">🔍</button>}
-        </form>
+        </div>
       </div>
-      <div className="filter-cell middle">
-        <span>
-          {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
-          {searchIndices.length > 0 ? (
-            <button className="deselect" onClick={handleClear}>
-              X
-            </button>
-          ) : null}
-        </span>
+      <div className={`${styles.count}`}>
+        {searchIndices.length ? <span>{searchIndices.length} rows</span> : null}
       </div>
-      <div className="filter-cell right" />
     </div>
   );
 }
