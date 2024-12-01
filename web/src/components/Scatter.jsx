@@ -7,17 +7,13 @@ import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-
 import { SELECT } from '../pages/FullScreenExplore';
 
 import styles from './Scatter.module.css';
-import styles from './Scatter.module.css';
 
 import PropTypes from 'prop-types';
 ScatterPlot.propTypes = {
   points: PropTypes.array.isRequired, // an array of [x,y] points
-  points: PropTypes.array.isRequired, // an array of [x,y] points
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
-  colorScaleType: PropTypes.oneOf(['categorical', 'continuous']),
-  colorScaleType: PropTypes.oneOf(['categorical', 'continuous']),
   colorDomain: PropTypes.array,
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
@@ -34,18 +30,13 @@ ScatterPlot.propTypes = {
 const calculatePointSize = (numPoints) => {
   const minPoints = 100; // Minimum number of points to start scaling
   const maxPoints = 1000000;
-  const maxPoints = 1000000;
   const minSize = 6; // Minimum size of points
   const maxSize = 1; // Maximum size of points when number of points is very large
-  const scale = scaleLog().domain([minPoints, maxPoints]).range([minSize, maxSize]).clamp(true);
   const scale = scaleLog().domain([minPoints, maxPoints]).range([minSize, maxSize]).clamp(true);
   return scale(numPoints);
 };
 const calculatePointOpacity = (numPoints) => {
   const minPoints = 100; // Minimum number of points to start scaling
-  const maxPoints = 1000000;
-  const minOpacity = 0.2;
-  const maxOpacity = 0.7;
   const maxPoints = 1000000;
   const minOpacity = 0.2;
   const maxOpacity = 0.7;
@@ -56,10 +47,6 @@ const calculatePointOpacity = (numPoints) => {
   return scale(numPoints);
 };
 
-function ScatterPlot({
-  points,
-  width,
-  height,
 function ScatterPlot({
   points,
   width,
@@ -94,13 +81,9 @@ function ScatterPlot({
     const xScale = scaleLinear()
       // .domain(xDomain.current)
       .domain([-1, 1]);
-      .domain([-1, 1]);
     const yScale = scaleLinear()
       // .domain(yDomain.current)
       .domain([-1, 1]);
-
-    const selectKeyMap = { alt: 'rotate', shift: 'lasso' };
-
     const scatterSettings = {
       canvas: container.current,
       width,
@@ -108,7 +91,6 @@ function ScatterPlot({
       pointColorHover: [0.1, 0.1, 0.1, 0.5],
       xScale,
       yScale,
-      keyMap: activeFilterTab === SELECT ? selectKeyMap : {},
     };
     // console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
@@ -136,20 +118,13 @@ function ScatterPlot({
     });
     scatterplot.subscribe('deselect', () => {
       onSelect && onSelect([]);
-    scatterplot.subscribe('deselect', () => {
-      onSelect && onSelect([]);
     });
-    scatterplot.subscribe('pointOver', (pointIndex) => {
-      onHover && onHover(pointIndex);
     scatterplot.subscribe('pointOver', (pointIndex) => {
       onHover && onHover(pointIndex);
     });
     scatterplot.subscribe('pointOut', () => {
       onHover && onHover(null);
-    scatterplot.subscribe('pointOut', () => {
-      onHover && onHover(null);
     });
-
 
     // const canvas = container.current;
     // canvas.addEventListener('mouseleave', handleMouseLeave);
@@ -167,7 +142,6 @@ function ScatterPlot({
   useEffect(() => {
     const scatterplot = scatterplotRef.current;
     const prevPoints = prevPointsRef.current;
-    if (scatterplot && points && points.length) {
     if (scatterplot && points && points.length) {
       const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
@@ -196,18 +170,9 @@ function ScatterPlot({
         if (!colorRange) {
           const colorScale = scaleSequential(colorInterpolator).domain(domain);
           pointColor = range(uniques).map((u) => rgb(colorScale(u)).hex());
-        let domain = extent(uniques).reverse();
-        if (!colorRange) {
-          const colorScale = scaleSequential(colorInterpolator).domain(domain);
-          pointColor = range(uniques).map((u) => rgb(colorScale(u)).hex());
         } else {
           pointColor = colorRange;
-          pointColor = colorRange;
         }
-      } else if (colorScaleType === 'continuous') {
-        let r = range(0, 100);
-        const colorScale = scaleSequential(colorInterpolator).domain([0, 100]);
-        pointColor = r.map((i) => rgb(colorScale(i)).hex());
       } else if (colorScaleType === 'continuous') {
         let r = range(0, 100);
         const colorScale = scaleSequential(colorInterpolator).domain([0, 100]);
@@ -216,17 +181,11 @@ function ScatterPlot({
 
       if (colorScaleType) {
         scatterplot.set({ colorBy: 'valueA' });
-      if (colorScaleType) {
-        scatterplot.set({ colorBy: 'valueA' });
       }
-      if (opacityBy) {
       if (opacityBy) {
         scatterplot.set({
           opacityBy,
           sizeBy: opacityBy,
-          opacity: opacityRange || [0.1, 0.2, 0.3, 0.4, 0.5, 1],
-          pointSize: pointSizeRange || [2, 4, 5, 6, pointSize],
-        });
           opacity: opacityRange || [0.1, 0.2, 0.3, 0.4, 0.5, 1],
           pointSize: pointSizeRange || [2, 4, 5, 6, pointSize],
         });
@@ -235,15 +194,12 @@ function ScatterPlot({
           opacity: opacity,
           pointSize: pointSize,
         });
-        });
       }
       if (prevPoints && prevPoints.length === points.length) {
-        scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
         scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
           // don't color till after
           scatterplot.set({
             pointColor: pointColor,
-          });
           });
           scatterplot.draw(points, { transition: false });
         });
