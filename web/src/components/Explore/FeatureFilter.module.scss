@@ -1,0 +1,82 @@
+.container {
+  width: calc(100% - 80px);
+  // Keep existing clusters-select and filter-row styles if any
+  &.active {
+    // Your active styles
+  }
+}
+
+.dropdownContainer {
+  position: relative;
+  width: 100%;
+}
+
+.inputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  
+  &::placeholder {
+    color: #999;
+  }
+}
+
+.clearButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #999;
+  
+  &:hover {
+    color: #666;
+  }
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 4px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.item {
+  padding: 8px;
+  cursor: pointer;
+  
+  &.highlighted {
+    background-color: #f0f0f0;
+  }
+  
+  &.selected {
+    font-weight: bold;
+  }
+}
+
+.filterCell {
+  // Keep existing filter-cell styles
+  width: 100%;
+  &.left {
+    // Your left cell styles
+  }
+  
+  &.middle {
+    // Your middle cell styles
+  }
+}

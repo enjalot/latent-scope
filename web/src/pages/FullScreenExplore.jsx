@@ -7,7 +7,7 @@ import useCurrentScope from '../hooks/useCurrentScope';
 import useNearestNeighborsSearch from '../hooks/useNearestNeighborsSearch';
 import useScopeData from '../hooks/useScopeData';
 import { saeAvailable } from '../lib/SAE';
-import { apiUrl } from '../lib/apiService';
+import { apiUrl, apiService } from '../lib/apiService';
 
 import FilterActions from '../components/Explore/FilterActions';
 import SubNav from '../components/SubNav';
@@ -19,7 +19,7 @@ export const SEARCH = 'search';
 export const CLUSTER = 'filter';
 export const SELECT = 'select';
 export const COLUMN = 'column';
-
+export const FEATURE = 'feature';
 export const PER_PAGE = 100;
 
 function Explore() {
@@ -209,6 +209,11 @@ function Explore() {
     setFilteredIndices(selectedIndices);
   };
 
+  const toggleFeature = () => {
+    setActiveFilterTab(FEATURE);
+    setFilteredIndices(featureIndices);
+  };
+
   // ====================================================================================================
   // NN Search
   // ====================================================================================================
@@ -241,27 +246,6 @@ function Explore() {
       fetchScopeRows();
     }
   }, [fetchScopeRows, scope, embeddings, setClusterLabels]);
-
-  useEffect(() => {
-    if (cluster && activeFilterTab === CLUSTER) {
-      const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
-      setClusterAnnotations(annots);
-      const indices = annots.map((d) => d.ls_index);
-      setClusterIndices(indices);
-      setFilteredIndices(indices);
-      // scatter?.zoomToPoints(
-      //   annots.map((d) => d.ls_index),
-      //   { transition: true, transitionDuration: 1500, padding: 1.5 }
-      // );
-    } else {
-      setClusterAnnotations([]);
-      // if (scatter && scatter.zoomToOrigin) {
-      //   console.log('==== zoom to origin', scatter.zoomToOrigin);
-      //   // scatter?.zoomToLocation([0, 0], 1);
-      //   scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
-      // }
-    }
-  }, [cluster, scopeRows, setClusterAnnotations]);
 
   // Handlers for responding to individual data points
   const handleClicked = useCallback(
@@ -309,20 +293,42 @@ function Explore() {
 
   const [clusterIndices, setClusterIndices] = useState([]);
   useEffect(() => {
-    if (cluster) {
-      const indices = clusterAnnotations.map((d) => d.ls_index);
+    if (cluster && activeFilterTab === CLUSTER) {
+      const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
+      setClusterAnnotations(annots);
+      const indices = annots.map((d) => d.ls_index);
       setClusterIndices(indices);
+      setFilteredIndices(indices);
     } else {
+      setClusterAnnotations([]);
       setClusterIndices([]);
-      // clear the filtered indices when the cluster is clearedS
-      // this should only happen when the cluster filter is the active filter.
-      if (activeFilterTab === CLUSTER) {
-        setFilteredIndices([]);
-      }
+      setFilteredIndices([]);
     }
-  }, [cluster, clusterMap, clusterAnnotations]);
+  }, [
+    cluster,
+    scopeRows,
+    setClusterAnnotations,
+    setClusterIndices,
+    setFilteredIndices,
+    activeFilterTab,
+  ]);
 
   // ==== COLUMNS ====
+
+  const [featureIndices, setFeatureIndices] = useState([]);
+  const [featureAnnotations, setFeatureAnnotations] = useState([]);
+  useEffect(() => {
+    if (feature >= 0 && activeFilterTab === FEATURE) {
+      console.log('==== feature ==== ', feature);
+      apiService.searchSaeFeature(datasetId, sae?.id, feature, 100).then((data) => {
+        console.log('==== data ==== ', data);
+        setFeatureIndices(data.top_row_indices);
+        setFilteredIndices(data.top_row_indices);
+      });
+    } else {
+      setFilteredIndices([]);
+    }
+  }, [datasetId, sae, setFilteredIndices, activeFilterTab, feature]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -509,8 +515,15 @@ function Explore() {
                 toggleColumn={toggleColumn}
                 toggleFilter={toggleFilter}
                 toggleSelect={toggleSelect}
+                toggleFeature={toggleFeature}
                 dataset={dataset}
                 datasetId={datasetId}
+                scope={scope}
+                features={features}
+                feature={feature}
+                setFeature={setFeature}
+                featureIndices={featureIndices}
+                setFeatureIndices={setFeatureIndices}
               />
             </div>
             <div

@@ -4,7 +4,8 @@ import { Button } from 'react-element-forge';
 import ClusterFilter from './ClusterFilter';
 import ColumnFilter from './ColumnFilter';
 import NearestNeighbor from './NearestNeighbor';
-import { SEARCH, CLUSTER, SELECT, COLUMN } from '../../pages/FullScreenExplore';
+import FeatureFilter from './FeatureFilter';
+import { SEARCH, CLUSTER, SELECT, COLUMN, FEATURE } from '../../pages/FullScreenExplore';
 import useColumnFilter from '../../hooks/useColumnFilter';
 import { apiUrl } from '../../lib/apiService';
 
@@ -26,10 +27,17 @@ export default function FilterActions({
   toggleFilter,
   toggleSelect,
   toggleColumn,
+  toggleFeature,
   columnFilterIndices,
   setColumnFilterIndices,
   datasetId,
   dataset,
+  features,
+  feature,
+  setFeature,
+  featureIndices,
+  setFeatureIndices,
+  scope,
 }) {
   const { columnFiltersActive, setColumnFiltersActive, columnFilters } = useColumnFilter(
     apiUrl,
@@ -57,6 +65,16 @@ export default function FilterActions({
         columnFilters={columnFilters}
         columnIndices={columnFilterIndices}
         setColumnIndices={setColumnFilterIndices}
+      />
+    );
+  } else if (activeFilterTab === FEATURE) {
+    filterComponent = (
+      <FeatureFilter
+        features={features}
+        feature={feature}
+        featureIndices={featureIndices}
+        setFeature={setFeature}
+        scope={scope}
       />
     );
   } else if (activeFilterTab === SELECT) {
@@ -137,6 +155,17 @@ export default function FilterActions({
           color="secondary"
           title="Search"
         />
+        {features?.length ? (
+          <Button
+            onClick={toggleFeature}
+            className={`${styles.actionsButton} ${activeFilterTab === FEATURE ? styles.active : styles.notActive}`}
+            size="small"
+            icon="search"
+            text={`Feature (${featureIndices?.length})`}
+            color="secondary"
+            title="Feature"
+          />
+        ) : null}
       </div>
       <div className={styles.actionsRow}>{filterComponent}</div>
     </div>

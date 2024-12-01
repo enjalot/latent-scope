@@ -28,6 +28,7 @@
     "react-router-dom": "^6.20.1",
     "react-select": "^5.8.0",
     "react-tooltip": "^5.26.3",
+    "react-window": "^1.8.10",
     "regl-scatterplot": "^1.8.5",
     "request": "^2.88.2",
     "sass": "^1.80.3"

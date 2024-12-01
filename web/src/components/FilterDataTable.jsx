@@ -222,8 +222,11 @@ function FilterDataTable({
                       icon="minimize"
                     />
                     <div>
-                      {row.ls_features.top_indices.slice(0, topN).map((featIdx, i) => (
-                        <div key={i}>
+                      {row.ls_features.top_indices.map((featIdx, i) => (
+                        <div
+                          key={i}
+                          style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
+                        >
                           {featIdx}: {features?.[featIdx]?.label} (
                           {row.ls_features.top_acts?.[i]?.toFixed(3)})
                         </div>
@@ -245,7 +248,10 @@ function FilterDataTable({
                     {feature >= 0 ? (
                       <>
                         {feature}: {!!features?.length && features[feature]?.label} (
-                        {row.ls_features.top_acts?.[feature]?.toFixed(3)})
+                        {row.ls_features.top_acts?.[
+                          row.ls_features?.top_indices?.indexOf(feature)
+                        ]?.toFixed(3)}
+                        )
                       </>
                     ) : (
                       <>
