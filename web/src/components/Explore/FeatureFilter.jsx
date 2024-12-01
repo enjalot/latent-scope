@@ -3,7 +3,15 @@ import { FixedSizeList as List } from 'react-window';
 import classNames from 'classnames';
 import styles from './FeatureFilter.module.scss';
 
-export default function FeatureFilter({ scope, features, feature, featureIndices, setFeature }) {
+export default function FeatureFilter({
+  scope,
+  features,
+  feature,
+  featureIndices,
+  setFeature,
+  setFilteredIndices,
+  setFeatureIndices,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
@@ -68,6 +76,8 @@ export default function FeatureFilter({ scope, features, feature, featureIndices
   const handleClear = useCallback(() => {
     setInputValue('');
     setFeature(-1);
+    setFilteredIndices([]);
+    setFeatureIndices([]);
     inputRef.current?.focus();
   }, [setFeature, setInputValue, inputRef]);
 

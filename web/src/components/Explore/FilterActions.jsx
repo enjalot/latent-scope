@@ -75,6 +75,8 @@ export default function FilterActions({
         featureIndices={featureIndices}
         setFeature={setFeature}
         scope={scope}
+        setFilteredIndices={setFilteredIndices}
+        setFeatureIndices={setFeatureIndices}
       />
     );
   } else if (activeFilterTab === SELECT) {
