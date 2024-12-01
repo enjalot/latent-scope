@@ -52,9 +52,9 @@ class OpenAIChatProvider(ChatModelProvider):
             self.encoder = tiktoken.encoding_for_model(self.name)
         else:
             self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"), base_url=self.base_url)
-            self.encoder = None
-        print("BASE URL", self.base_url)
-        print("MODEL", self.name)
+            # even if this is some other model, we wont be able to figure out the tokenizer from custom API
+            # so we just use gpt-4o as a fallback, it should be roughly correct for token counts
+            self.encoder = tiktoken.encoding_for_model("gpt-4o") 
         config = OpenAIConfig(self.name)
         self.model = outlines.models.openai(self.client, config)
         self.generator = outlines.generate.text(self.model)

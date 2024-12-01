@@ -342,8 +342,8 @@ function ClusterLabels() {
                 🤔
               </span>
               <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
-                The number of samples to use from each cluster for summarization. Set to 0 to use
-                all samples.
+                The number of items to use from each cluster for summarization. Set to 0 to use all
+                items. Items are chosen based on distance from the centroid of the cluster.
               </Tooltip>
             </label>
             <label>
@@ -351,7 +351,7 @@ function ClusterLabels() {
               <input
                 type="number"
                 name="max_tokens"
-                defaultValue={chatModel?.params?.max_tokens || 8192}
+                defaultValue={scope?.embedding?.max_seq_length || 512}
                 min={-1}
                 disabled={!!clusterLabelsJob || !cluster}
               />
@@ -359,7 +359,8 @@ function ClusterLabels() {
                 🤔
               </span>
               <Tooltip id="max_tokens" place="top" effect="solid" className="tooltip-area">
-                The maximum number of tokens to use for the model. Set to -1 to ignore limits.
+                The maximum number of tokens per sample to use, truncates long samples to max
+                tokens. Set to -1 to ignore limits.
               </Tooltip>
             </label>
             <textarea
