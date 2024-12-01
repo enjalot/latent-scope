@@ -122,10 +122,19 @@ function ClusterLabels() {
     });
   }, []);
 
+  const [ollamaModels, setOllamaModels] = useState([]);
+  const fetchOllamaModels = useCallback(() => {
+    apiService.fetchOllamaChatModels().then((data) => {
+      console.log('ollama chat models', data);
+      if (data && data.length) setOllamaModels(data);
+    });
+  }, [setOllamaModels]);
+
   useEffect(() => {
     fetchRecentModels();
     searchHFModels();
-  }, [fetchRecentModels, searchHFModels]);
+    fetchOllamaModels();
+  }, [fetchRecentModels, searchHFModels, fetchOllamaModels]);
 
   // Build up the list of options for the Dropdown
   const [allModels, setAllModels] = useState([]);
@@ -135,6 +144,7 @@ function ClusterLabels() {
     const am = [presetModels[0]]
       .concat(recentModels)
       .concat(customModels)
+      .concat(ollamaModels)
       .concat(HFModels)
       .concat(presetModels.slice(1))
       .filter((d) => !!d);
