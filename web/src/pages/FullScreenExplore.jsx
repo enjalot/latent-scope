@@ -16,7 +16,7 @@ import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/FilterDataTable';
 
 export const SEARCH = 'search';
-export const FILTER = 'filter';
+export const CLUSTER = 'filter';
 export const SELECT = 'select';
 export const COLUMN = 'column';
 
@@ -183,7 +183,7 @@ function Explore() {
   // Selection via Scatterplot
   // indices of items selected by the scatter plot
   // indices of items in the current filter. default to cluster indices to start
-  const [activeFilterTab, setActiveFilterTab] = useState(FILTER);
+  const [activeFilterTab, setActiveFilterTab] = useState(CLUSTER);
 
   const [selectedIndices, setSelectedIndices] = useState([]);
 
@@ -214,7 +214,7 @@ function Explore() {
   };
 
   const toggleFilter = () => {
-    setActiveFilterTab(FILTER);
+    setActiveFilterTab(CLUSTER);
     setFilteredIndices(clusterIndices);
   };
 
@@ -257,7 +257,7 @@ function Explore() {
   }, [fetchScopeRows, scope, embeddings, setClusterLabels]);
 
   useEffect(() => {
-    if (cluster && activeFilterTab === FILTER) {
+    if (cluster && activeFilterTab === CLUSTER) {
       const annots = scopeRows.filter((d) => d.cluster == cluster.cluster);
       setClusterAnnotations(annots);
       const indices = annots.map((d) => d.ls_index);
@@ -314,7 +314,7 @@ function Explore() {
       setClusterIndices([]);
       // clear the filtered indices when the cluster is clearedS
       // this should only happen when the cluster filter is the active filter.
-      if (activeFilterTab === FILTER) {
+      if (activeFilterTab === CLUSTER) {
         setFilteredIndices([]);
       }
     }

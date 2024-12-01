@@ -4,7 +4,7 @@ import { Button } from 'react-element-forge';
 import ClusterFilter from './ClusterFilter';
 import ColumnFilter from './ColumnFilter';
 import NearestNeighbor from './NearestNeighbor';
-import { SEARCH, FILTER, SELECT, COLUMN } from '../../pages/FullScreenExplore';
+import { SEARCH, CLUSTER, SELECT, COLUMN } from '../../pages/FullScreenExplore';
 import useColumnFilter from '../../hooks/useColumnFilter';
 import { apiUrl } from '../../lib/apiService';
 
@@ -40,7 +40,7 @@ export default function FilterActions({
   );
 
   let filterComponent = null;
-  if (activeFilterTab === FILTER) {
+  if (activeFilterTab === CLUSTER) {
     filterComponent = (
       <ClusterFilter
         clusterLabels={clusterLabels}
@@ -102,7 +102,7 @@ export default function FilterActions({
       <div className="filter-actions-container">
         <Button
           onClick={toggleFilter}
-          className={`filter-actions-button ${activeFilterTab === FILTER ? 'active' : 'not-active'}`}
+          className={`filter-actions-button ${activeFilterTab === CLUSTER ? 'active' : 'not-active'}`}
           size="small"
           icon="filter"
           text={`Filter by Cluster (${clusterIndices?.length})`}

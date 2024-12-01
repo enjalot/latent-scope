@@ -18,7 +18,7 @@ import {
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
-import { FILTER } from '../../pages/FullScreenExplore';
+import { CLUSTER } from '../../pages/FullScreenExplore';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -43,8 +43,7 @@ function VisualizationPane({
   activeFilterTab,
 }) {
   // only show the hull if we are filtering by cluster
-  const showHull = activeFilterTab === FILTER;
-
+  const showHull = activeFilterTab === CLUSTER;
 
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -65,13 +64,13 @@ function VisualizationPane({
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
-      if (hoveredIndex !== null) {
-        if (i === hoveredIndex) {
-          return [p.x, p.y, mapSelectionKey.hovered];
-        } else {
-          return [p.x, p.y, mapSelectionKey.notSelected];
-        }
-      }
+      // if (hoveredIndex !== null) {
+      //   if (i === hoveredIndex) {
+      //     return [p.x, p.y, mapSelectionKey.hovered];
+      //   } else {
+      //     return [p.x, p.y, mapSelectionKey.notSelected];
+      //   }
+      // }
       // if (deletedIndices?.includes(i)) {
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
