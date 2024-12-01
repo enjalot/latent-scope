@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Button } from 'react-element-forge';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
@@ -70,12 +70,12 @@ function FilterDataTable({
 
   const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
 
-  const [tags, setTags] = useState([]);
-  useEffect(() => {
-    if (tagset) {
-      setTags(Object.keys(tagset));
-    }
-  }, [tagset]);
+  // const [tags, setTags] = useState([]);
+  // useEffect(() => {
+  //   if (tagset) {
+  //     setTags(Object.keys(tagset));
+  //   }
+  // }, [tagset]);
 
   const hydrateIndices = useCallback(
     (indices) => {
@@ -110,7 +110,7 @@ function FilterDataTable({
         // setPageCount(totalPages);
       }
     },
-    [dataset, page, showEmbeddings, sae_id, filteredIndices, defaultIndices]
+    [dataset, page, showEmbeddings, sae_id]
   );
 
   const formattedColumns = useMemo(() => {
@@ -279,7 +279,17 @@ function FilterDataTable({
       };
     });
     return columnDefs;
-  }, [dataset, tags, tagset, clusterMap, distances, features, expandedFeatureRows]);
+  }, [
+    dataset,
+    /*tags, tagset,*/
+    clusterMap,
+    distances,
+    features,
+    expandedFeatureRows,
+    feature,
+    sae_id,
+    showEmbeddings,
+  ]);
 
   useEffect(() => {
     let indicesToUse = [];
@@ -289,7 +299,7 @@ function FilterDataTable({
       indicesToUse = defaultIndices;
     }
     hydrateIndices(indicesToUse);
-  }, [filteredIndices, page, defaultIndices, deletedIndices]);
+  }, [filteredIndices, page, defaultIndices, deletedIndices, hydrateIndices]);
 
   const headerRef = useRef(null);
   const bodyRef = useRef(null);
@@ -418,4 +428,4 @@ function FilterDataTable({
     </div>
   );
 }
-export default FilterDataTable;
+export default memo(FilterDataTable);

@@ -50,8 +50,11 @@ const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices, setFilter
     // console.log("active filters", active, columnFiltersActive)
     if (active > 0) {
       columnQuery(columnFiltersActive);
+    } else {
+      setColumnIndices([]);
+      setFilteredIndices([]);
     }
-  }, [columnFiltersActive, columnQuery]);
+  }, [columnFiltersActive, columnQuery, setColumnIndices, setFilteredIndices]);
 
   return {
     columnFiltersActive,

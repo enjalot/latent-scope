@@ -7,7 +7,6 @@ export default function NearestNeighbor({
   searchLoading,
   setSearchText,
   clearSearch,
-  setFilteredIndices,
 }) {
   const [inputValue, setInputValue] = useState('');
 
@@ -19,7 +18,6 @@ export default function NearestNeighbor({
   const handleClear = () => {
     clearSearch();
     setInputValue('');
-    setFilteredIndices([]);
   };
 
   return (

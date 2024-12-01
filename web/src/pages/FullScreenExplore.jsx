@@ -189,20 +189,6 @@ function Explore() {
 
   const [columnFilterIndices, setColumnFilterIndices] = useState([]);
 
-  const handleSelected = useCallback(
-    (indices) => {
-      if (activeFilterTab === SELECT) {
-        // console.log("handle selected", indices)
-        const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-        setSelectedIndices(nonDeletedIndices);
-        setFilteredIndices(nonDeletedIndices);
-        // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-        // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
-      }
-    },
-    [activeFilterTab, setSelectedIndices]
-  );
-
   const toggleSearch = () => {
     setActiveFilterTab(SEARCH);
     setFilteredIndices(searchIndices);
@@ -299,6 +285,22 @@ function Explore() {
     [setHoveredIndex]
   );
 
+  const handleSelected = useCallback(
+    (indices) => {
+      const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
+      if (activeFilterTab === SELECT) {
+        setSelectedIndices(nonDeletedIndices);
+        setFilteredIndices(nonDeletedIndices);
+        // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
+        // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
+      } else if (activeFilterTab === CLUSTER) {
+        let selected = scopeRows.filter((row) => nonDeletedIndices.includes(row.ls_index))?.[0];
+        setCluster(clusterLabels.find((d) => d.cluster == selected?.cluster));
+      }
+    },
+    [activeFilterTab, setSelectedIndices, setCluster, scopeRows, deletedIndices, clusterLabels]
+  );
+
   const clearScope = useCallback(() => {
     setCluster(null);
   }, []);
@@ -334,7 +336,7 @@ function Explore() {
   const filtersContainerRef = useRef(null);
 
   const [filtersHeight, setFiltersHeight] = useState(250);
-  const FILTERS_PADDING = 62;
+  const FILTERS_PADDING = 2;
   const tableHeight = useMemo(
     () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
     [filtersHeight]

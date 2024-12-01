@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './FilterActions.css';
+import styles from './FilterActions.module.scss';
 import { Button } from 'react-element-forge';
 import ClusterFilter from './ClusterFilter';
 import ColumnFilter from './ColumnFilter';
@@ -47,7 +47,6 @@ export default function FilterActions({
         cluster={cluster}
         clusterIndices={clusterIndices}
         setCluster={setCluster}
-        setFilteredIndices={setFilteredIndices}
       />
     );
   } else if (activeFilterTab === COLUMN) {
@@ -58,31 +57,30 @@ export default function FilterActions({
         columnFilters={columnFilters}
         columnIndices={columnFilterIndices}
         setColumnIndices={setColumnFilterIndices}
-        setFilteredIndices={setFilteredIndices}
       />
     );
   } else if (activeFilterTab === SELECT) {
     filterComponent = (
-      <div className={`filter-row ${selectedIndices?.length ? 'active' : ''}`}>
-        <div className="filter-cell left filter-description">
-          Click, or Shift+Drag on the map to filter by points.
-        </div>
-        <div className="filter-cell middle">
-          <span>{selectedIndices?.length} rows</span>
-          {selectedIndices?.length > 0 ? (
-            <button
+      <div className={`${styles.filterRow} ${selectedIndices?.length ? styles.active : ''}`}>
+        {!selectedIndices?.length ? (
+          <div className={`${styles.filterCell} ${styles.count}`}>
+            Click, or Shift+Drag on the map to filter by points.
+          </div>
+        ) : (
+          <div className={`${styles.filterCell} ${styles.count}`}>
+            <span>{selectedIndices?.length} rows</span>
+            <Button
               className="deselect"
               onClick={() => {
                 setSelectedIndices([]);
                 setFilteredIndices([]);
                 scatter?.select([]);
               }}
-            >
-              X
-            </button>
-          ) : null}
-        </div>
-        <div className="filter-cell right"></div>
+              icon="x"
+              color="secondary"
+            />
+          </div>
+        )}
       </div>
     );
   } else if (activeFilterTab === SEARCH) {
@@ -90,7 +88,6 @@ export default function FilterActions({
       <NearestNeighbor
         searchIndices={searchIndices}
         searchLoading={searchLoading}
-        setFilteredIndices={setFilteredIndices}
         setSearchText={setSearchText}
         clearSearch={clearSearch}
       />
@@ -98,11 +95,11 @@ export default function FilterActions({
   }
 
   return (
-    <>
-      <div className="filter-actions-container">
+    <div className={styles.container}>
+      <div className={styles.actionsContainer}>
         <Button
           onClick={toggleFilter}
-          className={`filter-actions-button ${activeFilterTab === CLUSTER ? 'active' : 'not-active'}`}
+          className={`${styles.actionsButton} ${activeFilterTab === CLUSTER ? styles.active : styles.notActive}`}
           size="small"
           icon="filter"
           text={`Filter by Cluster (${clusterIndices?.length})`}
@@ -113,7 +110,7 @@ export default function FilterActions({
         {columnFilters?.length > 0 && (
           <Button
             onClick={toggleColumn}
-            className={`filter-actions-button ${activeFilterTab === COLUMN ? 'active' : 'not-active'}`}
+            className={`${styles.actionsButton} ${activeFilterTab === COLUMN ? styles.active : styles.notActive}`}
             size="small"
             icon="columns"
             text={`Filter by Column (${columnFilterIndices?.length})`}
@@ -124,7 +121,7 @@ export default function FilterActions({
 
         <Button
           onClick={toggleSelect}
-          className={`filter-actions-button ${activeFilterTab === SELECT ? 'active' : 'not-active'}`}
+          className={`${styles.actionsButton} ${activeFilterTab === SELECT ? styles.active : styles.notActive}`}
           size="small"
           icon="crosshair"
           text={`Select (${selectedIndices?.length})`}
@@ -133,7 +130,7 @@ export default function FilterActions({
         />
         <Button
           onClick={toggleSearch}
-          className={`filter-actions-button ${activeFilterTab === SEARCH ? 'active' : 'not-active'}`}
+          className={`${styles.actionsButton} ${activeFilterTab === SEARCH ? styles.active : styles.notActive}`}
           size="small"
           icon="search"
           text={`Search (${searchIndices?.length})`}
@@ -141,7 +138,7 @@ export default function FilterActions({
           title="Search"
         />
       </div>
-      <div className="filter-actions-row">{filterComponent}</div>
-    </>
+      <div className={styles.actionsRow}>{filterComponent}</div>
+    </div>
   );
 }

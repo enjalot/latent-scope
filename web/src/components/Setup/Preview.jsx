@@ -40,6 +40,8 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [drawPoints, setDrawPoints] = useState([]);
 
+  const [deletedIndices, setDeletedIndices] = useState([]);
+
   const searchQuery = useCallback(() => {
     if (searchText) {
       setLastSearchText(searchText);
@@ -101,10 +103,6 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
     }
     return height / 2 - 6;
   }, [umap, height, viewMode]);
-
-  useEffect(() => {
-    console.log('viewMode', viewMode);
-  }, [viewMode]);
 
   // const heightPx = useMemo(() => `${height}px`, [height])
   // const widthPx = useMemo(() => `${width}px`, [width])
@@ -313,6 +311,30 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
     return mapPointSizeRange.map((d) => d * pointSize);
   }, [pointSize]);
 
+  const [page, setPage] = useState(0);
+  useEffect(() => {
+    console.log('tableHeight', tableHeight);
+  }, [tableHeight]);
+  useEffect(() => {
+    console.log('dataset', dataset);
+  }, [dataset]);
+  useEffect(() => {
+    console.log('dataIndices', dataIndices);
+  }, [dataIndices]);
+  useEffect(() => {
+    console.log('distances', distances);
+  }, [distances]);
+  useEffect(() => {
+    console.log('clusterMap', clusterMap);
+  }, [clusterMap]);
+  useEffect(() => {
+    console.log('clusterLabels', clusterLabels);
+  }, [clusterLabels]);
+
+  useEffect(() => {
+    console.log('viewMode', viewMode);
+  }, [viewMode]);
+
   return (
     <div className={styles['preview']}>
       {/* <div className={styles["preview-header"]}>
@@ -409,16 +431,20 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
       )}
 
       {tableHeight > 0 && viewMode !== 'umap' && dataset ? (
-        <div className={styles['table-container']}>
+        <div className={styles['table-container']} style={{ height: tableHeight }}>
           <FilterDataTable
             dataset={dataset}
-            indices={dataIndices}
+            filteredIndices={dataIndices}
+            defaultIndices={dataIndices}
+            deletedIndices={deletedIndices}
             distances={distances}
             clusterMap={clusterMap}
             clusterLabels={clusterLabels}
             height={tableHeight}
             showNavigation={false}
-            onHover={(index) => handleHovered(index)}
+            onHover={handleHovered}
+            page={page}
+            setPage={setPage}
           />
         </div>
       ) : null}
