@@ -1,0 +1,66 @@
+.left-pane-container {
+    border-right: 1px solid var(--borders-color-border-1);
+    background: var(--neutrals-color-neutral-1);
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem;
+    justify-content: space-between;
+    position: relative;
+}
+
+.left-pane-button {
+    background-color: var(--neutrals-color-neutral-1) !important;
+    color: var(--text-color-text-primary) !important;
+    border-radius: 4px !important;
+    border: 0px solid #5e5d5d !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    width: 30px;
+    height: 30px;
+    padding: 2px !important;
+    font-size: 12px !important;
+}
+
+/* Selected state - Option 1: Background color */
+.left-pane-button.selected {
+    background: var(--selected-bg, #e3f2fd);
+    color: var(--selected-color, #1976d2);
+}
+
+/* Disabled state */
+.left-pane-button.disabled {
+    /* opacity: 0.5; */
+    color: var(--semantic-color-semantic-neutral-disabled) !important;
+    cursor: not-allowed;
+}
+
+.main-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.button-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.metadata-tooltip {
+    position: absolute;
+    left: 100%;
+    bottom: 10px;
+    margin-left: 8px;
+    white-space: nowrap;
+    background-color: white;
+    z-index: 1000;
+}
+
+@media (prefers-color-scheme: dark) {
+    .left-pane-container {
+        border-right: 1px solid var(--borders-color-border-3);
+        background-color: #111;
+    }
+
+}

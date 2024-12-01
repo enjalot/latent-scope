@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/Home';
 import Settings from './pages/Settings';
 import Explore from './pages/Explore';
+import FullScreenExplore from './pages/FullScreenExplore';
 import Compare from './pages/Compare';
 import Setup from './pages/Setup';
 import Jobs from './pages/Jobs';
@@ -38,7 +39,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/datasets/:dataset/explore/:scope" element={<Explore />} />
+          <Route path="/datasets/:dataset/explore/:scope" element={<FullScreenExplore />} />
           <Route path="/datasets/:dataset/compare/" element={<Compare />} />
           <Route path="/datasets/:dataset/export" element={<Export />} />
           <Route path="/datasets/:dataset/export/:scope" element={<Export />} />

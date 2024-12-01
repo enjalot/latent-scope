@@ -38,8 +38,8 @@
   padding: 2px !important;
   font-size: 12px !important;
   border-radius: 4px !important;
-  border: 1px solid #5e5d5d !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 0px solid #5e5d5d !important;
+  // box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
  
   
   &:hover {
@@ -110,6 +110,13 @@
 @media (prefers-color-scheme: light) {
   .panel {
     background: #f9f9f9;
+    border: 1px solid #5e5d5d;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .panel {
+    background: lightsalmon;
     border: 1px solid #5e5d5d;
   }
 }

@@ -6,12 +6,13 @@ const ColumnFilter = ({
   columnFiltersActive,
   setColumnFiltersActive,
   setColumnIndices,
+  setFilteredIndices,
 }) => {
   return columnFilters?.length ? (
     <div className={`filter-row column-filter ${columnIndices?.length ? 'active' : ''}`}>
       <div className="filter-cell">
         {columnFilters.map((column) => (
-          <span key={column.column}>
+          <span key={column.column} style={{ marginRight: 8 }}>
             {column.column}:
             <select
               onChange={(e) => {
@@ -39,6 +40,7 @@ const ColumnFilter = ({
             onClick={() => {
               setColumnFiltersActive({});
               setColumnIndices([]);
+              setFilteredIndices([]);
             }}
           >
             X

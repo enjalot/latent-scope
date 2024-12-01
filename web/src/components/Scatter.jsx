@@ -4,6 +4,7 @@ import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
 import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
 import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
+import { SELECT } from '../pages/FullScreenExplore';
 
 import styles from './Scatter.module.css';
 
@@ -13,7 +14,6 @@ ScatterPlot.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
-  colorScaleType: PropTypes.oneOf(['categorical', 'continuous']),
   colorDomain: PropTypes.array,
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
@@ -64,6 +64,7 @@ function ScatterPlot({
   onView,
   onSelect,
   onHover,
+  activeFilterTab,
 }) {
   const container = useRef();
   const xDomain = useRef([-1, 1]);
@@ -91,24 +92,25 @@ function ScatterPlot({
       xScale,
       yScale,
     };
-
     // console.log("creating scatterplot", xDomain.current)
     const scatterplot = createScatterplot(scatterSettings);
     scatterplotRef.current = scatterplot;
 
+    // padding around the points and the border of the canvas
+    const padding = 0.05;
+
     // center the view on the canvas
     scatterplot.zoomToArea({
-      x: -1,
-      y: -1,
-      width: 2,
-      height: 2,
+      x: -1 - padding,
+      y: -1 - padding,
+      width: 2 + padding * 2,
+      height: 2 + padding * 2,
     });
 
     onView && onView(xDomain.current, yDomain.current);
     scatterplot.subscribe('view', ({ camera, view, xScale: xs, yScale: ys }) => {
       xDomain.current = xs.domain();
       yDomain.current = ys.domain();
-
       onView && onView(xDomain.current, yDomain.current);
     });
     scatterplot.subscribe('select', ({ points }) => {
@@ -134,7 +136,7 @@ function ScatterPlot({
       scatterplot.destroy();
       // canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [width, height, onScatter, onView, onSelect, onHover]);
+  }, [onScatter, onView, onSelect, onHover, width, height, activeFilterTab]);
 
   const prevPointsRef = useRef();
   useEffect(() => {
@@ -144,10 +146,16 @@ function ScatterPlot({
       const pointSize = calculatePointSize(points.length) * pointScale;
       const opacity = calculatePointOpacity(points.length);
       // console.log("point size", pointSize, opacity)
-      let pointColor = [250 / 255, 128 / 255, 114 / 255, 1]; //salmon
+      // let pointColor = [250/255, 128/255, 114/255, 1] //salmon
+      let pointColor = [122 / 255, 217 / 255, 255 / 255, 1]; //salmon
+      // let pointColor = '#7AD9FF';
+
+      // 224, 239, 255
 
       // let drawPoints = points
       // let categories = points[0].length === 3 ? true : false
+      console.log({ colorScaleType, colorDomain, colorRange });
+
       if (colorScaleType === 'categorical') {
         let uniques = colorDomain;
         if (!uniques) {
@@ -194,41 +202,36 @@ function ScatterPlot({
             pointColor: pointColor,
           });
           scatterplot.draw(points, { transition: false });
-          // scatterplot.zoomToArea({
-          //   x: [-1, 1],
-          //   y: [-1, 1],
-          //   width: 2,
-          //   height: 2,
-          // });
         });
       } else {
         console.log('=== fresh draw scatterplot ===');
         scatterplot.set({
           pointColor: pointColor,
         });
-        scatterplot.draw(points, { transition: false });
-        scatterplot.zoomToArea({
-          x: [-1, 1],
-          y: [-1, 1],
-          width: 2,
-          height: 2,
-        });
       }
-      prevPointsRef.current = points;
+      scatterplot.draw(points, { transition: false });
     }
+    prevPointsRef.current = points;
   }, [
     points,
     width,
     height,
     colorScaleType,
-    colorInterpolator,
     duration,
+    colorInterpolator,
     pointScale,
     opacityRange,
     pointSizeRange,
   ]);
 
-  return <canvas className={styles.scatter} ref={container} onMouseLeave={handleMouseLeave} />;
+  return (
+    <canvas
+      style={{ width, height }}
+      className={styles.scatter}
+      ref={container}
+      onMouseLeave={handleMouseLeave}
+    />
+  );
 }
 
 export default ScatterPlot;

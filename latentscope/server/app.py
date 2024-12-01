@@ -248,7 +248,6 @@ def query():
     # only send back the first per_page rows
     # per_page = 100
     # rows_json = rows_json[:per_page]
-    # print("ROWS JSON", rows_json)
 
     # send back the rows as json
     return jsonify({

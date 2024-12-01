@@ -7,6 +7,7 @@ import HullPlot from '../HullPlot';
 import TilePlot from '../TilePlot';
 import { Tooltip } from 'react-tooltip';
 import { processHulls } from '../../utils';
+import { useColorMode } from '../../hooks/useColorMode';
 import {
   mapSelectionColorsLight,
   mapSelectionDomain,
@@ -17,6 +18,7 @@ import {
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
+import { CLUSTER } from '../../pages/FullScreenExplore';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -31,12 +33,18 @@ function VisualizationPane({
   hoveredCluster,
   slide,
   scope,
+  hoveredIndex,
   onScatter,
   onSelect,
   onHover,
   hovered,
-  containerRef,
+  width,
+  height,
+  activeFilterTab,
 }) {
+  // only show the hull if we are filtering by cluster
+  const showHull = activeFilterTab === CLUSTER;
+
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
   const handleView = useCallback(
@@ -47,45 +55,27 @@ function VisualizationPane({
     [setXDomain, setYDomain]
   );
 
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [size, setSize] = useState([500, 500]);
+  // const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(true);
   const umapRef = useRef(null);
   const [umapOffset, setUmapOffset] = useState(0);
 
-  // let's fill the container and update the width and height if window resizes
-  useEffect(() => {
-    function updateSize() {
-      if (!containerRef.current) return;
-
-      if (isFullScreen) {
-        // Use window dimensions in fullscreen mode
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
-        setSize([windowWidth - 50, windowHeight - 100]);
-        setUmapOffset(80); // TODO: why is this the
-      } else {
-        const rect = containerRef.current.getBoundingClientRect();
-        const urect = umapRef.current.getBoundingClientRect();
-        const width = rect.width;
-        let swidth = width > 500 ? 500 : width - 50;
-        setSize([swidth, rect.height - urect.top + 30]);
-        setUmapOffset(urect.top + 40); // 40 is the height of the top header
-      }
-
-      // console.log("UMAP OFFSET", rect.top + top)
-    }
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
-  }, [isFullScreen]);
-
-  const [width, height] = size;
+  const size = [width, height];
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
+      // if (hoveredIndex !== null) {
+      //   if (i === hoveredIndex) {
+      //     return [p.x, p.y, mapSelectionKey.hovered];
+      //   } else {
+      //     return [p.x, p.y, mapSelectionKey.notSelected];
+      //   }
+      // }
       // if (deletedIndices?.includes(i)) {
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
+      } else if (hoveredIndex === i) {
+        return [p.x, p.y, mapSelectionKey.hovered];
       } else if (intersectedIndices?.includes(i)) {
         return [p.x, p.y, mapSelectionKey.selected];
       } else if (intersectedIndices?.length) {
@@ -94,7 +84,7 @@ function VisualizationPane({
         return [p.x, p.y, mapSelectionKey.normal];
       }
     });
-  }, [scopeRows, intersectedIndices]);
+  }, [scopeRows, intersectedIndices, hoveredIndex]);
 
   const points = useMemo(() => {
     return scopeRows
@@ -125,7 +115,7 @@ function VisualizationPane({
         });
       }
     }
-  }, [hovered, scopeRows, xDomain, yDomain, width, size, umapOffset]);
+  }, [hovered, scopeRows, xDomain, yDomain, width, height, umapOffset]);
 
   const hulls = useMemo(() => {
     return processHulls(clusterLabels, scopeRows, (d) => (d.deleted ? null : [d.x, d.y]));
@@ -170,15 +160,14 @@ function VisualizationPane({
   });
 
   useEffect(() => {
-    console.log('scopeRows', scopeRows);
     if (scopeRows?.length <= 1000) {
-      setVizConfig((prev) => ({ ...prev, pointSize: 2 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 2.25 }));
     } else if (scopeRows?.length <= 10000) {
-      setVizConfig((prev) => ({ ...prev, pointSize: 1 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 1.25 }));
     } else if (scopeRows?.length <= 100000) {
-      setVizConfig((prev) => ({ ...prev, pointSize: 0.5 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 0.75 }));
     } else {
-      setVizConfig((prev) => ({ ...prev, pointSize: 0.25 }));
+      setVizConfig((prev) => ({ ...prev, pointSize: 0.5 }));
     }
   }, [scopeRows]);
 
@@ -206,21 +195,14 @@ function VisualizationPane({
   }, [vizConfig.pointOpacity]);
 
   return (
-    <div className="umap-container" ref={umapRef}>
+    // <div style={{ width, height }} ref={umapRef}>
+    <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
       <div className={styles.configToggleContainer}>
         <Button
           className={styles['configToggle']}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
           aria-label="Toggle configuration panel"
-          icon={isPanelOpen ? 'x' : 'settings'}
-          size="small"
-          // color="#333"
-        />
-        <Button
-          className={styles['fullscreenToggle']}
-          onClick={() => setIsFullScreen(!isFullScreen)}
-          aria-label="Toggle full screen"
-          icon={isFullScreen ? 'minimize' : 'maximize'}
+          icon={'settings'}
           size="small"
           // color="#333"
         />
@@ -237,10 +219,7 @@ function VisualizationPane({
         />
       </div>
 
-      <div
-        className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
-        style={{ width, height }}
-      >
+      <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
         {!isIOS() && scope ? (
           <Scatter
             points={drawingPoints}
@@ -257,6 +236,7 @@ function VisualizationPane({
             onView={handleView}
             onSelect={onSelect}
             onHover={onHover}
+            activeFilterTab={activeFilterTab}
           />
         ) : (
           <AnnotationPlot
@@ -269,27 +249,27 @@ function VisualizationPane({
             yDomain={yDomain}
           />
         )}
-
         {/* show all the hulls */}
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
             hulls={hulls}
-            // stroke="#8d7d7d"
+            // stroke="#E7C7AA"
+            // stroke={slide && slide.hull ? 'lightgray' : '#E7C7AA'}
+            // stroke={isDark ? '#E0EFFF' : '#d4b297'}
             stroke="#d4b297"
+            // stroke={'#E0EFFF'}
             fill="none"
             duration={200}
-            strokeWidth={0.5}
+            strokeWidth={0.15}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
           />
         )}
-
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            // fill="lightgray"
             fill="#d28440"
             stroke="#CC5500"
             strokeWidth={2.5}
@@ -301,37 +281,35 @@ function VisualizationPane({
             yDomain={yDomain}
             width={width}
             height={height}
+            label={scope.cluster_labels_lookup[hoveredCluster.cluster]}
           />
         )}
-
-        {slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
+        {/* Cluster is selected via filter */}
+        {showHull && slide && slide.hull && !scope.ignore_hulls && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={clusterHulls}
-            // fill="darkgray"
-            // stroke="gray"
-            fill="#d28440"
-            stroke="#CC5500"
-            strokeWidth={2.5}
-            opacity={0.5}
+            fill="#D3965E"
+            stroke="#C77C37"
+            strokeWidth={3}
+            opacity={0.25}
             duration={0}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
+            label={scope.cluster_labels_lookup[slide.cluster]}
           />
         )}
-
         <AnnotationPlot
           points={hoverAnnotations}
           stroke="black"
-          fill="orange"
+          fill="purple"
           size="16"
           xDomain={xDomain}
           yDomain={yDomain}
-          width={width}
-          height={height}
+          width={'100%'}
+          height={'100%'}
         />
-
         {vizConfig.showHeatMap && tiles?.length > 1 && (
           <TilePlot
             tiles={tiles}
@@ -352,8 +330,8 @@ function VisualizationPane({
           data-tooltip-id="featureTooltip"
           style={{
             position: 'absolute',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
+            right: 225,
+            top: 0,
             pointerEvents: 'none',
           }}
         ></div>
@@ -365,18 +343,18 @@ function VisualizationPane({
           delayShow={0}
           delayHide={0}
           delayUpdate={0}
+          noArrow={true}
           className="tooltip-area"
           style={{
             position: 'absolute',
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
+            left: 0,
+            top: 0,
             pointerEvents: 'none',
-            maxWidth: '400px',
-            backgroundColor: hovered?.ls_search_index >= 0 ? '#111' : '#666',
+            width: '400px',
+            backgroundColor: '#D3965E',
           }}
         >
           <div className="tooltip-content">
-            {/* {hovered.ls_search_index >= 0 ? <span>Search: #{hovered.ls_search_index + 1}<br/></span> : null} */}
             {hoveredCluster && (
               <span>
                 <span className="key">Cluster {hoveredCluster.cluster}: </span>

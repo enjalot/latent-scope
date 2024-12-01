@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
-const useColumnFilter = (apiUrl, dataset, datasetId) => {
-  const [columnIndices, setColumnIndices] = useState([]);
+const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices, setFilteredIndices) => {
   const [columnFiltersActive, setColumnFiltersActive] = useState({});
 
   const columnFilters = useMemo(() => {
@@ -40,6 +39,7 @@ const useColumnFilter = (apiUrl, dataset, datasetId) => {
         .then((data) => {
           let indices = data.indices;
           setColumnIndices(indices);
+          setFilteredIndices(indices);
         });
     },
     [apiUrl, datasetId]
@@ -54,8 +54,6 @@ const useColumnFilter = (apiUrl, dataset, datasetId) => {
   }, [columnFiltersActive, columnQuery]);
 
   return {
-    columnIndices,
-    setColumnIndices,
     columnFiltersActive,
     setColumnFiltersActive,
     columnFilters,
