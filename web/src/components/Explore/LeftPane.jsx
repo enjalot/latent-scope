@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './LeftPane.css';
 import { Button } from 'react-element-forge';
+import { apiService } from '../../lib/apiService';
+import { compareVersions } from 'compare-versions';
 import ScopeHeader from './ScopeHeader';
 
 export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices, onScopeChange }) {
   const [showMetadata, setShowMetadata] = useState(false);
+  const [lsVersion, setLsVersion] = useState(null);
+
+  useEffect(() => {
+    apiService.fetchVersion().then(setLsVersion);
+  }, []);
+
+  const isOutdatedScope = useMemo(
+    () =>
+      scope && lsVersion && scope?.ls_version && compareVersions(scope?.ls_version, lsVersion) < 0,
+    [lsVersion, scope]
+  );
 
   return (
     <div className="left-pane-container">
@@ -38,13 +51,13 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
         onMouseLeave={() => setShowMetadata(false)}
       >
         <Button
-          className="left-pane-button"
+          className={`left-pane-button ${isOutdatedScope ? 'warning-button' : ''}`}
           size="small"
           icon="info"
           color="secondary"
           title="Show scope metadata"
         />
-        {showMetadata && (
+        {(showMetadata || isOutdatedScope) && (
           <div className="metadata-tooltip">
             <ScopeHeader
               dataset={dataset}

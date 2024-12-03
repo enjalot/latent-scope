@@ -119,8 +119,10 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         console.log('newHeight', newHeight, 'newWidth', newWidth);
         if (newHeight > 700) {
           setViewMode('both');
-        } else {
+        } else if (umap) {
           setViewMode('umap');
+        } else {
+          setViewMode('table');
         }
         setHeight(newHeight);
         setWidth(newWidth);
@@ -134,7 +136,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
     }, 100);
 
     return () => window.removeEventListener('resize', updateDimensions);
-  }, [setViewMode, setHeight, setWidth]);
+  }, [setViewMode, setHeight, setWidth, umap]);
 
   useEffect(() => {
     console.log('SCOPE', scope);
@@ -312,28 +314,6 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   }, [pointSize]);
 
   const [page, setPage] = useState(0);
-  useEffect(() => {
-    console.log('tableHeight', tableHeight);
-  }, [tableHeight]);
-  useEffect(() => {
-    console.log('dataset', dataset);
-  }, [dataset]);
-  useEffect(() => {
-    console.log('dataIndices', dataIndices);
-  }, [dataIndices]);
-  useEffect(() => {
-    console.log('distances', distances);
-  }, [distances]);
-  useEffect(() => {
-    console.log('clusterMap', clusterMap);
-  }, [clusterMap]);
-  useEffect(() => {
-    console.log('clusterLabels', clusterLabels);
-  }, [clusterLabels]);
-
-  useEffect(() => {
-    console.log('viewMode', viewMode);
-  }, [viewMode]);
 
   return (
     <div className={styles['preview']}>

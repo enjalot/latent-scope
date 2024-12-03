@@ -46,63 +46,22 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
 
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
 
-        {scope?.ls_version ? (
-          <span>
-            {lsVersion && compareVersions(scope?.ls_version, lsVersion) < 0 ? (
-              <div className="scope-version-warning">
-                <span className="warning-header">Outdated Scope</span>
-                <span>
-                  {' '}
-                  This scope was created with Latent Scope version <code>{scope.ls_version}</code>,
-                  while you are running Latent Scope <code>{lsVersion}</code>
-                </span>
-                <span>
-                  {' '}
-                  please "Overwrite" the scope in the last step on the{' '}
-                  <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to
-                  update.
-                </span>
-              </div>
-            ) : null}
+        {lsVersion && compareVersions(scope?.ls_version, lsVersion) < 0 ? (
+          <div className="scope-version-warning">
+            <span className="warning-header">Outdated Scope</span>
             <span>
-              <span className="metadata-label">Dataset</span> {dataset?.id}
+              {' '}
+              This scope was created with Latent Scope version <code>{scope.ls_version}</code>,
+              while you are running Latent Scope <code>{lsVersion}</code>
             </span>
-            <br />
             <span>
-              <span className="metadata-label">Scope</span> {scope?.id}
+              {' '}
+              please "Overwrite" the scope in the last step on the{' '}
+              <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to
+              update.
             </span>
-            <br />
-            <span>
-              <span className="metadata-label">Description</span> {scope?.description}
-            </span>
-            <br />
-            <span>
-              <span className="metadata-label">Embedding</span> {scope?.embedding?.model_id}
-            </span>
-
-            <br />
-            <span>
-              <span className="metadata-label">Version</span> {scope?.ls_version}
-            </span>
-            <br />
-            {/* <div className="dataset-card"> */}
-            <span>
-              {dataset?.length - deletedIndices?.length}/{dataset?.length} rows
-              {deletedIndices?.length > 0 && (
-                <span className="metadata-label"> ({deletedIndices?.length} deleted)</span>
-              )}
-            </span>
-            <br />
-            {/* </div> */}
-            <span>
-              <span>{scope?.cluster_labels_lookup?.length} clusters</span>
-            </span>
-            <br />
-            <span>
-              <span>{tags.length} tags</span>
-            </span>
-          </span>
-        ) : (
+          </div>
+        ) : !scope?.ls_version ? (
           <div className="scope-version-warning">
             <span className="warning-header">Outdated Scope!</span>
             <span>
@@ -112,7 +71,34 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
               update.
             </span>
           </div>
-        )}
+        ) : null}
+        <span>
+          <span className="metadata-label">Dataset</span> {dataset?.id}
+        </span>
+        <span>
+          <span className="metadata-label">Scope</span> {scope?.id}
+        </span>
+        <span>
+          <span className="metadata-label">Description</span> {scope?.description}
+        </span>
+        <span>
+          <span className="metadata-label">Embedding</span> {scope?.embedding?.model_id}
+        </span>
+        <span>
+          <span className="metadata-label">Version</span> {scope?.ls_version}
+        </span>
+        <span>
+          {dataset?.length - deletedIndices?.length}/{dataset?.length} rows
+          {deletedIndices?.length > 0 && (
+            <span className="metadata-label"> ({deletedIndices?.length} deleted)</span>
+          )}
+        </span>
+        <span>
+          <span>{scope?.cluster_labels_lookup?.length} clusters</span>
+        </span>
+        <span>
+          <span>{tags.length} tags</span>
+        </span>
       </div>
 
       {/* <div className="dataset-card">

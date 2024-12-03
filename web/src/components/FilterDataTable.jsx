@@ -281,6 +281,7 @@ function FilterDataTable({
 
       return {
         ...baseCol,
+        width: col == 'ls_index' ? 60 : 150,
         renderCell,
       };
     });
@@ -307,69 +308,6 @@ function FilterDataTable({
     hydrateIndices(indicesToUse);
   }, [filteredIndices, page, defaultIndices, deletedIndices, hydrateIndices]);
 
-  const headerRef = useRef(null);
-  const bodyRef = useRef(null);
-
-  const [scrollbarWidth, setScrollbarWidth] = useState(0);
-
-  const calculateScrollbarWidth = () => {
-    if (bodyRef.current) {
-      const width = bodyRef.current.offsetWidth - bodyRef.current.clientWidth;
-      setScrollbarWidth(width);
-    }
-  };
-
-  // these useEffects seem janky. I want to have the table body scroll independently in Y but not in X
-  useEffect(() => {
-    calculateScrollbarWidth();
-    // Recalculate on window resize
-    window.addEventListener('resize', calculateScrollbarWidth);
-
-    // Adjust header width to match body's scrollWidth
-    const adjustHeaderWidth = () => {
-      if (headerRef.current && bodyRef.current) {
-        const bodyScrollWidth = bodyRef.current.scrollWidth;
-        headerRef.current.querySelector('table').style.width = `${bodyScrollWidth}px`;
-        headerRef.current.style.overflowX = 'hidden'; // Hide horizontal overflow
-      }
-    };
-
-    // Call it initially and whenever the window resizes
-    adjustHeaderWidth();
-    window.addEventListener('resize', adjustHeaderWidth);
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
-        if (entry.target === bodyRef.current) {
-          adjustHeaderWidth();
-        }
-      }
-    });
-
-    if (bodyRef.current) {
-      resizeObserver.observe(bodyRef.current);
-    }
-
-    // Start: Code to synchronize horizontal scroll
-    const syncHorizontalScroll = () => {
-      if (headerRef.current && bodyRef.current) {
-        headerRef.current.scrollLeft = bodyRef.current.scrollLeft;
-      }
-    };
-
-    const bodyEl = bodyRef.current;
-    bodyEl.addEventListener('scroll', syncHorizontalScroll);
-
-    // End: Code to synchronize horizontal scroll
-
-    return () => {
-      window.removeEventListener('resize', calculateScrollbarWidth);
-      window.removeEventListener('resize', adjustHeaderWidth);
-      // Clean up the scroll listener
-      bodyEl.removeEventListener('scroll', syncHorizontalScroll);
-      resizeObserver.disconnect();
-    };
-  }, []);
-
   const renderRowWithHover = useCallback(
     (key, props) => {
       return <RowWithHover key={key} props={props} onHover={onHover} />;
@@ -395,11 +333,7 @@ function FilterDataTable({
       // style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}
-      <div
-        className="filter-table-scrollable-body table-body"
-        style={{ overflowY: 'auto' }}
-        ref={bodyRef}
-      >
+      <div className="filter-table-scrollable-body table-body" style={{ overflowY: 'auto' }}>
         <DataGrid
           rows={rows}
           columns={formattedColumns}

@@ -138,13 +138,16 @@
   padding: 6px;
   border: 1px solid red;
   border-radius: 6px;
-
-
 }
 
 .scope-version-warning .warning-header {
   color: red;
   font-weight: bold;
+}
+
+.left-pane-button.warning-button {
+  stroke: red !important;
+  color: red !important;
 }
 
 /* SECOND ROW: UMAP */
