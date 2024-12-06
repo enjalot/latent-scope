@@ -44,48 +44,50 @@ function RowWithHover({ props, onHover }) {
   );
 }
 
-function FeatureCell({ row, feature, features, expandedFeatureRows, setExpandedFeatureRows }) {
+function FeatureCell({ row, feature, features }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsModalOpen(false);
   }, [setIsModalOpen]);
 
+  const TO_SHOW = 15;
+
   return (
     <>
-      <div
-        className="feature-cell"
-        style={{ cursor: 'pointer' }}
-        onClick={() => setIsModalOpen(true)}
-      >
-        {feature >= 0 ? (
-          <>
-            {feature}: {!!features?.length && features[feature]?.label} (
-            {row.ls_features.top_acts?.[row.ls_features?.top_indices?.indexOf(feature)]?.toFixed(3)}
-            )
-          </>
-        ) : (
-          <>
-            {row.ls_features.top_indices[0]}:{' '}
-            {!!features?.length && features[row.ls_features.top_indices[0]]?.label} (
-            {row.ls_features.top_acts?.[0]?.toFixed(3)})
-          </>
-        )}
+      <div className="feature-cell-button-container">
+        <Button
+          className="feature-cell-button"
+          color="primary"
+          variant="clear"
+          // variant="outline"
+          onClick={() => setIsModalOpen(true)}
+          icon="maximize-2"
+          size="small"
+        />
+        <Modal
+          isVisible={isModalOpen}
+          onClose={handleClose}
+          title={`Features for Index ${row.ls_index}`}
+        >
+          <div className="feature-modal-close">
+            <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
+            <Button onClick={handleClose} icon="x" color="primary" variant="outline" size="small" />
+          </div>
+          <div className="feature-modal-content">
+            {row.ls_features.top_indices.slice(0, TO_SHOW).map((featIdx, i) => (
+              <div
+                className="feature-modal-item"
+                key={i}
+                style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
+              >
+                {featIdx}: {features?.[featIdx]?.label} ({row.ls_features.top_acts?.[i]?.toFixed(3)}
+                )
+              </div>
+            ))}
+          </div>
+        </Modal>
       </div>
-
-      <Modal
-        isVisible={isModalOpen}
-        onClose={handleClose}
-        title={`Features for Index ${row.ls_index}`}
-      >
-        <div className="feature-modal-content">
-          {row.ls_features.top_indices.map((featIdx, i) => (
-            <div key={i} style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}>
-              {featIdx}: {features?.[featIdx]?.label} ({row.ls_features.top_acts?.[i]?.toFixed(3)})
-            </div>
-          ))}
-        </div>
-      </Modal>
     </>
   );
 }
