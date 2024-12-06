@@ -106,7 +106,11 @@
 }
 
 .feature-cell {
-  padding: 4px;
+  padding: 8px;
+}
+
+.feature-cell:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .feature-cell.expanded {
@@ -120,4 +124,10 @@
   margin-bottom: 8px;
   padding: 2px 8px;
   font-size: 12px;
+}
+
+.feature-modal-content {
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
 }

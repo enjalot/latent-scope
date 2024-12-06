@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Button } from 'react-element-forge';
+import { Modal } from 'react-element-forge';
 import PropTypes from 'prop-types';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
@@ -43,6 +44,52 @@ function RowWithHover({ props, onHover }) {
   );
 }
 
+function FeatureCell({ row, feature, features, expandedFeatureRows, setExpandedFeatureRows }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setIsModalOpen(false);
+  }, [setIsModalOpen]);
+
+  return (
+    <>
+      <div
+        className="feature-cell"
+        style={{ cursor: 'pointer' }}
+        onClick={() => setIsModalOpen(true)}
+      >
+        {feature >= 0 ? (
+          <>
+            {feature}: {!!features?.length && features[feature]?.label} (
+            {row.ls_features.top_acts?.[row.ls_features?.top_indices?.indexOf(feature)]?.toFixed(3)}
+            )
+          </>
+        ) : (
+          <>
+            {row.ls_features.top_indices[0]}:{' '}
+            {!!features?.length && features[row.ls_features.top_indices[0]]?.label} (
+            {row.ls_features.top_acts?.[0]?.toFixed(3)})
+          </>
+        )}
+      </div>
+
+      <Modal
+        isVisible={isModalOpen}
+        onClose={handleClose}
+        title={`Features for Index ${row.ls_index}`}
+      >
+        <div className="feature-modal-content">
+          {row.ls_features.top_indices.map((featIdx, i) => (
+            <div key={i} style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}>
+              {featIdx}: {features?.[featIdx]?.label} ({row.ls_features.top_acts?.[i]?.toFixed(3)})
+            </div>
+          ))}
+        </div>
+      </Modal>
+    </>
+  );
+}
+
 function FilterDataTable({
   dataset,
   filteredIndices = [],
@@ -60,6 +107,8 @@ function FilterDataTable({
   page,
   setPage,
 }) {
+  console.log('==== FILTER DATA TABLE =====', { feature, features });
+
   const [rows, setRows] = useState([]);
 
   // page count is the total number of pages available
@@ -195,76 +244,16 @@ function FilterDataTable({
       if (col === 'ls_features') {
         return {
           ...baseCol,
-          width: expandedFeatureRows.size > 0 ? 400 : 200, // dynamic width
-          renderCell: ({ row }) => {
-            const isExpanded = expandedFeatureRows.has(row.ls_index);
-            const topN = isExpanded ? 10 : 1;
-
-            return (
-              <div
-                className={`feature-cell ${isExpanded ? 'expanded' : ''}`}
-                style={{ cursor: 'pointer' }}
-              >
-                {isExpanded ? (
-                  <>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedFeatureRows((prev) => {
-                          const next = new Set(prev);
-                          next.delete(row.ls_index);
-                          return next;
-                        });
-                      }}
-                      size="small"
-                      color="secondary"
-                      variant="solid"
-                      icon="minimize"
-                    />
-                    <div>
-                      {row.ls_features.top_indices.map((featIdx, i) => (
-                        <div
-                          key={i}
-                          style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
-                        >
-                          {featIdx}: {features?.[featIdx]?.label} (
-                          {row.ls_features.top_acts?.[i]?.toFixed(3)})
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('expanding', row.ls_index);
-                      setExpandedFeatureRows((prev) => {
-                        const next = new Set(prev);
-                        next.add(row.ls_index);
-                        return next;
-                      });
-                    }}
-                  >
-                    {feature >= 0 ? (
-                      <>
-                        {feature}: {!!features?.length && features[feature]?.label} (
-                        {row.ls_features.top_acts?.[
-                          row.ls_features?.top_indices?.indexOf(feature)
-                        ]?.toFixed(3)}
-                        )
-                      </>
-                    ) : (
-                      <>
-                        {row.ls_features.top_indices[0]}:{' '}
-                        {!!features?.length && features[row.ls_features.top_indices[0]]?.label} (
-                        {row.ls_features.top_acts?.[0]?.toFixed(3)})
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          },
+          width: expandedFeatureRows.size > 0 ? 400 : 200,
+          renderCell: ({ row }) => (
+            <FeatureCell
+              row={row}
+              feature={feature}
+              features={features}
+              expandedFeatureRows={expandedFeatureRows}
+              setExpandedFeatureRows={setExpandedFeatureRows}
+            />
+          ),
         };
       }
 
