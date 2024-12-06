@@ -131,3 +131,33 @@
   max-height: 80vh;
   overflow-y: auto;
 }
+
+.feature-cell-button {
+  padding: 2px;
+  color: var(--neutrals-color-neutral-3) !important;
+}
+
+.feature-cell-button:hover {
+  color: var(--interactions---primary-color-interaction-primary) !important;
+}
+
+.feature-cell-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.feature-modal-close {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.feature-modal-text {
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+.feature-modal-item {
+  margin-bottom: 4px;
+}
