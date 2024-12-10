@@ -92,6 +92,117 @@ function FeatureCell({ row, feature, features }) {
   );
 }
 
+function FeaturePlot({ row, feature, features, width }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const TO_SHOW = 15; // number of activations to show in the modal
+
+  const height = 20;
+  const padding = { left: 0, right: 0, top: 1.5, bottom: 1.5 };
+  const plotWidth = width - padding.left - padding.right;
+
+  // Create scale from 0 to 1
+  const xScale = (x) => padding.left + x * plotWidth;
+
+  const activations = row.ls_features.top_acts || [];
+  const indices = row.ls_features.top_indices || [];
+
+  // if feature is -1, we want to plot all the activations the same color
+  // otherwise, we want to highlight the selected feature darker than the others.
+  /// we should actually render the selected feature last so it's on top of the others.
+  const color = (i) => {
+    console.log('color', { i, feature });
+    if (feature === -1) {
+      return '#b87333';
+    } else if (i === feature) {
+      return '#b87333';
+    } else {
+      return '#f5f5f5';
+    }
+  };
+
+  const handleClose = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  return (
+    <>
+      <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
+        {/* Axis line */}
+        {/* <line
+          x1={padding.left}
+          y1={height / 2}
+          x2={width - padding.right}
+          y2={height / 2}
+          stroke="#f5f5f5"
+          strokeWidth={1}
+        /> */}
+
+        {/* Ticks and labels */}
+        {/* {[0, 1].map((tick) => (
+        <g key={tick}>
+          <line
+            x1={xScale(tick)}
+            y1={height / 2 - 5}
+            x2={xScale(tick)}
+            y2={height / 2 + 5}
+            stroke="currentColor"
+          />
+          <text x={xScale(tick)} y={height - 5} fontSize="10" textAnchor="middle">
+            {tick}
+          </text>
+        </g>
+      ))} */}
+
+        {/* Activation lines */}
+        {activations.map((act, i) => (
+          <line
+            key={i}
+            x1={xScale(act)}
+            y1={height - padding.top}
+            x2={xScale(act)}
+            y2={padding.bottom}
+            // stroke={indices[i] === feature ? 'var(--color-primary)' : 'var(--color-neutral)'}
+            stroke={color(indices[i])}
+            strokeWidth={indices[i] === feature ? 2 : 1}
+            opacity={feature === -1 ? 0.8 : indices[i] === feature ? 0.8 : 0.5}
+          >
+            <title>
+              {indices[i]}: {features?.[indices[i]]?.label}
+            </title>
+          </line>
+        ))}
+
+        {/* Axis label */}
+        {/* <text x={width / 2} y={12} fontSize="10" textAnchor="middle">
+        Activation Value
+      </text> */}
+      </svg>
+
+      <Modal
+        isVisible={isModalOpen}
+        onClose={handleClose}
+        title={`Features for Index ${row.ls_index}`}
+      >
+        <div className="feature-modal-close">
+          <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
+          <Button onClick={handleClose} icon="x" color="primary" variant="outline" size="small" />
+        </div>
+        <div className="feature-modal-content">
+          {row.ls_features.top_indices.slice(0, TO_SHOW).map((featIdx, i) => (
+            <div
+              className="feature-modal-item"
+              key={i}
+              style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
+            >
+              {featIdx}: {features?.[featIdx]?.label} ({row.ls_features.top_acts?.[i]?.toFixed(3)})
+            </div>
+          ))}
+        </div>
+      </Modal>
+    </>
+  );
+}
+
 function FilterDataTable({
   dataset,
   filteredIndices = [],
@@ -244,11 +355,13 @@ function FilterDataTable({
       }
 
       if (col === 'ls_features') {
+        const baseWidth = 200;
         return {
           ...baseCol,
-          width: expandedFeatureRows.size > 0 ? 400 : 200,
+          width: expandedFeatureRows.size > 0 ? baseWidth + 100 : baseWidth,
           renderCell: ({ row }) => (
-            <FeatureCell
+            <FeaturePlot
+              width={baseWidth}
               row={row}
               feature={feature}
               features={features}
