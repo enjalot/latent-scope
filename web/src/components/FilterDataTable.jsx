@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import 'react-data-grid/lib/styles.css';
 
 import DataGrid, { Row } from 'react-data-grid';
+import { scaleLog, scaleLinear } from 'd3-scale';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -42,6 +43,12 @@ function RowWithHover({ props, onHover }) {
       }}
     />
   );
+}
+
+function extent(activations) {
+  const min = Math.min(...activations);
+  const max = Math.max(...activations);
+  return [min, max];
 }
 
 function FeatureCell({ row, feature, features }) {
@@ -93,18 +100,27 @@ function FeatureCell({ row, feature, features }) {
 }
 
 function FeaturePlot({ row, feature, features, width }) {
+  const { idx } = row;
+
+  const showTicks = idx !== undefined;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const TO_SHOW = 15; // number of activations to show in the modal
 
-  const height = 20;
-  const padding = { left: 0, right: 0, top: 1.5, bottom: 1.5 };
+  const height = showTicks ? 35 : 20; // Increase height for the row with ticks
+  const padding = { left: 20, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }; // Add bottom padding for ticks
   const plotWidth = width - padding.left - padding.right;
 
-  // Create scale from 0 to 1
-  const xScale = (x) => padding.left + x * plotWidth;
-
   const activations = row.ls_features.top_acts || [];
+
+  // Create scale from 0 to 1
+  const logScale = scaleLog()
+    .domain([0.01, 1])
+    .range([padding.left, width - padding.right]);
+
   const indices = row.ls_features.top_indices || [];
+
+  console.log('activations', activations);
 
   // if feature is -1, we want to plot all the activations the same color
   // otherwise, we want to highlight the selected feature darker than the others.
@@ -127,41 +143,16 @@ function FeaturePlot({ row, feature, features, width }) {
   return (
     <>
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
-        {/* Axis line */}
-        {/* <line
-          x1={padding.left}
-          y1={height / 2}
-          x2={width - padding.right}
-          y2={height / 2}
-          stroke="#f5f5f5"
-          strokeWidth={1}
-        /> */}
-
-        {/* Ticks and labels */}
-        {/* {[0, 1].map((tick) => (
-        <g key={tick}>
-          <line
-            x1={xScale(tick)}
-            y1={height / 2 - 5}
-            x2={xScale(tick)}
-            y2={height / 2 + 5}
-            stroke="currentColor"
-          />
-          <text x={xScale(tick)} y={height - 5} fontSize="10" textAnchor="middle">
-            {tick}
-          </text>
-        </g>
-      ))} */}
-
         {/* Activation lines */}
         {activations.map((act, i) => (
           <line
             key={i}
-            x1={xScale(act)}
-            y1={height - padding.top}
-            x2={xScale(act)}
-            y2={padding.bottom}
-            // stroke={indices[i] === feature ? 'var(--color-primary)' : 'var(--color-neutral)'}
+            // x1={xScale(logScale(act))}
+            x1={logScale(act)}
+            y1={height - padding.bottom}
+            x2={logScale(act)}
+            // x2={xScale(act)}
+            y2={padding.top}
             stroke={color(indices[i])}
             strokeWidth={indices[i] === feature ? 2 : 1}
             opacity={feature === -1 ? 0.8 : indices[i] === feature ? 0.8 : 0.5}
@@ -172,10 +163,23 @@ function FeaturePlot({ row, feature, features, width }) {
           </line>
         ))}
 
-        {/* Axis label */}
-        {/* <text x={width / 2} y={12} fontSize="10" textAnchor="middle">
-        Activation Value
-      </text> */}
+        {/* Add tick marks and labels when idx === 0 */}
+        {showTicks && (
+          <>
+            {[0.01, 0.1, 1].map((tick) => (
+              <g
+                key={tick}
+                // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
+                transform={`translate(${logScale(tick)},${height - padding.bottom})`}
+              >
+                <line y2="4" stroke="#666" />
+                <text y="12" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
+                  {tick === 0.01 ? '0.01' : tick}
+                </text>
+              </g>
+            ))}
+          </>
+        )}
       </svg>
 
       <Modal
@@ -222,6 +226,8 @@ function FilterDataTable({
 }) {
   console.log('==== FILTER DATA TABLE =====', { feature, features });
 
+  console.log('activations', feature, features);
+
   const [rows, setRows] = useState([]);
 
   // page count is the total number of pages available
@@ -265,7 +271,7 @@ function FilterDataTable({
             // console.log("pages", totalPages, total)
             setPageCount(totalPages);
             console.log('======= SETTING ROWS =======', rows);
-            setRows(rows);
+            setRows(rows.map((row, idx) => ({ ...row, idx })));
           });
       } else {
         setRows([]);
@@ -360,14 +366,7 @@ function FilterDataTable({
           ...baseCol,
           width: expandedFeatureRows.size > 0 ? baseWidth + 100 : baseWidth,
           renderCell: ({ row }) => (
-            <FeaturePlot
-              width={baseWidth}
-              row={row}
-              feature={feature}
-              features={features}
-              expandedFeatureRows={expandedFeatureRows}
-              setExpandedFeatureRows={setExpandedFeatureRows}
-            />
+            <FeaturePlot width={baseWidth} row={row} feature={feature} features={features} />
           ),
         };
       }
@@ -441,6 +440,13 @@ function FilterDataTable({
         <DataGrid
           rows={rows}
           columns={formattedColumns}
+          rowClass={(row, index) => {
+            debugger;
+            if (row.ls_index === 0) {
+              return 'test';
+            }
+            return '';
+          }}
           rowGetter={(i) => rows[i]}
           rowHeight={getRowHeight}
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
