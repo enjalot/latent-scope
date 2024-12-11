@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 import 'react-data-grid/lib/styles.css';
 
 import DataGrid, { Row } from 'react-data-grid';
-import { scaleLog, scaleLinear } from 'd3-scale';
+import { scaleLog, scaleLinear, scalePow } from 'd3-scale';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -99,6 +99,24 @@ function FeatureCell({ row, feature, features }) {
   );
 }
 
+function invertedLogScale(x, base = 10) {
+  // Ensure input is between 0 and 1
+  x = Math.max(0, Math.min(1, x));
+
+  // Invert the input first
+  const inverted = 1 - x;
+
+  // Apply log transformation
+  const logTransformed = Math.log(1 + inverted * (base - 1)) / Math.log(base);
+
+  // Invert back
+  return 1 - logTransformed;
+}
+
+function mapToRange(value, min, max) {
+  return min + value * (max - min);
+}
+
 function FeaturePlot({ row, feature, features, width }) {
   const { idx } = row;
 
@@ -109,24 +127,23 @@ function FeaturePlot({ row, feature, features, width }) {
 
   const height = showTicks ? 35 : 20; // Increase height for the row with ticks
   const padding = { left: 20, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }; // Add bottom padding for ticks
-  const plotWidth = width - padding.left - padding.right;
 
   const activations = row.ls_features.top_acts || [];
 
   // Create scale from 0 to 1
-  const logScale = scaleLog()
-    .domain([0.01, 1])
+  const logScale = scalePow()
+    .exponent(2) // Exponent > 1 compresses smaller values
+    .domain(extent(activations))
     .range([padding.left, width - padding.right]);
 
-  const indices = row.ls_features.top_indices || [];
+  // .range([padding.left, width - padding.right]);
 
-  console.log('activations', activations);
+  const indices = row.ls_features.top_indices || [];
 
   // if feature is -1, we want to plot all the activations the same color
   // otherwise, we want to highlight the selected feature darker than the others.
   /// we should actually render the selected feature last so it's on top of the others.
   const color = (i) => {
-    console.log('color', { i, feature });
     if (feature === -1) {
       return '#b87333';
     } else if (i === feature) {
@@ -147,11 +164,9 @@ function FeaturePlot({ row, feature, features, width }) {
         {activations.map((act, i) => (
           <line
             key={i}
-            // x1={xScale(logScale(act))}
             x1={logScale(act)}
             y1={height - padding.bottom}
             x2={logScale(act)}
-            // x2={xScale(act)}
             y2={padding.top}
             stroke={color(indices[i])}
             strokeWidth={indices[i] === feature ? 2 : 1}
@@ -166,7 +181,7 @@ function FeaturePlot({ row, feature, features, width }) {
         {/* Add tick marks and labels when idx === 0 */}
         {showTicks && (
           <>
-            {[0.01, 0.1, 1].map((tick) => (
+            {extent(activations).map((tick) => (
               <g
                 key={tick}
                 // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
@@ -174,7 +189,7 @@ function FeaturePlot({ row, feature, features, width }) {
               >
                 <line y2="4" stroke="#666" />
                 <text y="12" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
-                  {tick === 0.01 ? '0.01' : tick}
+                  {tick.toFixed(2)}
                 </text>
               </g>
             ))}
