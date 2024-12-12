@@ -146,6 +146,11 @@
   justify-content: center;
 }
 
+.feature-modal {
+  padding: 0px;
+  width: 800px !important;
+}
+
 .feature-modal-close {
   display: flex;
   justify-content: space-between;
@@ -160,4 +165,35 @@
 
 .feature-modal-item {
   margin-bottom: 4px;
+  position: relative;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  /* margin: 2px 0; */
+  /* width: 100%; */
+  height: 24px;
 }
+
+.feature-modal-item-background {
+  position: absolute;
+  z-index: 0;
+  height: 100%;
+  background-color: var(--interactions---primary-color-interaction-primary);
+  opacity: 0.25;
+  border-radius: 4px;
+}
+.feature-label:hover {
+  color: var(--interactions---primary-color-interaction-primary-active);
+}
+
+.feature-label {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  position: absolute;
+  z-index: 1;
+  text-decoration: none;
+  color: inherit;
+  padding-left: 4px;
+}
+

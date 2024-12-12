@@ -51,33 +51,7 @@ function extent(activations) {
   return [min, max];
 }
 
-function FeatureCell({ row, feature, features }) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  return (
-    <>
-      <div className="feature-cell-button-container">
-        <Button
-          className="feature-cell-button"
-          color="primary"
-          variant="clear"
-          onClick={() => setIsModalOpen(true)}
-          icon="maximize-2"
-          size="small"
-        />
-        <FeatureModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          rowIndex={row.ls_index}
-          features={features}
-          topIndices={row.ls_features.top_indices}
-          topActs={row.ls_features.top_acts}
-          selectedFeature={feature}
-        />
-      </div>
-    </>
-  );
-}
 
 function FeatureModal({
   isOpen,
@@ -91,9 +65,22 @@ function FeatureModal({
   const TO_SHOW = 15;
 
   const baseUrl = 'https://enjalot.github.io/latent-taxonomy#model=NOMIC_FWEDU_25k&feature=';
+  const maxAct = Math.max(...topActs);
+  const getWidth = (act) => {
+    return `${(act / maxAct) * 100}%`;
+  };
+
+  const itemStyle = (featIdx) => ({
+    fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
+  });
 
   return (
-    <Modal isVisible={isOpen} onClose={onClose} title={`Features for Index ${rowIndex}`}>
+    <Modal
+      className="feature-modal"
+      isVisible={isOpen}
+      onClose={onClose}
+      title={`Features for Index ${rowIndex}`}
+    >
       <div className="feature-modal-close">
         <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
         <Button onClick={onClose} icon="x" color="primary" variant="outline" size="small" />
@@ -103,15 +90,16 @@ function FeatureModal({
           <div
             className="feature-modal-item"
             key={i}
-            style={{
-              cursor: 'pointer',
-              fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
-            }}
+            style={itemStyle(featIdx)}
             onClick={() => window.open(`${baseUrl}${featIdx}`, '_blank', 'noopener,noreferrer')}
           >
-            <span style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div
+              className="feature-modal-item-background"
+              style={{ width: getWidth(topActs[i]) }}
+            />
+            <div className="feature-label">
               {featIdx}: {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
-            </span>
+            </div>
           </div>
         ))}
       </div>
@@ -263,10 +251,6 @@ function FilterDataTable({
   page,
   setPage,
 }) {
-  console.log('==== FILTER DATA TABLE =====', { feature, features });
-
-  console.log('activations', feature, features);
-
   const [rows, setRows] = useState([]);
 
   // page count is the total number of pages available
