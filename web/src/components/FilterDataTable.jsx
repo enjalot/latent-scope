@@ -54,12 +54,6 @@ function extent(activations) {
 function FeatureCell({ row, feature, features }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleClose = useCallback(() => {
-    setIsModalOpen(false);
-  }, [setIsModalOpen]);
-
-  const TO_SHOW = 15;
-
   return (
     <>
       <div className="feature-cell-button-container">
@@ -67,38 +61,63 @@ function FeatureCell({ row, feature, features }) {
           className="feature-cell-button"
           color="primary"
           variant="clear"
-          // variant="outline"
           onClick={() => setIsModalOpen(true)}
           icon="maximize-2"
           size="small"
         />
-        <Modal
-          isVisible={isModalOpen}
-          onClose={handleClose}
-          title={`Features for Index ${row.ls_index}`}
-        >
-          <div className="feature-modal-close">
-            <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
-            <Button onClick={handleClose} icon="x" color="primary" variant="outline" size="small" />
-          </div>
-          <div className="feature-modal-content">
-            {row.ls_features.top_indices.slice(0, TO_SHOW).map((featIdx, i) => (
-              <div
-                className="feature-modal-item"
-                key={i}
-                style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
-              >
-                {featIdx}: {features?.[featIdx]?.label} ({row.ls_features.top_acts?.[i]?.toFixed(3)}
-                )
-              </div>
-            ))}
-          </div>
-        </Modal>
+        <FeatureModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          rowIndex={row.ls_index}
+          features={features}
+          topIndices={row.ls_features.top_indices}
+          topActs={row.ls_features.top_acts}
+          selectedFeature={feature}
+        />
       </div>
     </>
   );
 }
 
+function FeatureModal({
+  isOpen,
+  onClose,
+  rowIndex,
+  features,
+  topIndices,
+  topActs,
+  selectedFeature,
+}) {
+  const TO_SHOW = 15;
+
+  const baseUrl = 'https://enjalot.github.io/latent-taxonomy#model=NOMIC_FWEDU_25k&feature=';
+
+  return (
+    <Modal isVisible={isOpen} onClose={onClose} title={`Features for Index ${rowIndex}`}>
+      <div className="feature-modal-close">
+        <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
+        <Button onClick={onClose} icon="x" color="primary" variant="outline" size="small" />
+      </div>
+      <div className="feature-modal-content">
+        {topIndices.slice(0, TO_SHOW).map((featIdx, i) => (
+          <div
+            className="feature-modal-item"
+            key={i}
+            style={{
+              cursor: 'pointer',
+              fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
+            }}
+            onClick={() => window.open(`${baseUrl}${featIdx}`, '_blank', 'noopener,noreferrer')}
+          >
+            <span style={{ textDecoration: 'none', color: 'inherit' }}>
+              {featIdx}: {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
+            </span>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
 
 function FeaturePlot({ row, feature, features, width }) {
   const featureSelected = feature !== -1;
@@ -115,21 +134,16 @@ function FeaturePlot({ row, feature, features, width }) {
 
   const activations = row.ls_features.top_acts || [];
 
-  // Create scale from 0 to 1
+  // Create power scale to compress smaller values and expand larger values
   const logScale = scalePow()
-    .exponent(2.5) // Exponent > 1 compresses smaller values
+    .exponent(2.5)
     .domain(extent(activations))
     .range([padding.left, width - padding.right]);
-
-  // .range([padding.left, width - padding.right]);
-
-  const indices = row.ls_features.top_indices || [];
 
   // if feature is -1, we want to plot all the activations the same color
   // otherwise, we want to highlight the selected feature darker than the others.
   // i is in the space of all features (0 to features.length - 1)
   const featureLineStyle = (i) => {
-    debugger;
     // no feature selected, so plot all the activations the same color
     if (feature === -1) {
       return {
@@ -219,27 +233,15 @@ function FeaturePlot({ row, feature, features, width }) {
         ))}
       </svg>
 
-      <Modal
-        isVisible={isModalOpen}
+      <FeatureModal
+        isOpen={isModalOpen}
         onClose={handleClose}
-        title={`Features for Index ${row.ls_index}`}
-      >
-        <div className="feature-modal-close">
-          <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
-          <Button onClick={handleClose} icon="x" color="primary" variant="outline" size="small" />
-        </div>
-        <div className="feature-modal-content">
-          {row.ls_features.top_indices.slice(0, TO_SHOW).map((featIdx, i) => (
-            <div
-              className="feature-modal-item"
-              key={i}
-              style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
-            >
-              {featIdx}: {features?.[featIdx]?.label} ({row.ls_features.top_acts?.[i]?.toFixed(3)})
-            </div>
-          ))}
-        </div>
-      </Modal>
+        rowIndex={row.ls_index}
+        features={features}
+        topIndices={row.ls_features.top_indices}
+        topActs={row.ls_features.top_acts}
+        selectedFeature={feature}
+      />
     </>
   );
 }
@@ -319,13 +321,15 @@ function FilterDataTable({
   );
 
   const formattedColumns = useMemo(() => {
+    const ls_features_column = 'ls_features (click to expand)';
     let columns = ['ls_index'];
     // Text column is always the first column (after index)
+
     columns.push(dataset.text_column);
 
     if (distances && distances.length) columns.push('ls_similarity');
     if (showEmbeddings) columns.push('ls_embedding');
-    if (sae_id) columns.push('ls_features');
+    if (sae_id) columns.push(ls_features_column);
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
     // if (tagset && Object.keys(tagset).length) columns.push('tags');
 
@@ -397,7 +401,7 @@ function FilterDataTable({
         };
       }
 
-      if (col === 'ls_features') {
+      if (col === ls_features_column) {
         const baseWidth = 200;
         return {
           ...baseCol,
