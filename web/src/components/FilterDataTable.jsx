@@ -129,6 +129,7 @@ function FeaturePlot({ row, feature, features, width }) {
   // otherwise, we want to highlight the selected feature darker than the others.
   // i is in the space of all features (0 to features.length - 1)
   const featureLineStyle = (i) => {
+    debugger;
     // no feature selected, so plot all the activations the same color
     if (feature === -1) {
       return {
@@ -165,19 +166,30 @@ function FeaturePlot({ row, feature, features, width }) {
   // features -> list of {feature, label, max_activation, order?}. feature is the index of the entry in the list.
   // feature -> the feature index being used as a filter (between 0 and features.length - 1, or -1 if no feature is selected)
 
-  const featuresToActivations = row.ls_features.top_indices.map((idx, i) => {
+  let featuresToActivations = row.ls_features.top_indices.map((idx, i) => {
     return {
       feature: idx,
       activation: row.ls_features.top_acts[i],
     };
   });
 
+  if (feature !== -1) {
+    const nonSelectedFeatures = featuresToActivations.filter(
+      ({ feature: feat_idx }) => feat_idx !== feature
+    );
+    const selectedFeature = featuresToActivations.filter(
+      ({ feature: feat_idx }) => feat_idx === feature
+    );
+    // add the selected feature to the end of the list, so it's on top of the others
+    featuresToActivations = [...nonSelectedFeatures, ...selectedFeature];
+  }
+
   return (
     <>
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
         {/* Activation lines */}
 
-        {featuresToActivations.map(({ feat_idx, activation }) => (
+        {featuresToActivations.map(({ feature: feat_idx, activation }) => (
           <line
             key={feat_idx}
             x1={logScale(activation)}
