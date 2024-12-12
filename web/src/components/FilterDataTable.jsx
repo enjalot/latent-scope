@@ -92,13 +92,20 @@ function FeatureModal({
             key={i}
             style={itemStyle(featIdx)}
             onClick={() => window.open(`${baseUrl}${featIdx}`, '_blank', 'noopener,noreferrer')}
+            title={`${baseUrl}${featIdx}`}
           >
             <div
               className="feature-modal-item-background"
               style={{ width: getWidth(topActs[i]) }}
             />
             <div className="feature-label">
-              {featIdx}: {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
+              <span className="feature-modal-item-filter-link">{featIdx}:</span>
+              <span className="feature-modal-item-filter-label">
+                {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
+              </span>
+              <div className="feature-modal-item-filter-text-container">
+                <span className="feature-modal-item-filter-text">Filter by this feature</span>
+              </div>
             </div>
           </div>
         ))}
