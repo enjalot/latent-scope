@@ -99,25 +99,10 @@ function FeatureCell({ row, feature, features }) {
   );
 }
 
-function invertedLogScale(x, base = 10) {
-  // Ensure input is between 0 and 1
-  x = Math.max(0, Math.min(1, x));
-
-  // Invert the input first
-  const inverted = 1 - x;
-
-  // Apply log transformation
-  const logTransformed = Math.log(1 + inverted * (base - 1)) / Math.log(base);
-
-  // Invert back
-  return 1 - logTransformed;
-}
-
-function mapToRange(value, min, max) {
-  return min + value * (max - min);
-}
 
 function FeaturePlot({ row, feature, features, width }) {
+  const featureSelected = feature !== -1;
+
   const { idx } = row;
 
   const showTicks = idx !== undefined;
@@ -132,7 +117,7 @@ function FeaturePlot({ row, feature, features, width }) {
 
   // Create scale from 0 to 1
   const logScale = scalePow()
-    .exponent(2) // Exponent > 1 compresses smaller values
+    .exponent(2.5) // Exponent > 1 compresses smaller values
     .domain(extent(activations))
     .range([padding.left, width - padding.right]);
 
@@ -142,14 +127,30 @@ function FeaturePlot({ row, feature, features, width }) {
 
   // if feature is -1, we want to plot all the activations the same color
   // otherwise, we want to highlight the selected feature darker than the others.
-  /// we should actually render the selected feature last so it's on top of the others.
-  const color = (i) => {
+  // i is in the space of all features (0 to features.length - 1)
+  const featureLineStyle = (i) => {
+    // no feature selected, so plot all the activations the same color
     if (feature === -1) {
-      return '#b87333';
+      return {
+        stroke: '#b87333',
+        strokeWidth: 1,
+        opacity: 0.8,
+      };
     } else if (i === feature) {
-      return '#b87333';
+      // we are plotting the selected feature, so make it darker, and thicker than the others
+      return {
+        stroke: '#b87333',
+        strokeWidth: 2,
+        opacity: 0.8,
+      };
     } else {
-      return '#f5f5f5';
+      // we are plotting a feature that is not the selected feature, so make it lighter and thinner
+      // than the selected feature
+      return {
+        stroke: '#f5f5f5',
+        strokeWidth: 1,
+        opacity: 0.5,
+      };
     }
   };
 
@@ -157,44 +158,53 @@ function FeaturePlot({ row, feature, features, width }) {
     setIsModalOpen(false);
   }, []);
 
+  // row -> the row being rendered
+  // row.ls_features -> an object with top_indices and top_acts
+  // top_indices -> list of feature indices sorted by activation strength
+  // top_acts -> list of activation strengths for the top_indices (extracted into a list activations)
+  // features -> list of {feature, label, max_activation, order?}. feature is the index of the entry in the list.
+  // feature -> the feature index being used as a filter (between 0 and features.length - 1, or -1 if no feature is selected)
+
+  const featuresToActivations = row.ls_features.top_indices.map((idx, i) => {
+    return {
+      feature: idx,
+      activation: row.ls_features.top_acts[i],
+    };
+  });
+
   return (
     <>
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
         {/* Activation lines */}
-        {activations.map((act, i) => (
+
+        {featuresToActivations.map(({ feat_idx, activation }) => (
           <line
-            key={i}
-            x1={logScale(act)}
+            key={feat_idx}
+            x1={logScale(activation)}
             y1={height - padding.bottom}
-            x2={logScale(act)}
+            x2={logScale(activation)}
             y2={padding.top}
-            stroke={color(indices[i])}
-            strokeWidth={indices[i] === feature ? 2 : 1}
-            opacity={feature === -1 ? 0.8 : indices[i] === feature ? 0.8 : 0.5}
+            {...featureLineStyle(feat_idx)}
           >
             <title>
-              {indices[i]}: {features?.[indices[i]]?.label}
+              {feat_idx}: {features?.[feat_idx]?.label}
             </title>
           </line>
         ))}
 
-        {/* Add tick marks and labels when idx === 0 */}
-        {showTicks && (
-          <>
-            {extent(activations).map((tick) => (
-              <g
-                key={tick}
-                // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
-                transform={`translate(${logScale(tick)},${height - padding.bottom})`}
-              >
-                <line y2="4" stroke="#666" />
-                <text y="12" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
-                  {tick.toFixed(2)}
-                </text>
-              </g>
-            ))}
-          </>
-        )}
+        {/* Add axis ticks and labels */}
+        {extent(activations).map((tick) => (
+          <g
+            key={tick}
+            // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
+            transform={`translate(${logScale(tick)},${height - padding.bottom})`}
+          >
+            <line y2="4" stroke="#666" />
+            <text y="12" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
+              {tick.toFixed(2)}
+            </text>
+          </g>
+        ))}
       </svg>
 
       <Modal
@@ -456,7 +466,6 @@ function FilterDataTable({
           rows={rows}
           columns={formattedColumns}
           rowClass={(row, index) => {
-            debugger;
             if (row.ls_index === 0) {
               return 'test';
             }
