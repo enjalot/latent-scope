@@ -466,6 +466,12 @@ function Explore() {
   //   defaultRows: defaultIndices,
   // });
 
+  const handleFeatureClick = (featIdx) => {
+    setActiveFilterTab(FEATURE);
+    setFeature(featIdx);
+    // setFilteredIndices(featureIndices);
+  };
+
   if (!dataset)
     return (
       <>
@@ -556,6 +562,7 @@ function Explore() {
                 onClick={handleClicked}
                 page={page}
                 setPage={setPage}
+                handleFeatureClick={handleFeatureClick}
               />
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import classNames from 'classnames';
 import styles from './FeatureFilter.module.scss';
@@ -16,12 +16,23 @@ export default function FeatureFilter({
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
 
+  const featureLabel = (featIdx) => {
+    const featureObj = features.find((f) => f.feature === featIdx);
+    return `(${featIdx}) ${featureObj.label}`;
+  };
+
+  useEffect(() => {
+    if (feature !== -1) {
+      setInputValue(featureLabel(feature));
+    }
+  }, [feature]);
+
   const items = useMemo(
     () =>
       features
         ?.map((f) => ({
           value: f.feature,
-          label: `(${f.feature}) ${f.label}`,
+          label: featureLabel(f.feature),
         }))
         .filter((f) => scope?.sae?.max_activations[f.value] !== 0) || [],
     [features, scope]

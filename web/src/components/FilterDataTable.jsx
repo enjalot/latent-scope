@@ -61,6 +61,7 @@ function FeatureModal({
   topIndices,
   topActs,
   selectedFeature,
+  handleFeatureClick,
 }) {
   const TO_SHOW = 15;
 
@@ -73,6 +74,11 @@ function FeatureModal({
   const itemStyle = (featIdx) => ({
     fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
   });
+
+  const handleFilterClick = (featIdx) => {
+    handleFeatureClick(featIdx);
+    onClose();
+  };
 
   return (
     <Modal
@@ -103,7 +109,13 @@ function FeatureModal({
               <span className="feature-modal-item-filter-label">
                 {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
               </span>
-              <div className="feature-modal-item-filter-text-container">
+              <div
+                className="feature-modal-item-filter-text-container"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleFilterClick(featIdx);
+                }}
+              >
                 <span className="feature-modal-item-filter-text">Filter by this feature</span>
               </div>
             </div>
@@ -114,15 +126,12 @@ function FeatureModal({
   );
 }
 
-function FeaturePlot({ row, feature, features, width }) {
-  const featureSelected = feature !== -1;
-
+function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
   const { idx } = row;
 
   const showTicks = idx !== undefined;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const TO_SHOW = 15; // number of activations to show in the modal
 
   const height = showTicks ? 35 : 20; // Increase height for the row with ticks
   const padding = { left: 20, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }; // Add bottom padding for ticks
@@ -236,12 +245,14 @@ function FeaturePlot({ row, feature, features, width }) {
         topIndices={row.ls_features.top_indices}
         topActs={row.ls_features.top_acts}
         selectedFeature={feature}
+        handleFeatureClick={handleFeatureClick}
       />
     </>
   );
 }
 
 function FilterDataTable({
+  handleFeatureClick,
   dataset,
   filteredIndices = [],
   defaultIndices = [],
@@ -398,7 +409,13 @@ function FilterDataTable({
           ...baseCol,
           width: expandedFeatureRows.size > 0 ? baseWidth + 100 : baseWidth,
           renderCell: ({ row }) => (
-            <FeaturePlot width={baseWidth} row={row} feature={feature} features={features} />
+            <FeaturePlot
+              width={baseWidth}
+              row={row}
+              feature={feature}
+              features={features}
+              handleFeatureClick={handleFeatureClick}
+            />
           ),
         };
       }
