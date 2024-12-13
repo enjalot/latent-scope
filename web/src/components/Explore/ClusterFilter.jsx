@@ -1,5 +1,6 @@
 import React from 'react';
 import Select from 'react-select';
+import { selectStyles } from './SelectStyles';
 
 export default function ClusterFilter({ clusterLabels, cluster, clusterIndices, setCluster }) {
   const selectOptions = clusterLabels?.map((cl) => ({
@@ -33,6 +34,7 @@ export default function ClusterFilter({ clusterLabels, cluster, clusterIndices, 
           isClearable
           placeholder="Filter by cluster"
           className="cluster-react-select"
+          styles={selectStyles}
         />
       </div>
       <div className="filter-cell middle">

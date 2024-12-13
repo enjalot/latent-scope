@@ -1,7 +1,7 @@
 import Select from 'react-select';
 import { Button } from 'react-element-forge';
 import styles from './ColumnFilter.module.scss';
-
+import { selectStyles } from './SelectStyles';
 const ColumnFilter = ({
   columnFilters,
   columnIndices,
@@ -38,6 +38,7 @@ const ColumnFilter = ({
               isClearable
               placeholder={`Filter by ${column.column}`}
               className={styles.columnSelect}
+              styles={selectStyles}
             />
           </span>
         ))}
