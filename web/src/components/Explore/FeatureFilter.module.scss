@@ -1,9 +1,5 @@
 .container {
   width: calc(100% - 80px);
-  // Keep existing clusters-select and filter-row styles if any
-  &.active {
-    // Your active styles
-  }
 }
 
 .dropdownContainer {
@@ -18,12 +14,21 @@
 
 .input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: var(--input-padding);
+  border: 1px solid var(--color-border-1);
+  border-radius: var(--input-border-radius);
+  background-color: var(--color-neutral-0);
+  color: var(--color-text-main);
+  font-size: var(--input-font-size);
   
   &::placeholder {
-    color: #999;
+    color: var(--color-text-subtle);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--color-text-reverse);
+    background-color: var(--color-neutral-0-reverse);
+    border-color: var(--color-border-3);
   }
 }
 
@@ -36,10 +41,10 @@
   border: none;
   cursor: pointer;
   padding: 4px;
-  color: #999;
+  color: var(--color-text-subtle);
   
   &:hover {
-    color: #666;
+    color: var(--color-text-main);
   }
 }
 
@@ -48,35 +53,60 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-top: 4px;
+  background: var(--color-neutral-0);
+  border: 1px solid var(--color-border-1);
+  border-radius: var(--dropdown-border-radius);
+  margin-top: var(--dropdown-margin-top);
   z-index: 1000;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--button-box-shadow);
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--color-text-reverse);
+    background: var(--color-neutral-0-reverse);
+    border-color: var(--color-border-3);
+  }
 }
 
 .item {
   padding: 8px;
   cursor: pointer;
+  color: var(--color-text-main);
+  
+  &:hover {
+    background-color: var(--color-interaction-secondary-hover);
+  }
   
   &.highlighted {
-    background-color: #f0f0f0;
+    background-color: var(--color-neutral-1);
   }
   
   &.selected {
-    font-weight: bold;
+    background-color: var(--color-neutral-2);
+    color: var(--color-interaction-primary);
+    font-weight: var(--font-body-semibold-weight);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--color-text-reverse);
+    &:hover {
+      background-color: var(--color-interactions-menu-hover);
+    }
+    
+    &.highlighted {
+      background-color: var(--color-border-3);
+    }
+    
+    &.selected {
+      background-color: var(--color-border-2);
+    }
   }
 }
 
 .filterCell {
-  // Keep existing filter-cell styles
   width: 100%;
-  &.left {
-    // Your left cell styles
-  }
   
   &.middle {
-    // Your middle cell styles
+    color: var(--color-text-subtle);
+    font-size: var(--font-body-sm);
   }
 }
