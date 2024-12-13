@@ -177,6 +177,10 @@ function Explore() {
     }
   }, [hoveredIndex, scopeRows]);
 
+  // contains the rows that are currently being displayed in the data table
+  // this is used potentially color the points in the scatterplot when the filter is feature
+  const [dataTableRows, setDataTableRows] = useState([]);
+
   // ====================================================================================================
   // Filtering
   // ====================================================================================================
@@ -549,7 +553,7 @@ function Explore() {
                 distances={distances}
                 clusterMap={clusterMap}
                 clusterLabels={clusterLabels}
-                tagset={tagset}
+                onDataTableRows={setDataTableRows}
                 sae_id={sae?.id}
                 feature={feature}
                 features={features}
@@ -594,6 +598,8 @@ function Explore() {
                 width={width}
                 height={height}
                 activeFilterTab={activeFilterTab}
+                dataTableRows={dataTableRows}
+                feature={feature}
               />
             ) : null}
           </div>

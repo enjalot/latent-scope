@@ -258,7 +258,7 @@ function FilterDataTable({
   defaultIndices = [],
   distances = [],
   clusterMap = {},
-  tagset,
+  onDataTableRows,
   showEmbeddings = null,
   showNavigation = true,
   sae_id = null,
@@ -313,9 +313,11 @@ function FilterDataTable({
             setPageCount(totalPages);
             console.log('======= SETTING ROWS =======', rows);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
+            onDataTableRows(rows);
           });
       } else {
         setRows([]);
+        onDataTableRows([]);
         // setPageCount(totalPages);
       }
     },

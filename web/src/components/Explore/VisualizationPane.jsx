@@ -18,12 +18,83 @@ import {
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
-import { CLUSTER } from '../../pages/FullScreenExplore';
+import { CLUSTER, FEATURE } from '../../pages/FullScreenExplore';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 };
+
+function getBucketSize(values) {
+  // base this on the number of points
+  const nBuckets = Math.floor(values.length / 10);
+  return nBuckets;
+}
+
+// Interpolates between two hex colors to create a gradient with specified number of steps
+// Becomes the color range for the points
+function getInterpolatedColorRange(values, startColor = '#E8C9AC', endColor = '#b87333') {
+  const steps = getBucketSize(values);
+  // Convert hex to RGB
+  const start = {
+    r: parseInt(startColor.slice(1, 3), 16),
+    g: parseInt(startColor.slice(3, 5), 16),
+    b: parseInt(startColor.slice(5, 7), 16),
+  };
+
+  const end = {
+    r: parseInt(endColor.slice(1, 3), 16),
+    g: parseInt(endColor.slice(3, 5), 16),
+    b: parseInt(endColor.slice(5, 7), 16),
+  };
+
+  // Calculate step size for each color channel
+  const stepR = (end.r - start.r) / (steps - 1);
+  const stepG = (end.g - start.g) / (steps - 1);
+  const stepB = (end.b - start.b) / (steps - 1);
+
+  // Generate array of interpolated colors
+  return Array.from({ length: steps }, (_, i) => {
+    const r = Math.round(start.r + stepR * i);
+    const g = Math.round(start.g + stepG * i);
+    const b = Math.round(start.b + stepB * i);
+
+    // Convert back to hex
+    return (
+      '#' +
+      [r, g, b]
+        .map((x) => {
+          const hex = x.toString(16);
+          return hex.length === 1 ? '0' + hex : hex;
+        })
+        .join('')
+    );
+  });
+}
+
+// given a value that has not been discretized, return the bucket it belongs to
+function getBucket(value, domain) {
+  if (!domain.length) return null;
+
+  // Sort values in descending order
+  const sortedValues = [...domain].sort((a, b) => b - a);
+
+  // Find the first value that's less than or equal to our target
+  return sortedValues.find((v) => value >= v) ?? null;
+}
+
+// performs data discretization by dividing a continuous range of values into a specified number of equal-width buckets (bins)
+function getBucketedDomain(values) {
+  if (!values.length) return [];
+
+  const nBuckets = getBucketSize(values);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const bucketSize = (maxVal - minVal) / nBuckets;
+
+  // Generate array of bucket boundary values
+  return Array.from({ length: nBuckets }, (_, i) => minVal + i * bucketSize);
+}
 
 function VisualizationPane({
   scopeRows,
@@ -41,6 +112,8 @@ function VisualizationPane({
   width,
   height,
   activeFilterTab,
+  dataTableRows,
+  feature,
 }) {
   // only show the hull if we are filtering by cluster
   const showHull = activeFilterTab === CLUSTER;
@@ -62,8 +135,69 @@ function VisualizationPane({
 
   const size = [width, height];
 
+  const featureIsSelected = activeFilterTab === FEATURE && feature !== -1;
+
+  const featureDomainAndRange = useMemo(() => {
+    const rows = dataTableRows.filter((p) => intersectedIndices?.includes(p.ls_index));
+    if (featureIsSelected) {
+      // extract the activations for the selected feature for each row
+      const activations = rows
+        .filter((p) => {
+          const { top_indices } = p.ls_features;
+          return top_indices.indexOf(feature) !== -1;
+        })
+        .map((p) => {
+          const { top_acts, top_indices } = p.ls_features;
+          return top_acts[top_indices.indexOf(feature)];
+        });
+      const domain = getBucketedDomain(activations);
+      const range = getInterpolatedColorRange(activations);
+
+      // add a hidden state to the domain to represent rows that don't have the feature
+      domain.unshift(mapSelectionKey.notSelected);
+
+      // add a light color to the range to represent rows that don't have the feature
+      range.unshift('#e8e8e8');
+
+      // add an array of all 1s for each domain value
+      const opacity = domain.map(() => 1);
+
+      return { domain, range, opacity };
+    }
+    return { domain: [], range: [], opacity: [] };
+  }, [dataTableRows, intersectedIndices, feature, activeFilterTab]);
+
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
+      // change the color domain and range of the points to be the activations of the selected feature
+      if (featureIsSelected) {
+        if (intersectedIndices?.includes(i)) {
+          // find the index of ls_idnex in the intersectedIndices array
+          const { ls_index } = p;
+          const index = intersectedIndices.indexOf(ls_index);
+
+          if (index === -1 || index >= dataTableRows.length) {
+            return [p.x, p.y, mapSelectionKey.notSelected];
+          }
+
+          // get the data from datatableRows based on index
+          const data = dataTableRows[index];
+
+          // get the activation for the selected feature
+
+          const activatedIdx = data.ls_features.top_indices.indexOf(feature);
+
+          if (activatedIdx !== -1) {
+            const activatedFeature = data.ls_features.top_acts[activatedIdx];
+            const bucket = getBucket(activatedFeature, featureDomainAndRange.domain);
+            return [p.x, p.y, bucket];
+          } else {
+            return [p.x, p.y, mapSelectionKey.notSelected];
+          }
+        } else {
+          return [p.x, p.y, mapSelectionKey.notSelected];
+        }
+      }
       // if (hoveredIndex !== null) {
       //   if (i === hoveredIndex) {
       //     return [p.x, p.y, mapSelectionKey.hovered];
@@ -93,6 +227,10 @@ function VisualizationPane({
         return [p.x, p.y];
       });
   }, [scopeRows]);
+
+  if (featureIsSelected) {
+    console.log('domain + range', featureDomainAndRange, drawingPoints);
+  }
 
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   useEffect(() => {
@@ -227,9 +365,9 @@ function VisualizationPane({
             width={width}
             height={height}
             colorScaleType="categorical"
-            colorRange={mapSelectionColorsLight}
-            colorDomain={mapSelectionDomain}
-            opacityRange={pointOpacityRange}
+            colorRange={featureIsSelected ? featureDomainAndRange.range : mapSelectionColorsLight}
+            colorDomain={featureIsSelected ? featureDomainAndRange.domain : mapSelectionDomain}
+            opacityRange={featureIsSelected ? featureDomainAndRange.opacity : mapSelectionOpacity}
             pointSizeRange={pointSizeRange}
             opacityBy="valueA"
             onScatter={onScatter}
