@@ -169,6 +169,14 @@ function VisualizationPane({
 
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
+      // if (hoveredIndex !== null) {
+      //   if (i === hoveredIndex) {
+      //     return [p.x, p.y, mapSelectionKey.hovered];
+      //   } else {
+      //     return [p.x, p.y, mapSelectionKey.notSelected];
+      //   }
+      // }
+
       // change the color domain and range of the points to be the activations of the selected feature
       if (featureIsSelected) {
         if (i % 2 === 0) {
@@ -205,13 +213,7 @@ function VisualizationPane({
           return [p.x, p.y, 1];
         }
       }
-      // if (hoveredIndex !== null) {
-      //   if (i === hoveredIndex) {
-      //     return [p.x, p.y, mapSelectionKey.hovered];
-      //   } else {
-      //     return [p.x, p.y, mapSelectionKey.notSelected];
-      //   }
-      // }
+
       // if (deletedIndices?.includes(i)) {
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
@@ -370,10 +372,13 @@ function VisualizationPane({
             colorScaleType="categorical"
             // colorRange={featureIsSelected ? featureDomainAndRange.range : mapSelectionColorsLight}
             // 2 -> activated, 1 -> not activated
-            colorRange={featureIsSelected ? ['#b5b1ad'] : mapSelectionColorsLight}
-            colorDomain={featureIsSelected ? [1] : mapSelectionDomain}
+            colorRange={featureIsSelected ? ['#0000ff', '#00ff00'] : mapSelectionColorsLight}
+            colorDomain={featureIsSelected ? [1, 2] : mapSelectionDomain}
             opacityRange={featureIsSelected ? [0.1, 1] : mapSelectionOpacity}
             pointSizeRange={featureIsSelected ? [2, 8] : mapPointSizeRange}
+            // colorRange={mapSelectionColorsLight}
+            // colorDomain={mapSelectionDomain}
+            // opacityRange={mapSelectionOpacity}
             // pointSizeRange={pointSizeRange}
             opacityBy="valueA"
             onScatter={onScatter}
@@ -415,7 +420,7 @@ function VisualizationPane({
           <HullPlot
             hulls={hoveredHulls}
             fill="#d28440"
-            stroke="#CC5500"
+            stroke="#8bcf66"
             strokeWidth={2.5}
             // if there are selected indices already, that means other points will be less visible
             // so we can make the hull a bit more transparent

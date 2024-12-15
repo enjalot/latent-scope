@@ -149,6 +149,10 @@
 .feature-modal {
   padding: 0px;
   width: 800px !important;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: #111 !important;
+  }
 }
 
 .feature-modal-close {
