@@ -85,7 +85,7 @@ const HullPlot = ({
   const calculateScaledFontSize = (width, height) => {
     const baseFontSize = 12;
     // Scale based on the smaller dimension to maintain readability
-    const FACTOR = 1000; // 800 is a reference size
+    const FACTOR = 900; // smaller is bigger
     const scaleFactor = Math.min(width, height) / FACTOR;
     return Math.max(baseFontSize * scaleFactor, 8); // Ensure minimum font size of 8px
   };
@@ -186,7 +186,7 @@ const HullPlot = ({
 
     labelSel.exit().remove();
 
-    // Add background rectangles for labels
+    // Add background rectangles for labels so that can be seen over the data points
     let labelBgSel = svg.selectAll('rect.hull-label-bg').data(hulls);
 
     labelBgSel.exit().remove();
@@ -199,13 +199,12 @@ const HullPlot = ({
         return text.length * charWidth + 2 * fontSize; // Add padding of 1 character width on each side
       };
 
-      // Then modify the label background rect code to use this function
       labelBgSel
         .enter()
         .append('rect')
         .attr('class', 'hull-label-bg')
         .merge(labelBgSel)
-        .attr('fill', 'white')
+        .attr('fill', '#7baf5a')
         .attr('rx', 3)
         .attr('ry', 3)
         .attr('opacity', 0.85)
@@ -251,7 +250,7 @@ const HullPlot = ({
           (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
         )
         .attr('text-anchor', 'middle')
-        .attr('fill', textColor)
+        .attr('fill', 'white')
         .attr('font-family', 'monospace')
         .attr('alignment-baseline', 'auto')
         .attr('font-size', calculateScaledFontSize(width, height))
@@ -304,7 +303,7 @@ const HullPlot = ({
           (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
         )
         .attr('text-anchor', 'middle')
-        .attr('fill', textColor)
+        .attr('fill', 'white')
         .attr('alignment-baseline', 'auto')
         .attr('font-size', calculateScaledFontSize(width, height))
         .text(label.label);
