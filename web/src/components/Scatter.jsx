@@ -196,14 +196,6 @@ function ScatterPlot({
         });
       }
       if (prevPoints && prevPoints.length === points.length) {
-        console.log({
-          pointColor,
-          opacityRange,
-          pointSizeRange,
-          colorScaleType,
-          colorDomain,
-          colorRange,
-        });
         scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
           // don't color till after
           scatterplot.set({
@@ -212,14 +204,6 @@ function ScatterPlot({
           scatterplot.draw(points, { transition: false });
         });
       } else {
-        console.log({
-          pointColor,
-          opacityRange,
-          pointSizeRange,
-          colorScaleType,
-          colorDomain,
-          colorRange,
-        });
         console.log('=== fresh draw scatterplot ===');
         scatterplot.set({
           pointColor: pointColor,
