@@ -146,7 +146,23 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
   // if feature is -1, we want to plot all the activations the same color
   // otherwise, we want to highlight the selected feature darker than the others.
   // i is in the space of all features (0 to features.length - 1)
-  const featureLineStyle = (i) => {
+  const featureLineStyle = (f, idx) => {
+    if (hoveredIdx !== null) {
+      if (idx === hoveredIdx) {
+        return {
+          stroke: '#b87333',
+          strokeWidth: 2,
+          opacity: 0.8,
+        };
+      } else {
+        return {
+          stroke: '#ccc',
+          strokeWidth: 2,
+          opacity: 0.25,
+        };
+      }
+    }
+
     // no feature selected, so plot all the activations the same color
     if (feature === -1) {
       return {
@@ -154,7 +170,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
         strokeWidth: 2,
         opacity: 0.8,
       };
-    } else if (i === feature) {
+    } else if (f === feature) {
       // we are plotting the selected feature, so make it darker, and thicker than the others
       return {
         stroke: '#b87333',
@@ -202,11 +218,12 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
   }
 
   const [tooltipContent, setTooltipContent] = useState(null);
+  const [hoveredIdx, setHoveredIdx] = useState(null);
 
   return (
     <>
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
-        {featuresToActivations.map(({ feature: feat_idx, activation }) => (
+        {featuresToActivations.map(({ feature: feat_idx, activation }, idx) => (
           <line
             data-tooltip-id={`feature-tooltip`}
             key={feat_idx}
@@ -215,14 +232,16 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
             x2={logScale(activation)}
             y2={padding.top}
             onMouseEnter={() => {
+              setHoveredIdx(idx);
               setTooltipContent(
                 `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`
               );
             }}
             onMouseLeave={() => {
               setTooltipContent(null);
+              setHoveredIdx(null);
             }}
-            {...featureLineStyle(feat_idx)}
+            {...featureLineStyle(feat_idx, idx)}
           />
         ))}
 
