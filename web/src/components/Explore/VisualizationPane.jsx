@@ -157,7 +157,7 @@ function VisualizationPane({
       domain.unshift(mapSelectionKey.notSelected);
 
       // add a light color to the range to represent rows that don't have the feature
-      range.unshift('#e8e8e8');
+      range.unshift('#ffffff');
 
       // add an array of all 1s for each domain value
       const opacity = domain.map(() => 1);
@@ -171,7 +171,14 @@ function VisualizationPane({
     return scopeRows.map((p, i) => {
       // change the color domain and range of the points to be the activations of the selected feature
       if (featureIsSelected) {
+        if (i % 2 === 0) {
+          return [p.x, p.y, 2];
+        } else {
+          return [p.x, p.y, 1];
+        }
+
         if (intersectedIndices?.includes(i)) {
+          return [p.x, p.y, 2];
           // find the index of ls_idnex in the intersectedIndices array
           const { ls_index } = p;
           const index = intersectedIndices.indexOf(ls_index);
@@ -190,12 +197,12 @@ function VisualizationPane({
           if (activatedIdx !== -1) {
             const activatedFeature = data.ls_features.top_acts[activatedIdx];
             const bucket = getBucket(activatedFeature, featureDomainAndRange.domain);
-            return [p.x, p.y, bucket];
+            return [p.x, p.y, 2];
           } else {
-            return [p.x, p.y, mapSelectionKey.notSelected];
+            return [p.x, p.y, 2];
           }
         } else {
-          return [p.x, p.y, mapSelectionKey.notSelected];
+          return [p.x, p.y, 1];
         }
       }
       // if (hoveredIndex !== null) {
@@ -227,10 +234,6 @@ function VisualizationPane({
         return [p.x, p.y];
       });
   }, [scopeRows]);
-
-  if (featureIsSelected) {
-    console.log('domain + range', featureDomainAndRange, drawingPoints);
-  }
 
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   useEffect(() => {
@@ -365,10 +368,13 @@ function VisualizationPane({
             width={width}
             height={height}
             colorScaleType="categorical"
-            colorRange={featureIsSelected ? featureDomainAndRange.range : mapSelectionColorsLight}
-            colorDomain={featureIsSelected ? featureDomainAndRange.domain : mapSelectionDomain}
-            opacityRange={featureIsSelected ? featureDomainAndRange.opacity : mapSelectionOpacity}
-            pointSizeRange={pointSizeRange}
+            // colorRange={featureIsSelected ? featureDomainAndRange.range : mapSelectionColorsLight}
+            // 2 -> activated, 1 -> not activated
+            colorRange={featureIsSelected ? ['#b5b1ad'] : mapSelectionColorsLight}
+            colorDomain={featureIsSelected ? [1] : mapSelectionDomain}
+            opacityRange={featureIsSelected ? [0.1, 1] : mapSelectionOpacity}
+            pointSizeRange={featureIsSelected ? [2, 8] : mapPointSizeRange}
+            // pointSizeRange={pointSizeRange}
             opacityBy="valueA"
             onScatter={onScatter}
             onView={handleView}
