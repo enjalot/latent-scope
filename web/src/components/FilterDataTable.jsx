@@ -51,8 +51,6 @@ function extent(activations) {
   return [min, max];
 }
 
-
-
 function FeatureModal({
   isOpen,
   onClose,
@@ -75,8 +73,8 @@ function FeatureModal({
     fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
   });
 
-  const handleFilterClick = (featIdx) => {
-    handleFeatureClick(featIdx);
+  const handleFilterClick = (featIdx, activation) => {
+    handleFeatureClick(featIdx, activation);
     onClose();
   };
 
@@ -113,7 +111,7 @@ function FeatureModal({
                 className="feature-modal-item-filter-text-container"
                 onClick={(event) => {
                   event.stopPropagation();
-                  handleFilterClick(featIdx);
+                  handleFilterClick(featIdx, topActs[i]);
                 }}
               >
                 <span className="feature-modal-item-filter-text">Filter by this feature</span>
@@ -286,11 +284,13 @@ function FilterDataTable({
   //   }
   // }, [tagset]);
 
+  const [rowsLoading, setRowsLoading] = useState(false);
   const hydrateIndices = useCallback(
     (indices) => {
       // console.log("hydrate!", dataset)
       console.log('indices', indices);
       if (dataset && indices.length) {
+        setRowsLoading(true);
         console.log('fetching query', dataset);
         fetch(`${apiUrl}/query`, {
           method: 'POST',
@@ -314,14 +314,16 @@ function FilterDataTable({
             console.log('======= SETTING ROWS =======', rows);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
             onDataTableRows(rows);
+            setRowsLoading(false);
           });
       } else {
         setRows([]);
         onDataTableRows([]);
+        setRowsLoading(false);
         // setPageCount(totalPages);
       }
     },
-    [dataset, page, showEmbeddings, sae_id]
+    [dataset, page, showEmbeddings, sae_id, setRowsLoading]
   );
 
   const formattedColumns = useMemo(() => {
@@ -483,7 +485,7 @@ function FilterDataTable({
 
   return (
     <div
-      className="filter-data-table"
+      className={`filter-data-table ${rowsLoading ? 'loading' : ''}`}
       // style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}

@@ -47,6 +47,7 @@ function Explore() {
   // when passed to the data table it will show that feature first?
   const [feature, setFeature] = useState(-1);
   const [features, setFeatures] = useState([]);
+  const [threshold, setThreshold] = useState(0.1);
 
   useEffect(() => {
     const asyncRead = async (meta) => {
@@ -321,18 +322,33 @@ function Explore() {
 
   const [featureIndices, setFeatureIndices] = useState([]);
   const [featureAnnotations, setFeatureAnnotations] = useState([]);
+  const [featureIndicesLoading, setFeatureIndicesLoading] = useState(false);
   useEffect(() => {
     if (feature >= 0 && activeFilterTab === FEATURE) {
       console.log('==== feature ==== ', feature);
-      apiService.searchSaeFeature(datasetId, sae?.id, feature, 100).then((data) => {
+      console.log('==== threshold ==== ', threshold);
+      setFeatureIndicesLoading(true);
+      apiService.searchSaeFeature(datasetId, sae?.id, feature, threshold, 100).then((data) => {
         console.log('==== data ==== ', data);
         setFeatureIndices(data.top_row_indices);
         setFilteredIndices(data.top_row_indices);
+        setFeatureIndicesLoading(false);
       });
     } else {
       setFilteredIndices([]);
+      setFeatureIndices([]);
+      setFeatureIndicesLoading(false);
     }
-  }, [datasetId, sae, setFilteredIndices, activeFilterTab, feature]);
+  }, [
+    datasetId,
+    sae,
+    setFilteredIndices,
+    activeFilterTab,
+    feature,
+    threshold,
+    setFeatureIndices,
+    setFeatureIndicesLoading,
+  ]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -470,10 +486,11 @@ function Explore() {
   //   defaultRows: defaultIndices,
   // });
 
-  const handleFeatureClick = (featIdx) => {
+  const handleFeatureClick = (featIdx, activation) => {
     setActiveFilterTab(FEATURE);
     setFeature(featIdx);
-    // setFilteredIndices(featureIndices);
+    // TODO: for setting the threshold the FeatureFilter component would need to have threshold passed in
+    // setThreshold(activation);
   };
 
   if (!dataset)
@@ -534,6 +551,7 @@ function Explore() {
                 setFeature={setFeature}
                 featureIndices={featureIndices}
                 setFeatureIndices={setFeatureIndices}
+                setThreshold={setThreshold}
               />
             </div>
             <div

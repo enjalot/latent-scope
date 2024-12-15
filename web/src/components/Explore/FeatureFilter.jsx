@@ -11,10 +11,12 @@ export default function FeatureFilter({
   setFeature,
   setFilteredIndices,
   setFeatureIndices,
+  onThreshold,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
+  const [threshold, setThreshold] = useState(0.1);
 
   const featureLabel = (featIdx) => {
     const featureObj = features.find((f) => f.feature === featIdx);
@@ -26,6 +28,16 @@ export default function FeatureFilter({
       setInputValue(featureLabel(feature));
     }
   }, [feature]);
+
+  // default the threshold to half the max activation of the feature
+  useEffect(() => {
+    if (feature >= 0) {
+      const maxActivation = scope?.sae?.max_activations[feature] || 0;
+      let t = maxActivation < 0.2 ? maxActivation / 2 : 0.1;
+      setThreshold(t);
+      onThreshold(t);
+    }
+  }, [feature, scope, onThreshold]);
 
   const items = useMemo(
     () =>
@@ -114,6 +126,11 @@ export default function FeatureFilter({
     [filteredItems, handleSelect, selectedItem]
   );
 
+  const handleThresholdChanged = useCallback(() => {
+    console.log('threshold', threshold);
+    onThreshold(threshold);
+  }, [threshold, setFeature]);
+
   return (
     <div className={classNames(styles.container)}>
       <div className={classNames(styles.filterCell, styles.left)}>
@@ -154,7 +171,24 @@ export default function FeatureFilter({
         </div>
       </div>
       <div className={classNames(styles.filterCell, styles.middle)}>
-        {featureIndices?.length ? <span>{featureIndices.length} rows</span> : <span>0 rows</span>}
+        {feature >= 0 && (
+          <div className={styles.thresholdContainer}>
+            <input
+              type="range"
+              min={0.01}
+              max={scope?.sae?.max_activations[feature] || 0.1}
+              step={0.01}
+              value={threshold}
+              onChange={(e) => setThreshold(Number(e.target.value))}
+              onMouseUp={handleThresholdChanged}
+              className={styles.thresholdInput}
+            />
+            <span className={styles.thresholdLabel}> activation threshold: {threshold}</span>
+          </div>
+        )}
+        <div className={styles.rowCount}>
+          {featureIndices?.length ? <span>{featureIndices.length} rows</span> : <span>0 rows</span>}
+        </div>
       </div>
     </div>
   );
