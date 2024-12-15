@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Button } from 'react-element-forge';
 import { Modal } from 'react-element-forge';
 import PropTypes from 'prop-types';
+import { Tooltip } from 'react-tooltip';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
 
@@ -150,7 +151,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
     if (feature === -1) {
       return {
         stroke: '#b87333',
-        strokeWidth: 1,
+        strokeWidth: 2,
         opacity: 0.8,
       };
     } else if (i === feature) {
@@ -165,7 +166,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
       // than the selected feature
       return {
         stroke: '#f5f5f5',
-        strokeWidth: 1,
+        strokeWidth: 2,
         opacity: 0.5,
       };
     }
@@ -200,24 +201,29 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
     featuresToActivations = [...nonSelectedFeatures, ...selectedFeature];
   }
 
+  const [tooltipContent, setTooltipContent] = useState(null);
+
   return (
     <>
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
-        {/* Activation lines */}
-
         {featuresToActivations.map(({ feature: feat_idx, activation }) => (
           <line
+            data-tooltip-id={`feature-tooltip`}
             key={feat_idx}
             x1={logScale(activation)}
             y1={height - padding.bottom}
             x2={logScale(activation)}
             y2={padding.top}
+            onMouseEnter={() => {
+              setTooltipContent(
+                `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`
+              );
+            }}
+            onMouseLeave={() => {
+              setTooltipContent(null);
+            }}
             {...featureLineStyle(feat_idx)}
-          >
-            <title>
-              {feat_idx}: {features?.[feat_idx]?.label}
-            </title>
-          </line>
+          />
         ))}
 
         {/* Add axis ticks and labels */}
@@ -227,13 +233,30 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
             // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
             transform={`translate(${logScale(tick)},${height - padding.bottom})`}
           >
-            <line y2="4" stroke="#666" />
-            <text y="12" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
+            {/* <line y2="4" stroke="#666" /> */}
+            <text y="10" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
               {tick.toFixed(2)}
             </text>
           </g>
         ))}
       </svg>
+
+      {/* <div data-tooltip-id="feature-tooltip" /> */}
+      <Tooltip
+        id="feature-tooltip"
+        isOpen={true}
+        place="top"
+        effect="solid"
+        content={tooltipContent}
+        className="feature-tooltip"
+        // positionStrategy="fixed"
+        style={{
+          zIndex: 9999,
+          maxWidth: 'none',
+          whiteSpace: 'nowrap',
+          backgroundColor: '#D3965E',
+        }}
+      />
 
       <FeatureModal
         isOpen={isModalOpen}
@@ -288,7 +311,6 @@ function FilterDataTable({
   const hydrateIndices = useCallback(
     (indices) => {
       // console.log("hydrate!", dataset)
-      console.log('indices', indices);
       if (dataset && indices.length) {
         setRowsLoading(true);
         console.log('fetching query', dataset);
