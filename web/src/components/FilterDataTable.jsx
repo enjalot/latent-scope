@@ -132,7 +132,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const height = showTicks ? 35 : 20; // Increase height for the row with ticks
+  const height = 45;
   const padding = { left: 20, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }; // Add bottom padding for ticks
 
   const activations = row.ls_features.top_acts || [];
@@ -512,16 +512,6 @@ function FilterDataTable({
     [onHover]
   );
 
-  const getRowHeight = useCallback(
-    (row) => {
-      if (expandedFeatureRows.has(row.ls_index)) {
-        return 200; // or however tall you want expanded rows to be
-      }
-      return 35; // default row height
-    },
-    [expandedFeatureRows]
-  );
-
   // console.log('==== FILTER DATA TABLE =====', { filteredIndices, defaultIndices, rows });
 
   return (
@@ -541,7 +531,7 @@ function FilterDataTable({
             return '';
           }}
           rowGetter={(i) => rows[i]}
-          rowHeight={getRowHeight}
+          rowHeight={sae_id ? 50 : 35}
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
