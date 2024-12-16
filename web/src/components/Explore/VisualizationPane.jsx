@@ -62,16 +62,14 @@ function VisualizationPane({
 
   const size = [width, height];
 
+  // const featureIsSelected = feature !== -1 && activeFilterTab === FEATURE;
+
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
-      // if (hoveredIndex !== null) {
-      //   if (i === hoveredIndex) {
-      //     return [p.x, p.y, mapSelectionKey.hovered];
-      //   } else {
-      //     return [p.x, p.y, mapSelectionKey.notSelected];
-      //   }
-      // }
-      // if (deletedIndices?.includes(i)) {
+      return [p.x, p.y, i % 2 === 0 ? 1 : 2];
+
+      if (featureIsSelected) {
+      }
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
       } else if (hoveredIndex === i) {
@@ -227,10 +225,14 @@ function VisualizationPane({
             width={width}
             height={height}
             colorScaleType="categorical"
-            colorRange={mapSelectionColorsLight}
-            colorDomain={mapSelectionDomain}
-            opacityRange={pointOpacityRange}
-            pointSizeRange={pointSizeRange}
+            // colorRange={mapSelectionColorsLight}
+            // colorDomain={mapSelectionDomain}
+            // opacityRange={pointOpacityRange}
+            // pointSizeRange={pointSizeRange}
+            colorRange={['#FF0000', '#0000FF']}
+            colorDomain={[1, 2]}
+            opacityRange={[0.5, 1]}
+            pointSizeRange={[1, 10]}
             opacityBy="valueA"
             onScatter={onScatter}
             onView={handleView}
