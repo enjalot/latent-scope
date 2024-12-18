@@ -72,7 +72,10 @@ function ScatterPlot({
   onSelect,
   onHover,
   activeFilterTab,
+  scope,
 }) {
+  const { sae: { max_activations = [] } = {} } = scope || {};
+
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);

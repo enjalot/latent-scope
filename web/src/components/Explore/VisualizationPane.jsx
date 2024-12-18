@@ -44,6 +44,8 @@ function VisualizationPane({
   feature,
   dataTableRows,
 }) {
+  const { sae: { max_activations = [] } = {} } = scope || {};
+
   // only show the hull if we are filtering by cluster
   const showHull = activeFilterTab === CLUSTER;
 
@@ -79,7 +81,7 @@ function VisualizationPane({
         const activatedFeature = data.ls_features.top_acts[activatedIdx];
         // normalize the activation to be between 0 and 1
         const min = 0.0;
-        const max = 0.3;
+        const max = max_activations[feature];
         const normalizedActivation = (activatedFeature - min) / (max - min);
         lookup.set(data.ls_index, normalizedActivation);
       }
@@ -249,8 +251,9 @@ function VisualizationPane({
       <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
         {!isIOS() && scope ? (
           <Scatter
+            scope={scope}
             points={drawingPoints}
-            duration={2000}
+            duration={1000}
             width={width}
             height={height}
             // colorScaleType="categorical"
