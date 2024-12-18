@@ -261,3 +261,24 @@
 .rdg-cell {
   overflow: visible !important;
 }
+
+.feature-column-info-tooltip {
+  background-color: #D3965E !important;
+  padding: 10px !important;
+  border-radius: 5px !important;
+  opacity: 1 !important;
+  /* pointer-events: auto !important; */
+  display: block !important;
+  visibility: visible !important;
+  width: 200px !important;
+  text-wrap: wrap !important;
+  z-index: 99999 !important;
+}
+
+.feature-column-info-tooltip-icon:hover {
+  cursor: pointer;
+}
+
+.feature-column-info-tooltip-icon {
+  margin-left: 4px;
+}

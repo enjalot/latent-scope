@@ -477,15 +477,6 @@ function Explore() {
     },
   };
 
-  // console.log('==== indices state === ', {
-  //   clusterIndices,
-  //   searchIndices,
-  //   selectedIndices,
-  //   filteredIndices,
-  //   columnFilterIndices,
-  //   defaultRows: defaultIndices,
-  // });
-
   const handleFeatureClick = (featIdx, activation) => {
     setActiveFilterTab(FEATURE);
     setFeature(featIdx);

@@ -221,7 +221,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   return (
-    <>
+    <div className="feature-plot-container">
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
         {featuresToActivations.map(({ feature: feat_idx, activation }, idx) => (
           <line
@@ -287,7 +287,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
         selectedFeature={feature}
         handleFeatureClick={handleFeatureClick}
       />
-    </>
+    </div>
   );
 }
 
@@ -368,7 +368,7 @@ function FilterDataTable({
   );
 
   const formattedColumns = useMemo(() => {
-    const ls_features_column = 'ls_features (click to expand)';
+    const ls_features_column = 'ls_features';
     let columns = ['ls_index'];
     // Text column is always the first column (after index)
 
@@ -450,9 +450,46 @@ function FilterDataTable({
 
       if (col === ls_features_column) {
         const baseWidth = 200;
+
         return {
           ...baseCol,
           width: expandedFeatureRows.size > 0 ? baseWidth + 100 : baseWidth,
+          renderHeaderCell: () => (
+            <div className="feature-column-header" style={{ position: 'relative' }}>
+              <span>{ls_features_column}</span>
+              <span
+                data-tooltip-id="feature-column-info-tooltip"
+                className="feature-column-info-tooltip-icon"
+              >
+                🤔
+              </span>
+              <Tooltip
+                id="feature-column-info-tooltip"
+                className="feature-column-info-tooltip"
+                place="bottom"
+                effect="solid"
+                clickable={true}
+                delayHide={500} // give the user a chance to click the tooltip links
+              >
+                <div onClick={(e) => e.stopPropagation()}>
+                  The vertical bars represent activations for different{' '}
+                  <a
+                    href="https://enjalot.github.io/latent-taxonomy/articles/about"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Sparse Autoencoder (SAE)
+                  </a>{' '}
+                  features corresponding to each embedding. Higher activations indicate that the
+                  feature captures an important semantic element of the embedding.
+                  <br />
+                  <br />
+                  Click each cell to see the labels for each feature and to filter rows by a
+                  particular feature.
+                </div>
+              </Tooltip>
+            </div>
+          ),
           renderCell: ({ row }) => (
             <FeaturePlot
               width={baseWidth}
