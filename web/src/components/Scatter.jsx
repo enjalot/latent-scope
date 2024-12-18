@@ -8,6 +8,7 @@ import {
   interpolateTurbo,
   interpolateCool,
   interpolateReds,
+  interpolateOranges,
 } from 'd3-scale-chromatic';
 import { SELECT } from '../pages/FullScreenExplore';
 
@@ -60,7 +61,7 @@ function ScatterPlot({
   pointScale = 1,
   colorScaleType = null,
   // colorInterpolator = interpolateCool,
-  colorInterpolator = interpolateReds,
+  colorInterpolator = interpolateOranges,
   colorDomain = null,
   colorRange = null,
   opacityBy,
