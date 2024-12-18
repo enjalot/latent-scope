@@ -22,6 +22,7 @@ export const COLUMN = 'column';
 export const FEATURE = 'feature';
 export const PER_PAGE = 100;
 
+
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
   const navigate = useNavigate();

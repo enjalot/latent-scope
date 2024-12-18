@@ -263,12 +263,11 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
       {/* <div data-tooltip-id="feature-tooltip" /> */}
       <Tooltip
         id="feature-tooltip"
-        isOpen={true}
         place="top"
         effect="solid"
         content={tooltipContent}
         className="feature-tooltip"
-        // positionStrategy="fixed"
+        positionStrategy="absolute"
         style={{
           zIndex: 9999,
           maxWidth: 'none',
@@ -460,31 +459,6 @@ function FilterDataTable({
               >
                 🤔
               </span>
-              <Tooltip
-                id="feature-column-info-tooltip"
-                className="feature-column-info-tooltip"
-                place="bottom"
-                effect="solid"
-                clickable={true}
-                delayHide={500} // give the user a chance to click the tooltip links
-              >
-                <div onClick={(e) => e.stopPropagation()}>
-                  The vertical bars represent activations for different{' '}
-                  <a
-                    href="https://enjalot.github.io/latent-taxonomy/articles/about"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Sparse Autoencoder (SAE)
-                  </a>{' '}
-                  features corresponding to each embedding. Higher activations indicate that the
-                  feature captures an important semantic element of the embedding.
-                  <br />
-                  <br />
-                  Click each cell to see the labels for each feature and to filter rows by a
-                  particular feature.
-                </div>
-              </Tooltip>
             </div>
           ),
           renderCell: ({ row }) => (
@@ -559,6 +533,31 @@ function FilterDataTable({
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
+        <Tooltip
+          id="feature-column-info-tooltip"
+          className="feature-column-info-tooltip"
+          place="bottom"
+          effect="solid"
+          clickable={true}
+          delayHide={500} // give the user a chance to click the tooltip links
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            The vertical bars represent activations for different{' '}
+            <a
+              href="https://enjalot.github.io/latent-taxonomy/articles/about"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Sparse Autoencoder (SAE)
+            </a>{' '}
+            features corresponding to each embedding. Higher activations indicate that the feature
+            captures an important semantic element of the embedding.
+            <br />
+            <br />
+            Click each cell to see the labels for each feature and to filter rows by a particular
+            feature.
+          </div>
+        </Tooltip>
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">

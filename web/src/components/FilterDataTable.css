@@ -106,6 +106,7 @@
 
 .rdg {
   border: 0px solid #ededed !important;
+  /* overflow: visible !important; */
   /* overflow-y: hidden; */
 }
 
@@ -262,6 +263,7 @@
   overflow: visible !important;
 }
 
+
 .feature-column-info-tooltip {
   background-color: #D3965E !important;
   padding: 10px !important;
@@ -272,7 +274,9 @@
   visibility: visible !important;
   width: 200px !important;
   text-wrap: wrap !important;
-  z-index: 99999 !important;
+  z-index: 9999 !important;
+  position: absolute !important;
+  /* top: -50px !important; */
 }
 
 .feature-column-info-tooltip-icon:hover {
