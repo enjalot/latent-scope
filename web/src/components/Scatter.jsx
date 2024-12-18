@@ -3,7 +3,12 @@ import createScatterplot from 'regl-scatterplot';
 import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
 import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
-import { interpolateViridis, interpolateTurbo, interpolateCool } from 'd3-scale-chromatic';
+import {
+  interpolateViridis,
+  interpolateTurbo,
+  interpolateCool,
+  interpolateReds,
+} from 'd3-scale-chromatic';
 import { SELECT } from '../pages/FullScreenExplore';
 
 import styles from './Scatter.module.css';
@@ -54,7 +59,8 @@ function ScatterPlot({
   duration = 0,
   pointScale = 1,
   colorScaleType = null,
-  colorInterpolator = interpolateCool,
+  // colorInterpolator = interpolateCool,
+  colorInterpolator = interpolateReds,
   colorDomain = null,
   colorRange = null,
   opacityBy,
@@ -173,15 +179,14 @@ function ScatterPlot({
         } else {
           pointColor = colorRange;
         }
+        scatterplot.set({ colorBy: 'valueA' });
       } else if (colorScaleType === 'continuous') {
-        let r = range(0, 100);
-        const colorScale = scaleSequential(colorInterpolator).domain([0, 100]);
+        let r = range(0, 50);
+        const colorScale = scaleSequential(colorInterpolator).domain([0, 50]);
         pointColor = r.map((i) => rgb(colorScale(i)).hex());
+        scatterplot.set({ colorBy: 'valueB' });
       }
 
-      if (colorScaleType) {
-        scatterplot.set({ colorBy: 'valueA' });
-      }
       if (opacityBy) {
         scatterplot.set({
           opacityBy,
