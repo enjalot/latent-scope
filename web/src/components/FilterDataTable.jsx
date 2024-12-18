@@ -125,7 +125,14 @@ function FeatureModal({
   );
 }
 
-function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
+function FeaturePlot({
+  row,
+  feature,
+  features,
+  width,
+  handleFeatureClick,
+  setFeatureTooltipContent,
+}) {
   const { idx } = row;
 
   const showTicks = idx !== undefined;
@@ -217,11 +224,10 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
     featuresToActivations = [...nonSelectedFeatures, ...selectedFeature];
   }
 
-  const [tooltipContent, setTooltipContent] = useState(null);
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   return (
-    <>
+    <div className="feature-plot-container">
       <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
         {featuresToActivations.map(({ feature: feat_idx, activation }, idx) => (
           <line
@@ -231,15 +237,20 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
             y1={height - padding.bottom}
             x2={logScale(activation)}
             y2={padding.top}
-            onMouseEnter={() => {
+            onMouseEnter={(e) => {
+              // Add position offset to prevent cursor from triggering mouseLeave
+              const rect = e.currentTarget.getBoundingClientRect();
               setHoveredIdx(idx);
-              setTooltipContent(
-                `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`
-              );
+              setFeatureTooltipContent({
+                content: `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`,
+                position: { x: rect.left, y: rect.top },
+              });
             }}
             onMouseLeave={() => {
-              setTooltipContent(null);
-              setHoveredIdx(null);
+              setTimeout(() => {
+                setFeatureTooltipContent(null);
+                setHoveredIdx(null);
+              }, 50); // Small delay to prevent flickering
             }}
             {...featureLineStyle(feat_idx, idx)}
           />
@@ -261,21 +272,6 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
       </svg>
 
       {/* <div data-tooltip-id="feature-tooltip" /> */}
-      <Tooltip
-        id="feature-tooltip"
-        isOpen={true}
-        place="top"
-        effect="solid"
-        content={tooltipContent}
-        className="feature-tooltip"
-        // positionStrategy="fixed"
-        style={{
-          zIndex: 9999,
-          maxWidth: 'none',
-          whiteSpace: 'nowrap',
-          backgroundColor: '#D3965E',
-        }}
-      />
 
       <FeatureModal
         isOpen={isModalOpen}
@@ -287,7 +283,7 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
         selectedFeature={feature}
         handleFeatureClick={handleFeatureClick}
       />
-    </>
+    </div>
   );
 }
 
@@ -314,25 +310,25 @@ function FilterDataTable({
   // page count is the total number of pages available
   const [pageCount, setPageCount] = useState(0);
 
-  // when filteredIndices is empty, we use defaultIndices and show the pageCount as totalPages
-  // otherwise, we use filteredIndices and show the pageCount as the query result totalPages
-
-  const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
-
-  // const [tags, setTags] = useState([]);
-  // useEffect(() => {
-  //   if (tagset) {
-  //     setTags(Object.keys(tagset));
-  //   }
-  // }, [tagset]);
+  // feature tooltip content
+  const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
 
   const [rowsLoading, setRowsLoading] = useState(false);
   const hydrateIndices = useCallback(
     (indices) => {
       // console.log("hydrate!", dataset)
       if (dataset && indices.length) {
-        setRowsLoading(true);
-        console.log('fetching query', dataset);
+        // setRowsLoading(true);
+        const body = {
+          dataset: dataset.id,
+          indices: indices,
+          embedding_id: showEmbeddings,
+          page,
+          sae_id: sae_id,
+        };
+        const timestamp = Date.now();
+        console.log('fetching query', body, timestamp);
+
         fetch(`${apiUrl}/query`, {
           method: 'POST',
           headers: {
@@ -352,15 +348,15 @@ function FilterDataTable({
             console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
             setPageCount(totalPages);
-            console.log('======= SETTING ROWS =======', rows);
+            console.log('======= SETTING ROWS =======', rows, timestamp);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
             onDataTableRows(rows);
-            setRowsLoading(false);
+            // setRowsLoading(false);
           });
       } else {
         setRows([]);
         onDataTableRows([]);
-        setRowsLoading(false);
+        // setRowsLoading(false);
         // setPageCount(totalPages);
       }
     },
@@ -368,7 +364,7 @@ function FilterDataTable({
   );
 
   const formattedColumns = useMemo(() => {
-    const ls_features_column = 'ls_features (click to expand)';
+    const ls_features_column = 'ls_features';
     let columns = ['ls_index'];
     // Text column is always the first column (after index)
 
@@ -450,9 +446,21 @@ function FilterDataTable({
 
       if (col === ls_features_column) {
         const baseWidth = 200;
+
         return {
           ...baseCol,
-          width: expandedFeatureRows.size > 0 ? baseWidth + 100 : baseWidth,
+          width: baseWidth,
+          renderHeaderCell: () => (
+            <div className="feature-column-header" style={{ position: 'relative' }}>
+              <span>{ls_features_column}</span>
+              <span
+                data-tooltip-id="feature-column-info-tooltip"
+                className="feature-column-info-tooltip-icon"
+              >
+                🤔
+              </span>
+            </div>
+          ),
           renderCell: ({ row }) => (
             <FeaturePlot
               width={baseWidth}
@@ -460,6 +468,7 @@ function FilterDataTable({
               feature={feature}
               features={features}
               handleFeatureClick={handleFeatureClick}
+              setFeatureTooltipContent={setFeatureTooltipContent}
             />
           ),
         };
@@ -483,21 +492,11 @@ function FilterDataTable({
       };
     });
     return columnDefs;
-  }, [
-    dataset,
-    /*tags, tagset,*/
-    clusterMap,
-    distances,
-    features,
-    expandedFeatureRows,
-    feature,
-    sae_id,
-    showEmbeddings,
-  ]);
+  }, [dataset, clusterMap, distances, features, feature, sae_id, showEmbeddings]);
 
   useEffect(() => {
     let indicesToUse = [];
-    if (filteredIndices.length) {
+    if (feature >= 0) {
       indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
     } else {
       indicesToUse = defaultIndices;
@@ -521,6 +520,24 @@ function FilterDataTable({
     >
       {/* Scrollable Table Body */}
       <div className="filter-table-scrollable-body table-body" style={{ overflowY: 'auto' }}>
+        <Tooltip
+          id="feature-tooltip"
+          place="top"
+          effect="solid"
+          content={featureTooltipContent?.content}
+          className="feature-tooltip"
+          // float={true}
+          position="fixed"
+          style={{
+            zIndex: 9999,
+            maxWidth: 'none',
+            whiteSpace: 'nowrap',
+            backgroundColor: '#D3965E',
+            position: 'fixed',
+            left: featureTooltipContent?.position?.x ?? 0,
+            top: (featureTooltipContent?.position?.y ?? 0) - 30,
+          }}
+        />
         <DataGrid
           rows={rows}
           columns={formattedColumns}
@@ -535,6 +552,32 @@ function FilterDataTable({
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
+
+        <Tooltip
+          id="feature-column-info-tooltip"
+          className="feature-column-info-tooltip"
+          place="bottom"
+          effect="solid"
+          clickable={true}
+          delayHide={500} // give the user a chance to click the tooltip links
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            The vertical bars represent activations for different{' '}
+            <a
+              href="https://enjalot.github.io/latent-taxonomy/articles/about"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Sparse Autoencoder (SAE)
+            </a>{' '}
+            features corresponding to each embedding. Higher activations indicate that the feature
+            captures an important semantic element of the embedding.
+            <br />
+            <br />
+            Click each cell to see the labels for each feature and to filter rows by a particular
+            feature.
+          </div>
+        </Tooltip>
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">

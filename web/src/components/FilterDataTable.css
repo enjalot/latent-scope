@@ -106,6 +106,7 @@
 
 .rdg {
   border: 0px solid #ededed !important;
+  /* overflow: visible !important; */
   /* overflow-y: hidden; */
 }
 
@@ -258,6 +259,30 @@
   opacity: 1 !important;
 }
 
-.rdg-cell {
+/* .rdg-cell {
   overflow: visible !important;
+} */
+
+
+.feature-column-info-tooltip {
+  background-color: #D3965E !important;
+  padding: 10px !important;
+  border-radius: 5px !important;
+  opacity: 1 !important;
+  /* pointer-events: auto !important; */
+  display: block !important;
+  visibility: visible !important;
+  width: 200px !important;
+  text-wrap: wrap !important;
+  z-index: 9999 !important;
+  position: absolute !important;
+  /* top: -50px !important; */
+}
+
+.feature-column-info-tooltip-icon:hover {
+  cursor: pointer;
+}
+
+.feature-column-info-tooltip-icon {
+  margin-left: 4px;
 }
