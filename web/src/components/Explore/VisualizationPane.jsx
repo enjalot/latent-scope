@@ -66,38 +66,37 @@ function VisualizationPane({
 
   const featureIsSelected = feature !== -1 && activeFilterTab === FEATURE;
 
+  // Add new memoized feature activation lookup
+  const featureActivationMap = useMemo(() => {
+    if (!featureIsSelected || !dataTableRows || !intersectedIndices) {
+      return new Map();
+    }
+
+    const lookup = new Map();
+    dataTableRows.forEach((data, index) => {
+      const activatedIdx = data.ls_features.top_indices.indexOf(feature);
+      if (activatedIdx !== -1) {
+        const activatedFeature = data.ls_features.top_acts[activatedIdx];
+        // normalize the activation to be between 0 and 1
+        const min = 0.0;
+        const max = 0.3;
+        const normalizedActivation = (activatedFeature - min) / (max - min);
+        lookup.set(data.ls_index, normalizedActivation);
+      }
+    });
+    return lookup;
+  }, [featureIsSelected, dataTableRows, feature]);
+
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
       if (featureIsSelected) {
         if (intersectedIndices?.includes(i)) {
-          // find the index of ls_idnex in the intersectedIndices array
-          const { ls_index } = p;
-          const index = intersectedIndices.indexOf(ls_index);
-
-          if (index === -1 || index >= dataTableRows.length) {
-            return [p.x, p.y, mapSelectionKey.hidden, 0.0];
-          }
-
-          // get the data from datatableRows based on index
-          const data = dataTableRows[index];
-
-          // get the activation for the selected feature
-
-          const activatedIdx = data.ls_features.top_indices.indexOf(feature);
-
-          if (activatedIdx !== -1) {
-            const activatedFeature = data.ls_features.top_acts[activatedIdx];
-            // normalize the activation to be between 0 and 1
-            const min = 0.0;
-            const max = 0.3;
-            const normalizedActivation = (activatedFeature - min) / (max - min);
-            return [p.x, p.y, mapSelectionKey.selected, normalizedActivation];
-          } else {
-            return [p.x, p.y, mapSelectionKey.hidden, 0.0];
-          }
-        } else {
-          return [p.x, p.y, mapSelectionKey.hidden, 0.0];
+          const activation = featureActivationMap.get(p.ls_index);
+          return activation !== undefined
+            ? [p.x, p.y, mapSelectionKey.selected, activation]
+            : [p.x, p.y, mapSelectionKey.hidden, 0.0];
         }
+        return [p.x, p.y, mapSelectionKey.hidden, 0.0];
       }
 
       if (p.deleted) {
@@ -112,7 +111,7 @@ function VisualizationPane({
         return [p.x, p.y, mapSelectionKey.normal];
       }
     });
-  }, [scopeRows, intersectedIndices, hoveredIndex, dataTableRows, featureIsSelected, feature]);
+  }, [scopeRows, intersectedIndices, hoveredIndex, featureActivationMap, featureIsSelected]);
 
   const points = useMemo(() => {
     return scopeRows
