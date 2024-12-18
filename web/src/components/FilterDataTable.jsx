@@ -125,7 +125,14 @@ function FeatureModal({
   );
 }
 
-function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
+function FeaturePlot({
+  row,
+  feature,
+  features,
+  width,
+  handleFeatureClick,
+  setFeatureTooltipContent,
+}) {
   const { idx } = row;
 
   const showTicks = idx !== undefined;
@@ -217,7 +224,6 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
     featuresToActivations = [...nonSelectedFeatures, ...selectedFeature];
   }
 
-  const [tooltipContent, setTooltipContent] = useState(null);
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   return (
@@ -231,15 +237,20 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
             y1={height - padding.bottom}
             x2={logScale(activation)}
             y2={padding.top}
-            onMouseEnter={() => {
+            onMouseEnter={(e) => {
+              // Add position offset to prevent cursor from triggering mouseLeave
+              const rect = e.currentTarget.getBoundingClientRect();
               setHoveredIdx(idx);
-              setTooltipContent(
-                `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`
-              );
+              setFeatureTooltipContent({
+                content: `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`,
+                position: { x: rect.left, y: rect.top },
+              });
             }}
             onMouseLeave={() => {
-              setTooltipContent(null);
-              setHoveredIdx(null);
+              setTimeout(() => {
+                setFeatureTooltipContent(null);
+                setHoveredIdx(null);
+              }, 50); // Small delay to prevent flickering
             }}
             {...featureLineStyle(feat_idx, idx)}
           />
@@ -261,20 +272,6 @@ function FeaturePlot({ row, feature, features, width, handleFeatureClick }) {
       </svg>
 
       {/* <div data-tooltip-id="feature-tooltip" /> */}
-      <Tooltip
-        id="feature-tooltip"
-        place="top"
-        effect="solid"
-        content={tooltipContent}
-        className="feature-tooltip"
-        positionStrategy="absolute"
-        style={{
-          zIndex: 9999,
-          maxWidth: 'none',
-          whiteSpace: 'nowrap',
-          backgroundColor: '#D3965E',
-        }}
-      />
 
       <FeatureModal
         isOpen={isModalOpen}
@@ -312,6 +309,9 @@ function FilterDataTable({
 
   // page count is the total number of pages available
   const [pageCount, setPageCount] = useState(0);
+
+  // feature tooltip content
+  const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
 
   const [rowsLoading, setRowsLoading] = useState(false);
   const hydrateIndices = useCallback(
@@ -468,6 +468,7 @@ function FilterDataTable({
               feature={feature}
               features={features}
               handleFeatureClick={handleFeatureClick}
+              setFeatureTooltipContent={setFeatureTooltipContent}
             />
           ),
         };
@@ -519,6 +520,24 @@ function FilterDataTable({
     >
       {/* Scrollable Table Body */}
       <div className="filter-table-scrollable-body table-body" style={{ overflowY: 'auto' }}>
+        <Tooltip
+          id="feature-tooltip"
+          place="top"
+          effect="solid"
+          content={featureTooltipContent?.content}
+          className="feature-tooltip"
+          // float={true}
+          position="fixed"
+          style={{
+            zIndex: 9999,
+            maxWidth: 'none',
+            whiteSpace: 'nowrap',
+            backgroundColor: '#D3965E',
+            position: 'fixed',
+            left: featureTooltipContent?.position?.x ?? 0,
+            top: (featureTooltipContent?.position?.y ?? 0) - 30,
+          }}
+        />
         <DataGrid
           rows={rows}
           columns={formattedColumns}
@@ -533,6 +552,7 @@ function FilterDataTable({
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
+
         <Tooltip
           id="feature-column-info-tooltip"
           className="feature-column-info-tooltip"
