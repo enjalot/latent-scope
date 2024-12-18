@@ -322,33 +322,20 @@ function Explore() {
 
   const [featureIndices, setFeatureIndices] = useState([]);
   const [featureAnnotations, setFeatureAnnotations] = useState([]);
-  const [featureIndicesLoading, setFeatureIndicesLoading] = useState(false);
   useEffect(() => {
     if (feature >= 0 && activeFilterTab === FEATURE) {
       console.log('==== feature ==== ', feature);
       console.log('==== threshold ==== ', threshold);
-      setFeatureIndicesLoading(true);
       apiService.searchSaeFeature(datasetId, sae?.id, feature, threshold, 100).then((data) => {
         console.log('==== data ==== ', data);
         setFeatureIndices(data.top_row_indices);
         setFilteredIndices(data.top_row_indices);
-        setFeatureIndicesLoading(false);
       });
     } else {
       setFilteredIndices([]);
       setFeatureIndices([]);
-      setFeatureIndicesLoading(false);
     }
-  }, [
-    datasetId,
-    sae,
-    setFilteredIndices,
-    activeFilterTab,
-    feature,
-    threshold,
-    setFeatureIndices,
-    setFeatureIndicesLoading,
-  ]);
+  }, [datasetId, sae, setFilteredIndices, activeFilterTab, feature, threshold, setFeatureIndices]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -477,12 +464,15 @@ function Explore() {
     },
   };
 
-  const handleFeatureClick = (featIdx, activation) => {
-    setActiveFilterTab(FEATURE);
-    setFeature(featIdx);
-    // TODO: for setting the threshold the FeatureFilter component would need to have threshold passed in
-    // setThreshold(activation);
-  };
+  const handleFeatureClick = useCallback(
+    (featIdx, activation) => {
+      setActiveFilterTab(FEATURE);
+      setFeature(featIdx);
+      // TODO: for setting the threshold the FeatureFilter component would need to have threshold passed in
+      // setThreshold(activation);
+    },
+    [setActiveFilterTab, setFeature, setThreshold]
+  );
 
   if (!dataset)
     return (

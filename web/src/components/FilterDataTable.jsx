@@ -314,25 +314,22 @@ function FilterDataTable({
   // page count is the total number of pages available
   const [pageCount, setPageCount] = useState(0);
 
-  // when filteredIndices is empty, we use defaultIndices and show the pageCount as totalPages
-  // otherwise, we use filteredIndices and show the pageCount as the query result totalPages
-
-  const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
-
-  // const [tags, setTags] = useState([]);
-  // useEffect(() => {
-  //   if (tagset) {
-  //     setTags(Object.keys(tagset));
-  //   }
-  // }, [tagset]);
-
   const [rowsLoading, setRowsLoading] = useState(false);
   const hydrateIndices = useCallback(
     (indices) => {
       // console.log("hydrate!", dataset)
       if (dataset && indices.length) {
-        setRowsLoading(true);
-        console.log('fetching query', dataset);
+        // setRowsLoading(true);
+        const body = {
+          dataset: dataset.id,
+          indices: indices,
+          embedding_id: showEmbeddings,
+          page,
+          sae_id: sae_id,
+        };
+        const timestamp = Date.now();
+        console.log('fetching query', body, timestamp);
+
         fetch(`${apiUrl}/query`, {
           method: 'POST',
           headers: {
@@ -352,15 +349,15 @@ function FilterDataTable({
             console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
             setPageCount(totalPages);
-            console.log('======= SETTING ROWS =======', rows);
+            console.log('======= SETTING ROWS =======', rows, timestamp);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
             onDataTableRows(rows);
-            setRowsLoading(false);
+            // setRowsLoading(false);
           });
       } else {
         setRows([]);
         onDataTableRows([]);
-        setRowsLoading(false);
+        // setRowsLoading(false);
         // setPageCount(totalPages);
       }
     },
@@ -453,7 +450,7 @@ function FilterDataTable({
 
         return {
           ...baseCol,
-          width: expandedFeatureRows.size > 0 ? baseWidth + 100 : baseWidth,
+          width: baseWidth,
           renderHeaderCell: () => (
             <div className="feature-column-header" style={{ position: 'relative' }}>
               <span>{ls_features_column}</span>
@@ -520,21 +517,11 @@ function FilterDataTable({
       };
     });
     return columnDefs;
-  }, [
-    dataset,
-    /*tags, tagset,*/
-    clusterMap,
-    distances,
-    features,
-    expandedFeatureRows,
-    feature,
-    sae_id,
-    showEmbeddings,
-  ]);
+  }, [dataset, clusterMap, distances, features, feature, sae_id, showEmbeddings]);
 
   useEffect(() => {
     let indicesToUse = [];
-    if (filteredIndices.length) {
+    if (feature >= 0) {
       indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
     } else {
       indicesToUse = defaultIndices;
