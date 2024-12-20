@@ -13,11 +13,13 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
     apiService.fetchVersion().then(setLsVersion);
   }, []);
 
-  const isOutdatedScope = useMemo(
-    () =>
-      scope && lsVersion && scope?.ls_version && compareVersions(scope?.ls_version, lsVersion) < 0,
-    [lsVersion, scope]
-  );
+  const isOutdatedScope = useMemo(() => {
+    if (!scope?.ls_version || !lsVersion) return false;
+    // Convert versions to minor by replacing patch with 0
+    const scopeMinor = scope.ls_version.replace(/(\d+\.\d+)\.\d+/, '$1.0');
+    const lsMinor = lsVersion.replace(/(\d+\.\d+)\.\d+/, '$1.0');
+    return compareVersions(scopeMinor, lsMinor) < 0;
+  }, [lsVersion, scope]);
 
   return (
     <div className="left-pane-container">
