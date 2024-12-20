@@ -124,6 +124,9 @@
 .feature-plot-container canvas {
   cursor: pointer;
 }
+.feature-modal-item-filter-button {
+  transform: scale(0.6);
+}
 
 .feature-cell:hover {
   background-color: rgba(0, 0, 0, 0.05);

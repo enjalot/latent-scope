@@ -56,6 +56,7 @@ function FeatureModal({
   isOpen,
   onClose,
   rowIndex,
+  hoveredIdx,
   features,
   topIndices,
   topActs,
@@ -78,6 +79,7 @@ function FeatureModal({
     handleFeatureClick(featIdx, activation);
     onClose();
   };
+  console.log('==== FEATURE MODAL ====', { hoveredIdx, selectedFeature });
 
   return (
     <Modal
@@ -95,10 +97,15 @@ function FeatureModal({
           <div className="feature-modal-item" key={i} style={itemStyle(featIdx)}>
             <div
               className="feature-modal-item-background"
-              style={{ width: getWidth(topActs[i]) }}
+              style={{
+                width: getWidth(topActs[i]),
+                borderBottom: hoveredIdx === i ? '2px solid #b87333' : 'none',
+                backgroundColor: hoveredIdx === i ? '#b87333' : '#aaa',
+              }}
             />
             <div className="feature-label">
               <Button
+                className="feature-modal-item-filter-button"
                 icon="filter"
                 color="primary"
                 variant="outline"
@@ -292,6 +299,8 @@ function FeaturePlot({
     setFeatureTooltipContent(null);
   }, [setFeatureTooltipContent]);
 
+  const [modalHoveredIdx, setModalHoveredIdx] = useState(null);
+
   return (
     <div className="feature-plot-container">
       <canvas
@@ -300,7 +309,10 @@ function FeaturePlot({
         height={height}
         style={{ width, height }}
         data-tooltip-id="feature-tooltip"
-        onClick={() => setIsModalOpen(true)}
+        onClick={useCallback(() => {
+          setIsModalOpen(true);
+          setModalHoveredIdx(hoveredIdx);
+        }, [hoveredIdx])}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       />
@@ -309,6 +321,7 @@ function FeaturePlot({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         rowIndex={row.ls_index}
+        hoveredIdx={modalHoveredIdx}
         features={features}
         topIndices={row.ls_features.top_indices}
         topActs={row.ls_features.top_acts}

@@ -142,7 +142,7 @@ export default function FeatureFilter({
               onChange={handleInputChange}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              placeholder="Filter by feature!!!"
+              placeholder="Filter by feature"
               className={styles.input}
             />
             {inputValue && (
