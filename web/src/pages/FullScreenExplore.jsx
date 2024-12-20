@@ -22,6 +22,7 @@ export const COLUMN = 'column';
 export const FEATURE = 'feature';
 export const PER_PAGE = 100;
 
+
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ function Explore() {
   // when passed to the data table it will show that feature first?
   const [feature, setFeature] = useState(-1);
   const [features, setFeatures] = useState([]);
+  const [threshold, setThreshold] = useState(0.1);
 
   useEffect(() => {
     const asyncRead = async (meta) => {
@@ -176,6 +178,10 @@ function Explore() {
       setHoverAnnotations([]);
     }
   }, [hoveredIndex, scopeRows]);
+
+  // contains the rows that are currently being displayed in the data table
+  // this is used potentially color the points in the scatterplot when the filter is feature
+  const [dataTableRows, setDataTableRows] = useState([]);
 
   // ====================================================================================================
   // Filtering
@@ -320,15 +326,17 @@ function Explore() {
   useEffect(() => {
     if (feature >= 0 && activeFilterTab === FEATURE) {
       console.log('==== feature ==== ', feature);
-      apiService.searchSaeFeature(datasetId, sae?.id, feature, 100).then((data) => {
+      console.log('==== threshold ==== ', threshold);
+      apiService.searchSaeFeature(datasetId, sae?.id, feature, threshold, 100).then((data) => {
         console.log('==== data ==== ', data);
         setFeatureIndices(data.top_row_indices);
         setFilteredIndices(data.top_row_indices);
       });
     } else {
       setFilteredIndices([]);
+      setFeatureIndices([]);
     }
-  }, [datasetId, sae, setFilteredIndices, activeFilterTab, feature]);
+  }, [datasetId, sae, setFilteredIndices, activeFilterTab, feature, threshold, setFeatureIndices]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -457,14 +465,15 @@ function Explore() {
     },
   };
 
-  // console.log('==== indices state === ', {
-  //   clusterIndices,
-  //   searchIndices,
-  //   selectedIndices,
-  //   filteredIndices,
-  //   columnFilterIndices,
-  //   defaultRows: defaultIndices,
-  // });
+  const handleFeatureClick = useCallback(
+    (featIdx, activation) => {
+      setActiveFilterTab(FEATURE);
+      setFeature(featIdx);
+      // TODO: for setting the threshold the FeatureFilter component would need to have threshold passed in
+      // setThreshold(activation);
+    },
+    [setActiveFilterTab, setFeature, setThreshold]
+  );
 
   if (!dataset)
     return (
@@ -524,6 +533,7 @@ function Explore() {
                 setFeature={setFeature}
                 featureIndices={featureIndices}
                 setFeatureIndices={setFeatureIndices}
+                setThreshold={setThreshold}
               />
             </div>
             <div
@@ -543,9 +553,10 @@ function Explore() {
                 distances={distances}
                 clusterMap={clusterMap}
                 clusterLabels={clusterLabels}
-                tagset={tagset}
+                onDataTableRows={setDataTableRows}
                 sae_id={sae?.id}
                 feature={feature}
+                features={features}
                 onTagset={fetchTagSet}
                 onScope={() => {
                   fetchScopeMeta();
@@ -555,6 +566,7 @@ function Explore() {
                 onClick={handleClicked}
                 page={page}
                 setPage={setPage}
+                handleFeatureClick={handleFeatureClick}
               />
             </div>
           </div>
@@ -586,6 +598,8 @@ function Explore() {
                 width={width}
                 height={height}
                 activeFilterTab={activeFilterTab}
+                dataTableRows={dataTableRows}
+                feature={feature}
               />
             ) : null}
           </div>

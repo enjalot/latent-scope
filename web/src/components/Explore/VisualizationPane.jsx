@@ -18,7 +18,7 @@ import {
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
-import { CLUSTER } from '../../pages/FullScreenExplore';
+import { CLUSTER, FEATURE } from '../../pages/FullScreenExplore';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => {
@@ -41,7 +41,11 @@ function VisualizationPane({
   width,
   height,
   activeFilterTab,
+  feature,
+  dataTableRows,
 }) {
+  const { sae: { max_activations = [] } = {} } = scope || {};
+
   // only show the hull if we are filtering by cluster
   const showHull = activeFilterTab === CLUSTER;
 
@@ -62,16 +66,41 @@ function VisualizationPane({
 
   const size = [width, height];
 
+  const featureIsSelected = feature !== -1 && activeFilterTab === FEATURE;
+
+  // Add new memoized feature activation lookup
+  const featureActivationMap = useMemo(() => {
+    if (!featureIsSelected || !dataTableRows || !intersectedIndices) {
+      return new Map();
+    }
+
+    const lookup = new Map();
+    dataTableRows.forEach((data, index) => {
+      const activatedIdx = data.ls_features.top_indices.indexOf(feature);
+      if (activatedIdx !== -1) {
+        const activatedFeature = data.ls_features.top_acts[activatedIdx];
+        // normalize the activation to be between 0 and 1
+        const min = 0.0;
+        const max = max_activations[feature];
+        const normalizedActivation = (activatedFeature - min) / (max - min);
+        lookup.set(data.ls_index, normalizedActivation);
+      }
+    });
+    return lookup;
+  }, [featureIsSelected, dataTableRows, feature]);
+
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
-      // if (hoveredIndex !== null) {
-      //   if (i === hoveredIndex) {
-      //     return [p.x, p.y, mapSelectionKey.hovered];
-      //   } else {
-      //     return [p.x, p.y, mapSelectionKey.notSelected];
-      //   }
-      // }
-      // if (deletedIndices?.includes(i)) {
+      if (featureIsSelected) {
+        if (intersectedIndices?.includes(i)) {
+          const activation = featureActivationMap.get(p.ls_index);
+          return activation !== undefined
+            ? [p.x, p.y, mapSelectionKey.selected, activation]
+            : [p.x, p.y, mapSelectionKey.hidden, 0.0];
+        }
+        return [p.x, p.y, mapSelectionKey.hidden, 0.0];
+      }
+
       if (p.deleted) {
         return [-10, -10, mapSelectionKey.hidden];
       } else if (hoveredIndex === i) {
@@ -84,7 +113,7 @@ function VisualizationPane({
         return [p.x, p.y, mapSelectionKey.normal];
       }
     });
-  }, [scopeRows, intersectedIndices, hoveredIndex]);
+  }, [scopeRows, intersectedIndices, hoveredIndex, featureActivationMap, featureIsSelected]);
 
   const points = useMemo(() => {
     return scopeRows
@@ -222,11 +251,13 @@ function VisualizationPane({
       <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
         {!isIOS() && scope ? (
           <Scatter
+            scope={scope}
             points={drawingPoints}
-            duration={2000}
+            duration={1000}
             width={width}
             height={height}
-            colorScaleType="categorical"
+            // colorScaleType="categorical"
+            colorScaleType={featureIsSelected ? 'continuous' : 'categorical'}
             colorRange={mapSelectionColorsLight}
             colorDomain={mapSelectionDomain}
             opacityRange={pointOpacityRange}

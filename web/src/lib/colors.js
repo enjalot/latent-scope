@@ -20,7 +20,7 @@ export const mapSelectionColorsLight = [
   baseColor,
   baseColor,
   baseColor,
-  '#8bcf66',
+  '#8bcf66', // 3, hovered
   '#fcfbfd', // 99, hidden
 ];
 
@@ -31,7 +31,6 @@ export const mapSelectionColorsDark = [
   baseColorDark,
   '#fcfbfd', // 99, hidden
 ];
-
 
 export const mapSelectionOpacity = [
   0.33, // normal
