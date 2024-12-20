@@ -270,8 +270,8 @@ function VisualizationPane({
         {hoveredCluster && hoveredCluster.hull && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
-            fill="#d28440"
-            stroke="#CC5500"
+            fill="#8bcf66"
+            stroke="#6aa64f"
             strokeWidth={2.5}
             // if there are selected indices already, that means other points will be less visible
             // so we can make the hull a bit more transparent
