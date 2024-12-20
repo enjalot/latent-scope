@@ -98,6 +98,13 @@ function FeatureModal({
               style={{ width: getWidth(topActs[i]) }}
             />
             <div className="feature-label">
+              <Button
+                icon="filter"
+                color="primary"
+                variant="outline"
+                size="small"
+                onClick={() => handleFeatureClick(featIdx, topActs[i])}
+              />
               <span
                 title={`${baseUrl}${featIdx}`}
                 onClick={() => window.open(`${baseUrl}${featIdx}`, '_blank', 'noopener,noreferrer')}
@@ -134,148 +141,173 @@ function FeaturePlot({
   setFeatureTooltipContent,
 }) {
   const { idx } = row;
-
   const showTicks = idx !== undefined;
-
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  const canvasRef = useRef(null);
 
   const height = 45;
-  const padding = { left: 20, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }; // Add bottom padding for ticks
+  const padding = { left: 10, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 };
 
   const activations = row.ls_features.top_acts || [];
 
-  // Create power scale to compress smaller values and expand larger values
   const logScale = scalePow()
     .exponent(2.5)
     .domain(extent(activations))
     .range([padding.left, width - padding.right]);
 
-  // if feature is -1, we want to plot all the activations the same color
-  // otherwise, we want to highlight the selected feature darker than the others.
-  // i is in the space of all features (0 to features.length - 1)
-  const featureLineStyle = (f, idx) => {
-    if (hoveredIdx !== null) {
-      if (idx === hoveredIdx) {
-        return {
-          stroke: '#b87333',
-          strokeWidth: 2,
-          opacity: 0.8,
-        };
-      } else {
-        return {
-          stroke: '#ccc',
-          strokeWidth: 2,
-          opacity: 0.25,
-        };
-      }
-    }
-
-    // no feature selected, so plot all the activations the same color
-    if (feature === -1) {
-      return {
-        stroke: '#b87333',
-        strokeWidth: 2,
-        opacity: 0.8,
-      };
-    } else if (f === feature) {
-      // we are plotting the selected feature, so make it darker, and thicker than the others
-      return {
-        stroke: '#b87333',
-        strokeWidth: 2,
-        opacity: 0.8,
-      };
-    } else {
-      // we are plotting a feature that is not the selected feature, so make it lighter and thinner
-      // than the selected feature
-      return {
-        stroke: '#f5f5f5',
-        strokeWidth: 2,
-        opacity: 0.5,
-      };
-    }
-  };
-
-  const handleClose = useCallback(() => {
-    setIsModalOpen(false);
-  }, []);
-
-  // row -> the row being rendered
-  // row.ls_features -> an object with top_indices and top_acts
-  // top_indices -> list of feature indices sorted by activation strength
-  // top_acts -> list of activation strengths for the top_indices (extracted into a list activations)
-  // features -> list of {feature, label, max_activation, order?}. feature is the index of the entry in the list.
-  // feature -> the feature index being used as a filter (between 0 and features.length - 1, or -1 if no feature is selected)
-
-  let featuresToActivations = row.ls_features.top_indices.map((idx, i) => {
-    return {
+  // Prepare feature data
+  const featuresToActivations = useMemo(() => {
+    let data = row.ls_features.top_indices.map((idx, i) => ({
       feature: idx,
       activation: row.ls_features.top_acts[i],
-    };
-  });
+    }));
 
-  if (feature !== -1) {
-    const nonSelectedFeatures = featuresToActivations.filter(
-      ({ feature: feat_idx }) => feat_idx !== feature
-    );
-    const selectedFeature = featuresToActivations.filter(
-      ({ feature: feat_idx }) => feat_idx === feature
-    );
-    // add the selected feature to the end of the list, so it's on top of the others
-    featuresToActivations = [...nonSelectedFeatures, ...selectedFeature];
-  }
+    if (feature !== -1) {
+      const nonSelected = data.filter(({ feature: feat_idx }) => feat_idx !== feature);
+      const selected = data.filter(({ feature: feat_idx }) => feat_idx === feature);
+      return [...nonSelected, ...selected];
+    }
+    return data;
+  }, [row.ls_features, feature]);
 
-  const [hoveredIdx, setHoveredIdx] = useState(null);
+  // Draw canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas DPI for sharp rendering
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+
+    // Draw lines
+    featuresToActivations.forEach(({ feature: feat_idx, activation }, idx) => {
+      const x = logScale(activation);
+
+      ctx.beginPath();
+      ctx.moveTo(x, height - padding.bottom);
+      ctx.lineTo(x, padding.top);
+
+      // Set line style based on hover/feature state
+      if (hoveredIdx !== null) {
+        if (idx === hoveredIdx) {
+          ctx.strokeStyle = '#b87333';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.8;
+        } else {
+          ctx.strokeStyle = '#ccc';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.25;
+        }
+      } else if (feature === -1) {
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.8;
+      } else if (feat_idx === feature) {
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.8;
+      } else {
+        ctx.strokeStyle = '#f5f5f5';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.5;
+      }
+
+      ctx.stroke();
+    });
+
+    // Draw ticks
+    if (showTicks) {
+      ctx.font = '8px sans-serif';
+      ctx.fillStyle = '#666';
+      ctx.textAlign = 'center';
+
+      extent(activations).forEach((tick) => {
+        const x = logScale(tick);
+        ctx.fillText(tick.toFixed(2), x, height - padding.bottom + 10);
+      });
+    }
+  }, [
+    width,
+    height,
+    featuresToActivations,
+    hoveredIdx,
+    feature,
+    logScale,
+    showTicks,
+    padding,
+    activations,
+  ]);
+
+  // Handle mouse interactions
+  const handleMouseMove = useCallback(
+    (e) => {
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+
+      // Find closest line
+      let closestIdx = null;
+      let minDistance = Infinity;
+
+      featuresToActivations.forEach(({ activation }, idx) => {
+        const lineX = logScale(activation);
+        const distance = Math.abs(x - lineX);
+        if (distance < minDistance && distance < 5) {
+          // 5px threshold
+          minDistance = distance;
+          closestIdx = idx;
+        }
+      });
+
+      setHoveredIdx(closestIdx);
+
+      if (closestIdx !== null) {
+        const { feature: feat_idx, activation } = featuresToActivations[closestIdx];
+        const rect = canvas.getBoundingClientRect();
+        const tooltipX = rect.left + logScale(activation) - padding.left;
+        const tooltipY = rect.bottom + 25;
+
+        // Update tooltip state in a single setState call
+        setFeatureTooltipContent({
+          content: `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`,
+          x: tooltipX,
+          y: tooltipY,
+        });
+      } else {
+        setFeatureTooltipContent(null);
+      }
+    },
+    [featuresToActivations, logScale, features, setFeatureTooltipContent, padding]
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredIdx(null);
+    setFeatureTooltipContent(null);
+  }, [setFeatureTooltipContent]);
 
   return (
     <div className="feature-plot-container">
-      <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
-        {featuresToActivations.map(({ feature: feat_idx, activation }, idx) => (
-          <line
-            data-tooltip-id={`feature-tooltip`}
-            key={feat_idx}
-            x1={logScale(activation)}
-            y1={height - padding.bottom}
-            x2={logScale(activation)}
-            y2={padding.top}
-            onMouseEnter={(e) => {
-              // Add position offset to prevent cursor from triggering mouseLeave
-              const rect = e.currentTarget.getBoundingClientRect();
-              setHoveredIdx(idx);
-              setFeatureTooltipContent({
-                content: `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`,
-                position: { x: rect.left, y: rect.top },
-              });
-            }}
-            onMouseLeave={() => {
-              setTimeout(() => {
-                setFeatureTooltipContent(null);
-                setHoveredIdx(null);
-              }, 50); // Small delay to prevent flickering
-            }}
-            {...featureLineStyle(feat_idx, idx)}
-          />
-        ))}
-
-        {/* Add axis ticks and labels */}
-        {extent(activations).map((tick) => (
-          <g
-            key={tick}
-            // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
-            transform={`translate(${logScale(tick)},${height - padding.bottom})`}
-          >
-            {/* <line y2="4" stroke="#666" /> */}
-            <text y="10" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
-              {tick.toFixed(2)}
-            </text>
-          </g>
-        ))}
-      </svg>
-
-      {/* <div data-tooltip-id="feature-tooltip" /> */}
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        style={{ width, height }}
+        data-tooltip-id="feature-tooltip"
+        onClick={() => setIsModalOpen(true)}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      />
 
       <FeatureModal
         isOpen={isModalOpen}
-        onClose={handleClose}
+        onClose={() => setIsModalOpen(false)}
         rowIndex={row.ls_index}
         features={features}
         topIndices={row.ls_features.top_indices}
@@ -522,10 +554,12 @@ function FilterDataTable({
       <div className="filter-table-scrollable-body table-body" style={{ overflowY: 'auto' }}>
         <Tooltip
           id="feature-tooltip"
-          place="top"
+          place="bottom"
           effect="solid"
-          content={featureTooltipContent?.content}
+          content={featureTooltipContent?.content || ''}
           className="feature-tooltip"
+          float={true}
+          isOpen={!!featureTooltipContent}
           // float={true}
           position="fixed"
           style={{
@@ -534,8 +568,10 @@ function FilterDataTable({
             whiteSpace: 'nowrap',
             backgroundColor: '#D3965E',
             position: 'fixed',
-            left: featureTooltipContent?.position?.x ?? 0,
-            top: (featureTooltipContent?.position?.y ?? 0) - 30,
+            marginTop: 10,
+            top: -200,
+            // left: featureTooltipContent?.x || 0,
+            // top: (featureTooltipContent?.y || 0) - 30,
           }}
         />
         <DataGrid
@@ -556,7 +592,7 @@ function FilterDataTable({
         <Tooltip
           id="feature-column-info-tooltip"
           className="feature-column-info-tooltip"
-          place="bottom"
+          place="top"
           effect="solid"
           clickable={true}
           delayHide={500} // give the user a chance to click the tooltip links

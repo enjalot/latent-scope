@@ -20,6 +20,8 @@
   animation: loadingFade 1.5s ease-in-out infinite;
 }
 
+
+
 .filter-data-table-page-controls {
   margin-top: 0px;
   display: flex;
@@ -118,6 +120,9 @@
 
 .feature-cell {
   padding: 8px;
+}
+.feature-plot-container canvas {
+  cursor: pointer;
 }
 
 .feature-cell:hover {
