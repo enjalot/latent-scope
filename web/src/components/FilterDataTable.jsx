@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Button } from 'react-element-forge';
+import { Modal } from 'react-element-forge';
 import PropTypes from 'prop-types';
+import { Tooltip } from 'react-tooltip';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
 
 import DataGrid, { Row } from 'react-data-grid';
+import { scaleLog, scaleLinear, scalePow } from 'd3-scale';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -43,13 +46,255 @@ function RowWithHover({ props, onHover }) {
   );
 }
 
+function extent(activations) {
+  const min = Math.min(...activations);
+  const max = Math.max(...activations);
+  return [min, max];
+}
+
+function FeatureModal({
+  isOpen,
+  onClose,
+  rowIndex,
+  features,
+  topIndices,
+  topActs,
+  selectedFeature,
+  handleFeatureClick,
+}) {
+  const TO_SHOW = 15;
+
+  const baseUrl = 'https://enjalot.github.io/latent-taxonomy#model=NOMIC_FWEDU_25k&feature=';
+  const maxAct = Math.max(...topActs);
+  const getWidth = (act) => {
+    return `${(act / maxAct) * 100}%`;
+  };
+
+  const itemStyle = (featIdx) => ({
+    fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
+  });
+
+  const handleFilterClick = (featIdx, activation) => {
+    handleFeatureClick(featIdx, activation);
+    onClose();
+  };
+
+  return (
+    <Modal
+      className="feature-modal"
+      isVisible={isOpen}
+      onClose={onClose}
+      title={`Features for Index ${rowIndex}`}
+    >
+      <div className="feature-modal-close">
+        <span className="feature-modal-text">Top {TO_SHOW} Activated SAE Features</span>
+        <Button onClick={onClose} icon="x" color="primary" variant="outline" size="small" />
+      </div>
+      <div className="feature-modal-content">
+        {topIndices.slice(0, TO_SHOW).map((featIdx, i) => (
+          <div className="feature-modal-item" key={i} style={itemStyle(featIdx)}>
+            <div
+              className="feature-modal-item-background"
+              style={{ width: getWidth(topActs[i]) }}
+            />
+            <div className="feature-label">
+              <span
+                title={`${baseUrl}${featIdx}`}
+                onClick={() => window.open(`${baseUrl}${featIdx}`, '_blank', 'noopener,noreferrer')}
+                className="feature-modal-item-filter-link"
+              >
+                {featIdx}:
+              </span>
+              <span className="feature-modal-item-filter-label">
+                {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
+              </span>
+              <div
+                className="feature-modal-item-filter-text-container"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleFilterClick(featIdx, topActs[i]);
+                }}
+              >
+                <span className="feature-modal-item-filter-text">Filter by this feature</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function FeaturePlot({
+  row,
+  feature,
+  features,
+  width,
+  handleFeatureClick,
+  setFeatureTooltipContent,
+}) {
+  const { idx } = row;
+
+  const showTicks = idx !== undefined;
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const height = 45;
+  const padding = { left: 20, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }; // Add bottom padding for ticks
+
+  const activations = row.ls_features.top_acts || [];
+
+  // Create power scale to compress smaller values and expand larger values
+  const logScale = scalePow()
+    .exponent(2.5)
+    .domain(extent(activations))
+    .range([padding.left, width - padding.right]);
+
+  // if feature is -1, we want to plot all the activations the same color
+  // otherwise, we want to highlight the selected feature darker than the others.
+  // i is in the space of all features (0 to features.length - 1)
+  const featureLineStyle = (f, idx) => {
+    if (hoveredIdx !== null) {
+      if (idx === hoveredIdx) {
+        return {
+          stroke: '#b87333',
+          strokeWidth: 2,
+          opacity: 0.8,
+        };
+      } else {
+        return {
+          stroke: '#ccc',
+          strokeWidth: 2,
+          opacity: 0.25,
+        };
+      }
+    }
+
+    // no feature selected, so plot all the activations the same color
+    if (feature === -1) {
+      return {
+        stroke: '#b87333',
+        strokeWidth: 2,
+        opacity: 0.8,
+      };
+    } else if (f === feature) {
+      // we are plotting the selected feature, so make it darker, and thicker than the others
+      return {
+        stroke: '#b87333',
+        strokeWidth: 2,
+        opacity: 0.8,
+      };
+    } else {
+      // we are plotting a feature that is not the selected feature, so make it lighter and thinner
+      // than the selected feature
+      return {
+        stroke: '#f5f5f5',
+        strokeWidth: 2,
+        opacity: 0.5,
+      };
+    }
+  };
+
+  const handleClose = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  // row -> the row being rendered
+  // row.ls_features -> an object with top_indices and top_acts
+  // top_indices -> list of feature indices sorted by activation strength
+  // top_acts -> list of activation strengths for the top_indices (extracted into a list activations)
+  // features -> list of {feature, label, max_activation, order?}. feature is the index of the entry in the list.
+  // feature -> the feature index being used as a filter (between 0 and features.length - 1, or -1 if no feature is selected)
+
+  let featuresToActivations = row.ls_features.top_indices.map((idx, i) => {
+    return {
+      feature: idx,
+      activation: row.ls_features.top_acts[i],
+    };
+  });
+
+  if (feature !== -1) {
+    const nonSelectedFeatures = featuresToActivations.filter(
+      ({ feature: feat_idx }) => feat_idx !== feature
+    );
+    const selectedFeature = featuresToActivations.filter(
+      ({ feature: feat_idx }) => feat_idx === feature
+    );
+    // add the selected feature to the end of the list, so it's on top of the others
+    featuresToActivations = [...nonSelectedFeatures, ...selectedFeature];
+  }
+
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  return (
+    <div className="feature-plot-container">
+      <svg width={width} height={height} onClick={() => setIsModalOpen(true)}>
+        {featuresToActivations.map(({ feature: feat_idx, activation }, idx) => (
+          <line
+            data-tooltip-id={`feature-tooltip`}
+            key={feat_idx}
+            x1={logScale(activation)}
+            y1={height - padding.bottom}
+            x2={logScale(activation)}
+            y2={padding.top}
+            onMouseEnter={(e) => {
+              // Add position offset to prevent cursor from triggering mouseLeave
+              const rect = e.currentTarget.getBoundingClientRect();
+              setHoveredIdx(idx);
+              setFeatureTooltipContent({
+                content: `Feature ${feat_idx}: ${features?.[feat_idx]?.label} (${activation.toFixed(3)})`,
+                position: { x: rect.left, y: rect.top },
+              });
+            }}
+            onMouseLeave={() => {
+              setTimeout(() => {
+                setFeatureTooltipContent(null);
+                setHoveredIdx(null);
+              }, 50); // Small delay to prevent flickering
+            }}
+            {...featureLineStyle(feat_idx, idx)}
+          />
+        ))}
+
+        {/* Add axis ticks and labels */}
+        {extent(activations).map((tick) => (
+          <g
+            key={tick}
+            // transform={`translate(${xScale(logScale(tick))},${height - padding.bottom})`}
+            transform={`translate(${logScale(tick)},${height - padding.bottom})`}
+          >
+            {/* <line y2="4" stroke="#666" /> */}
+            <text y="10" textAnchor="middle" fill="#666" style={{ fontSize: '8px' }}>
+              {tick.toFixed(2)}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      {/* <div data-tooltip-id="feature-tooltip" /> */}
+
+      <FeatureModal
+        isOpen={isModalOpen}
+        onClose={handleClose}
+        rowIndex={row.ls_index}
+        features={features}
+        topIndices={row.ls_features.top_indices}
+        topActs={row.ls_features.top_acts}
+        selectedFeature={feature}
+        handleFeatureClick={handleFeatureClick}
+      />
+    </div>
+  );
+}
+
 function FilterDataTable({
+  handleFeatureClick,
   dataset,
   filteredIndices = [],
   defaultIndices = [],
   distances = [],
   clusterMap = {},
-  tagset,
+  onDataTableRows,
   showEmbeddings = null,
   showNavigation = true,
   sae_id = null,
@@ -65,24 +310,25 @@ function FilterDataTable({
   // page count is the total number of pages available
   const [pageCount, setPageCount] = useState(0);
 
-  // when filteredIndices is empty, we use defaultIndices and show the pageCount as totalPages
-  // otherwise, we use filteredIndices and show the pageCount as the query result totalPages
+  // feature tooltip content
+  const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
 
-  const [expandedFeatureRows, setExpandedFeatureRows] = useState(new Set());
-
-  // const [tags, setTags] = useState([]);
-  // useEffect(() => {
-  //   if (tagset) {
-  //     setTags(Object.keys(tagset));
-  //   }
-  // }, [tagset]);
-
+  const [rowsLoading, setRowsLoading] = useState(false);
   const hydrateIndices = useCallback(
     (indices) => {
       // console.log("hydrate!", dataset)
-      console.log('indices', indices);
       if (dataset && indices.length) {
-        console.log('fetching query', dataset);
+        // setRowsLoading(true);
+        const body = {
+          dataset: dataset.id,
+          indices: indices,
+          embedding_id: showEmbeddings,
+          page,
+          sae_id: sae_id,
+        };
+        const timestamp = Date.now();
+        console.log('fetching query', body, timestamp);
+
         fetch(`${apiUrl}/query`, {
           method: 'POST',
           headers: {
@@ -102,25 +348,31 @@ function FilterDataTable({
             console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
             setPageCount(totalPages);
-            console.log('======= SETTING ROWS =======', rows);
-            setRows(rows);
+            console.log('======= SETTING ROWS =======', rows, timestamp);
+            setRows(rows.map((row, idx) => ({ ...row, idx })));
+            onDataTableRows(rows);
+            // setRowsLoading(false);
           });
       } else {
         setRows([]);
+        onDataTableRows([]);
+        // setRowsLoading(false);
         // setPageCount(totalPages);
       }
     },
-    [dataset, page, showEmbeddings, sae_id]
+    [dataset, page, showEmbeddings, sae_id, setRowsLoading]
   );
 
   const formattedColumns = useMemo(() => {
+    const ls_features_column = 'ls_features';
     let columns = ['ls_index'];
     // Text column is always the first column (after index)
+
     columns.push(dataset.text_column);
 
     if (distances && distances.length) columns.push('ls_similarity');
     if (showEmbeddings) columns.push('ls_embedding');
-    if (sae_id) columns.push('ls_features');
+    if (sae_id) columns.push(ls_features_column);
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
     // if (tagset && Object.keys(tagset).length) columns.push('tags');
 
@@ -192,79 +444,33 @@ function FilterDataTable({
         };
       }
 
-      if (col === 'ls_features') {
+      if (col === ls_features_column) {
+        const baseWidth = 200;
+
         return {
           ...baseCol,
-          width: expandedFeatureRows.size > 0 ? 400 : 200, // dynamic width
-          renderCell: ({ row }) => {
-            const isExpanded = expandedFeatureRows.has(row.ls_index);
-            const topN = isExpanded ? 10 : 1;
-
-            return (
-              <div
-                className={`feature-cell ${isExpanded ? 'expanded' : ''}`}
-                style={{ cursor: 'pointer' }}
+          width: baseWidth,
+          renderHeaderCell: () => (
+            <div className="feature-column-header" style={{ position: 'relative' }}>
+              <span>{ls_features_column}</span>
+              <span
+                data-tooltip-id="feature-column-info-tooltip"
+                className="feature-column-info-tooltip-icon"
               >
-                {isExpanded ? (
-                  <>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedFeatureRows((prev) => {
-                          const next = new Set(prev);
-                          next.delete(row.ls_index);
-                          return next;
-                        });
-                      }}
-                      size="small"
-                      color="secondary"
-                      variant="solid"
-                      icon="minimize"
-                    />
-                    <div>
-                      {row.ls_features.top_indices.map((featIdx, i) => (
-                        <div
-                          key={i}
-                          style={{ fontWeight: featIdx === feature ? 'bold' : 'normal' }}
-                        >
-                          {featIdx}: {features?.[featIdx]?.label} (
-                          {row.ls_features.top_acts?.[i]?.toFixed(3)})
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('expanding', row.ls_index);
-                      setExpandedFeatureRows((prev) => {
-                        const next = new Set(prev);
-                        next.add(row.ls_index);
-                        return next;
-                      });
-                    }}
-                  >
-                    {feature >= 0 ? (
-                      <>
-                        {feature}: {!!features?.length && features[feature]?.label} (
-                        {row.ls_features.top_acts?.[
-                          row.ls_features?.top_indices?.indexOf(feature)
-                        ]?.toFixed(3)}
-                        )
-                      </>
-                    ) : (
-                      <>
-                        {row.ls_features.top_indices[0]}:{' '}
-                        {!!features?.length && features[row.ls_features.top_indices[0]]?.label} (
-                        {row.ls_features.top_acts?.[0]?.toFixed(3)})
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          },
+                🤔
+              </span>
+            </div>
+          ),
+          renderCell: ({ row }) => (
+            <FeaturePlot
+              width={baseWidth}
+              row={row}
+              feature={feature}
+              features={features}
+              handleFeatureClick={handleFeatureClick}
+              setFeatureTooltipContent={setFeatureTooltipContent}
+            />
+          ),
         };
       }
 
@@ -286,21 +492,11 @@ function FilterDataTable({
       };
     });
     return columnDefs;
-  }, [
-    dataset,
-    /*tags, tagset,*/
-    clusterMap,
-    distances,
-    features,
-    expandedFeatureRows,
-    feature,
-    sae_id,
-    showEmbeddings,
-  ]);
+  }, [dataset, clusterMap, distances, features, feature, sae_id, showEmbeddings]);
 
   useEffect(() => {
     let indicesToUse = [];
-    if (filteredIndices.length) {
+    if (feature >= 0) {
       indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
     } else {
       indicesToUse = defaultIndices;
@@ -315,33 +511,73 @@ function FilterDataTable({
     [onHover]
   );
 
-  const getRowHeight = useCallback(
-    (row) => {
-      if (expandedFeatureRows.has(row.ls_index)) {
-        return 200; // or however tall you want expanded rows to be
-      }
-      return 35; // default row height
-    },
-    [expandedFeatureRows]
-  );
-
   // console.log('==== FILTER DATA TABLE =====', { filteredIndices, defaultIndices, rows });
 
   return (
     <div
-      className="filter-data-table"
+      className={`filter-data-table ${rowsLoading ? 'loading' : ''}`}
       // style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {/* Scrollable Table Body */}
       <div className="filter-table-scrollable-body table-body" style={{ overflowY: 'auto' }}>
+        <Tooltip
+          id="feature-tooltip"
+          place="top"
+          effect="solid"
+          content={featureTooltipContent?.content}
+          className="feature-tooltip"
+          // float={true}
+          position="fixed"
+          style={{
+            zIndex: 9999,
+            maxWidth: 'none',
+            whiteSpace: 'nowrap',
+            backgroundColor: '#D3965E',
+            position: 'fixed',
+            left: featureTooltipContent?.position?.x ?? 0,
+            top: (featureTooltipContent?.position?.y ?? 0) - 30,
+          }}
+        />
         <DataGrid
           rows={rows}
           columns={formattedColumns}
+          rowClass={(row, index) => {
+            if (row.ls_index === 0) {
+              return 'test';
+            }
+            return '';
+          }}
           rowGetter={(i) => rows[i]}
-          rowHeight={getRowHeight}
+          rowHeight={sae_id ? 50 : 35}
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
+
+        <Tooltip
+          id="feature-column-info-tooltip"
+          className="feature-column-info-tooltip"
+          place="bottom"
+          effect="solid"
+          clickable={true}
+          delayHide={500} // give the user a chance to click the tooltip links
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            The vertical bars represent activations for different{' '}
+            <a
+              href="https://enjalot.github.io/latent-taxonomy/articles/about"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Sparse Autoencoder (SAE)
+            </a>{' '}
+            features corresponding to each embedding. Higher activations indicate that the feature
+            captures an important semantic element of the embedding.
+            <br />
+            <br />
+            Click each cell to see the labels for each feature and to filter rows by a particular
+            feature.
+          </div>
+        </Tooltip>
       </div>
       {showNavigation && (
         <div className="filter-data-table-page-controls">

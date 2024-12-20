@@ -37,6 +37,7 @@ export default function FilterActions({
   setFeature,
   featureIndices,
   setFeatureIndices,
+  setThreshold,
   scope,
 }) {
   const { columnFiltersActive, setColumnFiltersActive, columnFilters } = useColumnFilter(
@@ -77,6 +78,7 @@ export default function FilterActions({
         scope={scope}
         setFilteredIndices={setFilteredIndices}
         setFeatureIndices={setFeatureIndices}
+        onThreshold={setThreshold}
       />
     );
   } else if (activeFilterTab === SELECT) {

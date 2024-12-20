@@ -96,6 +96,10 @@ def feature():
     dataset = request.args.get('dataset')
     sae_id = request.args.get('sae_id')
     feature_id = request.args.get('feature_id')
+    threshold = request.args.get('threshold')
+    # Convert threshold to float if it exists
+    threshold = float(threshold) if threshold is not None else 0.1
+
     top_n = request.args.get('top_n')
     if top_n is not None:
         top_n = int(top_n)
@@ -122,9 +126,17 @@ def feature():
     if not np.any(non_zero_mask):
         return jsonify(top_row_indices=[])  # Return empty list if no activations
 
-    # Get the indices of top_n highest activations from non-zero activations only
-    top_row_indices = np.argsort(feature_activations[non_zero_mask])[::-1]
-    actual_indices = np.where(non_zero_mask)[0][top_row_indices]
+    # Filter by threshold and non-zero activations
+    above_threshold_mask = feature_activations > threshold
+    if not np.any(above_threshold_mask):
+        return jsonify(top_row_indices=[])  # Return empty list if no activations above threshold
+
+    # Get the indices of top_n highest activations from filtered activations
+    top_row_indices = np.argsort(feature_activations[above_threshold_mask])[::-1]
+    # if top_n:
+    #     top_row_indices = top_row_indices[:top_n]
+    actual_indices = np.where(above_threshold_mask)[0][top_row_indices]
+    
     
     return jsonify(top_row_indices=actual_indices.tolist())
 

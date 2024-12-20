@@ -181,11 +181,12 @@ export const apiService = {
         };
       });
   },
-  searchSaeFeature: async (datasetId, saeId, featureId, topN) => {
+  searchSaeFeature: async (datasetId, saeId, featureId, threshold, topN) => {
     const searchParams = new URLSearchParams({
       dataset: datasetId,
       sae_id: saeId,
       feature_id: featureId,
+      threshold,
       top_n: topN,
     });
     return fetch(`${apiUrl}/search/feature?${searchParams.toString()}`).then((response) =>
