@@ -112,6 +112,7 @@ export default function FilterActions({
         searchLoading={searchLoading}
         setSearchText={setSearchText}
         clearSearch={clearSearch}
+        setFilteredIndices={setFilteredIndices}
       />
     );
   }
