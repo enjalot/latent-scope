@@ -12,7 +12,7 @@ export default function NearestNeighbor({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSearchText(e.target.elements.searchBox.value);
+    setSearchText(inputValue);
   };
 
   const handleClear = () => {
@@ -41,7 +41,10 @@ export default function NearestNeighbor({
             color="secondary"
             className={styles.searchButton}
             disabled={searchLoading}
-            onClick={() => (searchIndices.length ? handleClear() : null)}
+            onClick={(e) => {
+              e.preventDefault();
+              searchIndices.length ? handleClear() : handleSubmit(e);
+            }}
             icon={searchLoading ? 'pie-chart' : searchIndices.length ? 'x' : 'search'}
           />
         </div>

@@ -79,7 +79,6 @@ function FeatureModal({
     handleFeatureClick(featIdx, activation);
     onClose();
   };
-  console.log('==== FEATURE MODAL ====', { hoveredIdx, selectedFeature });
 
   return (
     <Modal
