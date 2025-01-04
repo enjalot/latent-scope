@@ -30,11 +30,20 @@ const useScopeData = (apiUrl, datasetId, scope) => {
 
         let clusterMap = {};
         let nonDeletedClusters = new Set();
+
+        // Reset all counts in cluster_labels_lookup first
+        // to avoid overcounting clusters counts.
+        // this is happening because fetchScopeRows is being called multiple times
+        // and the cluster_labels_lookup is being mutated
+        // TODO: fix this -> use a new object for cluster_labels_lookup
+        if (scope.cluster_labels_lookup) {
+          scope.cluster_labels_lookup.forEach((cluster) => {
+            cluster.count = 0;
+          });
+        }
+
         scopeRows.forEach((d) => {
           const cluster = scope.cluster_labels_lookup?.[d.cluster];
-          if (!cluster.count) {
-            cluster.count = 0;
-          }
           cluster.count += 1;
 
           clusterMap[d.ls_index] = cluster;
