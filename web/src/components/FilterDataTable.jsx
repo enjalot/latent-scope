@@ -540,7 +540,7 @@ function FilterDataTable({
 
   useEffect(() => {
     let indicesToUse = [];
-    if (feature >= 0) {
+    if (filteredIndices.length) {
       indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
     } else {
       indicesToUse = defaultIndices;

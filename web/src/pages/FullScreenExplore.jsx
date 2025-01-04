@@ -483,6 +483,11 @@ function Explore() {
       </>
     );
 
+  console.log('==== indices ==== ', {
+    searchIndices,
+    filteredIndices,
+  });
+
   return (
     <>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={handleScopeChange} />
