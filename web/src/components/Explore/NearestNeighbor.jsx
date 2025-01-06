@@ -1,9 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input, Button } from 'react-element-forge';
 import styles from './NearestNeighbor.module.scss';
 
-export default function NearestNeighbor({ searchIndices, searchLoading, setSearchText, clearSearch }) {
-  const [inputValue, setInputValue] = useState('');
+export default function NearestNeighbor({
+  searchIndices,
+  searchLoading,
+  setSearchText,
+  clearSearch,
+  defaultValue = '',
+}) {
+  const [inputValue, setInputValue] = useState(defaultValue);
+
+  useEffect(() => {
+    setInputValue(defaultValue);
+  }, [defaultValue]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

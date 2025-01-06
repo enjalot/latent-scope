@@ -237,7 +237,6 @@ function Explore() {
     scope,
     embeddings,
     deletedIndices,
-    setFilteredIndices,
   });
 
   // ====================================================================================================
@@ -279,27 +278,10 @@ function Explore() {
   const handleSelected = useCallback(
     (indices) => {
       const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-
-      // if a user clicks on a point in the scatterplot and the filter tab is CLUSTER
-      // we should set the cluster to the cluster of the point
-      // this will in turn set the filtered indices to all the indices of the points in the cluster
-      if (activeFilterTab === CLUSTER) {
-        let selected = scopeRows.filter((row) => nonDeletedIndices.includes(row.ls_index))?.[0];
-        setCluster(clusterLabels.find((d) => d.cluster == selected?.cluster));
-      }
-
-      // if a user clicks on a point in the scatterplot and the filter tab is not SELECT
-      // we should select the point and toggle the filter tab to SELECT
-      // this will in turn set the filtered indices to the selected indices
-      // the point should be highlighted in the scatterplot,
-      // and the filter table should show the selected points
-      else if (activeFilterTab !== SELECT) {
-        console.log('==== setting selected indices ==== ', nonDeletedIndices);
-        setActiveFilterTab(SELECT);
-        setSelectedIndices(nonDeletedIndices);
-      }
+      setActiveFilterTab(SELECT);
+      setSelectedIndices(nonDeletedIndices);
     },
-    [activeFilterTab, setSelectedIndices, setCluster, scopeRows, deletedIndices, clusterLabels]
+    [activeFilterTab, setSelectedIndices, deletedIndices]
   );
 
   const clearScope = useCallback(() => {
