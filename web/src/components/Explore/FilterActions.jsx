@@ -38,6 +38,7 @@ export default function FilterActions({
   setFeatureIndices,
   setThreshold,
   scope,
+  searchText,
 }) {
   const { columnFiltersActive, setColumnFiltersActive, columnFilters } = useColumnFilter(
     apiUrl,
@@ -108,6 +109,7 @@ export default function FilterActions({
         searchLoading={searchLoading}
         setSearchText={setSearchText}
         clearSearch={clearSearch}
+        defaultValue={searchText}
       />
     );
   }

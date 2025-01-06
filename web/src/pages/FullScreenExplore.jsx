@@ -223,10 +223,11 @@ function Explore() {
   // ====================================================================================================
   // NN Search
   // ====================================================================================================
-  // indices of items in a chosen slide
+  // the text that the user has entered into the nearest neighbor search input
+  const [searchText, setSearchText] = useState('');
+
   // the indices returned from similarity search
   const {
-    setSearchText,
     searchIndices,
     distances,
     isLoading: searchLoading,
@@ -237,6 +238,8 @@ function Explore() {
     scope,
     embeddings,
     deletedIndices,
+    searchText,
+    setSearchText,
   });
 
   // ====================================================================================================
@@ -541,6 +544,7 @@ function Explore() {
                 featureIndices={featureIndices}
                 setFeatureIndices={setFeatureIndices}
                 setThreshold={setThreshold}
+                searchText={searchText}
               />
             </div>
             <div

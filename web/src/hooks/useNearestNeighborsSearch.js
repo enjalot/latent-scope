@@ -7,10 +7,11 @@ export default function useNearestNeighborsSearch({
   embeddings,
   onSearchEmbedding,
   deletedIndices,
+  searchText,
+  setSearchText,
 }) {
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
-  const [searchText, setSearchText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const search = useCallback(
@@ -67,8 +68,6 @@ export default function useNearestNeighborsSearch({
   }, [searchText, search]);
 
   return {
-    searchText,
-    setSearchText,
     setSearchIndices,
     searchIndices,
     distances,
