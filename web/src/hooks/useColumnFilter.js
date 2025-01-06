@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
-const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices, setFilteredIndices) => {
+const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices) => {
   const [columnFiltersActive, setColumnFiltersActive] = useState({});
 
   const columnFilters = useMemo(() => {

@@ -20,7 +20,6 @@ export default function FilterActions({
   clearSearch,
   selectedIndices,
   setSelectedIndices,
-  setFilteredIndices,
   scatter,
   activeFilterTab,
   toggleSearch,
@@ -44,8 +43,7 @@ export default function FilterActions({
     apiUrl,
     dataset,
     datasetId,
-    setColumnFilterIndices,
-    setFilteredIndices
+    setColumnFilterIndices
   );
 
   let filterComponent = null;
@@ -76,7 +74,6 @@ export default function FilterActions({
         featureIndices={featureIndices}
         setFeature={setFeature}
         scope={scope}
-        setFilteredIndices={setFilteredIndices}
         setFeatureIndices={setFeatureIndices}
         onThreshold={setThreshold}
       />
@@ -95,7 +92,6 @@ export default function FilterActions({
               className="deselect"
               onClick={() => {
                 setSelectedIndices([]);
-                setFilteredIndices([]);
                 scatter?.select([]);
               }}
               icon="x"
@@ -112,7 +108,6 @@ export default function FilterActions({
         searchLoading={searchLoading}
         setSearchText={setSearchText}
         clearSearch={clearSearch}
-        setFilteredIndices={setFilteredIndices}
       />
     );
   }

@@ -332,14 +332,13 @@ function Explore() {
       apiService.searchSaeFeature(datasetId, sae?.id, feature, threshold, 100).then((data) => {
         console.log('==== data ==== ', data);
         setFeatureIndices(data.top_row_indices);
-        // setFilteredIndices(data.top_row_indices);
       });
     } else {
       // The feature filter is active, but the feature is no longer set
       // so we should clear the filtered indices
       setFeatureIndices([]);
     }
-  }, [datasetId, sae, setFilteredIndices, feature, threshold, setFeatureIndices]);
+  }, [datasetId, sae, feature, threshold, setFeatureIndices]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -424,6 +423,9 @@ function Explore() {
 
   const [width, height] = size;
 
+  // ====================================================================================================
+  // set the filtered indices based on the active filter tab
+  // ====================================================================================================
   useEffect(() => {
     if (activeFilterTab === COLUMN) {
       setFilteredIndices(columnFilterIndices);
@@ -499,14 +501,6 @@ function Explore() {
     [setActiveFilterTab, setFeature, setThreshold]
   );
 
-  console.log('==== indices ==== ', {
-    searchIndices,
-    filteredIndices,
-    activeFilterTab,
-    selectedIndices,
-    defaultIndices,
-  });
-
   if (!dataset)
     return (
       <>
@@ -550,7 +544,6 @@ function Explore() {
                 selectedIndices={selectedIndices}
                 setSelectedIndices={setSelectedIndices}
                 scatter={scatter}
-                setFilteredIndices={setFilteredIndices}
                 activeFilterTab={activeFilterTab}
                 toggleSearch={toggleSearch}
                 toggleColumn={toggleColumn}

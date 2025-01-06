@@ -7,7 +7,6 @@ export default function useNearestNeighborsSearch({
   embeddings,
   onSearchEmbedding,
   deletedIndices,
-  setFilteredIndices,
 }) {
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);

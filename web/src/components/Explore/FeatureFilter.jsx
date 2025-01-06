@@ -9,7 +9,6 @@ export default function FeatureFilter({
   feature,
   featureIndices,
   setFeature,
-  setFilteredIndices,
   setFeatureIndices,
   onThreshold,
 }) {
