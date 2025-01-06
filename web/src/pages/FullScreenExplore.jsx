@@ -278,11 +278,20 @@ function Explore() {
   );
 
   // behavior for when a user selects point(s) in the scatterplot
+  // if the filter tab is CLUSTER, we should set the cluster to the cluster of the point
+  // otherwise we should select the point(s) and toggle the filter tab to SELECT
   const handleSelected = useCallback(
     (indices) => {
       const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-      setActiveFilterTab(SELECT);
-      setSelectedIndices(nonDeletedIndices);
+      if (activeFilterTab === CLUSTER) {
+        let selected = scopeRows.filter((row) => nonDeletedIndices.includes(row.ls_index))?.[0];
+        setCluster(clusterLabels.find((d) => d.cluster == selected?.cluster));
+      } else {
+        if (activeFilterTab !== SELECT) {
+          setActiveFilterTab(SELECT);
+        }
+        setSelectedIndices(nonDeletedIndices);
+      }
     },
     [activeFilterTab, setSelectedIndices, deletedIndices]
   );
