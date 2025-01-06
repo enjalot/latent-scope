@@ -297,7 +297,6 @@ function Explore() {
         console.log('==== setting selected indices ==== ', nonDeletedIndices);
         setActiveFilterTab(SELECT);
         setSelectedIndices(nonDeletedIndices);
-        setFilteredIndices(nonDeletedIndices);
       }
     },
     [activeFilterTab, setSelectedIndices, setCluster, scopeRows, deletedIndices, clusterLabels]
@@ -316,7 +315,6 @@ function Explore() {
       setClusterAnnotations(annots);
       const indices = annots.map((d) => d.ls_index);
       setClusterIndices(indices);
-      setFilteredIndices(indices);
     } else {
       setClusterAnnotations([]);
       setClusterIndices([]);
@@ -334,7 +332,7 @@ function Explore() {
       apiService.searchSaeFeature(datasetId, sae?.id, feature, threshold, 100).then((data) => {
         console.log('==== data ==== ', data);
         setFeatureIndices(data.top_row_indices);
-        setFilteredIndices(data.top_row_indices);
+        // setFilteredIndices(data.top_row_indices);
       });
     } else {
       // The feature filter is active, but the feature is no longer set
@@ -435,11 +433,17 @@ function Explore() {
       setFilteredIndices(clusterIndices);
     } else if (activeFilterTab === SELECT) {
       setFilteredIndices(selectedIndices);
-    } else {
-      // this should never happen
-      setFilteredIndices([]);
+    } else if (activeFilterTab === SEARCH) {
+      setFilteredIndices(searchIndices);
     }
-  }, [activeFilterTab, columnFilterIndices, featureIndices, clusterIndices, selectedIndices]);
+  }, [
+    activeFilterTab,
+    columnFilterIndices,
+    featureIndices,
+    clusterIndices,
+    selectedIndices,
+    searchIndices,
+  ]);
 
   // ====================================================================================================
   // Draggable State

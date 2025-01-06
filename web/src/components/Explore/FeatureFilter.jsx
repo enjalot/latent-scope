@@ -99,7 +99,6 @@ export default function FeatureFilter({
   const handleClear = useCallback(() => {
     setInputValue('');
     setFeature(-1);
-    setFilteredIndices([]);
     setFeatureIndices([]);
     inputRef.current?.focus();
   }, [setFeature, setInputValue, inputRef]);

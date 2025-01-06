@@ -8,7 +8,6 @@ const ColumnFilter = ({
   columnFiltersActive,
   setColumnFiltersActive,
   setColumnIndices,
-  setFilteredIndices,
 }) => {
   return columnFilters?.length ? (
     <div className={`${styles.container} ${columnIndices?.length ? styles.active : ''}`}>
@@ -50,7 +49,6 @@ const ColumnFilter = ({
             onClick={() => {
               setColumnFiltersActive({});
               setColumnIndices([]);
-              setFilteredIndices([]);
             }}
             icon="x"
             color="secondary"

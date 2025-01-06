@@ -39,7 +39,6 @@ const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices, setFilter
         .then((data) => {
           let indices = data.indices;
           setColumnIndices(indices);
-          setFilteredIndices(indices);
         });
     },
     [apiUrl, datasetId]
@@ -52,9 +51,8 @@ const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices, setFilter
       columnQuery(columnFiltersActive);
     } else {
       setColumnIndices([]);
-      setFilteredIndices([]);
     }
-  }, [columnFiltersActive, columnQuery, setColumnIndices, setFilteredIndices]);
+  }, [columnFiltersActive, columnQuery, setColumnIndices]);
 
   return {
     columnFiltersActive,

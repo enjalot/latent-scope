@@ -19,7 +19,6 @@ export default function NearestNeighbor({
   const handleClear = () => {
     clearSearch();
     setInputValue('');
-    setFilteredIndices([]);
   };
 
   return (
