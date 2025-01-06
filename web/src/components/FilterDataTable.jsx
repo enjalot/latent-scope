@@ -121,15 +121,6 @@ function FeatureModal({
               <span className="feature-modal-item-filter-label">
                 {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
               </span>
-              <div
-                className="feature-modal-item-filter-text-container"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleFilterClick(featIdx, topActs[i]);
-                }}
-              >
-                <span className="feature-modal-item-filter-text">Filter by this feature</span>
-              </div>
             </div>
           </div>
         ))}

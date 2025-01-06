@@ -5,8 +5,7 @@ const useScopeData = (apiUrl, datasetId, scope) => {
   const [clusterMap, setClusterMap] = useState({});
   const [clusterIndices, setClusterIndices] = useState([]);
   const [clusterLabels, setClusterLabels] = useState([]);
-  const [points, setPoints] = useState([]);
-  const [drawPoints, setDrawPoints] = useState([]);
+
   const [scopeRows, setScopeRows] = useState([]);
 
   const [deletedIndices, setDeletedIndices] = useState([]);
@@ -16,7 +15,10 @@ const useScopeData = (apiUrl, datasetId, scope) => {
     if (scope?.sae_id) {
       apiService.fetchSae(datasetId, scope.sae_id).then((sae) => {
         console.log('SAE', sae);
-        setSae(sae);
+        // only set the sae if the embedding_id matches the scope embedding_id
+        if (sae.embedding_id && sae.embedding_id === scope.embedding_id) {
+          setSae(sae);
+        }
       });
     }
   }, [scope]);
