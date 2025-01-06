@@ -275,17 +275,29 @@ function Explore() {
     [setHoveredIndex]
   );
 
+  // behavior for when a user selects point(s) in the scatterplot
   const handleSelected = useCallback(
     (indices) => {
       const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-      if (activeFilterTab === SELECT) {
-        setSelectedIndices(nonDeletedIndices);
-        setFilteredIndices(nonDeletedIndices);
-        // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-        // scatter?.zoomToPoints(nonDeletedIndices, { transition: true });
-      } else if (activeFilterTab === CLUSTER) {
+
+      // if a user clicks on a point in the scatterplot and the filter tab is CLUSTER
+      // we should set the cluster to the cluster of the point
+      // this will in turn set the filtered indices to all the indices of the points in the cluster
+      if (activeFilterTab === CLUSTER) {
         let selected = scopeRows.filter((row) => nonDeletedIndices.includes(row.ls_index))?.[0];
         setCluster(clusterLabels.find((d) => d.cluster == selected?.cluster));
+      }
+
+      // if a user clicks on a point in the scatterplot and the filter tab is not SELECT
+      // we should select the point and toggle the filter tab to SELECT
+      // this will in turn set the filtered indices to the selected indices
+      // the point should be highlighted in the scatterplot,
+      // and the filter table should show the selected points
+      else if (activeFilterTab !== SELECT) {
+        console.log('==== setting selected indices ==== ', nonDeletedIndices);
+        setActiveFilterTab(SELECT);
+        setSelectedIndices(nonDeletedIndices);
+        setFilteredIndices(nonDeletedIndices);
       }
     },
     [activeFilterTab, setSelectedIndices, setCluster, scopeRows, deletedIndices, clusterLabels]
@@ -308,16 +320,8 @@ function Explore() {
     } else {
       setClusterAnnotations([]);
       setClusterIndices([]);
-      setFilteredIndices([]);
     }
-  }, [
-    cluster,
-    scopeRows,
-    setClusterAnnotations,
-    setClusterIndices,
-    setFilteredIndices,
-    activeFilterTab,
-  ]);
+  }, [cluster, scopeRows, setClusterAnnotations, setClusterIndices]);
 
   // ==== COLUMNS ====
 
@@ -333,10 +337,11 @@ function Explore() {
         setFilteredIndices(data.top_row_indices);
       });
     } else {
-      setFilteredIndices([]);
+      // The feature filter is active, but the feature is no longer set
+      // so we should clear the filtered indices
       setFeatureIndices([]);
     }
-  }, [datasetId, sae, setFilteredIndices, activeFilterTab, feature, threshold, setFeatureIndices]);
+  }, [datasetId, sae, setFilteredIndices, feature, threshold, setFeatureIndices]);
 
   const handleScopeChange = useCallback(
     (e) => {
@@ -421,6 +426,21 @@ function Explore() {
 
   const [width, height] = size;
 
+  useEffect(() => {
+    if (activeFilterTab === COLUMN) {
+      setFilteredIndices(columnFilterIndices);
+    } else if (activeFilterTab === FEATURE) {
+      setFilteredIndices(featureIndices);
+    } else if (activeFilterTab === CLUSTER) {
+      setFilteredIndices(clusterIndices);
+    } else if (activeFilterTab === SELECT) {
+      setFilteredIndices(selectedIndices);
+    } else {
+      // this should never happen
+      setFilteredIndices([]);
+    }
+  }, [activeFilterTab, columnFilterIndices, featureIndices, clusterIndices, selectedIndices]);
+
   // ====================================================================================================
   // Draggable State
   // ====================================================================================================
@@ -475,6 +495,14 @@ function Explore() {
     [setActiveFilterTab, setFeature, setThreshold]
   );
 
+  console.log('==== indices ==== ', {
+    searchIndices,
+    filteredIndices,
+    activeFilterTab,
+    selectedIndices,
+    defaultIndices,
+  });
+
   if (!dataset)
     return (
       <>
@@ -482,11 +510,6 @@ function Explore() {
         <div>Loading...</div>
       </>
     );
-
-  console.log('==== indices ==== ', {
-    searchIndices,
-    filteredIndices,
-  });
 
   return (
     <>

@@ -41,9 +41,10 @@ export default function useNearestNeighborsSearch({
         // TODO: handle deleted indices
 
         setDistances(dists);
+        const limit = 30;
         // TODO: make the # of results configurable
-        setSearchIndices(inds.slice(0, 20));
-        setFilteredIndices(inds.slice(0, 20));
+        setSearchIndices(inds.slice(0, limit));
+        setFilteredIndices(inds.slice(0, limit));
         onSearchEmbedding?.(data.search_embedding[0]);
       } catch (error) {
         console.error('Search failed:', error);
