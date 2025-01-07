@@ -147,7 +147,9 @@ function FeaturePlot({
   const height = 45;
   const padding = { left: 10, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 };
 
-  const activations = row.ls_features.top_acts || [];
+  const activations = row.ls_features?.top_acts || [];
+
+  console.log('==== activations ==== ', activations);
 
   const logScale = scalePow()
     .exponent(2.5)
@@ -390,7 +392,7 @@ function FilterDataTable({
           });
       } else {
         setRows([]);
-        onDataTableRows([]);
+        onDataTableRows && onDataTableRows([]);
         // setRowsLoading(false);
         // setPageCount(totalPages);
       }
@@ -496,16 +498,17 @@ function FilterDataTable({
               </span>
             </div>
           ),
-          renderCell: ({ row }) => (
-            <FeaturePlot
-              width={baseWidth}
-              row={row}
-              feature={feature}
-              features={features}
-              handleFeatureClick={handleFeatureClick}
-              setFeatureTooltipContent={setFeatureTooltipContent}
-            />
-          ),
+          renderCell: ({ row }) =>
+            row.ls_features && (
+              <FeaturePlot
+                width={baseWidth}
+                row={row}
+                feature={feature}
+                features={features}
+                handleFeatureClick={handleFeatureClick}
+                setFeatureTooltipContent={setFeatureTooltipContent}
+              />
+            ),
         };
       }
 

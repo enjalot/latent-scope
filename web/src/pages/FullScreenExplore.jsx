@@ -76,13 +76,7 @@ function Explore() {
       let embedding = embeddings.find((e) => e.id == scope.embedding_id);
       if (embedding) {
         asyncRead(saeAvailable[embedding.model_id]);
-      } else {
-        console.log('==== no embedding ====');
-        setFeatures([]);
-      }
-    } else {
-      console.log('==== no sae or embeddings ====');
-      setFeatures([]);
+      } 
     }
   }, [scope, sae, embeddings]);
 
