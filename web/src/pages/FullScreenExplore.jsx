@@ -30,19 +30,15 @@ function Explore() {
   // fetch dataset and current scope metadata
   // - scopes: all scopes available for this dataset
   // - embeddings: embeddings available for this dataset
-  const { embeddings, dataset, scope, fetchScopeMeta, scopes, tagset, fetchTagSet, tags } =
-    useCurrentScope(datasetId, scopeId, apiUrl);
+  const { embeddings, dataset, scope, fetchScopeMeta, scopes, fetchTagSet, tags } = useCurrentScope(
+    datasetId,
+    scopeId,
+    apiUrl
+  );
 
   // fetch data for the current scope and populate data structures for scatterplot and clustering
-  const {
-    fetchScopeRows,
-    setClusterLabels,
-    clusterMap,
-    clusterLabels,
-    scopeRows,
-    sae,
-    deletedIndices,
-  } = useScopeData(apiUrl, datasetId, scope);
+  const { fetchScopeRows, clusterMap, clusterLabels, scopeRows, sae, deletedIndices, setSae } =
+    useScopeData(apiUrl, datasetId, scope);
 
   // TODO: the user should be able to highlight a feature
   // when passed to the data table it will show that feature first?
@@ -80,7 +76,13 @@ function Explore() {
       let embedding = embeddings.find((e) => e.id == scope.embedding_id);
       if (embedding) {
         asyncRead(saeAvailable[embedding.model_id]);
+      } else {
+        console.log('==== no embedding ====');
+        setFeatures([]);
       }
+    } else {
+      console.log('==== no sae or embeddings ====');
+      setFeatures([]);
     }
   }, [scope, sae, embeddings]);
 
@@ -252,8 +254,26 @@ function Explore() {
   useEffect(() => {
     if (scope) {
       fetchScopeRows();
+      setFilteredIndices(defaultIndices);
+      setActiveFilterTab(CLUSTER);
+      setCluster(null);
+      setClusterAnnotations([]);
+      setClusterIndices([]);
+      setFeature(null);
+      setFeatureAnnotations([]);
+      setFeatureIndices([]);
+      setSearchText('');
+      setFeatures([]);
+      setDataTableRows([]);
+      setHovered(null);
+      setHoveredIndex(null);
+      setHoveredCluster(null);
+      setHoverAnnotations([]);
+      setSelectedIndices([]);
+      setColumnFilterIndices([]);
+      setSae(null);
     }
-  }, [fetchScopeRows, scope, embeddings, setClusterLabels]);
+  }, [fetchScopeRows, scope]);
 
   // Handlers for responding to individual data points
   const handleClicked = useCallback(

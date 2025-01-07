@@ -76,6 +76,7 @@ const useScopeData = (apiUrl, datasetId, scope) => {
     fetchScopeRows,
     deletedIndices,
     sae,
+    setSae,
   };
 };
 
