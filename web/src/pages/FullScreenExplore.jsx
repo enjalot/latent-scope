@@ -228,6 +228,7 @@ function Explore() {
     distances,
     isLoading: searchLoading,
     clearSearch,
+    setSearchIndices,
   } = useNearestNeighborsSearch({
     apiUrl,
     datasetId,
@@ -238,6 +239,8 @@ function Explore() {
     setSearchText,
   });
 
+  console.log('==== features ==== ', features, feature);
+
   // ====================================================================================================
   // Clusters
   // ====================================================================================================
@@ -245,27 +248,31 @@ function Explore() {
   const [cluster, setCluster] = useState(null);
   const [clusterAnnotations, setClusterAnnotations] = useState([]);
 
+  const resetState = () => {
+    setFilteredIndices(defaultIndices);
+    setActiveFilterTab(CLUSTER);
+    setCluster(null);
+    setClusterAnnotations([]);
+    setClusterIndices([]);
+    setFeature(-1);
+    setFeatureIndices([]);
+    setSearchText('');
+    setFeatures([]);
+    setDataTableRows([]);
+    setHovered(null);
+    setHoveredIndex(null);
+    setHoveredCluster(null);
+    setHoverAnnotations([]);
+    setSelectedIndices([]);
+    setColumnFilterIndices([]);
+    setSearchIndices([]);
+    setSae(null);
+  };
+
   useEffect(() => {
     if (scope) {
       fetchScopeRows();
-      setFilteredIndices(defaultIndices);
-      setActiveFilterTab(CLUSTER);
-      setCluster(null);
-      setClusterAnnotations([]);
-      setClusterIndices([]);
-      setFeature(null);
-      setFeatureAnnotations([]);
-      setFeatureIndices([]);
-      setSearchText('');
-      setFeatures([]);
-      setDataTableRows([]);
-      setHovered(null);
-      setHoveredIndex(null);
-      setHoveredCluster(null);
-      setHoverAnnotations([]);
-      setSelectedIndices([]);
-      setColumnFilterIndices([]);
-      setSae(null);
+      resetState();
     }
   }, [fetchScopeRows, scope]);
 
@@ -332,7 +339,6 @@ function Explore() {
   // ==== COLUMNS ====
 
   const [featureIndices, setFeatureIndices] = useState([]);
-  const [featureAnnotations, setFeatureAnnotations] = useState([]);
   useEffect(() => {
     if (feature >= 0 && activeFilterTab === FEATURE) {
       console.log('==== feature ==== ', feature);
