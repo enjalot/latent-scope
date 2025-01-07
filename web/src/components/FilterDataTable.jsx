@@ -149,8 +149,6 @@ function FeaturePlot({
 
   const activations = row.ls_features?.top_acts || [];
 
-  console.log('==== activations ==== ', activations);
-
   const logScale = scalePow()
     .exponent(2.5)
     .domain(extent(activations))
