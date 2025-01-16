@@ -27,16 +27,29 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256, 
 
     print(f"Loading scope from {scope_path}")
     scope_df = pd.read_parquet(os.path.join(scope_path, f"{scope_id}-input.parquet"))
-    scopes_meta = json.load(open(os.path.join(scope_path, f"{scope_id}.json")))
+    scope_meta = json.load(open(os.path.join(scope_path, f"{scope_id}.json")))
 
-    print(f"Loading embeddings from {dataset_path}/embeddings/{scopes_meta['embedding_id']}.h5")
-    embeddings = h5py.File(os.path.join(dataset_path, "embeddings", f"{scopes_meta['embedding_id']}.h5"), "r")
+    print(f"Loading embeddings from {dataset_path}/embeddings/{scope_meta['embedding_id']}.h5")
+    embeddings = h5py.File(os.path.join(dataset_path, "embeddings", f"{scope_meta['embedding_id']}.h5"), "r")
 
     db_uri = os.path.join(dataset_path, "lancedb")
     db = lancedb.connect(db_uri)
 
-    print(f"Converting embeddings to numpy arrays")
+    print(f"Converting embeddings to numpy arrays", embeddings['embeddings'].shape)
     scope_df["vector"] = [np.array(row) for row in embeddings['embeddings']]
+
+    if scope_meta["sae_id"]:
+        print(f"SAE scope detected, adding metadata")
+        # read in the sae indices
+        sae_path = os.path.join(dataset_path, "saes", f"{scope_meta['sae_id']}.h5")
+        with h5py.File(sae_path, 'r') as f:
+            all_top_indices = np.array(f["top_indices"])
+            all_top_acts = np.array(f["top_acts"])
+
+        # scope_df["sae_indices"] = all_top_indices
+        # scope_df["sae_acts"] = all_top_acts
+        scope_df["sae_indices"] = [row.tolist() for row in all_top_indices]
+        scope_df["sae_acts"] = [row.tolist() for row in all_top_acts]
 
     table_name = scope_id
 
@@ -49,8 +62,17 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256, 
     print(f"Creating table '{table_name}'")
     tbl = db.create_table(table_name, scope_df)
 
-    print(f"Creating index on table '{table_name}'")
+    print(f"Creating ANN index for embeddings on table '{table_name}'")
+    print(f"Partitioning into {partitions} partitions, {sub_vectors} sub-vectors")
     tbl.create_index(num_partitions=partitions, num_sub_vectors=sub_vectors, metric=metric)
+
+    print(f"Creating index for cluster on table '{table_name}'")
+    tbl.create_scalar_index("cluster", index_type="BTREE")
+
+    if scope_meta["sae_id"]:
+        print(f"Creating index for sae_indices on table '{table_name}'")
+        tbl.create_scalar_index("sae_indices", index_type="LABEL_LIST")
+
 
     print(f"Table '{table_name}' created successfully")
 
@@ -84,7 +106,7 @@ def main():
     parser.add_argument("--scope_id", help="ID of the scope to convert", type=str)
     parser.add_argument("--metric", help="Metric to use for the index", type=str, default="cosine")
     parser.add_argument("--partitions", help="Number of partitions to use for the index", type=int, default=256)
-    parser.add_argument("--sub_vectors", help="Number of sub-vectors to use for the index", type=int, default=96)
+    parser.add_argument("--sub_vectors", help="Number of sub-vectors to use for the index", type=int, default=128)
     args = parser.parse_args()
     print(f"ARGS: {args}")
     export_lance(args.directory, args.dataset, args.scope_id, args.metric, args.partitions, args.sub_vectors)

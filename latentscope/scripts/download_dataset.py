@@ -77,6 +77,17 @@ def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
             meta['id'] = dataset_name
             with open(meta_path, 'w') as f:
                 json.dump(meta, f, indent=2)
+        
+        # Update dataset.id in all scope JSON files
+        scopes_dir = latentscope_path / "scopes"
+        if scopes_dir.exists():
+            for scope_file in scopes_dir.glob("scopes-*.json"):
+                with open(scope_file, 'r') as f:
+                    scope_data = json.load(f)
+                if 'dataset' in scope_data:
+                    scope_data['dataset']['id'] = dataset_name
+                    with open(scope_file, 'w') as f:
+                        json.dump(scope_data, f, indent=2)
 
         print(f"Successfully downloaded latentscope files to: {latentscope_path}")
             
