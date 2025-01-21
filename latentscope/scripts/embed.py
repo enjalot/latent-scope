@@ -97,8 +97,14 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     model.load_model()
 
     if max_seq_length is not None and isinstance(model, TransformersEmbedProvider):
-        print("setting max seq length", max_seq_length)
-        model.model.max_seq_length = max_seq_length
+        # Check if max_seq_length is a setter property
+        try:
+            model.model.max_seq_length = max_seq_length
+        except AttributeError:
+            print("Warning: This model does not support setting max_seq_length. Continuing with default length.")
+        # else:
+        #     print("Warning: max_seq_length is not a settable property, setting may not work")
+        #     model.model.max_seq_length = max_seq_length
 
     print("Checking for empty inputs")
     sentences = df[text_column].tolist()
