@@ -392,23 +392,24 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         </div>
       ) : null}
 
-      {viewMode == 'table' && (
-        <div className={styles['row-information']}>
-          {selectedIndices.length ? (
-            <div>
+      {viewMode == 'table' ||
+        (viewMode == 'both' && (
+          <div className={styles['row-information']}>
+            {selectedIndices.length ? (
+              <div>
+                <span>
+                  Selected {selectedIndices?.length} of {dataset?.length} rows
+                </span>
+                <Button color="secondary" icon="x" onClick={() => clearSelection()}></Button>
+                {/* <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button> */}
+              </div>
+            ) : (
               <span>
-                Selected {selectedIndices?.length} of {dataset?.length} rows
+                Showing {dataIndices?.length} of {dataset?.length} rows
               </span>
-              <Button color="secondary" icon="x" onClick={() => clearSelection()}></Button>
-              {/* <Button color="delete" variant="outline" icon="trash" onClick={() => console.log("TODO: implement delete modal")} text="?"></Button> */}
-            </div>
-          ) : (
-            <span>
-              Showing {dataIndices?.length} of {dataset?.length} rows
-            </span>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        ))}
 
       {tableHeight > 0 && viewMode !== 'umap' && dataset ? (
         <div className={styles['table-container']} style={{ height: tableHeight }}>
