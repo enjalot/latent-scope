@@ -362,7 +362,7 @@ function FilterDataTable({
           sae_id: sae_id,
         };
         const timestamp = Date.now();
-        console.log('fetching query', body, timestamp);
+        // console.log('fetching query', body, timestamp);
 
         fetch(`${apiUrl}/query`, {
           method: 'POST',
@@ -380,10 +380,10 @@ function FilterDataTable({
           .then((response) => response.json())
           .then((data) => {
             let { rows, totalPages, total } = data;
-            console.log('query fetched data', data);
+            // console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
             setPageCount(totalPages);
-            console.log('======= SETTING ROWS =======', rows, timestamp);
+            // console.log('======= SETTING ROWS =======', rows, timestamp);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
             onDataTableRows(rows);
             // setRowsLoading(false);

@@ -107,6 +107,12 @@ def get_dataset_sae(dataset, sae):
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
+@datasets_bp.route('/<dataset>/features/<sae>', methods=['GET'])
+def get_dataset_features(dataset, sae):
+    file_path = os.path.join(DATA_DIR, dataset, "saes", sae + "_features.parquet")
+    df = pd.read_parquet(file_path)
+    return df.to_json(orient="records")
+
 @datasets_bp.route('/<dataset>/umaps', methods=['GET'])
 def get_dataset_umaps(dataset):
     directory_path = os.path.join(DATA_DIR, dataset, "umaps")

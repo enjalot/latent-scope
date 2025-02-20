@@ -242,11 +242,11 @@ def embed_truncate(dataset_id, embedding_id, dimensions):
             "model_id": embedding_meta["model_id"],
             "dataset_id": dataset_id,
             "text_column": embedding_meta["text_column"],
-            "max_seq_length": embedding_meta["max_seq_length"],
+            "max_seq_length": embedding_meta.get("max_seq_length"),
             "dimensions": matroyshka.shape[1],
             "prefix": embedding_meta["prefix"],
-            "min_values": min_values.tolist(),
-            "max_values": max_values.tolist(),
+            # "min_values": min_values.tolist(),
+            # "max_values": max_values.tolist(),
             }, f, indent=2)
 
     print("wrote", os.path.join(embedding_dir, f"{new_embedding_id}.h5"))

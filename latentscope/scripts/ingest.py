@@ -128,6 +128,8 @@ def ingest(dataset_id, df, text_column = None):
                     column_metadata[column]["image"] = True
         if column_type == "number":
             extent = df[column].agg(['min', 'max'])
+            # Replace infinity values with None before converting to list
+            extent = extent.replace([np.inf, -np.inf], np.nan)
             column_metadata[column]["extent"] = [None if pd.isna(x) else x for x in extent.tolist()]
         if column_type == "date":
             extent = df[column].agg(['min', 'max'])

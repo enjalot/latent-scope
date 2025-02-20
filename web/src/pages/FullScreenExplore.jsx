@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
 
 import './Explore.css';
 import useCurrentScope from '../hooks/useCurrentScope';
@@ -21,7 +20,6 @@ export const SELECT = 'select';
 export const COLUMN = 'column';
 export const FEATURE = 'feature';
 export const PER_PAGE = 100;
-
 
 function Explore() {
   const { dataset: datasetId, scope: scopeId } = useParams();
@@ -47,36 +45,21 @@ function Explore() {
   const [threshold, setThreshold] = useState(0.1);
 
   useEffect(() => {
-    const asyncRead = async (meta) => {
-      // console.log("META", meta)
-      if (!meta) return;
-      const buffer = await asyncBufferFromUrl(meta.url);
-      parquetRead({
-        file: buffer,
-        onComplete: (data) => {
-          // let pts = []
-          // console.log("DATA", data)
-          let fts = data.map((f) => {
-            // pts.push([f[2], f[3], parseInt(f[5])])
-            return {
-              feature: parseInt(f[0]),
-              max_activation: f[1],
-              label: f[6],
-              order: f[7],
-            };
-          });
-          // .filter(d => d.label.indexOf("linear") >= 0)
-          // .sort((a,b) => a.order - b.order)
-          console.log('FEATURES', fts);
-          setFeatures(fts);
-        },
-      });
-    };
     if (sae && embeddings && scope) {
       let embedding = embeddings.find((e) => e.id == scope.embedding_id);
-      if (embedding) {
-        asyncRead(saeAvailable[embedding.model_id]);
-      } 
+      if (embedding && saeAvailable[embedding.model_id]) {
+        apiService.getFeatures(saeAvailable[embedding.model_id]?.url).then((fts) => {
+          apiService.getDatasetFeatures(datasetId, sae?.id).then((dsfts) => {
+            dsfts.forEach((ft, i) => {
+              fts[i].dataset_max = ft.max_activation;
+              fts[i].dataset_avg = ft.avg_activation;
+              fts[i].dataset_count = ft.count;
+            });
+            console.log('DATASET included FEATURES', fts);
+            setFeatures(fts);
+          });
+        });
+      }
     }
   }, [scope, sae, embeddings]);
 
@@ -638,6 +621,7 @@ function Explore() {
                 activeFilterTab={activeFilterTab}
                 dataTableRows={dataTableRows}
                 feature={feature}
+                features={features}
               />
             ) : null}
           </div>

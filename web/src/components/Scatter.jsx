@@ -74,8 +74,6 @@ function ScatterPlot({
   activeFilterTab,
   scope,
 }) {
-  const { sae: { max_activations = [] } = {} } = scope || {};
-
   const container = useRef();
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
@@ -188,13 +186,13 @@ function ScatterPlot({
         let r = range(0, 50);
         const colorScale = scaleSequential(colorInterpolator).domain([0, 50]);
         pointColor = r.map((i) => rgb(colorScale(i)).hex());
-        console.log('COLOR');
+        // console.log('COLOR');
         scatterplot.set({ colorBy: 'valueB' });
         // scatterplot.set({ colorBy: 'valueA' });
       }
 
       if (opacityBy) {
-        console.log('OPACITY', opacityBy);
+        // console.log('OPACITY', opacityBy);
         scatterplot.set({
           opacityBy,
           sizeBy: opacityBy,

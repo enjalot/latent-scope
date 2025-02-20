@@ -1,5 +1,7 @@
 export const apiUrl = import.meta.env.VITE_API_URL;
 
+const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
+
 export const apiService = {
   fetchDataset: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -284,5 +286,30 @@ export const apiService = {
     return fetch(`${apiUrl}/models/custom-models/${modelId}`, {
       method: 'DELETE',
     }).then((response) => response.json());
+  },
+  getFeatures: async (url) => {
+    const buffer = await asyncBufferFromUrl(url);
+    return new Promise((resolve) => {
+      parquetRead({
+        file: buffer,
+        // rowFormat: 'object',
+        onComplete: (data) => {
+          let fts = data.map((f) => {
+            return {
+              feature: parseInt(f[0]),
+              max_activation: f[1],
+              label: f[6],
+              order: f[7],
+            };
+          });
+          resolve(fts);
+        },
+      });
+    });
+  },
+  getDatasetFeatures: async (datasetId, saeId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/features/${saeId}`).then((response) =>
+      response.json()
+    );
   },
 };

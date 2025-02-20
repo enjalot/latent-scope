@@ -71,6 +71,9 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     embedding_file = os.path.join(DATA_DIR, dataset_id, "embeddings", embedding_id + ".json")
     with open(embedding_file) as f:
         embedding = json.load(f)
+        # Remove min_values and max_values from embedding data
+        embedding.pop('min_values', None)
+        embedding.pop('max_values', None)
         scope["embedding"] = embedding
 
     if sae_id:
@@ -134,7 +137,7 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
 
     # umap_df['tile_index_32'] = make_tiles(umap_df['x'], umap_df['y'], 32)
     umap_df['tile_index_64'] = make_tiles(umap_df['x'], umap_df['y'], 64)
-    # umap_df['tile_index_128'] = make_tiles(umap_df['x'], umap_df['y'], 128)
+    umap_df['tile_index_128'] = make_tiles(umap_df['x'], umap_df['y'], 128)
 
     cluster_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_id + ".parquet"))
     cluster_labels_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_labels_id + ".parquet"))

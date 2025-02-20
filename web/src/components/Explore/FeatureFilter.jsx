@@ -19,7 +19,7 @@ export default function FeatureFilter({
 
   const featureLabel = (featIdx) => {
     const featureObj = features.find((f) => f.feature === featIdx);
-    return `(${featIdx}) ${featureObj.label}`;
+    return `${featIdx}: ${featureObj.label} (${featureObj.dataset_count})`;
   };
 
   useEffect(() => {
@@ -31,12 +31,12 @@ export default function FeatureFilter({
   // default the threshold to half the max activation of the feature
   useEffect(() => {
     if (feature >= 0) {
-      const maxActivation = scope?.sae?.max_activations[feature] || 0;
+      const maxActivation = features[feature]?.dataset_avg || 0;
       let t = maxActivation < 0.2 ? maxActivation / 2 : 0.1;
       setThreshold(t);
       onThreshold(t);
     }
-  }, [feature, scope, onThreshold]);
+  }, [feature, features, onThreshold]);
 
   const items = useMemo(
     () =>
@@ -44,8 +44,12 @@ export default function FeatureFilter({
         ?.map((f) => ({
           value: f.feature,
           label: featureLabel(f.feature),
+          dataset_max: f.dataset_max,
+          dataset_avg: f.dataset_avg,
+          dataset_count: f.dataset_count,
         }))
-        .filter((f) => scope?.sae?.max_activations[f.value] !== 0) || [],
+        .filter((f) => f.dataset_max !== 0)
+        .sort((a, b) => b.dataset_avg - a.dataset_avg) || [],
     [features, scope]
   );
 
@@ -174,7 +178,7 @@ export default function FeatureFilter({
             <input
               type="range"
               min={0.01}
-              max={scope?.sae?.max_activations[feature] || 0.1}
+              max={features[feature]?.dataset_max || 0.1}
               step={0.01}
               value={threshold}
               onChange={(e) => setThreshold(Number(e.target.value))}

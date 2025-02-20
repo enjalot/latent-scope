@@ -1,62 +1,60 @@
 [
   {
-      "provider": "openai",
-      "name": "text-embedding-3-small",
-      "id": "openai-text-embedding-3-small",
-      "params": {
-          "max_tokens": 8192,
-          "dimensions": [1536, 768, 512, 256, 128, 64, 16]
-      }
-  },
-{
-      "provider": "openai",
-      "name": "text-embedding-3-large",
-      "id": "openai-text-embedding-3-large",
-      "params": {
-          "max_tokens": 8192,
-          "dimensions": [3072, 1536, 768, 512, 256, 128, 64, 16]
-      }
+    "provider": "openai",
+    "name": "text-embedding-3-small",
+    "id": "openai-text-embedding-3-small",
+    "params": {
+      "max_tokens": 8192,
+      "dimensions": [1536, 768, 512, 256, 128, 64, 16]
+    }
   },
   {
-      "provider": "openai",
-      "name": "text-embedding-ada-002",
-      "id": "openai-text-embedding-ada-002",
-      "params": {
-          "max_tokens": 8192
-      }
+    "provider": "openai",
+    "name": "text-embedding-3-large",
+    "id": "openai-text-embedding-3-large",
+    "params": {
+      "max_tokens": 8192,
+      "dimensions": [3072, 1536, 768, 512, 256, 128, 64, 16]
+    }
   },
   {
-      "provider": "mistralai",
-      "name": "mistral-embed",
-      "id": "mistralai-mistral-embed",
-      "params": {
-      }
+    "provider": "openai",
+    "name": "text-embedding-ada-002",
+    "id": "openai-text-embedding-ada-002",
+    "params": {
+      "max_tokens": 8192
+    }
   },
   {
-      "provider": "cohereai",
-      "name": "embed-english-v3.0",
-      "id": "cohereai-embed-english-v3.0",
-      "params": {
-          "input_type": "clustering"
-      }
+    "provider": "mistralai",
+    "name": "mistral-embed",
+    "id": "mistralai-mistral-embed",
+    "params": {}
   },
-    {
-      "provider": "voyageai",
-      "name": "voyage-2",
-      "id": "voyageai-voyage-2",
-      "params": {
-          "truncation": true,
-          "max_tokens": 4000
-      }
+  {
+    "provider": "cohereai",
+    "name": "embed-english-v3.0",
+    "id": "cohereai-embed-english-v3.0",
+    "params": {
+      "input_type": "clustering"
+    }
   },
   {
     "provider": "voyageai",
-    "name": "voyage-large-2-instruct",
-    "id": "voyageai-voyage-large-2-instruct",
+    "name": "voyage-2",
+    "id": "voyageai-voyage-2",
     "params": {
-        "truncation": true,
-        "max_tokens": 16000
+      "truncation": true,
+      "max_tokens": 32000
     }
-}
-
+  },
+  {
+    "provider": "voyageai",
+    "name": "voyage-code-2",
+    "id": "voyageai-voyage-code-2",
+    "params": {
+      "truncation": true,
+      "max_tokens": 32000
+    }
+  }
 ]

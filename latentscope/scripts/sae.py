@@ -100,8 +100,6 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     print("ALL ACTS SHAPE", all_acts.shape)
     print("ALL INDS SHAPE", all_indices.shape)
     matrix = scipy.sparse.lil_matrix((all_acts.shape[0], model.num_latents), dtype=np.float32)
-    # matrix.rows = all_indices.tolist()
-    # matrix.data = all_acts.tolist()
     for i in range(all_acts.shape[0]):
         matrix.rows[i] = all_indices[i].tolist()
         matrix.data[i] = all_acts[i].tolist()
@@ -109,25 +107,26 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
 
     csr = matrix.tocsr()
     max_activations = csr.max(axis=0).toarray().flatten()
+    feature_counts = np.bincount(all_indices.flatten(), minlength=model.num_latents)
+    avg_activations = np.array(csr.sum(axis=0)).flatten() / np.maximum(feature_counts, 1)  # Avoid division by zero
 
-    print("MAX ACTIVATIONS", max_activations.shape)
-    print("MAX ACTIVATIONS", max_activations)
-
-    # TODO a faster way to calculate these? probably a scikit sparse matrix calculation or something
-    # for feature_idx in tqdm(range(model.num_latents), desc="Calculating max activations"):
-    #     feature_mask = all_indices == feature_idx
-    #     if feature_mask.any():
-    #         feature_activations = np.where(feature_mask, all_acts, 0.0)
-    #         max_activation = np.max(feature_activations)
-    #         max_activations[feature_idx] = max_activation
+    # Create features DataFrame
+    features_df = pd.DataFrame({
+        'feature_id': range(model.num_latents),
+        'max_activation': max_activations,
+        'count': feature_counts,
+        'avg_activation': avg_activations
+    })
+    
+    # Save features to parquet
+    features_df.to_parquet(os.path.join(sae_dir, f"{sae_id}_features.parquet"))
 
     dead_features = np.where(max_activations <= 0)
     alive_features = np.where(max_activations > 0)
-    # Count the number of dead features
     num_dead_features = len(dead_features[0])
     print(f"Number of dead features: {num_dead_features}")
 
-    # create the metadata json
+    # Update metadata json (removed max_activations)
     with open(os.path.join(sae_dir, f"{sae_id}.json"), 'w') as f:
         json.dump({
             "id": sae_id,
@@ -135,7 +134,6 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
             "k_expansion": k_expansion,
             "embedding_id": embedding_id,
             "dataset_id": dataset_id,
-            "max_activations": [round(act, 5) for act in max_activations.tolist()],
             "num_features": model.num_latents,
             "dead_features": num_dead_features,
             "alive_features": len(alive_features[0])
