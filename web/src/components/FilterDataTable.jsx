@@ -119,7 +119,9 @@ function FeatureModal({
                 {featIdx}:
               </span>
               <span className="feature-modal-item-filter-label">
-                {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)})
+                {features?.[featIdx]?.label} ({topActs?.[i]?.toFixed(3)} /{' '}
+                {features?.[featIdx]?.dataset_max?.toFixed(3)}){/* [count:{' '} */}
+                {/* {features?.[featIdx]?.dataset_count}] */}
               </span>
             </div>
           </div>
