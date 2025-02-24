@@ -50,8 +50,8 @@
   },
   {
     "provider": "voyageai",
-    "name": "voyage-code-2",
-    "id": "voyageai-voyage-code-2",
+    "name": "voyage-code-3",
+    "id": "voyageai-voyage-code-3",
     "params": {
       "truncation": true,
       "max_tokens": 32000
