@@ -67,6 +67,12 @@ function Export() {
     return files;
   }, [scope, datasetFiles]);
 
+  const hasLance = useMemo(() => {
+    return datasetFiles.find(
+      (d) => d[1].indexOf('lancedb') == 0 && d[1].indexOf(scopeId) >= 0 && d[1].indexOf('/data') > 0
+    );
+  }, [datasetFiles, scopeId]);
+
   const fileLink = useCallback(
     (d, i) => {
       return (
@@ -115,9 +121,7 @@ function Export() {
         {scopeId ? (
           <div className={styles['code-snippets']}>
             <h3>Python code snippets</h3>
-            <p className={styles['description']}>
-              These snippets can be used to load the data and embeddings in python.
-            </p>
+            <p className={styles['description']}>Load the data and embeddings in python.</p>
             {/* prettier-ignore */}
             <code>
             import h5py<br/>
@@ -128,6 +132,21 @@ function Export() {
             with h5py.File({scopeSubFiles.embeddings?.[0]?.[3]}, 'r') as emb_file:<br/>
             &nbsp;&nbsp;embeddings = np.array(emb_file["embeddings"])<br/>
             </code>
+
+            {hasLance ? (
+              <div className={styles['code-snippet']}>
+                <p className={styles['description']}>Query using LanceDB</p>
+                <code>
+                  import lancedb
+                  <br />
+                  db = lancedb.connect("{hasLance[3].split('/scopes')[0]}")
+                  <br />
+                  table = db.open_table("{scopeId}")
+                  <br />
+                  results = table.search(query).metric("cosine").limit(10).to_list()
+                </code>
+              </div>
+            ) : null}
           </div>
         ) : null}
 

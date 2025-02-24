@@ -296,6 +296,8 @@ def get_dataset_export_list(dataset):
         for file in files:
             if file == ".DS_Store":
                 continue
+            if file.endswith('.lock') or file.endswith('.metadata'):
+                continue
             full_path = os.path.join(root, file)
             file_name = os.path.basename(full_path)
             relative_path = os.path.relpath(full_path, directory_path)

@@ -127,11 +127,14 @@ tags:
 # {dataset_name}
 
 This dataset contains the files necessary to view in [latentscope](https://github.com/enjalot/latent-scope).
-The files in the `latentscope` are used by the app to view. You can also preview the scope TODO
+The files in the `latentscope` are used by the app to view.
 
-Total size of dataset files: {human_readable_size}
+Total size of dataset files: {human_readable_size}.
 
-TODO: download script inside latentscope
+To view this scope, `pip install latentscope` and run `ls-serve`. You can then download via the UI and explore.
+If you have questions, join us on [discord](https://discord.gg/x7NvpnM4pY).
+
+
 """
         readme_path = temp_path / "README.md"
         with open(readme_path, "w") as f:
