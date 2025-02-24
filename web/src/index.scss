@@ -363,8 +363,56 @@ button:focus-visible {
 }
 
 @media (prefers-color-scheme: dark) {
+  :root {
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
+
+    // Background colors
+    --color-background-overlay: rgba(23, 10, 122, 0.6);
+    --color-background-subtle-callout: #2A2A3F;
+    --color-background-modal-overlay: rgba(0, 0, 0, 0.5);
+    --color-background-critical: #3F1F24;
+    --color-background-neutral-0: #1A1A1A;
+
+    // Text colors
+    --color-text-main: #FFFFFF;
+    --color-text-subtle: rgba(255, 255, 255, 0.65);
+    --color-text-reverse: #213547;
+    --color-text-reverse-subtle: rgba(33, 53, 71, 0.65);
+
+    // Border colors
+    --color-border-1: #333333;
+    --color-border-2: #404040;
+    --color-border-3: #4D4D4D;
+
+    // Neutral colors
+    --color-neutral-0: #1A1A1A;
+    --color-neutral-0-reverse: #FFFFFF;
+    --color-neutral-1: #2A2A2A;
+    --color-neutral-2: #3A3A3A;
+    --color-neutral-3: #4A4A4A;
+
+    // Badge colors
+    --color-badge-primary-bg: #FFFFFF;
+    --color-badge-primary-text: #000000;
+    --color-badge-secondary-bg: #333333;
+    --color-badge-secondary-text: #FFFFFF;
+
+    // Menu colors
+    --color-interactions-menu: #FFFFFF;
+    --color-interactions-menu-hover: #CCCCCC;
+    --color-interactions-menu-inactive: #808080;
+
+    // Copy button
+    --copy-button-text-color: #A0A0A0;
+  }
+
+  button {
+    background-color: #2A2A2A;
+    color: #FFFFFF;
+  }
+
   ::-webkit-scrollbar-thumb {
-    // background-color: var(--borders-color-border-3);
     background-color: #555;
   }
 }

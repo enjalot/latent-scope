@@ -63,5 +63,7 @@
         border-right: 1px solid var(--borders-color-border-3);
         background-color: #111;
     }
-
+    .metadata-tooltip {
+        background-color: #333;
+    }
 }

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import Select from 'react-select';
-
+import { selectStyles } from './Explore/SelectStyles';
 import { format } from 'd3-format';
 
 const intf = format(',d');
@@ -101,6 +101,7 @@ function ModelSelect({
       getOptionValue={(option) => option.id}
       onChange={onChange}
       value={defaultValue}
+      styles={selectStyles}
       // menuIsOpen={true}
     />
   );

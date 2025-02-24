@@ -1,5 +1,4 @@
-  
- :root { 
+:root { 
     /* Light Mode */
     /* color */
     --borders-color-border-1: #e6e6e6;
@@ -50,4 +49,31 @@
     --text-color-text-subtle: #757575;
     --text-color-text-success: #51793d;
     --text-color-text-warning: #8b6c2e;
+
+    /* Dark Mode */
+    @media (prefers-color-scheme: dark) {
+        --borders-color-border-1: #3a3a3a;
+        --borders-color-border-2: #4a4a4a;
+        --borders-color-border-3: #4a4a4a33;
+        
+        --neutrals-color-neutral-0: #242424;
+        --neutrals-color-neutral-0-reverse: #ffffff;
+        --neutrals-color-neutral-1: #2f2f2f;
+        --neutrals-color-neutral-2: #3d3d3d;
+        --neutrals-color-neutral-3: #505050;
+        
+        --text-color-text-main: #e7e7e7;
+        --text-color-text-subtle: #a0a0a0;
+        --text-color-text-reverse: #242424;
+        --text-color-text-reverse-subtle: #2f2f2f;
+        
+        /* Keep the interaction colors the same for brand consistency */
+        --interactions---primary-color-interaction-primary: #b87333;
+        --interactions---primary-color-interaction-primary-hover: #d28440;
+        --interactions---primary-color-interaction-primary-active: #945e2b;
+        
+        --interactions---secondary-color-interaction-secondary: #2f2f2f;
+        --interactions---secondary-color-interaction-secondary-hover: #3d3d3d;
+        --interactions---secondary-color-interaction-secondary-active: #505050;
+    }
 }
