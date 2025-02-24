@@ -23,6 +23,7 @@ export default function useNearestNeighborsSearch({
         dataset: datasetId,
         query,
         embedding_id: scope.embedding_id,
+        scope_id: scope.id,
         ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {}),
       });
 

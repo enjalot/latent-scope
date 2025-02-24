@@ -15,6 +15,7 @@ DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
 
 # in memory cache of dataset metadata, embeddings, models and tokenizers
 DATASETS = {}
+DBS = {}
 EMBEDDINGS = {}
 FEATURES = {}
 DATAFRAMES = {}
@@ -26,13 +27,16 @@ Hard coded to 150 results currently
 @search_bp.route('/nn', methods=['GET'])
 def nn():
     dataset = request.args.get('dataset')
+    scope_id = request.args.get('scope_id')
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
     dimensions = int(dimensions) if dimensions else None
     # return_embeddings = True if request.args.get('return_embeddings') else False
     print("dimensions", dimensions)
+    # Check if this scope has a LanceDB index
+    query = request.args.get('query')
+    print("query", query)      
 
-    num = 150
     if embedding_id not in EMBEDDINGS:
         print("loading model", embedding_id)
         with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json"), 'r') as f:
@@ -45,6 +49,15 @@ def nn():
     else:
         model = EMBEDDINGS[dataset + "-" + embedding_id]
 
+    # If lancedb is available, we use it to search
+    lance_path = os.path.join(DATA_DIR, dataset, "lancedb", scope_id + ".lance")
+    print("LANCE PATH", lance_path)
+    if os.path.exists(lance_path):
+        print(f"Found LanceDB index at {lance_path}, using vector search")
+        return nn_lance(dataset, scope_id, model, query, dimensions)
+
+    # Otherwise we use the nearest neighbors search from sklearn
+    num = 150
     if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
         # load the dataset embeddings
         # embeddings = np.load(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".npy"))
@@ -61,8 +74,7 @@ def nn():
         nne = DATASETS[dataset][embedding_id]
     
     # embed the query string and find the nearest neighbor
-    query = request.args.get('query')
-    print("query", query)
+
     embedding = np.array(model.embed([query], dimensions=dimensions))
     distances, indices = nne.kneighbors(embedding)
     filtered_indices = indices[0]
@@ -71,6 +83,16 @@ def nn():
     distances = filtered_distances
     return jsonify(indices=indices.tolist(), distances=distances.tolist(), search_embedding=embedding.tolist())
 
+
+def nn_lance(dataset, scope_id, model, query, dimensions):
+    import lancedb
+    db = lancedb.connect(os.path.join(DATA_DIR, dataset, "lancedb"))
+    table = db.open_table(scope_id)
+    embedding = model.embed([query], dimensions=dimensions)
+    results = table.search(embedding).metric("cosine").select(["index"]).limit(100).to_list()
+    indices = [result["index"] for result in results]
+    distances = [result["_distance"] for result in results]
+    return jsonify(indices=indices, distances=distances, search_embedding=embedding)
 
 """
 Summarize features for a given set of dataset indices.
