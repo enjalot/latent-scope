@@ -46,3 +46,5 @@ export const mapPointSizeRange = [
   12.5, // hovered
   0, // hidden
 ];
+
+export const contrastColor = '#2ecc71';

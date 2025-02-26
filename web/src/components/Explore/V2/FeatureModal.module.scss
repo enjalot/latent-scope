@@ -1,0 +1,68 @@
+.featureModal {
+  width: 80vw !important;
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.headerText {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.content {
+  padding: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.item {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 2px;
+  border-radius: 4px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.itemBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  opacity: 0.2;
+  border-radius: 4px;
+  z-index: 0;
+}
+
+.featureLabel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+
+.filterLink {
+  cursor: pointer;
+  color: #666;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.filterLabel {
+  color: #333;
+}
+
+
+

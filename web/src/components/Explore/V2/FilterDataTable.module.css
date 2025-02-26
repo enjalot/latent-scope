@@ -1,0 +1,241 @@
+.filterDataTable {
+  width: calc(100% - 2px);
+  display: flex;
+  flex-direction: column;
+  padding-top: 1.5rem;
+  margin-top: 8px;
+  /* border: 1px solid #ccc; */
+  border-radius: 5px;
+  /* justify-content: center; */
+  height: 95%;
+}
+
+@media screen and (max-width: 1024px) {
+  .filterDataTable {
+    padding-top: .5rem;
+  }
+}
+
+@keyframes loadingFade {
+  0% { opacity: 0.25; }
+  50% { opacity: 1; }
+  100% { opacity: 0.25; }
+}
+
+.loading {
+  animation: loadingFade 1.5s ease-in-out infinite;
+}
+
+.filterDataTablePageControls {
+  margin-top: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 14px;
+  padding: 4px 0px;
+}
+
+.table {
+  border-spacing: 0;
+}
+
+.tableHeader {
+  text-align: left;
+  padding: 0 6px;
+  border-right: 1px solid #ccc;
+}
+
+.tableCell {
+  text-align: left;
+  padding: 3px 6px;
+  border-bottom: 1px solid #eee;
+  border-right: 1px solid #eee;
+}
+
+.lsClusterSelect {
+  max-width: 200px;
+}
+
+.tags {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+}
+
+.filterTableScrollableBody {
+  overflow-y: auto;
+}
+
+.tagActive {
+  background-color: #fff;
+  border: 1px solid gray;
+}
+
+.tagInactive {
+  background-color: #eee;
+  filter: grayscale(100%);
+  opacity: 0.5;
+}
+
+.textColumn {
+  background-color: var(--neutrals-color-neutral-2);
+  font-weight: bold;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tagActive {
+    background-color: #111;
+    border: 1px solid gray;
+  }
+  .tagInactive {
+    background-color: #333;
+  }
+  .textColumn {
+    background-color: #333;
+    color: #fff;
+  }
+}
+
+/* React-Data-Grid */
+.rdgRow {
+  cursor: pointer;
+}
+
+.rdgRow:hover {
+  background-color: var(--interactions---secondary-color-interaction-secondary-hover);
+}
+
+.rdgCell {
+  border-inline-end: 0 !important;
+  border-block-end: 0.5px solid #ededed !important;
+}
+
+.rdg {
+  border: 0px solid #ededed !important;
+  /* overflow: visible !important; */
+  /* overflow-y: hidden; */
+}
+
+@media (prefers-color-scheme: dark) {
+  .rdgRow:hover {
+     background-color: #555;
+  }
+}
+
+.featureCell {
+  padding: 8px;
+}
+
+.featurePlotContainer canvas {
+  cursor: pointer;
+}
+
+.featureModalItemFilterButton {
+  transform: scale(0.6);
+}
+
+.featureCell:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.featureCellExpanded {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  padding: 8px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.minimizeBtn {
+  margin-bottom: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.featureTooltip {
+  /* background-color: white !important; */
+  background-color: var(--interactions---primary-color-interaction-primary) !important;
+  color: var(--neutrals-color-neutral-0) !important;
+  border: 1px solid #ccc !important;
+  padding: 4px !important;
+  font-size: 12px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  z-index: 9999 !important;
+  width: auto !important;
+  max-width: 400px !important;  /* Adjust as needed */
+  white-space: normal !important;
+  word-break: break-word !important;
+  min-width: 200px !important;
+  opacity: 1 !important;
+}
+
+/* .rdg-cell {
+  overflow: visible !important;
+} */
+
+.featureColumnInfoTooltip {
+  background-color: #D3965E !important;
+  padding: 10px !important;
+  border-radius: 5px !important;
+  opacity: 1 !important;
+  /* pointer-events: auto !important; */
+  display: block !important;
+  visibility: visible !important;
+  width: 200px !important;
+  text-wrap: wrap !important;
+  z-index: 9999 !important;
+  position: absolute !important;
+  /* top: -50px !important; */
+}
+
+.featureColumnInfoTooltipIcon:hover {
+  cursor: pointer;
+}
+
+.featureColumnInfoTooltipIcon {
+  margin-left: 4px;
+}
+
+/* Add these styles to your CSS module */
+.indexCircleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.indexCircle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #2ecc71;
+  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);  /* semi-transparent white */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;  /* ensure it's above the grid */
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .loadingOverlay {
+    background-color: rgba(0, 0, 0, 0.7);  /* semi-transparent black for dark mode */
+  }
+}
