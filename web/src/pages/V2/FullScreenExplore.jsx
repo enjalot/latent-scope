@@ -53,6 +53,8 @@ function ExploreContent() {
     tags,
   } = useScope();
 
+  const navigate = useNavigate();
+
   // Get filter-related state from FilterContext
   const {
     // filterLoading,
@@ -165,6 +167,13 @@ function ExploreContent() {
   const tableHeight = useMemo(
     () => `calc(100% - ${filtersHeight + FILTERS_PADDING}px)`,
     [filtersHeight]
+  );
+
+  const handleScopeChange = useCallback(
+    (e) => {
+      navigate(`/datasets/${dataset?.id}/explore/${e.target.value}`);
+    },
+    [dataset, navigate]
   );
 
   useEffect(() => {
@@ -284,7 +293,13 @@ function ExploreContent() {
 
   return (
     <>
-      <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />
+      <SubNav
+        user={userId}
+        dataset={dataset}
+        scope={scope}
+        scopes={scopes}
+        onScopeChange={handleScopeChange}
+      />
       <div className="page-container">
         {!isMobileDevice() && (
           <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} tags={tags} />
