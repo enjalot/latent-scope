@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from './FilterActions.module.scss';
 import Container from './Search/Container';
+import styles from './FilterActions.module.scss';
 
 export default function FilterActions() {
   return (
