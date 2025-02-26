@@ -387,7 +387,7 @@ function FilterDataTable({
             setPageCount(totalPages);
             // console.log('======= SETTING ROWS =======', rows, timestamp);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
-            onDataTableRows(rows);
+            if (onDataTableRows) onDataTableRows(rows);
             // setRowsLoading(false);
           });
       } else {
