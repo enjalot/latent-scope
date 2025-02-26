@@ -329,4 +329,13 @@ export const apiService = {
         return data.rows[0][scope.dataset.text_column];
       });
   },
+  columnFilter: async (datasetId, filters) => {
+    return fetch(`${apiUrl}/column-filter`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ dataset: datasetId, filters: filters }),
+    }).then((response) => response.json());
+  },
 };

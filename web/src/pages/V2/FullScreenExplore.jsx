@@ -282,8 +282,6 @@ function ExploreContent() {
       </>
     );
 
-  console.log({ features });
-
   return (
     <>
       <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />

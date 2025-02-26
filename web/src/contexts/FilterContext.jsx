@@ -121,7 +121,6 @@ export function FilterProvider({ children }) {
       if (!filterConfig && !hasFilterInUrl) {
         indices = baseIndices;
       } else if (filterConfig) {
-        console.log('FILTER CONFIG', filterConfig);
         const { type, value } = filterConfig;
 
         switch (type) {
@@ -179,7 +178,6 @@ export function FilterProvider({ children }) {
     [filteredIndices]
   );
   const shownIndices = useMemo(() => {
-    console.log({ filteredIndices, page, deletedIndices });
     const start = page * ROWS_PER_PAGE;
     const nonDeletedIndices = filteredIndices.filter((index) => !deletedIndices.includes(index));
     return nonDeletedIndices.slice(start, start + ROWS_PER_PAGE);

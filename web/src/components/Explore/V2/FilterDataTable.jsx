@@ -160,7 +160,7 @@ function FilterDataTable({
             </div>
           ),
           renderCell: ({ row }) => {
-            console.log('=== row ===', row);
+            // console.log('=== row ===', row);
             return (
               row.sae_indices && (
                 <FeaturePlot
