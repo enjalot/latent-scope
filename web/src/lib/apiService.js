@@ -202,6 +202,7 @@ export const apiService = {
     );
   },
   fetchDataFromIndices: async (datasetId, indices, saeId) => {
+    console.log('==== fetchDataFromIndices ==== ', { datasetId, indices, saeId });
     return fetch(`${apiUrl}/indexed`, {
       method: 'POST',
       headers: {

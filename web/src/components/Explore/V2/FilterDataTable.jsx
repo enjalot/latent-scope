@@ -50,6 +50,8 @@ function FilterDataTable({
   const { dataTableRows, page, setPage, totalPages, filterConfig, filterActive, loading } =
     useFilter();
 
+  console.log('==== filterConfig ==== ', filterConfig, loading);
+
   // feature tooltip content
   const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
 

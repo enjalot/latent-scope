@@ -191,24 +191,24 @@ export function FilterProvider({ children }) {
 
   useEffect(() => {
     if (shownIndices.length) {
-      setLoading(true);
+      const nonDeletedIndices = shownIndices.filter((index) => !deletedIndices.includes(index));
 
       // Use a timestamp in ms as a unique key for this request.
       const requestTimestamp = Date.now();
       lastRequestRef.current = requestTimestamp;
 
-      const cacheKey = `${JSON.stringify(shownIndices)}-${page}`;
+      const cacheKey = `${JSON.stringify(nonDeletedIndices)}-${page}`;
 
       if (!filterConfig) {
         const cachedResult = rowsCache.current.get(cacheKey);
         if (cachedResult) {
           setDataTableRows(cachedResult);
-          setLoading(false);
+          // setLoading(false);
           return;
         }
       }
 
-      apiService.fetchDataFromIndices(datasetId, shownIndices, scope?.sae_id).then((rows) => {
+      apiService.fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id).then((rows) => {
         // Only update state if this is the latest request.
         if (lastRequestRef.current !== requestTimestamp) {
           // Discard stale result.
@@ -220,11 +220,9 @@ export function FilterProvider({ children }) {
           ls_index: row.index,
         }));
         setDataTableRows(rowsWithIdx);
-        setLoading(false);
 
         // only cache the result if there is no filter config
         // i.e. we are showing the default set of rows
-
         if (!filterConfig) {
           rowsCache.current.set(cacheKey, rowsWithIdx);
         }
