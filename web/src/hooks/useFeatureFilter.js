@@ -28,14 +28,15 @@ export default function useFeatureFilter({ userId, datasetId, scope, scopeLoaded
     console.log('feature filter', threshold);
     if (feature >= 0) {
       const data = await apiService.searchSaeFeature(
-        userId,
         datasetId,
-        scope?.id,
+        scope?.sae_id,
         feature,
-        threshold
+        threshold,
+        100
       );
       console.log('feature filter data', data);
-      return data;
+      const indices = data.top_row_indices;
+      return indices;
     }
     return [];
   };
