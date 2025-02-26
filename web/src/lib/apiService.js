@@ -158,12 +158,13 @@ export const apiService = {
         // throw error;
       });
   },
-  searchNearestNeighbors: async (datasetId, embedding, query) => {
+  searchNearestNeighbors: async (datasetId, embedding, query, scope = null) => {
     const embeddingDimensions = embedding?.dimensions;
     const searchParams = new URLSearchParams({
       dataset: datasetId,
       query,
       embedding_id: embedding.id,
+      ...(scope !== null ? { scope_id: scope.id } : {}),
       ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {}),
     });
 
@@ -173,7 +174,7 @@ export const apiService = {
       .then((data) => {
         let dists = [];
         let inds = data.indices.map((idx, i) => {
-          dists[idx] = data.distances[i];
+          dists.push(data.distances[i]);
           return idx;
         });
         return {

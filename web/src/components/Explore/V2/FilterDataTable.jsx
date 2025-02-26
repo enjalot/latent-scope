@@ -182,8 +182,6 @@ function FilterDataTable({
           return <span>{JSON.stringify(row[col])}</span>;
         }
         if (col === 'ls_similarity') {
-          // console.log('==== ls_similarity ==== ', row.ls_index, distances[row.ls_index], distances);
-          // use the row index to get the distance
           return <span>{parseFloat(1 - distances[row.idx]).toFixed(4)}</span>;
         }
         if (typeof row[col] === 'string') {

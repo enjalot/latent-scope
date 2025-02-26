@@ -1,79 +1,33 @@
 import { useState, useCallback, useEffect } from 'react';
+import { apiService, apiUrl } from '../lib/apiService';
 
-export default function useNearestNeighborsSearch({
-  apiUrl,
-  datasetId,
-  scope,
-  embeddings,
-  onSearchEmbedding,
-  deletedIndices,
-  searchText,
-  setSearchText,
-}) {
-  const [searchIndices, setSearchIndices] = useState([]);
+export default function useNearestNeighborsSearch({ userId, datasetId, scope, deletedIndices }) {
   const [distances, setDistances] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const search = useCallback(
-    async (query) => {
-      const emb = embeddings?.find((d) => d.id === scope.embedding_id);
-      const embeddingDimensions = emb?.dimensions;
+  const filter = async (query) => {
+    try {
+      return await apiService
+        .searchNearestNeighbors(datasetId, scope.embedding, query, scope)
+        .then((data) => {
+          const { indices, distances } = data;
+          const filteredIndices = indices.filter((idx) => !deletedIndices.includes(idx));
+          setDistances(distances);
+          const limit = 20;
+          return filteredIndices.slice(0, limit);
+        });
+    } catch (error) {
+      console.error('Search failed:', error);
+      return [];
+    }
+  };
 
-      const searchParams = new URLSearchParams({
-        dataset: datasetId,
-        query,
-        embedding_id: scope.embedding_id,
-        scope_id: scope.id,
-        ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {}),
-      });
-
-      setIsLoading(true);
-      try {
-        const response = await fetch(`${apiUrl}/search/nn?${searchParams.toString()}`);
-        const data = await response.json();
-
-        let dists = [];
-        let inds = data.indices
-          .map((idx, i) => {
-            dists[idx] = data.distances[i];
-            return idx;
-          })
-          .filter((idx) => !deletedIndices.includes(idx));
-        // TODO: handle deleted indices
-
-        setDistances(dists);
-        const limit = 20;
-        // TODO: make the # of results configurable
-        setSearchIndices(inds.slice(0, limit));
-        onSearchEmbedding?.(data.search_embedding[0]);
-      } catch (error) {
-        console.error('Search failed:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [apiUrl, datasetId, scope, embeddings, onSearchEmbedding]
-  );
-
-  const clearSearch = useCallback(() => {
-    setSearchText('');
-    setSearchIndices([]);
+  const clear = useCallback(() => {
     setDistances([]);
   }, []);
 
-  // Trigger search when searchText changes
-  useEffect(() => {
-    if (searchText) {
-      search(searchText);
-    }
-  }, [searchText, search]);
-
   return {
-    setSearchIndices,
-    searchIndices,
+    filter,
+    clear,
     distances,
-    isLoading,
-    search,
-    clearSearch,
   };
 }

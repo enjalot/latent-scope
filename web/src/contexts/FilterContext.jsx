@@ -191,14 +191,13 @@ export function FilterProvider({ children }) {
 
   useEffect(() => {
     if (shownIndices.length) {
-      const nonDeletedIndices = shownIndices.filter((index) => !deletedIndices.includes(index));
       setLoading(true);
 
       // Use a timestamp in ms as a unique key for this request.
       const requestTimestamp = Date.now();
       lastRequestRef.current = requestTimestamp;
 
-      const cacheKey = `${JSON.stringify(nonDeletedIndices)}-${page}`;
+      const cacheKey = `${JSON.stringify(shownIndices)}-${page}`;
 
       if (!filterConfig) {
         const cachedResult = rowsCache.current.get(cacheKey);
@@ -209,7 +208,7 @@ export function FilterProvider({ children }) {
         }
       }
 
-      apiService.fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id).then((rows) => {
+      apiService.fetchDataFromIndices(datasetId, shownIndices, scope?.sae_id).then((rows) => {
         // Only update state if this is the latest request.
         if (lastRequestRef.current !== requestTimestamp) {
           // Discard stale result.
