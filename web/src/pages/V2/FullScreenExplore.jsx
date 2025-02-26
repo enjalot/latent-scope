@@ -82,7 +82,7 @@ function ExploreContent() {
   const hydrateHoverText = useCallback(
     (index, setter) => {
       latestHoverIndexRef.current = index;
-      apiService.getHoverText(userId, datasetId, scope?.id, index).then((data) => {
+      apiService.getHoverText(scope, index).then((data) => {
         // Only update if this is still the latest requested index
         if (latestHoverIndexRef.current === index) {
           setter(data);

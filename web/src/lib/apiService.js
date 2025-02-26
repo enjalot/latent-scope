@@ -312,4 +312,21 @@ export const apiService = {
       response.json()
     );
   },
+  getHoverText: async (scope, index) => {
+    return fetch(`${apiUrl}/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        dataset: scope.dataset.id,
+        indices: [index],
+        page: 0,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        return data.rows[0][scope.dataset.text_column];
+      });
+  },
 };
