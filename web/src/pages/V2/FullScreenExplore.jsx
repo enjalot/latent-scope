@@ -50,6 +50,7 @@ function ExploreContent() {
     features,
     sae,
     scopes,
+    tags,
   } = useScope();
 
   // Get filter-related state from FilterContext
@@ -281,12 +282,14 @@ function ExploreContent() {
       </>
     );
 
+  console.log({ features });
+
   return (
     <>
       <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />
       <div className="page-container">
         {!isMobileDevice() && (
-          <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} />
+          <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} tags={tags} />
         )}
         <div
           ref={containerRef}

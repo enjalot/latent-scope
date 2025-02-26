@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { apiService, apiUrl } from '../lib/apiService';
@@ -19,6 +19,7 @@ export function ScopeProvider({ children }) {
   useEffect(() => {
     apiService.fetchScope(datasetId, scopeId).then((scope) => {
       if (saeAvailable[scope.embedding?.model_id]) {
+        console.log('=== SAE ===', scope.sae);
         setSae(scope.sae);
       } else {
         delete scope.sae;
@@ -41,6 +42,57 @@ export function ScopeProvider({ children }) {
         setScopes(data);
       });
   }, [datasetId, setScopes]);
+
+  // embeddings available for this dataset
+  // TODO: don't think we need this actually if we are just
+  // using the single embedding from the current scope
+  const [embeddings, setEmbeddings] = useState([]);
+  useEffect(() => {
+    fetch(`${apiUrl}/datasets/${datasetId}/embeddings`)
+      .then((response) => response.json())
+      .then((data) => {
+        setEmbeddings(data);
+      });
+  }, [datasetId, setEmbeddings]);
+
+  const [tagset, setTagset] = useState({});
+  const fetchTagSet = useCallback(() => {
+    fetch(`${apiUrl}/tags?dataset=${datasetId}`)
+      .then((response) => response.json())
+      .then((data) => setTagset(data));
+  }, [datasetId, setTagset]);
+
+  useEffect(() => {
+    fetchTagSet();
+  }, [fetchTagSet]);
+
+  const tags = useMemo(() => {
+    const tags = [];
+    for (const tag in tagset) {
+      tags.push(tag);
+    }
+    // console.log("tagset", tagset, tags)
+    return tags;
+  }, [tagset]);
+
+  useEffect(() => {
+    if (sae && embeddings && scope) {
+      let embedding = embeddings.find((e) => e.id == scope.embedding_id);
+      if (embedding && saeAvailable[embedding.model_id]) {
+        apiService.getFeatures(saeAvailable[embedding.model_id]?.url).then((fts) => {
+          apiService.getDatasetFeatures(datasetId, sae?.id).then((dsfts) => {
+            dsfts.forEach((ft, i) => {
+              fts[i].dataset_max = ft.max_activation;
+              fts[i].dataset_avg = ft.avg_activation;
+              fts[i].dataset_count = ft.count;
+            });
+            console.log('DATASET included FEATURES', fts);
+            setFeatures(fts);
+          });
+        });
+      }
+    }
+  }, [scope, sae, embeddings]);
 
   // useEffect(() => {
   //   if (scope?.sae_id) {
@@ -128,6 +180,8 @@ export function ScopeProvider({ children }) {
     features,
     setFeatures,
     scopes,
+    embeddings,
+    tags,
   };
 
   return <ScopeContext.Provider value={value}>{children}</ScopeContext.Provider>;

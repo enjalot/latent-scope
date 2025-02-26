@@ -96,9 +96,9 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
         <span>
           <span>{scope?.cluster_labels_lookup?.length} clusters</span>
         </span>
-        {/* <span>
+        <span>
           <span>{tags.length} tags</span>
-        </span> */}
+        </span>
       </div>
 
       {/* <div className="dataset-card">

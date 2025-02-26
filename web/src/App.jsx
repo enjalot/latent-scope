@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/Home';
 import Settings from './pages/Settings';
 // import Explore from './pages/Explore';
-// import FullScreenExplore from './pages/FullScreenExplore';
+// import Explore from './pages/FullScreenExplore';
 import Explore from './pages/V2/FullScreenExplore';
 import Compare from './pages/Compare';
 import Setup from './pages/Setup';

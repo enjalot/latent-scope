@@ -159,17 +159,21 @@ function FilterDataTable({
               </span>
             </div>
           ),
-          renderCell: ({ row }) =>
-            row.sae_indices && (
-              <FeaturePlot
-                width={baseWidth}
-                row={row}
-                feature={feature}
-                features={features}
-                handleFeatureClick={handleFeatureClick}
-                setFeatureTooltipContent={setFeatureTooltipContent}
-              />
-            ),
+          renderCell: ({ row }) => {
+            console.log('=== row ===', row);
+            return (
+              row.sae_indices && (
+                <FeaturePlot
+                  width={baseWidth}
+                  row={row}
+                  feature={feature}
+                  features={features}
+                  handleFeatureClick={handleFeatureClick}
+                  setFeatureTooltipContent={setFeatureTooltipContent}
+                />
+              )
+            );
+          },
         };
       }
 
