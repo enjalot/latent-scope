@@ -210,7 +210,7 @@ export function FilterProvider({ children }) {
         }
       }
 
-      apiService.fetchDataFromIndices(datasetId, nonDeletedIndices).then((rows) => {
+      apiService.fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id).then((rows) => {
         // Only update state if this is the latest request.
         if (lastRequestRef.current !== requestTimestamp) {
           // Discard stale result.
@@ -234,7 +234,7 @@ export function FilterProvider({ children }) {
     } else {
       setDataTableRows([]);
     }
-  }, [shownIndices, deletedIndices, userId, datasetId, scope]);
+  }, [shownIndices, deletedIndices, userId, datasetId, scope, filterConfig, page]);
 
   // The context exposes only the state and setters that consumer components need.
   const value = {

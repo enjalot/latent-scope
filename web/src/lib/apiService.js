@@ -200,13 +200,13 @@ export const apiService = {
       response.json()
     );
   },
-  fetchDataFromIndices: async (datasetId, indices) => {
+  fetchDataFromIndices: async (datasetId, indices, saeId) => {
     return fetch(`${apiUrl}/indexed`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ dataset: datasetId, indices: indices }),
+      body: JSON.stringify({ dataset: datasetId, indices: indices, sae_id: saeId }),
     })
       .then((response) => response.json())
       .then((data) => {
