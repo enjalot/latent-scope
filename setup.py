@@ -102,5 +102,4 @@ setup(
         'latentscope': ['web/dist/*', 'web/dist/**/*'],
         'latentscope.models': ['embedding_models.json', 'chat_models.json'],
     },
-    # rest of your setup configuration...
 )
