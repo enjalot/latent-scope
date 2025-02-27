@@ -138,9 +138,11 @@ def indexed():
             filtered_top_inds = sorted_top_inds[np.argsort(sorted_indices)]
         # rows['ls_acts'] = filtered_acts
         # rows['ls_top_indices'] = filtered_top_inds
-        rows['ls_features'] = [
-            {'top_acts': act, 'top_indices': idx} for act, idx in zip(filtered_acts, filtered_top_inds)
-        ]
+        # rows['ls_features'] = [
+        #     {'top_acts': act, 'top_indices': idx} for act, idx in zip(filtered_acts, filtered_top_inds)
+        # ]
+        rows['sae_acts'] = filtered_acts.tolist()
+        rows['sae_indices'] = filtered_top_inds.tolist()
 
     # send back the rows as json
     return rows.to_json(orient="records")

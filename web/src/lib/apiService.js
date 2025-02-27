@@ -158,12 +158,13 @@ export const apiService = {
         // throw error;
       });
   },
-  searchNearestNeighbors: async (datasetId, embedding, query) => {
+  searchNearestNeighbors: async (datasetId, embedding, query, scope = null) => {
     const embeddingDimensions = embedding?.dimensions;
     const searchParams = new URLSearchParams({
       dataset: datasetId,
       query,
       embedding_id: embedding.id,
+      ...(scope !== null ? { scope_id: scope.id } : {}),
       ...(embeddingDimensions !== undefined ? { dimensions: embeddingDimensions } : {}),
     });
 
@@ -173,7 +174,7 @@ export const apiService = {
       .then((data) => {
         let dists = [];
         let inds = data.indices.map((idx, i) => {
-          dists[idx] = data.distances[i];
+          dists.push(data.distances[i]);
           return idx;
         });
         return {
@@ -200,13 +201,13 @@ export const apiService = {
       response.json()
     );
   },
-  fetchDataFromIndices: async (datasetId, indices) => {
+  fetchDataFromIndices: async (datasetId, indices, saeId) => {
     return fetch(`${apiUrl}/indexed`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ dataset: datasetId, indices: indices }),
+      body: JSON.stringify({ dataset: datasetId, indices: indices, sae_id: saeId }),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -311,5 +312,31 @@ export const apiService = {
     return fetch(`${apiUrl}/datasets/${datasetId}/features/${saeId}`).then((response) =>
       response.json()
     );
+  },
+  getHoverText: async (scope, index) => {
+    return fetch(`${apiUrl}/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        dataset: scope.dataset.id,
+        indices: [index],
+        page: 0,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        return data.rows[0][scope.dataset.text_column];
+      });
+  },
+  columnFilter: async (datasetId, filters) => {
+    return fetch(`${apiUrl}/column-filter`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ dataset: datasetId, filters: filters }),
+    }).then((response) => response.json());
   },
 };

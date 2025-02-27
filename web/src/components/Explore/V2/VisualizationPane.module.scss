@@ -26,6 +26,12 @@
   left: 12px;
 }
 
+@media screen and (max-width: 1024px) {
+  .configToggleContainer {
+    display: none;
+  }
+}
+
 @mixin configToggle {
   position: absolute;
   width: 30px;

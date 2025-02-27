@@ -1,0 +1,12 @@
+
+.scatter {
+  position: absolute;
+  background-color: #fefefe;
+  user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .scatter {
+    background-color: #111;
+  }
+}

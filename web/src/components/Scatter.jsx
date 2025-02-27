@@ -10,7 +10,7 @@ import {
   interpolateReds,
   interpolateOranges,
 } from 'd3-scale-chromatic';
-import { SELECT } from '../pages/FullScreenExplore';
+// import { SELECT } from '../pages/FullScreenExplore';
 
 import styles from './Scatter.module.css';
 

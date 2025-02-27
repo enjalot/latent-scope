@@ -387,7 +387,7 @@ function FilterDataTable({
             setPageCount(totalPages);
             // console.log('======= SETTING ROWS =======', rows, timestamp);
             setRows(rows.map((row, idx) => ({ ...row, idx })));
-            onDataTableRows(rows);
+            if (onDataTableRows) onDataTableRows(rows);
             // setRowsLoading(false);
           });
       } else {
@@ -517,7 +517,7 @@ function FilterDataTable({
           return <span>{JSON.stringify(row[col])}</span>;
         }
         if (col === 'ls_similarity') {
-          return <span>{parseFloat(1 - distances[row.ls_index]).toFixed(4)}</span>;
+          return <span>{parseFloat(1 - distances[row.idx]).toFixed(4)}</span>;
         }
 
         return <span title={row[col]}>{row[col]}</span>;

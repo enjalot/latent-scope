@@ -50,11 +50,11 @@ def nn():
         model = EMBEDDINGS[dataset + "-" + embedding_id]
 
     # If lancedb is available, we use it to search
-    lance_path = os.path.join(DATA_DIR, dataset, "lancedb", scope_id + ".lance")
-    print("LANCE PATH", lance_path)
-    if os.path.exists(lance_path):
-        print(f"Found LanceDB index at {lance_path}, using vector search")
-        return nn_lance(dataset, scope_id, model, query, dimensions)
+    if scope_id is not None:
+        lance_path = os.path.join(DATA_DIR, dataset, "lancedb", scope_id + ".lance")
+        if os.path.exists(lance_path):
+            print(f"Found LanceDB index at {lance_path}, using vector search")
+            return nn_lance(dataset, scope_id, model, query, dimensions)
 
     # Otherwise we use the nearest neighbors search from sklearn
     num = 150

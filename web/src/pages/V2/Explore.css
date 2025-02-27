@@ -1,0 +1,555 @@
+.container {
+    display: grid;
+    grid-template-columns: 528px 1fr;
+    /* Left: 500px, Middle: 2/3 of remaining, Right: rest */
+    gap: 6px;
+    /* This adds space between your columns */
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .left-column {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    height: 100%;
+    /* max-width: 535px; */
+  }
+  
+  .data {
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    height: 100%;
+  }
+  
+  /* Fullscreen */
+  .visualization-pane-container {
+    width: 100%;
+    height: 100%;
+    border-left: 2px solid var(--borders-color-border-1);
+    box-sizing: border-box;
+    position: relative;
+  }
+  
+  .full-screen-explore-container {
+    position: relative;
+    display: grid;
+    grid-template-columns: 50% 1fr;
+    background: #fefefe;
+    flex-grow: 1;  
+  }
+  
+  .page-container {
+    display: flex;
+    gap: 4px;
+    height: 100%;
+    width: 100%;
+  }
+  
+  .filter-table-container {
+    /* position: absolute;
+    top: 5%;
+    left: 5%;
+    z-index: 100;
+    width: 33%;
+    */
+    /* height: 100%; */
+    padding: 20px;
+    overflow-y: auto;
+  }
+  
+  /* Responsive */
+  @media screen and (max-width: 1024px) {
+    .left-pane-container {
+      display: none;
+    }
+  
+    .page-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+    }
+  
+    .full-screen-explore-container {
+      display: flex;
+      flex-direction: column;
+      /* overflow-x: auto; */
+      /* height: 50vh;  */
+    }
+    .visualization-pane-container {
+      /* flex: 2; */
+      height: 67%;
+    }
+    .filter-table-container {
+      /* flex: 1; */
+      height: 33%;
+      padding: 10px;
+    }
+  }
+  
+  
+  .filter-data-table-fixed-header tr {
+    background-color: #f9f9f9;
+  }
+  .umap-container {
+    /* margin: 6px 12px; */
+    /* max-width: 515px; */
+    margin-top: 6px;
+    margin-left: 12px;
+    height: 100%;
+    overflow-y: hidden;
+    min-height: 0;
+    /* position: relative; */
+  }
+  
+  .tab-tables {
+    margin: 6px 12px;
+    height: 100%;
+    overflow-y: hidden;
+    min-height: 0;
+  }
+  
+  /* LEFT COLUMN */
+  /* FIRST ROW: Dataset summary */
+  
+  .summary {
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  
+    /* margin: 6px 12px; */
+    margin-top: 6px;
+    margin-left: 12px;
+    padding: 6px;
+    /* height: 148px; */
+    border: 1px solid lightgray;
+    border-radius: 5px;
+  }
+  
+  .heading {
+    margin: 0;
+    font-size: 1.17em;
+    /* margin-block-start: 1em; */
+    margin-block-end: .75em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    /* justify-content: center; */
+  }
+  
+  .heading a {
+    margin-left: 12px;
+  }
+  
+  .scope-card {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .scope-card .scope-selector {
+    margin: 0 6px;
+  }
+  
+  .scope-card .metadata-label {
+    font-size: 0.8em;
+    color: #666;
+    /* font-weight: bold; */
+  }
+  
+  .dataset-card {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+  }
+  
+  .scope-version-warning {
+    margin: 6px 0;
+    padding: 6px;
+    border: 1px solid red;
+    border-radius: 6px;
+  }
+  
+  .scope-version-warning .warning-header {
+    color: red;
+    font-weight: bold;
+  }
+  
+  .left-pane-button.warning-button {
+    stroke: red !important;
+    color: red !important;
+  }
+  
+  /* SECOND ROW: UMAP */
+  
+  .scatters {
+    position: relative;
+    border: 1px solid gray;
+    border-radius: 5px;
+    padding: 6px;
+  }
+  
+  /* THIRD ROW: hovered data point */
+  .hovered-point {
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    max-width: 500px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .container .hovered-point .key {
+    font-weight: bold;
+  }
+  
+  .container .hovered-point .value {
+    margin-left: 10px;
+  }
+  
+  
+  /* Filters and data table */
+  .filters-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid lightgray;
+    padding: 12px;
+    margin-top: 6px;
+    margin-right: 12px;
+    border-radius: 5px;
+  }
+  
+  /* lets make consistent input styling */
+  .filters-container input[type="text"],
+  .filters-container .filter-description {
+    padding: 3px;
+    margin: 0 6px;
+    border-radius: 3px;
+    border-width: 1px;
+  }
+  
+  .filters-container select {
+    border-radius: 3px;
+  }
+  
+  .filters-container button {
+    margin-left: 0.3em;
+    margin-top: 1px;
+    border: 1px solid gray;
+    padding: 2px 6px;
+    border-radius: 5px;
+  }
+  
+  .filters-container .new-tag input {
+    width: 60px;
+  }
+  
+  .filters-container .search-box input {
+    /* height: 24px; */
+    width: 300px;
+  }
+  
+  .filters-container .search-box select {
+    width: 358px;
+  }
+  
+  .clusters-select {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+  }
+  
+  .clusters-select .filter-cell.left {
+    /* flex: 1; */
+  }
+  
+  .cluster-react-select {
+    /* width: 80%; */
+    width: 400px;
+  }
+  
+  .column-filter .filter-cell.columns {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .column-filter .column-react-select {
+    width: 250px;
+  }
+  
+  .search-input-container {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+  }
+  
+  .filters-container .new-cluster-label {
+    width: 200px;
+  }
+  
+  .filters-container .update-cluster-label {
+    width: 250px;
+  }
+  
+  .filters-container .filter-row {
+    display: flex;
+    flex-direction: row;
+    /* border: 1px solid gray; */
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    align-items: center;
+  }
+  
+  .filters-container .filter-row.active {
+    background-color: #e6e6e6;
+  }
+  
+  .filters-container .column-filter select {
+    max-width: 120px;
+  }
+  
+  @media screen and (max-width: 1515px) {
+    .filters-container .search-box input {
+      /* height: 24px; */
+      width: 150px;
+    }
+  
+    .filters-container .search-box select {
+      width: 158px;
+    }
+  
+    .filters-container .clusters-select select {
+      width: 160px;
+    }
+  
+    .filters-container .update-cluster-label {
+      width: 150px;
+    }
+  
+    .filters-container .new-cluster-label {
+      width: 100px;
+    }
+  }
+  
+  
+  @media (prefers-color-scheme: dark) {
+    .filters-container .filter-row {
+      background-color: #333;
+      color: #fff;
+    }
+  
+    .filters-container .filter-row.active {
+      background-color: #555;
+    }
+      .filter-data-table-fixed-header tr {
+        background-color: #333;
+      }
+  
+    .full-screen-explore-container {
+      background: #111
+    }
+  
+    .visualization-pane-container {
+      border-left: 2px solid var(--borders-color-border-3);
+    }
+  }
+  
+  
+  .filters-container .filter-cell {
+    flex-grow: 1;
+    padding: 4px;
+    text-align: left;
+    display: flex;
+    gap: 6px;
+  }
+  
+  .filters-container .filter-cell.left,
+  .filters-container .filter-cell.right {
+    flex: 2;
+    /* Makes left and right cells take twice the space of the middle cell */
+  }
+  
+  .filters-container .filter-cell.middle {
+    flex: 1;
+      /* Middle cell takes the base flex size */
+  }
+  
+  .filters-container .bulk {
+    cursor: pointer;
+  }
+  
+  .filters-container .bulk.active {
+    border: 1px solid black;
+  }
+  
+  .filters-container .embeddings-controls {
+    gap: 12px;
+  }
+  
+  .filters-container .filter-mode.active {
+    font-weight: bold;
+    opacity: 1;
+    filter: blur(0px);
+  }
+  
+  .filters-container .filter-mode {
+    opacity: .25;
+    font-size: .85em;
+    filter: blur(.5px);
+  }
+  
+  .filter-table.no-data {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 8px;
+  }
+  
+  .tags-box {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-evenly;
+  }
+  
+  .tag-button.selected {
+    border: 2px solid black;
+  }
+  
+  /* .new-tag {
+    margin: 6px 0;
+  }
+  
+  .new-tag form {
+    display: inline;
+    width: 160px;
+    border: 1px solid lightgray;
+    padding: 7px;
+  } */
+  
+  
+  
+  /* .tab-neighbors .deselect {
+    display: inline-block;
+    margin: 5px;
+    width: 32px;
+  } */
+  
+  
+  /* RIGHT COLUMN */
+  /* FIRST ROW: Selector */
+  
+  /* SECOND ROW: Clusters */
+  
+  
+  .slide-bar {
+    padding: 6px;
+    /* height: 100%; */
+  }
+  
+  @media screen and (max-width: 1024px) {
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      margin-top: 5px;
+    }
+  
+    .left-column {
+      flex-grow: 1
+    }
+  .data {
+      height: 50%;
+      width: 100%;
+      flex-grow: 1;
+      overflow-y: visible;
+    }
+  
+    .hovered-point {
+      height: 150px;
+      max-width: 500px;
+    }
+  }
+  
+  @media screen and (max-width: 425px) {
+    .container {
+      width: 100%;
+      padding: 5px;
+    }
+  
+    .cluster {
+      width: 100%;
+      padding: 5px;
+    }
+  
+    .summary {
+      height: auto;
+    }
+  
+    .filters-container {
+      height: auto;
+      margin-top: 40px;
+    }
+  }
+  
+  .full-screen-explore-container {
+    height: 100%;
+  }
+  
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.25);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .loading-overlay {
+      background: rgba(30, 30, 30, 0.25);
+    }
+  }
+  
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+  
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  

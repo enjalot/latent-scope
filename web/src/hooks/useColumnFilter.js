@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { apiService } from '../lib/apiService';
 
-const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices) => {
-  const [columnFiltersActive, setColumnFiltersActive] = useState({});
+const useColumnFilter = (userId, datasetId, scope) => {
+  const [columnToValue, setColumnToValue] = useState({});
+
+  const dataset = useMemo(() => {
+    return scope?.dataset;
+  }, [scope]);
 
   const columnFilters = useMemo(() => {
     if (!dataset?.column_metadata) return [];
@@ -11,53 +16,31 @@ const useColumnFilter = (apiUrl, dataset, datasetId, setColumnIndices) => {
         categories: dataset.column_metadata[column].categories,
         counts: dataset.column_metadata[column].counts,
       }))
-      .filter((d) => d.counts);
+      .filter((d) => d.counts && Object.keys(d.counts).length > 1);
   }, [dataset]);
 
-  const columnQuery = useCallback(
-    (filters) => {
-      let query = [];
-      Object.keys(filters).forEach((c) => {
-        let f = filters[c];
-        if (f) {
-          query.push({
-            column: c,
-            type: 'eq',
-            value: f,
-          });
-        }
-      });
-      console.log('query', query);
-      fetch(`${apiUrl}/column-filter`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ dataset: datasetId, filters: query }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          let indices = data.indices;
-          setColumnIndices(indices);
-        });
-    },
-    [apiUrl, datasetId]
-  );
+  const filter = async (column, value) => {
+    let query = [
+      {
+        column: column,
+        type: 'eq',
+        value: value,
+      },
+    ];
+    const res = await apiService.columnFilter(datasetId, query);
+    console.log('column filter res', res);
+    return res.indices;
+  };
 
-  useEffect(() => {
-    let active = Object.values(columnFiltersActive).filter((d) => !!d).length;
-    // console.log("active filters", active, columnFiltersActive)
-    if (active > 0) {
-      columnQuery(columnFiltersActive);
-    } else {
-      setColumnIndices([]);
-    }
-  }, [columnFiltersActive, columnQuery, setColumnIndices]);
+  const clear = () => {
+    setColumnToValue({});
+  };
 
   return {
-    columnFiltersActive,
-    setColumnFiltersActive,
+    columnToValue,
     columnFilters,
+    filter,
+    clear,
   };
 };
 
