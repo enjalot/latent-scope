@@ -334,7 +334,7 @@ function ScatterGL({
         reglRef.current.destroy();
       }
     };
-  }, [width, height]);
+  }, [width, height, points]);
 
   const dynamicSize = useMemo(() => {
     let size = calculateDynamicPointScale(points.length, width, height);
