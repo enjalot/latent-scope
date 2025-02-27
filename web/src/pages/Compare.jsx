@@ -98,13 +98,15 @@ function Compare() {
       console.log('embeddings', embeddingsData);
       console.log('umaps', umapsData);
       setEmbeddings(embeddingsData);
-      umapsData.sort((a, b) => {
-        if (b.align_id < a.align_id) return -1;
-        if (b.align_id > a.align_id) return 1;
-        if (a.id < b.id) return -1;
-        if (a.id > b.id) return 1;
-        return 0;
-      });
+      umapsData
+        .filter((d) => !!d.align_id)
+        .sort((a, b) => {
+          if (b.align_id < a.align_id) return -1;
+          if (b.align_id > a.align_id) return 1;
+          if (a.id < b.id) return -1;
+          if (a.id > b.id) return 1;
+          return 0;
+        });
       setUmaps(umapsData);
     });
   }, [datasetId, setEmbeddings, setUmaps]);
@@ -172,12 +174,15 @@ function Compare() {
         )
           .then((response) => response.json())
           .then((displacementData) => {
+            // console.log('DISPLACEMENT DATA', displacementData);
             const log = scaleSymlog(extent(displacementData), [0, 1]);
             const dpts = pointsRef.current.map((d, i) => {
               const displacement = log(displacementData[i]);
               return [d[0], d[1], displacement < threshold ? 1 : 0, displacement];
             });
             setDrawPoints(dpts);
+            setAboveThresholdPoints(dpts.filter((d) => d[2] != 1));
+            // console.log('DRAW POINTS', drawPoints);
             drawPointsRef.current = dpts;
             setDisplacementLoading(false);
             firstPoints.current = true;
@@ -187,8 +192,9 @@ function Compare() {
     }
   }, [datasetId, left, right, points, threshold]);
 
-  const [pointSizeRange, setPointSizeRange] = useState([3, 1]);
-  const [opacityRange, setOpacityRange] = useState([0.1, 0.2]);
+  const [pointSizeRange, setPointSizeRange] = useState([5, 1]);
+  const [opacityRange, setOpacityRange] = useState([1, 0.2]);
+  const [aboveThresholdPoints, setAboveThresholdPoints] = useState([]);
   useEffect(() => {
     if (drawPointsRef.current.length > 0) {
       const newPoints = drawPointsRef.current.map((point) => [
@@ -198,10 +204,7 @@ function Compare() {
         point[3],
       ]);
       setDrawPoints(newPoints);
-      console.log(
-        'points filtered out',
-        newPoints.filter((d) => d[2] == 0)
-      );
+      setAboveThresholdPoints(newPoints.filter((d) => d[2] != 1));
     }
   }, [threshold]);
 
@@ -434,6 +437,7 @@ function Compare() {
                   onChange={(e) => setThreshold(parseFloat(e.target.value))}
                   style={{ width: '100%' }}
                 />
+                <span>{aboveThresholdPoints.length} points above threshold</span>
               </label>
             </div>
           </div>
@@ -454,7 +458,6 @@ function Compare() {
                     width={scopeWidth}
                     height={scopeHeight}
                     colorScaleType="continuous"
-                    // colorInterpolator={interpolateMagma}
                     colorInterpolator={interpolateReds}
                     opacityBy="valueA"
                     onScatter={setScatter}

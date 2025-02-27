@@ -183,7 +183,9 @@ const SearchResultsMetadata = ({ filterConfig }) => {
           </span>
         </div>
         <div className={styles.searchResultsMetadataItem}>
-          <span className={styles.searchResultsMetadataValue}>{shownIndices.length} results</span>
+          <span className={styles.searchResultsMetadataValue}>
+            {filteredIndices.length} results
+          </span>
         </div>
       </div>
     );
