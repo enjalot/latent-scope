@@ -40,9 +40,9 @@ def ingest_file(dataset_id, file_path, text_column = None):
     elif file_type == "parquet":
         df = pd.read_parquet(file)
     elif file_type == "jsonl":
-        df = pd.read_json(file, lines=True)
+        df = pd.read_json(file, lines=True, convert_dates=False)
     elif file_type == "json":
-        df = pd.read_json(file)
+        df = pd.read_json(file, convert_dates=False)
     elif file_type == "xlsx":
         df = pd.read_excel(file)
     else:
