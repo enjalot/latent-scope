@@ -6,17 +6,28 @@ import argparse
 from latentscope.util import get_data_dir
 from latentscope import __version__
 
+
 # TODO make a parquet version of these
 def main():
-    parser = argparse.ArgumentParser(description='Ingest a dataset')
-    parser.add_argument('id', type=str, help='Dataset id (directory name in data folder)')
-    parser.add_argument('--path', type=str, help='Path to csv/parquet/json/jsonl/xlsx file, otherwise assumes input.csv in dataset directory')
-    parser.add_argument('--text_column', type=str, help='Column to use as text for the scope')
+    parser = argparse.ArgumentParser(description="Ingest a dataset")
+    parser.add_argument(
+        "id", type=str, help="Dataset id (directory name in data folder)"
+    )
+    parser.add_argument(
+        "--path",
+        type=str,
+        help="Path to csv/parquet/json/jsonl/xlsx file, otherwise assumes input.csv in dataset directory",
+    )
+    parser.add_argument(
+        "--text_column", type=str, help="Column to use as text for the scope"
+    )
     args = parser.parse_args()
     ingest_file(args.id, args.path, args.text_column)
 
-def ingest_file(dataset_id, file_path, text_column = None):
+
+def ingest_file(dataset_id, file_path, text_column=None):
     import pandas as pd
+
     DATA_DIR = get_data_dir()
     directory = os.path.join(DATA_DIR, dataset_id)
     # check if dataset exists, if it does we want to increment a postfix on the dataset_id
@@ -31,7 +42,7 @@ def ingest_file(dataset_id, file_path, text_column = None):
 
     if not file_path:
         file_path = os.path.join(directory, "input.csv")
-    file_type = file_path.split('.')[-1]
+    file_type = file_path.split(".")[-1]
     print(f"File type detected: {file_type}")
     file = os.path.join(file_path)
     print("reading", file)
@@ -51,8 +62,7 @@ def ingest_file(dataset_id, file_path, text_column = None):
     ingest(dataset_id, df, text_column)
 
 
-def ingest(dataset_id, df, text_column = None):
-
+def ingest(dataset_id, df, text_column=None):
 
     DATA_DIR = get_data_dir()
     print("DATA DIR", DATA_DIR)
@@ -69,6 +79,7 @@ def ingest(dataset_id, df, text_column = None):
     print("checking column types")
     import pandas as pd
     import numpy as np
+
     # determine the types of the values in columns, especially string, number or array of numbers
     # we will store these in the metadata
     # we will also store the number of unique values in each column
@@ -82,7 +93,12 @@ def ingest(dataset_id, df, text_column = None):
             column_type = "string"
         elif pd.api.types.is_numeric_dtype(non_null_series):
             column_type = "number"
-        elif all(non_null_series.apply(lambda x: isinstance(x, list) and all(isinstance(i, (int, float)) for i in x))):
+        elif all(
+            non_null_series.apply(
+                lambda x: isinstance(x, list)
+                and all(isinstance(i, (int, float)) for i in x)
+            )
+        ):
             print("list array of numbers", column)
             column_type = "array"
         elif isinstance(non_null_series.iloc[0], np.ndarray):
@@ -95,7 +111,7 @@ def ingest(dataset_id, df, text_column = None):
             print("unknown column type", column, "converting to string")
             df[column] = df[column].astype(str)
             column_type = "string"
-        
+
         print("COLUMN", column, "TYPE", column_type)
 
         # Count unique values, excluding NaN
@@ -103,7 +119,9 @@ def ingest(dataset_id, df, text_column = None):
             if isinstance(df[column].iloc[0], np.ndarray):
                 unique_values_count = len(set([tuple(x) for x in df[column].dropna()]))
             elif isinstance(df[column].iloc[0], bytes):
-                unique_values_count = len(set(df[column].dropna().apply(lambda x: x.decode('utf-8'))))
+                unique_values_count = len(
+                    set(df[column].dropna().apply(lambda x: x.decode("utf-8")))
+                )
             elif isinstance(df[column].iloc[0], dict):
                 unique_values_count = len(set(df[column].dropna().apply(json.dumps)))
             else:
@@ -114,7 +132,7 @@ def ingest(dataset_id, df, text_column = None):
         # Store the metadata
         column_metadata[column] = {
             "type": column_type,
-            "unique_values_count": unique_values_count
+            "unique_values_count": unique_values_count,
         }
         if column_type == "string" and unique_values_count <= 100:
             categories = df[column].value_counts().index.tolist()
@@ -124,16 +142,26 @@ def ingest(dataset_id, df, text_column = None):
             if df[column].str.startswith("http").all():
                 column_metadata[column]["url"] = True
                 # check if endings of string are common image formats like png, jpg, jpeg, webp
-                if df[column].str.lower().str.endswith(("png", "jpg", "jpeg", "webp", "svg", "gif")).all():
+                if (
+                    df[column]
+                    .str.lower()
+                    .str.endswith(("png", "jpg", "jpeg", "webp", "svg", "gif"))
+                    .all()
+                ):
                     column_metadata[column]["image"] = True
         if column_type == "number":
-            extent = df[column].agg(['min', 'max'])
+            extent = df[column].agg(["min", "max"])
             # Replace infinity values with None before converting to list
             extent = extent.replace([np.inf, -np.inf], np.nan)
-            column_metadata[column]["extent"] = [None if pd.isna(x) else x for x in extent.tolist()]
+            column_metadata[column]["extent"] = [
+                None if pd.isna(x) else x for x in extent.tolist()
+            ]
         if column_type == "date":
-            extent = df[column].agg(['min', 'max'])
-            column_metadata[column]["extent"] = extent.tolist()
+            extent = df[column].agg(["min", "max"])
+            # Convert timestamps to ISO format strings for JSON serialization
+            column_metadata[column]["extent"] = [
+                ts.isoformat() if pd.notna(ts) else None for ts in extent.tolist()
+            ]
 
     output_file = f"{directory}/input.parquet"
     df.to_parquet(output_file)
@@ -143,19 +171,28 @@ def ingest(dataset_id, df, text_column = None):
     if text_column is None:
         text_column = "text" if "text" in df.columns else None
     if text_column is None:
-        text_column = next((col for col, meta in column_metadata.items() if meta['type'] == 'string'), None)
+        text_column = next(
+            (col for col, meta in column_metadata.items() if meta["type"] == "string"),
+            None,
+        )
 
-    potential_embeddings = [col for col, meta in column_metadata.items() if meta['type'] == 'array']
-    with open(os.path.join(directory,'meta.json'), 'w') as f:
-        json.dump({
-            "id": dataset_id,
-            "length": df.shape[0],
-            "columns": df.columns.tolist(),
-            "text_column": text_column,
-            "column_metadata": column_metadata,
-            "potential_embeddings": potential_embeddings,
-            "ls_version": __version__
-            }, f, indent=2)
+    potential_embeddings = [
+        col for col, meta in column_metadata.items() if meta["type"] == "array"
+    ]
+    with open(os.path.join(directory, "meta.json"), "w") as f:
+        json.dump(
+            {
+                "id": dataset_id,
+                "length": df.shape[0],
+                "columns": df.columns.tolist(),
+                "text_column": text_column,
+                "column_metadata": column_metadata,
+                "potential_embeddings": potential_embeddings,
+                "ls_version": __version__,
+            },
+            f,
+            indent=2,
+        )
 
     # create all the directories we will use
     os.makedirs(os.path.join(DATA_DIR, dataset_id, "embeddings"), exist_ok=True)
@@ -166,12 +203,12 @@ def ingest(dataset_id, df, text_column = None):
     tags_dir = os.path.join(DATA_DIR, dataset_id, "tags")
     os.makedirs(tags_dir, exist_ok=True)
     # Create default tags if they don't exist
-    new_files = ['👍.indices', '👎.indices']
+    new_files = ["👍.indices", "👎.indices"]
     for file_name in new_files:
         file_path = os.path.join(tags_dir, file_name)
         if not os.path.exists(file_path):
-            with open(file_path, 'w') as file:
-                file.write('')  # Initialize with an empty JSON object
+            with open(file_path, "w") as file:
+                file.write("")  # Initialize with an empty JSON object
 
 
 if __name__ == "__main__":
