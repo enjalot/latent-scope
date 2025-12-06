@@ -21,6 +21,7 @@ import { useFilter } from '../../../contexts/FilterContext';
 import { mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from '../../../lib/colors';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from '../ConfigurationPanel';
+import ClusterLabelsSidebar from '../ClusterLabelsSidebar';
 import { Icon, Button } from 'react-element-forge';
 
 // VisualizationPane.propTypes = {
@@ -194,6 +195,7 @@ function VisualizationPane({
   // Configuration Panel
   // ====================================================================================================
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [vizConfig, setVizConfig] = useState({
     showHeatMap: false,
     showClusterOutlines: true,
@@ -281,6 +283,21 @@ function VisualizationPane({
           toggleShowClusterOutlines={toggleShowClusterOutlines}
           updatePointSize={updatePointSize}
           updatePointOpacity={updatePointOpacity}
+        />
+      </div>
+
+      {/* Cluster Labels Sidebar Toggle (right side) */}
+      <div className={styles.sidebarToggleContainer}>
+        <Button
+          className={styles['sidebarToggle']}
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          aria-label="Toggle cluster labels sidebar"
+          icon={'cloud'}
+          size="small"
+        />
+        <ClusterLabelsSidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
       </div>
 

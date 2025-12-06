@@ -61,9 +61,28 @@
 
 
 
+// Sidebar (right side) toggle for cluster labels
+.sidebarToggleContainer {
+  position: absolute;
+  bottom: 0px;
+  right: 12px;
+}
+
+@media screen and (max-width: 1024px) {
+  .sidebarToggleContainer {
+    display: none;
+  }
+}
+
+.sidebarToggle {
+  @include configToggle;
+  bottom: 10px;
+}
+
 @media (prefers-color-scheme: light) {
   .configToggle,
-  .fullscreenToggle {
+  .fullscreenToggle,
+  .sidebarToggle {
     background-color: #f9f9f9 !important;
     color: #525151 !important;
   }
