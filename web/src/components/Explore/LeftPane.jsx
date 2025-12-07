@@ -36,7 +36,7 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
         <Button
           className={`left-pane-button ${activeView === 'clusters' ? 'active' : ''}`}
           size="small"
-          icon="cloud"
+          icon="layers"
           color={activeView === 'clusters' ? 'primary' : 'secondary'}
           title="View cluster labels"
           onClick={() => onViewChange?.('clusters')}
