@@ -6,7 +6,104 @@ import { filterConstants } from './V2/Search/utils';
 import ClusterIcon from './V2/Search/ClusterIcon';
 import styles from './ClusterLabelsPanel.module.scss';
 
+// Compute cluster centroids from scope rows
+const computeClusterCentroids = (scopeRows) => {
+  const clusterSums = {};
+  const clusterCounts = {};
+
+  scopeRows.forEach((row) => {
+    const clusterId = row.cluster;
+    if (clusterId === undefined || clusterId === null) return;
+
+    if (!clusterSums[clusterId]) {
+      clusterSums[clusterId] = { x: 0, y: 0 };
+      clusterCounts[clusterId] = 0;
+    }
+    clusterSums[clusterId].x += row.x;
+    clusterSums[clusterId].y += row.y;
+    clusterCounts[clusterId] += 1;
+  });
+
+  const centroids = {};
+  Object.keys(clusterSums).forEach((clusterId) => {
+    centroids[clusterId] = {
+      x: clusterSums[clusterId].x / clusterCounts[clusterId],
+      y: clusterSums[clusterId].y / clusterCounts[clusterId],
+    };
+  });
+
+  return centroids;
+};
+
+// Nearest neighbor traversal starting from top-left
+const nearestNeighborSort = (clusters, centroids) => {
+  if (!clusters || clusters.length === 0) return [];
+  if (!centroids || Object.keys(centroids).length === 0) {
+    // Fallback to alphabetical if no centroids available
+    return [...clusters].sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  // Create a copy with centroid info
+  const clustersWithPos = clusters.map((c) => ({
+    ...c,
+    centroid: centroids[c.cluster] || { x: 0, y: 0 },
+  }));
+
+  // Find top-left cluster (min x, max y - since y typically increases downward in screen coords,
+  // we want min y for top, but in projection space y might be inverted, so use max y - min x)
+  // Actually, let's use a scoring function: top-left means small x and large y
+  // Score = -x + y (higher score = more top-left)
+  const findTopLeft = (items) => {
+    let topLeftIdx = 0;
+    let bestScore = -Infinity;
+    items.forEach((item, idx) => {
+      const score = -item.centroid.x + item.centroid.y;
+      if (score > bestScore) {
+        bestScore = score;
+        topLeftIdx = idx;
+      }
+    });
+    return topLeftIdx;
+  };
+
+  // Euclidean distance between two centroids
+  const distance = (a, b) => {
+    const dx = a.centroid.x - b.centroid.x;
+    const dy = a.centroid.y - b.centroid.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Greedy nearest neighbor traversal
+  const result = [];
+  const remaining = [...clustersWithPos];
+
+  // Start with top-left cluster
+  const startIdx = findTopLeft(remaining);
+  result.push(remaining.splice(startIdx, 1)[0]);
+
+  // Greedily add nearest unvisited neighbor
+  while (remaining.length > 0) {
+    const current = result[result.length - 1];
+    let nearestIdx = 0;
+    let nearestDist = Infinity;
+
+    remaining.forEach((item, idx) => {
+      const dist = distance(current, item);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestIdx = idx;
+      }
+    });
+
+    result.push(remaining.splice(nearestIdx, 1)[0]);
+  }
+
+  // Return without centroid info
+  return result.map(({ centroid, ...rest }) => rest);
+};
+
 // Sort order definitions - extensible for future sort orders
+// Use compareFn for simple sorts, sortFn for complex sorts like nearest neighbor
 const SORT_ORDERS = {
   alphabetical: {
     label: 'A-Z',
@@ -28,6 +125,11 @@ const SORT_ORDERS = {
     label: 'Cluster #',
     compareFn: (a, b) => a.cluster - b.cluster,
   },
+  nearestNeighbor: {
+    label: 'Nearest Neighbor',
+    // Uses sortFn instead of compareFn - requires centroids
+    sortFn: nearestNeighborSort,
+  },
 };
 
 // Mini bar chart component for showing relative cluster size
@@ -45,7 +147,7 @@ const ClusterBar = ({ count, maxCount, isActive }) => {
 
 const ClusterLabelsPanel = () => {
   const [sortOrder, setSortOrder] = useState('alphabetical');
-  const { clusterLabels } = useScope();
+  const { clusterLabels, scopeRows } = useScope();
   const {
     clusterFilter,
     setFilterConfig,
@@ -63,11 +165,22 @@ const ClusterLabelsPanel = () => {
     return null;
   }, [filterConfig]);
 
+  // Compute cluster centroids for spatial sorting
+  const clusterCentroids = useMemo(() => {
+    if (!scopeRows || scopeRows.length === 0) return {};
+    return computeClusterCentroids(scopeRows);
+  }, [scopeRows]);
+
   const sortedLabels = useMemo(() => {
     if (!clusterLabels || clusterLabels.length === 0) return [];
     const sortConfig = SORT_ORDERS[sortOrder];
+
+    // Use sortFn for complex sorts (like nearest neighbor), compareFn for simple sorts
+    if (sortConfig.sortFn) {
+      return sortConfig.sortFn(clusterLabels, clusterCentroids);
+    }
     return [...clusterLabels].sort(sortConfig.compareFn);
-  }, [clusterLabels, sortOrder]);
+  }, [clusterLabels, sortOrder, clusterCentroids]);
 
   // Calculate max count for relative bar sizing
   const maxCount = useMemo(() => {
