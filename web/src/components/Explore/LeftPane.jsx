@@ -5,7 +5,7 @@ import { apiService } from '../../lib/apiService';
 import { compareVersions } from 'compare-versions';
 import ScopeHeader from './ScopeHeader';
 
-export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices, onScopeChange }) {
+export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices, onScopeChange, activeView = 'table', onViewChange }) {
   const [showMetadata, setShowMetadata] = useState(false);
   const [lsVersion, setLsVersion] = useState(null);
 
@@ -25,19 +25,23 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
     <div className="left-pane-container">
       <div className="button-column main-buttons">
         <Button
-          className="left-pane-button"
+          className={`left-pane-button ${activeView === 'table' ? 'active' : ''}`}
           size="small"
           icon="table"
-          color="primary"
-          title="Filter data points"
+          color={activeView === 'table' ? 'primary' : 'secondary'}
+          title="View data table"
+          onClick={() => onViewChange?.('table')}
+          data-testid="left-pane-table-button"
         />
-        {/* <Button
-          className="left-pane-button disabled"
+        <Button
+          className={`left-pane-button ${activeView === 'clusters' ? 'active' : ''}`}
           size="small"
-          icon="edit"
-          color="secondary"
-          title="View scope metadata"
-        /> */}
+          icon="cloud"
+          color={activeView === 'clusters' ? 'primary' : 'secondary'}
+          title="View cluster labels"
+          onClick={() => onViewChange?.('clusters')}
+          data-testid="left-pane-clusters-button"
+        />
         <Button
           className="left-pane-button disabled"
           size="small"

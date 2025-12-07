@@ -1,0 +1,210 @@
+// Panel styles - adapted from ClusterLabelsSidebar but as inline panel
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.summaryStats {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #666;
+}
+
+.summaryItem {
+  strong {
+    color: #333;
+  }
+}
+
+.sortControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  label {
+    font-size: 13px;
+    color: #666;
+  }
+}
+
+.sortSelect {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #4CAF50;
+  }
+}
+
+.activeFilter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #e3f2fd;
+  border: 1px solid #2196F3;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.clusterList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clusterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+
+  &:hover {
+    background: #f0f0f0;
+    border-color: #ccc;
+  }
+
+  &.active {
+    background: #e3f2fd;
+    border-color: #2196F3;
+    font-weight: 500;
+  }
+}
+
+.clusterItemHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.clusterBar {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.clusterBarFill {
+  height: 100%;
+  background: rgb(212, 178, 151);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.clusterBarFillActive {
+  background: #2196F3;
+}
+
+.clusterLabel {
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.clusterCount {
+  font-size: 12px;
+  color: #888;
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .panel {
+    background: transparent;
+    color: #e0e0e0;
+  }
+
+  .summaryStats {
+    color: #999;
+  }
+
+  .summaryItem strong {
+    color: #e0e0e0;
+  }
+
+  .sortControls label {
+    color: #aaa;
+  }
+
+  .sortSelect {
+    background: #333;
+    border-color: #555;
+    color: #e0e0e0;
+  }
+
+  .activeFilter {
+    background: #1e3a5f;
+    border-color: #2196F3;
+    color: #e0e0e0;
+  }
+
+  .clusterItem {
+    background: #333;
+    border-color: #444;
+    color: #e0e0e0;
+
+    &:hover {
+      background: #3a3a3a;
+      border-color: #555;
+    }
+
+    &.active {
+      background: #1e3a5f;
+      border-color: #2196F3;
+    }
+  }
+
+  .clusterBar {
+    background: #444;
+  }
+
+  .clusterCount {
+    background: #444;
+    color: #bbb;
+  }
+
+  .clusterLabel {
+    color: #e0e0e0;
+  }
+}

@@ -64,8 +64,9 @@
 // Sidebar (right side) toggle for cluster labels
 .sidebarToggleContainer {
   position: absolute;
-  bottom: 0px;
+  bottom: 50px;
   right: 12px;
+  z-index: 1001;
 }
 
 @media screen and (max-width: 1024px) {
@@ -76,7 +77,8 @@
 
 .sidebarToggle {
   @include configToggle;
-  bottom: 10px;
+  position: relative;
+  bottom: auto;
 }
 
 @media (prefers-color-scheme: light) {

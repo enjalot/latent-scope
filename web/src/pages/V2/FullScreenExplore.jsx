@@ -10,6 +10,7 @@ import SubNav from '../../components/SubNav';
 import LeftPane from '../../components/Explore/LeftPane';
 import VisualizationPane from '../../components/Explore/V2/VisualizationPane';
 import FilterDataTable from '../../components/Explore/V2/FilterDataTable';
+import ClusterLabelsPanel from '../../components/Explore/ClusterLabelsPanel';
 
 import { ScopeProvider, useScope } from '../../contexts/ScopeContext';
 import { FilterProvider, useFilter } from '../../contexts/FilterContext';
@@ -76,6 +77,9 @@ function ExploreContent() {
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
   const [dataTableRows, setDataTableRows] = useState([]);
   const [selectedAnnotations, setSelectedAnnotations] = useState([]);
+
+  // View switching state: 'table' or 'clusters'
+  const [activeView, setActiveView] = useState('table');
 
   // Add a ref to track the latest requested index
   const latestHoverIndexRef = useRef(null);
@@ -302,7 +306,14 @@ function ExploreContent() {
       />
       <div className="page-container">
         {!isMobileDevice() && (
-          <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} tags={tags} />
+          <LeftPane
+            dataset={dataset}
+            scope={scope}
+            deletedIndices={deletedIndices}
+            tags={tags}
+            activeView={activeView}
+            onViewChange={setActiveView}
+          />
         )}
         <div
           ref={containerRef}
@@ -329,20 +340,24 @@ function ExploreContent() {
                 display: 'flex',
               }}
             >
-              <FilterDataTable
-                userId={userId}
-                dataset={dataset}
-                scope={scope}
-                distances={searchFilter.distances}
-                clusterMap={clusterMap}
-                clusterLabels={clusterLabels}
-                sae_id={sae?.id}
-                feature={featureFilter.feature}
-                features={features}
-                onHover={handleHover}
-                onClick={handleClicked}
-                handleFeatureClick={handleFeatureClick}
-              />
+              {activeView === 'table' ? (
+                <FilterDataTable
+                  userId={userId}
+                  dataset={dataset}
+                  scope={scope}
+                  distances={searchFilter.distances}
+                  clusterMap={clusterMap}
+                  clusterLabels={clusterLabels}
+                  sae_id={sae?.id}
+                  feature={featureFilter.feature}
+                  features={features}
+                  onHover={handleHover}
+                  onClick={handleClicked}
+                  handleFeatureClick={handleFeatureClick}
+                />
+              ) : (
+                <ClusterLabelsPanel />
+              )}
             </div>
           </div>
           <div
