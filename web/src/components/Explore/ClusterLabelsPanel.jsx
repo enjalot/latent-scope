@@ -146,7 +146,7 @@ const ClusterBar = ({ count, maxCount, isActive }) => {
 };
 
 const ClusterLabelsPanel = () => {
-  const [sortOrder, setSortOrder] = useState('alphabetical');
+  const [sortOrder, setSortOrder] = useState('nearestNeighbor');
   const { clusterLabels, scopeRows } = useScope();
   const {
     clusterFilter,
