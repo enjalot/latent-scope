@@ -1,17 +1,15 @@
-from .__version__ import __version__
 from . import models
-
+from .__version__ import __version__
 from .util import (
-    update_data_dir,
     get_data_dir,
     set_api_key,
-    set_openai_key,
-    set_voyage_key,
-    set_together_key,
     set_cohere_key,
     set_mistral_key,
+    set_openai_key,
+    set_together_key,
+    set_voyage_key,
+    update_data_dir,
 )
-
 
 # ---------------------------------------------------------------------------
 # Heavy script imports are deferred so that importing `latentscope` (e.g. to

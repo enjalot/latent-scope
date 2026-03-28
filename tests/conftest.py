@@ -1,7 +1,8 @@
 """Shared pytest fixtures for latent-scope tests."""
 import os
-import pytest
 import tempfile
+
+import pytest
 
 
 @pytest.fixture

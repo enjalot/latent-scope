@@ -1,17 +1,18 @@
 """Tests for latentscope.util.configuration."""
 import os
-import pytest
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # get_data_dir
 # ---------------------------------------------------------------------------
 
 class TestGetDataDir:
-    def test_raises_when_env_not_set(self, monkeypatch, tmp_path):
+    def test_raises_when_env_not_set(self, monkeypatch):
         monkeypatch.delenv('LATENT_SCOPE_DATA', raising=False)
-        # Change to a directory with no .env so dotenv doesn't find one
-        monkeypatch.chdir(tmp_path)
+        # load_dotenv() finds the project .env via the source-file path, not cwd,
+        # so mock it out to ensure the env variable stays absent.
+        monkeypatch.setattr('latentscope.util.configuration.load_dotenv', lambda *a, **kw: None)
         from latentscope.util.configuration import get_data_dir
         with pytest.raises(RuntimeError, match="LATENT_SCOPE_DATA"):
             get_data_dir()
@@ -86,8 +87,11 @@ class TestSetApiKey:
 
     def test_backward_compat_setters(self, tmp_path):
         from latentscope.util.configuration import (
-            set_openai_key, set_voyage_key, set_together_key,
-            set_cohere_key, set_mistral_key,
+            set_cohere_key,
+            set_mistral_key,
+            set_openai_key,
+            set_together_key,
+            set_voyage_key,
         )
         env_file = str(tmp_path / ".env")
         set_openai_key("openai-val", env_file=env_file)

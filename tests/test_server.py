@@ -1,8 +1,8 @@
 """Tests for the Flask server (app factory and key routes)."""
 import json
 import os
-import pytest
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # App factory
@@ -16,7 +16,7 @@ class TestCreateApp:
         from latentscope.server.app import create_app
         new_dir = str(tmp_path / "new-data")
         assert not os.path.exists(new_dir)
-        application = create_app(data_dir=new_dir)
+        create_app(data_dir=new_dir)
         assert os.path.exists(new_dir)
 
     def test_read_only_false_by_default(self, app):
@@ -24,8 +24,8 @@ class TestCreateApp:
 
     def test_read_only_can_be_set(self, tmp_data_dir):
         from latentscope.server.app import create_app
-        application = create_app(data_dir=tmp_data_dir, read_only=True)
-        assert application.config['READ_ONLY'] is True
+        app = create_app(data_dir=tmp_data_dir, read_only=True)
+        assert app.config['READ_ONLY'] is True
 
 
 # ---------------------------------------------------------------------------
@@ -71,10 +71,7 @@ class TestDatasets:
 # ---------------------------------------------------------------------------
 
 class TestSettings:
-    def test_get_settings_returns_data_dir(self, client, tmp_data_dir):
-        # Create a minimal .env file so dotenv_values doesn't fail
-        env_file = os.path.join(os.getcwd(), '.env')
-        # Use a tmp env_file via app.config
+    def test_get_settings_returns_data_dir(self, client):
         response = client.get('/api/settings')
         # May return 200 or 500 depending on .env presence; we just check it's reachable
         assert response.status_code in (200, 500)

@@ -45,7 +45,7 @@ class TestChatModelList:
 
 class TestGetEmbeddingModelDict:
     def test_returns_known_model(self):
-        from latentscope.models import get_embedding_model_list, get_embedding_model_dict
+        from latentscope.models import get_embedding_model_dict, get_embedding_model_list
         first_model = get_embedding_model_list()[0]
         result = get_embedding_model_dict(first_model['id'])
         assert result['id'] == first_model['id']

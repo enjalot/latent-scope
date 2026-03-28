@@ -22,6 +22,39 @@ ls-serve ~/latent-scope-data
 
 We recommend python 3.12 as that's what the project is developed with.
 
+### Testing
+
+Run the test suite with pytest:
+
+```bash
+pip install pytest
+python -m pytest tests/ -q
+```
+
+Tests live in `tests/`. The `conftest.py` provides shared fixtures including `tmp_data_dir` (a temporary data directory), `app`/`client` (Flask test app/client), and `readonly_app`/`readonly_client` (read-only variants).
+
+### Linting & Formatting
+
+We use [ruff](https://docs.astral.sh/ruff/) for both linting and formatting. Configuration is in `pyproject.toml`.
+
+```bash
+pip install ruff
+
+# Check for lint issues
+ruff check latentscope/
+
+# Auto-fix safe issues
+ruff check --fix latentscope/
+
+# Format code
+ruff format latentscope/
+
+# Check formatting without changing files
+ruff format --check latentscope/
+```
+
+Key rules enforced: pycodestyle (E/W), pyflakes (F), isort (I), pyupgrade (UP). Line length is 100.
+
 ## Web client
 The `web` directory contains the JavaScript React source code for the web interface. Node.js is required to be installed on your system to run the development server or build a new version of the module.
 
@@ -60,8 +93,10 @@ API keys for the various proprietary model APIs are also stored in the .env file
 The flask app that runs the API and hosts the web UI has multiple components. The main setup is in `app.py` while `datasets.py`, `search.py`, `tags.py` provide specific routes. `jobs.py` is explained below.
 
 ## Jobs
-`latentscope/server/jobs.py`  
+`latentscope/server/jobs.py`
 The process run by the web UI is done by kicking off subprocesses that call the command line script for each step. The progress of the subprocess is captured and saved in a job JSON file and is updated continuously until the process completes or errors. This allows us to poll and display the status of the commands from the web UI.
+
+**Important:** All commands are built as Python lists and passed to `subprocess.Popen` without `shell=True`. Never use `shell=True` here — command arguments include user-supplied values (dataset names, file paths) which would be vulnerable to shell injection.
 
 ## Models
 `latentscope/models`

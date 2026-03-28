@@ -1,15 +1,16 @@
+import json
+import logging
+import math
 import os
 import sys
-import json
-import math
-import logging
 from importlib.resources import files
+
 from dotenv import dotenv_values, set_key
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-from latentscope.util import get_data_dir, get_supported_api_keys
 from latentscope.__version__ import __version__
+from latentscope.util import get_data_dir, get_supported_api_keys
 
 
 def _parse_bool_env(value):
