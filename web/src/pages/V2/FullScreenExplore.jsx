@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import './Explore.css';
 import { isMobileDevice } from '../../components/Explore/V2/util';
@@ -57,7 +57,6 @@ function ExploreContent() {
 
   // Get filter-related state from FilterContext
   const {
-    // filterLoading,
     loading: filterLoading,
     shownIndices,
     setFilterQuery,
@@ -126,9 +125,7 @@ function ExploreContent() {
   }, [hoveredIndex, scopeRows]);
 
   // Handlers for responding to individual data points
-  const handleClicked = useCallback((index) => {
-    console.log('====clicked====', index);
-  }, []);
+  const handleClicked = useCallback((_index) => {}, []);
 
   const handleHover = useCallback(
     (index) => {
@@ -142,22 +139,6 @@ function ExploreContent() {
     },
     [deletedIndices]
   );
-
-  // const handleSelected = useCallback(
-  //   (indices) => {
-  //     const nonDeletedIndices = indices.filter((index) => !deletedIndices.includes(index));
-  //     if (activeFilterTab === filterConstants.CLUSTER) {
-  //       let selected = scopeRows.filter((row) => nonDeletedIndices.includes(row.ls_index))?.[0];
-  //       if (selected) {
-  //         const selectedCluster = clusterLabels.find((d) => d.cluster === selected.cluster);
-  //         //   setCluster(selectedCluster);
-  //       }
-  //     } else {
-  //       setSelectedIndices(nonDeletedIndices);
-  //     }
-  //   },
-  //   [activeFilterTab, deletedIndices, scopeRows, clusterLabels, setSelectedIndices]
-  // );
 
   const containerRef = useRef(null);
   const filtersContainerRef = useRef(null);

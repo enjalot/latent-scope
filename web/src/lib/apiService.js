@@ -6,10 +6,6 @@ export const apiService = {
   fetchDataset: async (datasetId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/meta`)
       .then((response) => response.json())
-      .then((data) => {
-        console.log('dataset meta', data);
-        return data;
-      })
       .catch((error) => {
         console.error('Error fetching dataset metadata', error);
         throw error;
@@ -329,6 +325,14 @@ export const apiService = {
       .then((data) => {
         return data.rows[0][scope.dataset.text_column];
       });
+  },
+  fetchTags: async (datasetId) => {
+    return fetch(`${apiUrl}/tags?dataset=${datasetId}`).then((response) => response.json());
+  },
+  fetchScopeRows: async (datasetId, scopeId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/parquet`).then((response) =>
+      response.json()
+    );
   },
   columnFilter: async (datasetId, filters) => {
     return fetch(`${apiUrl}/column-filter`, {

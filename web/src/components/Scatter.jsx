@@ -214,7 +214,6 @@ function ScatterPlot({
           scatterplot.draw(points, { transition: false });
         });
       } else {
-        console.log('=== fresh draw scatterplot ===');
         scatterplot.set({
           pointColor: pointColor,
         });

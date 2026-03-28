@@ -4,8 +4,6 @@ import wasm from 'vite-plugin-wasm';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import path from 'path';
 
-const mode = process.env.MODE || 'development';
-
 export default defineConfig(({ mode }) => ({
   base: mode === 'read_only' ? '/latent-scope/' : '/',
   plugins: [react(), wasm(), topLevelAwait()],
@@ -16,5 +14,11 @@ export default defineConfig(({ mode }) => ({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    exclude: ['node_modules', 'dist'],
   },
 }));
