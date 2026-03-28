@@ -12,7 +12,7 @@ import {
   filterConstants,
   findFeatureLabel,
   validateColumnAndValue,
-} from '../components/Explore/V2/Search/utils';
+} from '../components/Explore/Search/utils';
 
 const FilterContext = createContext(null);
 

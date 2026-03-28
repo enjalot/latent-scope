@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { select } from 'd3-selection';
 import styles from './PointLabel.module.scss';
-import { contrastColor } from '../../../lib/colors';
+import { contrastColor } from '../../lib/colors';
 
 function PointLabel({
   selectedPoints, // array of {x, y, index} objects

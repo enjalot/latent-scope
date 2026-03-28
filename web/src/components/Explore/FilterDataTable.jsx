@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'react-tooltip';
-import { useFilter } from '../../../contexts/FilterContext';
+import { useFilter } from '../../contexts/FilterContext';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
 

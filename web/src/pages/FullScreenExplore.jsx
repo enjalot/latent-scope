@@ -2,20 +2,20 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import './Explore.css';
-import { isMobileDevice } from '../../components/Explore/V2/util';
-import { apiService } from '../../lib/apiService';
+import { isMobileDevice } from '../components/Explore/util';
+import { apiService } from '../lib/apiService';
 
-import FilterActions from '../../components/Explore/V2/FilterActions';
-import SubNav from '../../components/SubNav';
-import LeftPane from '../../components/Explore/LeftPane';
-import VisualizationPane from '../../components/Explore/V2/VisualizationPane';
-import FilterDataTable from '../../components/Explore/V2/FilterDataTable';
+import FilterActions from '../components/Explore/FilterActions';
+import SubNav from '../components/SubNav';
+import LeftPane from '../components/Explore/LeftPane';
+import VisualizationPane from '../components/Explore/VisualizationPane';
+import FilterDataTable from '../components/Explore/FilterDataTable';
 
-import { ScopeProvider, useScope } from '../../contexts/ScopeContext';
-import { FilterProvider, useFilter } from '../../contexts/FilterContext';
-import useDebounce from '../../hooks/useDebounce';
+import { ScopeProvider, useScope } from '../contexts/ScopeContext';
+import { FilterProvider, useFilter } from '../contexts/FilterContext';
+import useDebounce from '../hooks/useDebounce';
 
-import { filterConstants } from '../../components/Explore/V2/Search/utils';
+import { filterConstants } from '../components/Explore/Search/utils';
 
 const styles = {
   dragHandle: {

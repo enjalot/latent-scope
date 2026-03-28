@@ -4,9 +4,9 @@ import { Button } from 'react-element-forge';
 import { useSearchParams } from 'react-router-dom';
 
 import SearchResults from './SearchResults';
-import { useScope } from '../../../../contexts/ScopeContext';
+import { useScope } from '../../../contexts/ScopeContext';
 import styles from './Container.module.scss';
-import { useFilter } from '../../../../contexts/FilterContext';
+import { useFilter } from '../../../contexts/FilterContext';
 import { filterConstants } from './utils';
 /*
  * SearchContainer is the main parent component that manages the overall search state.
