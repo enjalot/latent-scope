@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 from flask import Blueprint, current_app, jsonify, request
 
 # Create a Blueprint

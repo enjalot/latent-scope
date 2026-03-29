@@ -23,6 +23,22 @@ def _data_dir():
     return current_app.config['DATA_DIR']
 
 
+def _require_params(**params):
+    """Validate that all named parameters are non-None.
+
+    Returns a tuple (error_response, 400) if any are missing, or None if all
+    are present.  Usage::
+
+        err = _require_params(dataset=dataset, model_id=model_id)
+        if err:
+            return err
+    """
+    missing = [name for name, value in params.items() if value is None]
+    if missing:
+        return jsonify({"error": f"Missing required parameters: {', '.join(missing)}"}), 400
+    return None
+
+
 def run_job(data_dir, dataset, job_id, command):
     """Execute a CLI command in a subprocess and write progress to a JSON file.
 
@@ -198,6 +214,11 @@ def run_embed():
     batch_size = request.args.get('batch_size')
     max_seq_length = request.args.get('max_seq_length')
 
+    err = _require_params(dataset=dataset, text_column=text_column, model_id=model_id,
+                          prefix=prefix, batch_size=batch_size)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-embed', dataset, text_column, model_id,
                f'--prefix={prefix}', f'--batch_size={batch_size}']
@@ -216,6 +237,10 @@ def run_embed_truncate():
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
 
+    err = _require_params(dataset=dataset, embedding_id=embedding_id, dimensions=dimensions)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-embed-truncate', dataset, embedding_id, str(dimensions)]
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
@@ -229,6 +254,11 @@ def run_embed_importer():
     model_id = request.args.get('model_id')
     embedding_column = request.args.get('embedding_column')
     text_column = request.args.get('text_column')
+
+    err = _require_params(dataset=dataset, model_id=model_id,
+                          embedding_column=embedding_column, text_column=text_column)
+    if err:
+        return err
 
     job_id = str(uuid.uuid4())
     command = ['ls-embed-importer', dataset, embedding_column, model_id, text_column]
@@ -328,6 +358,11 @@ def run_umap():
     save = request.args.get('save')
     seed = request.args.get('seed')
 
+    err = _require_params(dataset=dataset, embedding_id=embedding_id,
+                          neighbors=neighbors, min_dist=min_dist)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-umap', dataset, embedding_id, neighbors, min_dist]
     if init:
@@ -384,6 +419,11 @@ def run_sae():
     model_id = request.args.get('model_id')
     k_expansion = request.args.get('k_expansion')
 
+    err = _require_params(dataset=dataset, embedding_id=embedding_id,
+                          model_id=model_id, k_expansion=k_expansion)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-sae', dataset, embedding_id, model_id, k_expansion]
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
@@ -428,6 +468,12 @@ def run_cluster():
     min_samples = request.args.get('min_samples')
     cluster_selection_epsilon = request.args.get('cluster_selection_epsilon')
 
+    err = _require_params(dataset=dataset, umap_id=umap_id, samples=samples,
+                          min_samples=min_samples,
+                          cluster_selection_epsilon=cluster_selection_epsilon)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-cluster', dataset, umap_id, samples, min_samples, cluster_selection_epsilon]
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
@@ -456,6 +502,11 @@ def run_cluster_label():
     samples = request.args.get('samples')
     max_tokens_per_sample = request.args.get('max_tokens_per_sample')
     max_tokens_total = request.args.get('max_tokens_total')
+
+    err = _require_params(dataset=dataset, text_column=text_column,
+                          cluster_id=cluster_id, chat_id=chat_id, samples=samples)
+    if err:
+        return err
 
     job_id = str(uuid.uuid4())
     command = ['ls-label', dataset, text_column, cluster_id, chat_id, samples, context]
@@ -491,6 +542,13 @@ def run_scope():
     description = request.args.get('description')
     scope_id = request.args.get('scope_id')
 
+    err = _require_params(dataset=dataset, embedding_id=embedding_id,
+                          umap_id=umap_id, cluster_id=cluster_id,
+                          cluster_labels_id=cluster_labels_id,
+                          label=label, description=description)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-scope', dataset, embedding_id, umap_id, cluster_id,
                cluster_labels_id, label, description]
@@ -520,6 +578,10 @@ def run_plot():
     scope_id = request.args.get('scope_id')
     config = request.args.get('config')
 
+    err = _require_params(dataset=dataset, scope_id=scope_id, config=config)
+    if err:
+        return err
+
     job_id = str(uuid.uuid4())
     command = ['ls-export-plot', dataset, scope_id, f'--plot_config={config}']
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
@@ -531,6 +593,10 @@ def download_dataset():
     data_dir = _data_dir()
     dataset_repo = request.args.get('dataset_repo')
     dataset_name = request.args.get('dataset_name')
+
+    err = _require_params(dataset_repo=dataset_repo, dataset_name=dataset_name)
+    if err:
+        return err
 
     job_id = str(uuid.uuid4())
     command = ['ls-download-dataset', dataset_repo, dataset_name, data_dir]
@@ -545,6 +611,11 @@ def upload_dataset():
     hf_dataset = request.args.get('hf_dataset')
     main_parquet = request.args.get('main_parquet')
     private = request.args.get('private')
+
+    err = _require_params(dataset=dataset, hf_dataset=hf_dataset,
+                          main_parquet=main_parquet, private=private)
+    if err:
+        return err
 
     job_id = str(uuid.uuid4())
     path = os.path.join(data_dir, dataset)
