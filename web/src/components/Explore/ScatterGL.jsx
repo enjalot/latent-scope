@@ -16,10 +16,8 @@ import { useFilter } from '@/contexts/FilterContext';
 import { useColorMode } from '@/hooks/useColorMode';
 import styles from './Scatter.module.css';
 import useDebounce from '@/hooks/useDebounce';
-import { useScope } from '@/contexts/ScopeContext';
 
 import PropTypes from 'prop-types';
-import { reSplitAlphaNumeric } from '@tanstack/react-table';
 ScatterGL.propTypes = {
   points: PropTypes.array.isRequired, // an array of [x,y] points
   width: PropTypes.number.isRequired,
@@ -31,6 +29,7 @@ ScatterGL.propTypes = {
   onView: PropTypes.func,
   onSelect: PropTypes.func,
   onHover: PropTypes.func,
+  isSmallScreen: PropTypes.bool,
 };
 
 const calculatePointColor = (valueA) => {
@@ -103,13 +102,11 @@ function ScatterGL({
   onHover,
   featureIsSelected,
   ignoreNotSelected = false,
+  isSmallScreen = false,
 }) {
   const { isDark: isDarkMode } = useColorMode();
-  const { setFilteredIndices, anyFilterActive, setCenteredIndices } = useFilter();
-  const { clusterMap } = useScope();
+  const { setCenteredIndices } = useFilter();
 
-  // debounce the filtered indices update
-  // const debouncedSetFilteredIndices = useDebounce(setFilteredIndices, 50);
   const debouncedSetCenteredIndices = useDebounce(setCenteredIndices, 50);
 
   const canvasRef = useRef(null);
@@ -309,6 +306,9 @@ function ScatterGL({
         if (onView) {
           onView(newXScale.domain(), newYScale.domain(), event.transform);
         }
+      })
+      .on('end', (event) => {
+        updateCenteredIndices(event.transform);
       });
 
     const zoomSelection = select(canvas).call(zoomBehavior);
@@ -455,7 +455,7 @@ function ScatterGL({
   );
 
   // Find the n closest points to the given data coordinates (dataX, dataY)
-  const findNClosestPoints = (dataX, dataY, n) => {
+  const findNClosestPoints = useCallback((dataX, dataY, n) => {
     const closestPoints = [];
 
     // Search radius in data coordinates
@@ -498,7 +498,7 @@ function ScatterGL({
     return closestPoints.map(({ point }) =>
       points.findIndex((p) => p[0] === point[0] && p[1] === point[1])
     );
-  };
+  }, [points]);
 
   const handleMouseMove = useCallback(
     (event) => {
@@ -531,33 +531,22 @@ function ScatterGL({
     [points, onSelect, findNearestPoint]
   );
 
-  const updateCenteredIndices = (transform) => {
-    const newCenter = getCenterCoordinates(
-      width,
-      height,
-      transform,
-      xScaleRef.current,
-      yScaleRef.current
-    );
-    const closest = findNClosestPoints(newCenter.x, newCenter.y, TOP_N_POINTS);
-    debouncedSetCenteredIndices(closest);
-
-    // if (useDefaultIndices) {
-    //   const closest = findNearestPoint(newCenter.x, newCenter.y);
-    //   if (closest !== -1) {
-    //     setHoveredIndex(closest);
-    //     const cluster = clusterMap[closest];
-    //     if (cluster) {
-    //       setHoveredCluster(cluster);
-    //     }
-
-    //     if (isSmallScreen) {
-    //       debouncedSetFilteredIndices([closest]);
-    //     } else {
-    //     }
-    //   }
-    // }
-  };
+  const updateCenteredIndices = useCallback(
+    (transform) => {
+      if (!isSmallScreen) return;
+      const newCenter = getCenterCoordinates(
+        width,
+        height,
+        transform,
+        xScaleRef.current,
+        yScaleRef.current
+      );
+      if (!quadtreeRef.current) return;
+      const closest = findNClosestPoints(newCenter.x, newCenter.y, TOP_N_POINTS);
+      debouncedSetCenteredIndices(closest);
+    },
+    [width, height, debouncedSetCenteredIndices, findNClosestPoints, isSmallScreen]
+  );
 
   return (
     <canvas

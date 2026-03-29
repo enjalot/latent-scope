@@ -20,7 +20,7 @@ import { useFilter } from '../../contexts/FilterContext';
 
 import { mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from '../../lib/colors';
 import styles from './VisualizationPane.module.scss';
-import ConfigurationPanel from '../ConfigurationPanel';
+import ConfigurationPanel from './ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';
 
 // VisualizationPane.propTypes = {
@@ -49,6 +49,7 @@ function VisualizationPane({
   selectedAnnotations,
   hoveredCluster,
   dataTableRows,
+  isSmallScreen = false,
 }) {
   const { scopeRows, clusterLabels, clusterMap, deletedIndices, scope, features } = useScope();
 
@@ -295,6 +296,7 @@ function VisualizationPane({
             onHover={onHover}
             featureIsSelected={featureIsSelected}
             maxZoom={maxZoom}
+            isSmallScreen={isSmallScreen}
           />
         )}
         {/* show all the hulls */}
@@ -396,7 +398,9 @@ function VisualizationPane({
           k={transform.k}
           maxZoom={maxZoom}
         />
-        {/* <CrossHair xDomain={xDomain} yDomain={yDomain} width={width} height={height} /> */}
+        {isSmallScreen && (
+          <CrossHair xDomain={xDomain} yDomain={yDomain} width={width} height={height} />
+        )}
       </div>
 
       {/* Hover information display */}
