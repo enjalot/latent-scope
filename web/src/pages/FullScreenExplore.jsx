@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import './Explore.css';
-import { isMobileDevice } from '../components/Explore/util';
 import { apiService } from '../lib/apiService';
 
 import FilterActions from '../components/Explore/FilterActions';
@@ -14,6 +13,8 @@ import FilterDataTable from '../components/Explore/FilterDataTable';
 import { ScopeProvider, useScope } from '../contexts/ScopeContext';
 import { FilterProvider, useFilter } from '../contexts/FilterContext';
 import useDebounce from '../hooks/useDebounce';
+import { useSmallScreen } from '../hooks/useSmallScreen';
+import MobileExplore from './MobileExplore';
 
 import { filterConstants } from '../components/Explore/Search/utils';
 
@@ -282,9 +283,7 @@ function ExploreContent() {
         onScopeChange={handleScopeChange}
       />
       <div className="page-container">
-        {!isMobileDevice() && (
-          <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} tags={tags} />
-        )}
+        <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} tags={tags} />
         <div
           ref={containerRef}
           className="full-screen-explore-container"
@@ -358,10 +357,12 @@ function ExploreContent() {
 
 // Make the main Explore component just handle the providers
 function Explore() {
+  const isSmallScreen = useSmallScreen();
+
   return (
     <ScopeProvider>
       <FilterProvider>
-        <ExploreContent />
+        {isSmallScreen ? <MobileExplore /> : <ExploreContent />}
       </FilterProvider>
     </ScopeProvider>
   );

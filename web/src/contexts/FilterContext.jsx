@@ -24,6 +24,7 @@ export function FilterProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [filterQuery, setFilterQuery] = useState(''); // Optional query string for UI
   const [filterActive, setFilterActive] = useState(false);
+  const [centeredIndices, setCenteredIndices] = useState([]);
 
   const [urlParams, setUrlParams] = useSearchParams();
   // Pull shared data from a higher-level context.
@@ -116,9 +117,13 @@ export function FilterProvider({ children }) {
     async function applyFilter() {
       setLoading(true);
       let indices = [];
-      // If no filter is active, use the full baseIndices.
+      // If no filter is active, use centeredIndices if available, otherwise use baseIndices
       if (!filterConfig && !hasFilterInUrl) {
-        indices = baseIndices;
+        if (centeredIndices.length > 0) {
+          indices = centeredIndices.filter((index) => !deletedIndices.includes(index));
+        } else {
+          indices = baseIndices;
+        }
       } else if (filterConfig) {
         const { type, value } = filterConfig;
 
@@ -164,7 +169,7 @@ export function FilterProvider({ children }) {
     if (scopeLoaded) {
       applyFilter();
     }
-  }, [filterConfig, baseIndices, scopeRows, deletedIndices, userId, datasetId, scope, scopeLoaded]);
+  }, [filterConfig, baseIndices, scopeRows, deletedIndices, userId, datasetId, scope, scopeLoaded, centeredIndices]);
 
   // === Fetch Data Table Rows Logic
 
@@ -238,6 +243,9 @@ export function FilterProvider({ children }) {
     setFilterConfig,
     filterQuery,
     setFilterQuery,
+
+    centeredIndices,
+    setCenteredIndices,
 
     // Filtered indices and pagination state.
     filteredIndices, // Complete set of indices after filtering.
