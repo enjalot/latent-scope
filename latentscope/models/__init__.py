@@ -7,127 +7,130 @@ from .providers.togetherai import TogetherAIEmbedProvider
 from .providers.voyageai import VoyageAIEmbedProvider
 from .providers.nltk import NLTKChatProvider
 
-# We use a universal id system for models where its:
-# <provider>-<model-name> with model-name replacing "/"" with "___"
-# i.e. "nomic-ai/nomic-embed-text-v1.5" becomes: 
-# "transformers-nomic-ai___nomic-embed-text-v1.5"
-# or OpenAI's "text-embedding-3-small" becomes:
-# "openai-text-embedding-3-small"
+# Universal model ID scheme:
+#   <provider>-<model-name>  where "/" in the model name is replaced by "___"
+#
+# Examples:
+#   "nomic-ai/nomic-embed-text-v1.5"  →  "huggingface-nomic-ai___nomic-embed-text-v1.5"
+#   "text-embedding-3-small"          →  "openai-text-embedding-3-small"
+#
+# The legacy prefix "🤗-" is still accepted for backward compatibility.
+
+_HF_PROVIDER = "huggingface"
+_HF_PREFIX = f"{_HF_PROVIDER}-"
+# Legacy emoji prefix kept for backward compat when parsing existing IDs
+_HF_EMOJI_PREFIX = "🤗-"
+# setup.py / transformers provider used the old prefix "transformers-"
+_HF_OLD_PREFIX = "transformers-"
+
+
+def _parse_hf_model_id(model_id):
+    """Return the HuggingFace model name from a model_id, or None if not HF."""
+    for prefix in (_HF_PREFIX, _HF_EMOJI_PREFIX, _HF_OLD_PREFIX):
+        if model_id.startswith(prefix):
+            return model_id[len(prefix):].replace("___", "/")
+    return None
+
 
 def get_embedding_model_list():
-    """Returns a list of available embedding models."""
+    """Return the list of available embedding models."""
     from importlib.resources import files
     embedding_path = files('latentscope.models').joinpath('embedding_models.json')
     with open(embedding_path, "r") as f:
-        embed_model_list = json.load(f)
-    return embed_model_list
+        return json.load(f)
 
-def get_embedding_model_dict(id):
+
+def get_embedding_model_dict(model_id):
     embed_model_list = get_embedding_model_list()
     embed_model_dict = {model['id']: model for model in embed_model_list}
-    model = embed_model_dict[id]
+    model = embed_model_dict.get(model_id)
     if not model:
-        raise ValueError(f"Model {id} not found")
+        raise ValueError(f"Embedding model '{model_id}' not found")
     return model
 
-def get_embedding_model(id):
-    """Returns a ModelProvider instance for the given model id."""
 
-    # For backwards compatibility with the old preset transformers models 
-    # (all of which were also HF sentence transformers)
-    if id.startswith("transformers-"):
-        id = id.replace("transformers-", "🤗-")
-    if id.startswith("🤗-"):
-        # If the model id is a HF sentence transformers model, we get the model id
-        # by replacing "/" with "___"
-        # Then huggingface will take care of finding the model
-        model_name = id.split("🤗-")[1].replace("___", "/")
-        model = {
-            "provider": "🤗",
-            "name": model_name,
-            "params": {}
-        }
+def get_embedding_model(model_id):
+    """Return a ModelProvider instance for the given embedding model id."""
+    hf_name = _parse_hf_model_id(model_id)
+    if hf_name:
+        model = {"provider": _HF_PROVIDER, "name": hf_name, "params": {}}
     else:
-        model = get_embedding_model_dict(id)
-      
-    if model['provider'] == "🤗":
+        model = get_embedding_model_dict(model_id)
+
+    provider = model['provider']
+    # Accept both "huggingface" and legacy "🤗"
+    if provider in (_HF_PROVIDER, "🤗"):
         return TransformersEmbedProvider(model['name'], model['params'])
-    if model['provider'] == "openai":
+    if provider == "openai":
         return OpenAIEmbedProvider(model['name'], model['params'])
-    if model['provider'] == "mistralai":
+    if provider == "mistralai":
         return MistralAIEmbedProvider(model['name'], model['params'])
-    if model['provider'] == "cohereai":
+    if provider == "cohereai":
         return CohereAIEmbedProvider(model['name'], model['params'])
-    if model['provider'] == "togetherai":
+    if provider == "togetherai":
         return TogetherAIEmbedProvider(model['name'], model['params'])
-    if model['provider'] == "voyageai":
+    if provider == "voyageai":
         return VoyageAIEmbedProvider(model['name'], model['params'])
+    raise ValueError(f"Unknown embedding provider '{provider}' for model '{model_id}'")
 
 
 def get_chat_model_list():
-    """Returns a list of available chat models."""
+    """Return the list of available chat models."""
     from importlib.resources import files
     chat_path = files('latentscope.models').joinpath('chat_models.json')
     with open(chat_path, "r") as f:
-        chat_model_list = json.load(f)
-    return chat_model_list
+        return json.load(f)
 
-def get_chat_model_dict(id):
+
+def get_chat_model_dict(model_id):
     chat_model_list = get_chat_model_list()
     chat_model_dict = {model['id']: model for model in chat_model_list}
-    model = chat_model_dict[id]
+    model = chat_model_dict.get(model_id)
     if not model:
-        raise ValueError(f"Model {id} not found")
+        raise ValueError(f"Chat model '{model_id}' not found")
     return model
 
-def get_chat_model(id):
-    """Returns a ModelProvider instance for the given model id."""
-    # For backwards compatibility with the old preset transformers models
-    if id.startswith("transformers-"):
-        id = id.replace("transformers-", "🤗-")
-    if id.startswith("🤗-"):
-        # If the model id is a HF model, we get the model name
-        # by replacing "/" with "___"
-        model_name = id.split("🤗-")[1].replace("___", "/")
-        model = {
-            "provider": "🤗",
-            "name": model_name,
-            "params": {}
-        }
-    elif id.startswith("custom-"):
-        # Get custom model from custom_models.json
+
+def get_chat_model(model_id):
+    """Return a ModelProvider instance for the given chat model id."""
+    hf_name = _parse_hf_model_id(model_id)
+    if hf_name:
+        model = {"provider": _HF_PROVIDER, "name": hf_name, "params": {}}
+    elif model_id.startswith("custom-"):
         import os
         from latentscope.util import get_data_dir
-        DATA_DIR = get_data_dir()
-        custom_models_path = os.path.join(DATA_DIR, "custom_models.json")
+        data_dir = get_data_dir()
+        custom_models_path = os.path.join(data_dir, "custom_models.json")
         if os.path.exists(custom_models_path):
             with open(custom_models_path, "r") as f:
                 custom_models = json.load(f)
-            model = next((m for m in custom_models if m["id"] == id), None)
+            model = next((m for m in custom_models if m["id"] == model_id), None)
             if model is None:
-                raise ValueError(f"Custom model {id} not found")
+                raise ValueError(f"Custom model '{model_id}' not found in custom_models.json")
         else:
-            raise ValueError("No custom models found")
-    elif id.startswith("ollama-"):
+            raise ValueError("No custom_models.json found in data directory")
+    elif model_id.startswith("ollama-"):
         model = {
             "provider": "ollama",
-            "name": id.split("ollama-")[1],
-            "url": "http://localhost:11434/v1", # TODO: this should be passed in somehow?
-            "params": {}
+            "name": model_id[len("ollama-"):],
+            "url": "http://localhost:11434/v1",
+            "params": {},
         }
     else:
-        model = get_chat_model_dict(id)
-    
-    if model['provider'] == "🤗":
-        return TransformersChatProvider(model['name'], model['params'])
-    if model['provider'] == "openai":
-        return OpenAIChatProvider(model['name'], model['params'])
-    if model['provider'] == "custom":
-        return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
-    if model['provider'] == "ollama":
-        return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
-    if model['provider'] == "mistralai":
-        return MistralAIChatProvider(model['name'], model['params'])
-    if model['provider'] == "nltk":
-        return NLTKChatProvider(model['name'], model['params'])
+        model = get_chat_model_dict(model_id)
 
+    provider = model['provider']
+    # Accept both "huggingface" and legacy "🤗"
+    if provider in (_HF_PROVIDER, "🤗"):
+        return TransformersChatProvider(model['name'], model['params'])
+    if provider == "openai":
+        return OpenAIChatProvider(model['name'], model['params'])
+    if provider == "custom":
+        return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
+    if provider == "ollama":
+        return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
+    if provider == "mistralai":
+        return MistralAIChatProvider(model['name'], model['params'])
+    if provider == "nltk":
+        return NLTKChatProvider(model['name'], model['params'])
+    raise ValueError(f"Unknown chat provider '{provider}' for model '{model_id}'")

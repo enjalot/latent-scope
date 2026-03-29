@@ -1,90 +1,101 @@
 import os
-import sys
+
 from dotenv import load_dotenv, set_key
 
+_SUPPORTED_API_KEYS = [
+    "OPENAI_API_KEY",
+    "VOYAGE_API_KEY",
+    "TOGETHER_API_KEY",
+    "COHERE_API_KEY",
+    "MISTRAL_API_KEY",
+    "HUGGINGFACE_TOKEN",
+]
+
+
 def get_data_dir():
-    print("Loading environment variables from:", os.path.join(os.getcwd(), '.env'))
+    """Return the data directory from the LATENT_SCOPE_DATA environment variable.
+
+    Raises RuntimeError if the variable is not set, so callers (including
+    library users) get a proper exception rather than a hard sys.exit().
+    """
     load_dotenv()
-    DATA_DIR = os.getenv('LATENT_SCOPE_DATA')
-    if DATA_DIR is None:
-        print("""LATENT_SCOPE_DATA environment variable not set. Please set it to the directory where you want to store your data.
-e.g.: export LATENT_SCOPE_DATA=~/latentscope-data""")
-        sys.exit(1)
-    return DATA_DIR
+    data_dir = os.getenv('LATENT_SCOPE_DATA')
+    if data_dir is None:
+        raise RuntimeError(
+            "LATENT_SCOPE_DATA environment variable is not set. "
+            "Set it to your data directory, e.g.:\n"
+            "  export LATENT_SCOPE_DATA=~/latentscope-data\n"
+            "or call latentscope.init('/path/to/data') before using the library."
+        )
+    return data_dir
+
 
 def update_data_dir(directory, env_file=".env"):
-    # Load existing .env file, or create one if it doesn't exist
+    """Create or update the data directory setting in the env file."""
     load_dotenv(env_file)
     if not directory or directory == "":
         directory = os.getenv('LATENT_SCOPE_DATA')
         if not directory:
-            print("ERROR: Please specify a directory")
-            return
+            raise ValueError("Please specify a data directory.")
         else:
             print("No directory specified, current directory is:", directory)
     if "~" in directory:
         directory = os.path.expanduser(directory)
     if directory.startswith("./") or directory.startswith("../") or not directory.startswith("/"):
         directory = os.path.abspath(directory)
-    # Update the .env file with the new directory
     set_key(env_file, 'LATENT_SCOPE_DATA', directory)
-    # Update the environment variable for the current process
     os.environ['LATENT_SCOPE_DATA'] = directory
     if not os.path.exists(directory):
         os.makedirs(directory)
     return directory
 
+
 def get_key(key, env_file=".env"):
-    print("get key", os.getcwd())
+    """Retrieve any environment variable, loading from env_file first."""
     load_dotenv(env_file)
     return os.getenv(key)
 
+
 def get_supported_api_keys():
-    return [
-        "OPENAI_API_KEY",
-        "VOYAGE_API_KEY",
-        "TOGETHER_API_KEY",
-        "COHERE_API_KEY",
-        "MISTRAL_API_KEY",
-        "HUGGINGFACE_TOKEN"
-    ]
+    """Return the list of API key names supported by latent-scope."""
+    return list(_SUPPORTED_API_KEYS)
+
+
+def set_api_key(key_name, value, env_file=".env"):
+    """Set an API key in the env file and the current process environment.
+
+    Args:
+        key_name: The environment variable name (e.g. 'OPENAI_API_KEY').
+        value: The key value to store.
+        env_file: Path to the .env file to update (default: '.env').
+
+    Raises:
+        ValueError: If key_name is not a recognised API key.
+    """
+    if key_name not in _SUPPORTED_API_KEYS:
+        raise ValueError(
+            f"Unknown API key '{key_name}'. Supported keys: {_SUPPORTED_API_KEYS}"
+        )
+    load_dotenv(env_file)
+    set_key(env_file, key_name, value)
+    os.environ[key_name] = value
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible per-provider helpers (thin wrappers around set_api_key)
+# ---------------------------------------------------------------------------
 
 def set_openai_key(openai_key, env_file=".env"):
-    # Load existing .env file, or create one if it doesn't exist
-    load_dotenv(env_file)
-    # Update the .env file with the new directory
-    set_key(env_file, 'OPENAI_API_KEY', openai_key)
-    # Update the environment variable for the current process
-    os.environ['OPENAI_API_KEY'] = openai_key
+    set_api_key("OPENAI_API_KEY", openai_key, env_file)
 
 def set_voyage_key(voyage_key, env_file=".env"):
-    # Load existing .env file, or create one if it doesn't exist
-    load_dotenv(env_file)
-    # Update the .env file with the new directory
-    set_key(env_file, 'VOYAGE_API_KEY', voyage_key)
-    # Update the environment variable for the current process
-    os.environ['VOYAGE_API_KEY'] = voyage_key
+    set_api_key("VOYAGE_API_KEY", voyage_key, env_file)
 
 def set_together_key(together_key, env_file=".env"):
-    # Load existing .env file, or create one if it doesn't exist
-    load_dotenv(env_file)
-    # Update the .env file with the new directory
-    set_key(env_file, 'TOGETHER_API_KEY', together_key)
-    # Update the environment variable for the current process
-    os.environ['TOGETHER_API_KEY'] = together_key
+    set_api_key("TOGETHER_API_KEY", together_key, env_file)
 
 def set_cohere_key(cohere_key, env_file=".env"):
-    # Load existing .env file, or create one if it doesn't exist
-    load_dotenv(env_file)
-    # Update the .env file with the new directory
-    set_key(env_file, 'COHERE_API_KEY', cohere_key)
-    # Update the environment variable for the current process
-    os.environ['COHERE_API_KEY'] = cohere_key
+    set_api_key("COHERE_API_KEY", cohere_key, env_file)
 
 def set_mistral_key(mistral_key, env_file=".env"):
-    # Load existing .env file, or create one if it doesn't exist
-    load_dotenv(env_file)
-    # Update the .env file with the new directory
-    set_key(env_file, 'MISTRAL_API_KEY', mistral_key)
-    # Update the environment variable for the current process
-    os.environ['MISTRAL_API_KEY'] = mistral_key
+    set_api_key("MISTRAL_API_KEY", mistral_key, env_file)

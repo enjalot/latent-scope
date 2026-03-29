@@ -1,0 +1,23 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "F401",   # unused imports — too noisy during active development
+]
+exclude = ["web/", "notebooks/", "build/", "dist/", "venv/", "testenv*"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["latentscope"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

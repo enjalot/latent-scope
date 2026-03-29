@@ -125,10 +125,11 @@ The plan is organized into **independent work streams** that can be executed in 
 **Goal:** Lock in current behavior with tests before changing anything.
 **Branch:** `test/foundation`
 
-#### 1.1 Python Test Setup
-- Set up pytest with conftest.py and fixtures
-- Create a small test dataset (10-50 rows) that can run through the full pipeline
-- Fixture that sets up a temporary data directory with test data
+#### 1.1 Python Test Setup ✅ DONE
+- ✅ Set up pytest with conftest.py and fixtures (`tmp_data_dir`, `app`, `client`, `readonly_app`, `readonly_client`)
+- ✅ Added `pyproject.toml` with pytest + ruff configuration
+- ✅ Created `tests/__init__.py`
+- Fixture for small test dataset (10-50 rows) through full pipeline — deferred to 1.2
 
 #### 1.2 Pipeline Integration Tests
 Test each stage end-to-end with real (small) data:
@@ -144,10 +145,10 @@ Test each stage end-to-end with real (small) data:
 - Test the public API surface: `latentscope.ingest()`, `.embed()`, `.umapper()`, `.clusterer()`, `.labeler()`, `.scope()`
 - Verify return values and side effects (files created, metadata written)
 
-#### 1.4 Server API Tests
-- Set up Flask test client
-- Test key endpoints: dataset CRUD, search, file serving, job management
-- Test that server starts and serves the web UI
+#### 1.4 Server API Tests ✅ DONE (foundational)
+- ✅ Set up Flask test client (`tests/test_server.py` — 40 tests passing)
+- ✅ Tests cover app factory, version, datasets, settings, jobs, tags, models routes
+- Remaining: search, file serving, bulk operations endpoints
 
 #### 1.5 Frontend Test Setup
 - Set up Vitest (matches Vite ecosystem)
@@ -162,19 +163,20 @@ Test each stage end-to-end with real (small) data:
 
 ### Stream 2: Backend Design & Refactoring
 **Goal:** Clean, secure, well-structured Python backend with modern packaging.
-**Branch:** `refactor/backend`
+**Branch:** `refactor/backend` / `claude/modernize-backend-foundation-ZfNU2`
 **Depends on:** Stream 1 (tests must exist to verify refactoring doesn't break things)
 
-#### 2.1 Packaging Modernization
-- Migrate from setup.py to pyproject.toml
-- Define optional dependency groups: `[dev]`, `[test]`, `[gpu]`, `[all-providers]`
-- Separate heavy ML deps (torch, transformers) from lightweight server deps
-- Remove unnecessary deps from production (jupyter, notebook, beautifulsoup4 if unused)
+#### 2.1 Packaging Modernization ✅ PARTIALLY DONE
+- ✅ Added `pyproject.toml` with pytest + ruff configuration
+- ✅ Lazy imports in `__init__.py` (server deps no longer require ML packages)
+- Remaining: migrate full package metadata from `setup.py` to `pyproject.toml` (add `[project]`, `[project.optional-dependencies]` with `dev`, `test`, `gpu`, `all-providers` groups)
 
-#### 2.2 Security Fix: Job Runner
-- **Critical:** Replace `shell=True` subprocess calls in `latentscope/server/jobs.py:47-52` with argument lists
-- Sanitize all command construction
-- Make timeout configurable (currently hardcoded 300s at jobs.py:15)
+#### 2.2 Security Fix: Job Runner ✅ DONE
+- ✅ Replaced `shell=True` with argument list-based `subprocess.Popen` in `jobs.py`
+- ✅ All 14 command builders converted from f-string to list construction
+- ✅ `rerun_job` handles both legacy string format and new list format
+- ✅ Added `try/except` around `Popen` for missing executable errors
+- Timeout still hardcoded at `jobs.py:15` (TIMEOUT = 300) — deferred
 
 #### 2.3 Shared Utilities Extraction
 Deduplicate code that exists in multiple places:
@@ -184,27 +186,27 @@ Deduplicate code that exists in multiple places:
 - Embedding loading — shared between umapper.py, search.py, scope.py
 - Target: `latentscope/util/data.py` and `latentscope/util/embeddings.py`
 
-#### 2.4 Logging & Observability
-- Replace all `print()` statements with Python `logging` module
-- Configure log levels (DEBUG for dev, INFO for prod)
-- Fix `get_data_dir()` printing to stdout on every call
-- Structured log format for job progress
+#### 2.4 Logging & Observability ✅ PARTIALLY DONE
+- ✅ Removed debug `print()` from jobs.py, app.py, admin.py, configuration.py, models/__init__.py
+- ✅ `get_data_dir()` now raises `RuntimeError` instead of `sys.exit()` (library-safe)
+- Remaining: Replace remaining `print()` with Python `logging` module; configure log levels
 
 #### 2.5 Server Improvements
 - Add LRU eviction to global caches in `app.py` (DATAFRAMES, DATASETS, EMBEDDINGS, FEATURES, DBS — all unbounded)
 - Add basic thread safety for concurrent requests
 - Deprecate `/api/indexed` in favor of `/query` (noted in app.py:94 TODO)
 
-#### 2.6 Configuration Cleanup
-- Single point for environment variable loading (not repeated load_dotenv calls)
-- Make hardcoded values configurable (Ollama URL at models/__init__.py:115, search results at search.py:60, batch sizes)
-- Schema validation for JSON metadata files
+#### 2.6 Configuration Cleanup ✅ MOSTLY DONE
+- ✅ Unified `set_api_key(key_name, value)` with validation; per-provider helpers wrap it
+- ✅ Application factory pattern: DATA_DIR in `app.config`, not module-level globals
+- ✅ Centralized `load_dotenv` in configuration.py (no repeated calls across modules)
+- Remaining: Make hardcoded values configurable (Ollama URL, search result batch sizes); JSON metadata schema validation
 
-#### 2.7 Code Cleanup
-- Resolve or convert 19+ TODO/FIXME comments to issues
-- Remove dead code paths
-- Add docstrings to public API in `__init__.py`
-- Standardize import patterns (top-level vs lazy imports should have clear rationale)
+#### 2.7 Code Cleanup ✅ PARTIALLY DONE
+- ✅ Docstrings added to public API (`__init__.py`, `models/__init__.py`, `configuration.py`)
+- ✅ HuggingFace emoji bug (#97) fixed: provider key changed from '🤗' to 'huggingface', backward compat preserved
+- ✅ App factory pattern: all 7 blueprints use dependency injection via `current_app.config`
+- Remaining: Resolve 15+ TODO/FIXME comments; remove remaining dead code paths
 
 ---
 
