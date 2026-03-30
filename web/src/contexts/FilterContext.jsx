@@ -25,6 +25,8 @@ export function FilterProvider({ children }) {
   const [filterQuery, setFilterQuery] = useState(''); // Optional query string for UI
   const [filterActive, setFilterActive] = useState(false);
   const [centeredIndices, setCenteredIndices] = useState([]);
+  const centeredIndicesRef = useRef(centeredIndices);
+  centeredIndicesRef.current = centeredIndices;
 
   const [urlParams, setUrlParams] = useSearchParams();
   // Pull shared data from a higher-level context.
@@ -117,10 +119,10 @@ export function FilterProvider({ children }) {
     async function applyFilter() {
       setLoading(true);
       let indices = [];
-      // If no filter is active, use centeredIndices if available, otherwise use baseIndices
+      // If no filter is active, use centeredIndices (via ref) if available, otherwise use baseIndices
       if (!filterConfig && !hasFilterInUrl) {
-        if (centeredIndices.length > 0) {
-          indices = centeredIndices.filter((index) => !deletedIndices.includes(index));
+        if (centeredIndicesRef.current.length > 0) {
+          indices = centeredIndicesRef.current.filter((index) => !deletedIndices.includes(index));
         } else {
           indices = baseIndices;
         }
@@ -169,7 +171,16 @@ export function FilterProvider({ children }) {
     if (scopeLoaded) {
       applyFilter();
     }
-  }, [filterConfig, baseIndices, scopeRows, deletedIndices, userId, datasetId, scope, scopeLoaded, centeredIndices]);
+  }, [filterConfig, baseIndices, scopeRows, deletedIndices, userId, datasetId, scope, scopeLoaded]);
+
+  // When centeredIndices change on mobile, update filteredIndices only if no filter is active.
+  // Separate from the main filter effect to avoid re-running async filters or resetting pagination.
+  useEffect(() => {
+    if (filterConfig || hasFilterInUrl) return;
+    if (centeredIndices.length === 0) return;
+    const indices = centeredIndices.filter((index) => !deletedIndices.includes(index));
+    setFilteredIndices(indices);
+  }, [centeredIndices, filterConfig, hasFilterInUrl, deletedIndices]);
 
   // === Fetch Data Table Rows Logic
 
