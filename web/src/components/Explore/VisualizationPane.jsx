@@ -4,9 +4,9 @@ import PropTypes from 'prop-types';
 // import Scatter from '../Scatter';
 // import Scatter from '../ScatterCanvas';
 import Scatter from './ScatterGL';
-import AnnotationPlot from '../../AnnotationPlot';
-import HullPlot from '../../HullPlot';
-import TilePlot from '../../TilePlot';
+import AnnotationPlot from '../AnnotationPlot';
+import HullPlot from '../HullPlot';
+import TilePlot from '../TilePlot';
 import { Tooltip } from 'react-tooltip';
 import CrossHair from './Crosshair';
 import { processHulls } from './util';
@@ -15,10 +15,10 @@ import { filterConstants } from './Search/utils';
 
 // import { useColorMode } from '../../hooks/useColorMode';
 
-import { useScope } from '../../../contexts/ScopeContext';
-import { useFilter } from '../../../contexts/FilterContext';
+import { useScope } from '../../contexts/ScopeContext';
+import { useFilter } from '../../contexts/FilterContext';
 
-import { mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from '../../../lib/colors';
+import { mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from '../../lib/colors';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from '../ConfigurationPanel';
 import { Icon, Button } from 'react-element-forge';

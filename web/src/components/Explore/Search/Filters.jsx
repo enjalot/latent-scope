@@ -25,9 +25,7 @@ const FilterResults = ({ query }) => {
   ];
 
   // Handle filter option selection; trigger filter-specific code here
-  const handleSelectChange = (selectedOption) => {
-    console.log('Selected filter:', selectedOption);
-  };
+  const handleSelectChange = (_selectedOption) => {};
 
   return (
     <div className="filter-results">

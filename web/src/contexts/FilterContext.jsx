@@ -12,7 +12,7 @@ import {
   filterConstants,
   findFeatureLabel,
   validateColumnAndValue,
-} from '../components/Explore/V2/Search/utils';
+} from '../components/Explore/Search/utils';
 
 const FilterContext = createContext(null);
 
@@ -68,7 +68,6 @@ export function FilterProvider({ children }) {
     const numericValue = parseInt(value);
 
     if (key === filterConstants.SEARCH) {
-      console.log('==== search filter url param ==== ', { value });
       setFilterQuery(value);
       setFilterConfig({ type: filterConstants.SEARCH, value, label: value });
     } else if (key === filterConstants.CLUSTER) {
