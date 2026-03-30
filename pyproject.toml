@@ -1,3 +1,99 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "latentscope"
+dynamic = ["version"]
+description = "Quickly embed, project, cluster and explore a dataset."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Ian Johnson" },
+]
+dependencies = [
+    # Core scientific
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "scikit-learn>=1.3",
+    "pandas>=2.0",
+    "h5py>=3.10",
+    "lancedb>=0.19",
+    # ML
+    "torch>=2.1",
+    "transformers>=4.40",
+    "sentence-transformers>=3.0",
+    # Server
+    "Flask>=3.0",
+    "Flask-Cors>=4.0",
+    # API providers
+    "openai>=1.12",
+    "tiktoken>=0.5",
+    "mistralai>=0.0.11",
+    "cohere>=4.40",
+    "together>=0.2.10",
+    "voyageai>=0.2.3",
+    "tokenizers>=0.15",
+    # Clustering & dimensionality reduction
+    "umap-learn>=0.5.5",
+    "hdbscan>=0.8",
+    # ML misc
+    "outlines>=0.1",
+    "nltk>=3.8",
+    "latentsae>=0.1.3",
+    "datamapplot>=0.3",
+    "matplotlib>=3.8",
+    # Hugging Face
+    "datasets>=2.0",
+    "huggingface-hub>=0.24",
+    # Util
+    "python-dotenv>=1.0",
+    "tqdm>=4.66",
+]
+
+[project.urls]
+Source = "https://github.com/enjalot/latent-scope"
+Tracker = "https://github.com/enjalot/latent-scope/issues"
+
+[project.scripts]
+ls-serve = "latentscope.server:start"
+ls-init = "latentscope:main"
+ls-ingest = "latentscope.scripts.ingest:main"
+ls-list-models = "latentscope:list_models"
+ls-embed = "latentscope.scripts.embed:main"
+ls-embed-debug = "latentscope.scripts.embed:debug"
+ls-embed-truncate = "latentscope.scripts.embed:truncate"
+ls-embed-importer = "latentscope.scripts.embed:importer"
+ls-umap = "latentscope.scripts.umapper:main"
+ls-cluster = "latentscope.scripts.cluster:main"
+ls-label = "latentscope.scripts.label_clusters:main"
+ls-scope = "latentscope.scripts.scope:main"
+ls-export-plot = "latentscope.scripts.export_plot:main"
+ls-update-embedding-stats = "latentscope.scripts.embed:update_embedding_stats"
+ls-sae = "latentscope.scripts.sae:main"
+ls-download-dataset = "latentscope.scripts.download_dataset:main"
+ls-upload-dataset = "latentscope.scripts.upload_dataset:main"
+
+[tool.hatch.version]
+path = "latentscope/__version__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["latentscope"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "latentscope/",
+    "README.md",
+    "LICENSE",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

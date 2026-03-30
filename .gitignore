@@ -10,3 +10,4 @@ dist
 build
 *.egg-info
 *.un~
+.venv

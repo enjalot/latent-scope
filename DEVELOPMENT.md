@@ -2,33 +2,35 @@
 
 If you are interested in customizing or contributing to latent-scope this document explains the ways to develop it.
 
+## Prerequisites
+
+- Python 3.12 (recommended)
+- [uv](https://docs.astral.sh/uv/) for Python dependency management
+- Node.js for the web client
+
 ## Python module
 The `latentscope` directory contains the python source code for the [latent scope pip module](https://pypi.org/project/latentscope/). There are three primary parts to the module:
 
 1. server - contains the flask app and API routes
-2. scripts - 
-3. models/
-4. util/
+2. scripts - CLI command implementations for each pipeline step
+3. models/ - model providers and configuration
+4. util/ - configuration utilities
 
 ### Running locally
-If you modify the python code and want to try out your changes, you can run locally like so:
 
-```
-python -m venv testenv
-source testenv/bin/activate
-pip install -e .
-ls-serve ~/latent-scope-data
+```bash
+uv sync
+uv run ls-serve ~/latent-scope-data
 ```
 
-We recommend python 3.12 as that's what the project is developed with.
+This creates a `.venv`, installs all dependencies (including dev tools), and runs the server.
 
 ### Testing
 
 Run the test suite with pytest:
 
 ```bash
-pip install pytest
-python -m pytest tests/ -q
+uv run pytest tests/ -q
 ```
 
 Tests live in `tests/`. The `conftest.py` provides shared fixtures including `tmp_data_dir` (a temporary data directory), `app`/`client` (Flask test app/client), and `readonly_app`/`readonly_client` (read-only variants).
@@ -38,22 +40,26 @@ Tests live in `tests/`. The `conftest.py` provides shared fixtures including `tm
 We use [ruff](https://docs.astral.sh/ruff/) for both linting and formatting. Configuration is in `pyproject.toml`.
 
 ```bash
-pip install ruff
-
 # Check for lint issues
-ruff check latentscope/
+uv run ruff check latentscope/
 
 # Auto-fix safe issues
-ruff check --fix latentscope/
+uv run ruff check --fix latentscope/
 
 # Format code
-ruff format latentscope/
+uv run ruff format latentscope/
 
 # Check formatting without changing files
-ruff format --check latentscope/
+uv run ruff format --check latentscope/
 ```
 
 Key rules enforced: pycodestyle (E/W), pyflakes (F), isort (I), pyupgrade (UP). Line length is 100.
+
+### Adding dependencies
+
+1. Add the dependency to `pyproject.toml` under `[project] dependencies`
+2. Run `uv lock` to update the lockfile
+3. Run `uv sync` to install
 
 ## Web client
 The `web` directory contains the JavaScript React source code for the web interface. Node.js is required to be installed on your system to run the development server or build a new version of the module.
@@ -70,11 +76,21 @@ This will call the local API at http://localhost:5001 as set in `web/.env.develo
 ## Building for distribution
 You can build a new version of the module, this will package the latest version of the web interface as well.
 
-You can use the included `build.sh` script to build and install the wheel in a test environment:
 ```bash
-./build.sh 0.4.4
-source testenv-whl/bin/activate
-ls-serve
+./build.sh
+```
+
+This will build the React web assets, copy them into the package tree, and build the wheel/sdist with `uv build`. Artifacts end up in `dist/`.
+
+To test the built wheel:
+```bash
+uv venv testenv --python 3.12
+uv pip install dist/latentscope-*.whl --python testenv/bin/python
+```
+
+To publish to PyPI:
+```bash
+uv publish
 ```
 
 
