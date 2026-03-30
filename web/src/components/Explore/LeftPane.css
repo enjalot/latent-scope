@@ -8,6 +8,22 @@
     padding: 1rem 0.5rem;
     justify-content: space-between;
     position: relative;
+    width: 50px;
+    transition: width 0.2s ease;
+}
+
+.left-pane-container.left-pane-expanded {
+    width: 260px;
+    align-items: stretch;
+}
+
+.cluster-panel-container {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    border-top: 1px solid var(--borders-color-border-1);
+    border-bottom: 1px solid var(--borders-color-border-1);
+    margin: 0.5rem 0;
 }
 
 .left-pane-button {
@@ -65,5 +81,9 @@
     }
     .metadata-tooltip {
         background-color: #333;
+    }
+    .cluster-panel-container {
+        border-top-color: var(--borders-color-border-3);
+        border-bottom-color: var(--borders-color-border-3);
     }
 }

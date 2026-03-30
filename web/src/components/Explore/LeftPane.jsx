@@ -4,9 +4,11 @@ import { Button } from 'react-element-forge';
 import { apiService } from '../../lib/apiService';
 import { compareVersions } from 'compare-versions';
 import ScopeHeader from './ScopeHeader';
+import ClusterLabelsPanel from './ClusterLabelsPanel';
 
 export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices, onScopeChange }) {
   const [showMetadata, setShowMetadata] = useState(false);
+  const [showClusters, setShowClusters] = useState(false);
   const [lsVersion, setLsVersion] = useState(null);
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
   }, [lsVersion, scope]);
 
   return (
-    <div className="left-pane-container">
+    <div className={`left-pane-container ${showClusters ? 'left-pane-expanded' : ''}`}>
       <div className="button-column main-buttons">
         <Button
           className="left-pane-button"
@@ -31,13 +33,15 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
           color="primary"
           title="Filter data points"
         />
-        {/* <Button
-          className="left-pane-button disabled"
+        <Button
+          className={`left-pane-button ${showClusters ? 'selected' : ''}`}
           size="small"
-          icon="edit"
-          color="secondary"
-          title="View scope metadata"
-        /> */}
+          icon="grid"
+          color={showClusters ? 'primary' : 'secondary'}
+          title="Browse clusters"
+          onClick={() => setShowClusters(!showClusters)}
+          data-testid="toggle-clusters-button"
+        />
         <Button
           className="left-pane-button disabled"
           size="small"
@@ -47,6 +51,13 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
           disabled
         />
       </div>
+
+      {showClusters && (
+        <div className="cluster-panel-container">
+          <ClusterLabelsPanel />
+        </div>
+      )}
+
       <div
         className="button-column info-button"
         onMouseEnter={() => setShowMetadata(true)}
