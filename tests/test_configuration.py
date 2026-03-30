@@ -12,7 +12,7 @@ class TestGetDataDir:
         monkeypatch.delenv('LATENT_SCOPE_DATA', raising=False)
         # load_dotenv() finds the project .env via the source-file path, not cwd,
         # so mock it out to ensure the env variable stays absent.
-        monkeypatch.setattr('latentscope.util.configuration.load_dotenv', lambda *a, **kw: None)
+        monkeypatch.setattr('latentscope.util.configuration._load_dotenv', lambda *a, **kw: None)
         from latentscope.util.configuration import get_data_dir
         with pytest.raises(RuntimeError, match="LATENT_SCOPE_DATA"):
             get_data_dir()
@@ -117,3 +117,63 @@ def test_get_supported_api_keys():
     assert "OPENAI_API_KEY" in keys
     assert "VOYAGE_API_KEY" in keys
     assert "MISTRAL_API_KEY" in keys
+
+
+# ---------------------------------------------------------------------------
+# LATENT_SCOPE_NO_DOTENV opt-out
+# ---------------------------------------------------------------------------
+
+class TestNoDotenvOptOut:
+    def test_dotenv_disabled_when_flag_set(self, monkeypatch):
+        monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
+        from latentscope.util.configuration import _dotenv_disabled
+        assert _dotenv_disabled() is True
+
+    def test_dotenv_enabled_by_default(self, monkeypatch):
+        monkeypatch.delenv("LATENT_SCOPE_NO_DOTENV", raising=False)
+        from latentscope.util.configuration import _dotenv_disabled
+        assert _dotenv_disabled() is False
+
+    def test_dotenv_enabled_when_flag_not_one(self, monkeypatch):
+        monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "0")
+        from latentscope.util.configuration import _dotenv_disabled
+        assert _dotenv_disabled() is False
+
+    def test_load_dotenv_skipped_when_opted_out(self, monkeypatch):
+        """When LATENT_SCOPE_NO_DOTENV=1, _load_dotenv should not call load_dotenv."""
+        monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
+        calls = []
+        monkeypatch.setattr(
+            'latentscope.util.configuration.load_dotenv',
+            lambda *a, **kw: calls.append(1),
+        )
+        from latentscope.util.configuration import _load_dotenv
+        _load_dotenv()
+        assert len(calls) == 0
+
+    def test_load_dotenv_called_when_not_opted_out(self, monkeypatch):
+        """When LATENT_SCOPE_NO_DOTENV is unset, _load_dotenv delegates to load_dotenv."""
+        monkeypatch.delenv("LATENT_SCOPE_NO_DOTENV", raising=False)
+        calls = []
+        monkeypatch.setattr(
+            'latentscope.util.configuration.load_dotenv',
+            lambda *a, **kw: calls.append(1),
+        )
+        from latentscope.util.configuration import _load_dotenv
+        _load_dotenv()
+        assert len(calls) == 1
+
+    def test_safe_set_key_warns_on_readonly(self, tmp_path, monkeypatch):
+        """_safe_set_key emits a warning instead of raising on write failure."""
+        from latentscope.util.configuration import _safe_set_key
+        # Point at a non-existent directory so the write fails
+        bad_path = str(tmp_path / "no-such-dir" / ".env")
+        with pytest.warns(UserWarning, match="Could not write"):
+            _safe_set_key(bad_path, "FOO", "bar")
+
+    def test_get_data_dir_works_with_no_dotenv(self, monkeypatch):
+        """get_data_dir should work when dotenv is disabled and env var is set."""
+        monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
+        monkeypatch.setenv("LATENT_SCOPE_DATA", "/some/path")
+        from latentscope.util.configuration import get_data_dir
+        assert get_data_dir() == "/some/path"
