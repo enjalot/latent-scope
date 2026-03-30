@@ -16,29 +16,21 @@ function MobileExplore() {
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
 
-  const [size, setSize] = useState([500, 500]);
+  const [size, setSize] = useState([window.innerWidth, window.innerHeight - 200]);
   const vizContainerRef = useRef(null);
 
-  function updateSize() {
-    if (vizContainerRef.current) {
-      const vizRect = vizContainerRef.current.getBoundingClientRect();
-      const computedStyle = window.getComputedStyle(vizContainerRef.current);
-      setSize([vizRect.width, parseInt(computedStyle.height) - 150]);
-    }
-  }
-
   useEffect(() => {
-    const observer = new MutationObserver(() => {
-      updateSize();
+    if (!vizContainerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        // Reserve 150px for the bottom sheet
+        setSize([width, height - 150]);
+      }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(vizContainerRef.current);
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
   }, []);
 
   const handleHover = useCallback(
