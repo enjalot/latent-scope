@@ -5,28 +5,42 @@ from .base import EmbedModelProvider, ChatModelProvider
 from latentscope.util import get_key
 
 class OpenAIEmbedProvider(EmbedModelProvider):
+    def __init__(self, name, params, base_url=None):
+        super().__init__(name, params)
+        self.base_url = base_url
+
     def load_model(self):
         from openai import OpenAI
-        import tiktoken
         api_key = get_key("OPENAI_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for OpenAI")
             print("Missing 'OPENAI_API_KEY' variable in:", f"{os.getcwd()}/.env")
 
-        base_url = get_key("OPENAI_BASE_URL")
-        if base_url is not None:
-            self.client = OpenAI(api_key=api_key, base_url=base_url)
+        if self.base_url is not None:
+            self.client = OpenAI(api_key=api_key, base_url=self.base_url)
         else:
-            self.client = OpenAI(api_key=api_key)
+            base_url = get_key("OPENAI_BASE_URL")
+            if base_url is not None:
+                self.client = OpenAI(api_key=api_key, base_url=base_url)
+            else:
+                self.client = OpenAI(api_key=api_key)
 
-        self.encoder = tiktoken.encoding_for_model(self.name)
+        # Only use tiktoken for native OpenAI models; custom/self-hosted
+        # models may not have a matching tiktoken encoding.
+        if self.base_url is None:
+            import tiktoken
+            self.encoder = tiktoken.encoding_for_model(self.name)
+        else:
+            self.encoder = None
 
     def embed(self, inputs, dimensions=None):
         time.sleep(0.01) # TODO proper rate limiting
-        enc = self.encoder
-        max_tokens = self.params["max_tokens"]
         inputs = [b.replace("\n", " ") for b in inputs]
-        inputs = [enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b for b in inputs]
+        # Only truncate via tiktoken for native OpenAI models
+        if self.encoder is not None:
+            enc = self.encoder
+            max_tokens = self.params.get("max_tokens", 8191)
+            inputs = [enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b for b in inputs]
         if dimensions is not None and dimensions > 0:
             response = self.client.embeddings.create(
                 input=inputs,

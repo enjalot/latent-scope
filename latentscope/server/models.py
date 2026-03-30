@@ -109,3 +109,46 @@ def delete_custom_model(model_id):
     with open(custom_models_path, 'w', encoding='utf-8') as file:
         json.dump(custom_models, file)
     return jsonify(custom_models)
+
+
+@models_bp.route('/custom-embedding-models', methods=['GET'])
+def get_custom_embedding_models():
+    custom_models_path = os.path.join(_data_dir(), "custom_embedding_models.json")
+    if not os.path.exists(custom_models_path):
+        return jsonify([])
+    with open(custom_models_path, 'r', encoding='utf-8') as file:
+        custom_models = json.load(file)
+    return jsonify(custom_models)
+
+
+@models_write_bp.route('/custom-embedding-models', methods=['POST'])
+def add_custom_embedding_model():
+    DATA_DIR = _data_dir()
+    data = request.json
+    custom_models_path = os.path.join(DATA_DIR, "custom_embedding_models.json")
+
+    existing_models = []
+    if os.path.exists(custom_models_path):
+        with open(custom_models_path, 'r', encoding='utf-8') as file:
+            existing_models = json.load(file)
+
+    data["id"] = "custom_embedding-" + data["name"]
+    existing_models.append(data)
+
+    with open(custom_models_path, 'w', encoding='utf-8') as file:
+        json.dump(existing_models, file)
+
+    return jsonify(existing_models)
+
+
+@models_write_bp.route('/custom-embedding-models/<model_id>', methods=['DELETE'])
+def delete_custom_embedding_model(model_id):
+    custom_models_path = os.path.join(_data_dir(), "custom_embedding_models.json")
+    if not os.path.exists(custom_models_path):
+        return jsonify([])
+    with open(custom_models_path, 'r', encoding='utf-8') as file:
+        custom_models = json.load(file)
+    custom_models = [m for m in custom_models if m["id"] != model_id]
+    with open(custom_models_path, 'w', encoding='utf-8') as file:
+        json.dump(custom_models, file)
+    return jsonify(custom_models)

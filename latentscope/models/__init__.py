@@ -54,6 +54,21 @@ def get_embedding_model(model_id):
     hf_name = _parse_hf_model_id(model_id)
     if hf_name:
         model = {"provider": _HF_PROVIDER, "name": hf_name, "params": {}}
+    elif model_id.startswith("custom_embedding-"):
+        import os
+        from latentscope.util import get_data_dir
+        data_dir = get_data_dir()
+        custom_models_path = os.path.join(data_dir, "custom_embedding_models.json")
+        if os.path.exists(custom_models_path):
+            with open(custom_models_path, "r") as f:
+                custom_models = json.load(f)
+            model = next((m for m in custom_models if m["id"] == model_id), None)
+            if model is None:
+                raise ValueError(
+                    f"Custom embedding model '{model_id}' not found in custom_embedding_models.json"
+                )
+        else:
+            raise ValueError("No custom_embedding_models.json found in data directory")
     else:
         model = get_embedding_model_dict(model_id)
 
@@ -71,6 +86,8 @@ def get_embedding_model(model_id):
         return TogetherAIEmbedProvider(model['name'], model['params'])
     if provider == "voyageai":
         return VoyageAIEmbedProvider(model['name'], model['params'])
+    if provider == "custom_embedding":
+        return OpenAIEmbedProvider(model['name'], model['params'], base_url=model['url'])
     raise ValueError(f"Unknown embedding provider '{provider}' for model '{model_id}'")
 
 

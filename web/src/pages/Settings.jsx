@@ -3,6 +3,7 @@ import { apiService, apiUrl } from '../lib/apiService';
 const readonly = import.meta.env.MODE == 'read_only';
 
 import CustomModels from '../components/CustomModels';
+import CustomEmbeddingModels from '../components/CustomEmbeddingModels';
 
 import styles from './Settings.module.css';
 
@@ -83,13 +84,22 @@ const Settings = () => {
         })}
       </div>
       <div className={styles['custom-models']}>
-        <h3>Custom Models</h3>
+        <h3>Custom Chat Models</h3>
         <div>
-          Add a custom model to use for embeddings. Saved in:
+          Add a custom chat model with an OpenAI-compatible API. Saved in:
           <code>{envSettings.data_dir}/custom_models.json</code>
         </div>
 
         <CustomModels />
+      </div>
+      <div className={styles['custom-models']}>
+        <h3>Custom Embedding Models</h3>
+        <div>
+          Add a custom embedding model with an OpenAI-compatible API. Saved in:
+          <code>{envSettings.data_dir}/custom_embedding_models.json</code>
+        </div>
+
+        <CustomEmbeddingModels />
       </div>
     </div>
   );

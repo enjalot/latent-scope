@@ -116,6 +116,20 @@ function Embedding() {
       .catch(console.error);
   }, [setPresetModels]);
 
+  const [customEmbeddingModels, setCustomEmbeddingModels] = useState([]);
+  useEffect(() => {
+    apiService
+      .fetchCustomEmbeddingModels()
+      .then((data) => {
+        const models = (data || []).map((m) => ({
+          ...m,
+          group: 'custom',
+        }));
+        setCustomEmbeddingModels(models);
+      })
+      .catch(console.error);
+  }, []);
+
   const [recentModels, setRecentModels] = useState([]);
   const fetchRecentModels = useCallback(() => {
     apiService.getRecentEmbeddingModels().then((data) => {
@@ -142,9 +156,8 @@ function Embedding() {
     - top models from HF
       - search models from HF
     - 3rd party models
-    
-    TODO: custom list
-    
+    - custom embedding models (OpenAI-compatible APIs)
+
   */
   const [allModels, setAllModels] = useState([]);
   const [allOptionsGrouped, setAllOptionsGrouped] = useState([]);
@@ -153,6 +166,7 @@ function Embedding() {
     const am = recentModels
       .concat(HFModels)
       .concat(presetModels)
+      .concat(customEmbeddingModels)
       .filter((d) => !!d);
     let allOptions = am
       .map((m) => {
@@ -177,7 +191,7 @@ function Embedding() {
     //   setDefaultModel(defaultOption);
     //   setModelId(defaultOption.id);
     // }
-  }, [presetModels, HFModels, recentModels, defaultModel]);
+  }, [presetModels, HFModels, recentModels, customEmbeddingModels, defaultModel]);
 
   useEffect(() => {
     if (embeddingsJob?.status === 'completed') {
