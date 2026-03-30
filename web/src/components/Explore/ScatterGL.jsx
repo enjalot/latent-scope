@@ -16,10 +16,8 @@ import { useFilter } from '@/contexts/FilterContext';
 import { useColorMode } from '@/hooks/useColorMode';
 import styles from './Scatter.module.css';
 import useDebounce from '@/hooks/useDebounce';
-import { useScope } from '@/contexts/ScopeContext';
 
 import PropTypes from 'prop-types';
-import { reSplitAlphaNumeric } from '@tanstack/react-table';
 ScatterGL.propTypes = {
   points: PropTypes.array.isRequired, // an array of [x,y] points
   width: PropTypes.number.isRequired,
@@ -31,6 +29,7 @@ ScatterGL.propTypes = {
   onView: PropTypes.func,
   onSelect: PropTypes.func,
   onHover: PropTypes.func,
+  isSmallScreen: PropTypes.bool,
 };
 
 const calculatePointColor = (valueA) => {
@@ -103,13 +102,11 @@ function ScatterGL({
   onHover,
   featureIsSelected,
   ignoreNotSelected = false,
+  isSmallScreen = false,
 }) {
   const { isDark: isDarkMode } = useColorMode();
-  const { setFilteredIndices, anyFilterActive, setCenteredIndices } = useFilter();
-  const { clusterMap } = useScope();
+  const { setCenteredIndices } = useFilter();
 
-  // debounce the filtered indices update
-  // const debouncedSetFilteredIndices = useDebounce(setFilteredIndices, 50);
   const debouncedSetCenteredIndices = useDebounce(setCenteredIndices, 50);
 
   const canvasRef = useRef(null);
@@ -155,27 +152,67 @@ function ScatterGL({
 
   const [transform, setTransform] = useState(zoomIdentity);
 
-  // Setup regl and shaders
+  // Ref so zoom end handler always calls the latest updateCenteredIndices
+  const updateCenteredIndicesRef = useRef(null);
+
+  // Setup canvas, regl, zoom behavior — only re-runs on resize
   useEffect(() => {
     const canvas = canvasRef.current;
-    // Get the actual pixel ratio, capped at 2 for better performance on high-DPI devices
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = width * pixelRatio;
     canvas.height = height * pixelRatio;
 
-    // Initialize regl with explicit pixel ratio
     reglRef.current = REGL({
       canvas,
       attributes: {
         antialias: true,
-        // Add these attributes for better iOS compatibility
         preserveDrawingBuffer: true,
         alpha: true,
       },
       pixelRatio: pixelRatio,
     });
 
-    // Create buffers only once per points change.
+    const zoomBehavior = zoom()
+      .scaleExtent([minZoom, maxZoom])
+      .on('zoom', (event) => {
+        setTransform(event.transform);
+        const newXScale = event.transform.rescaleX(xScaleRef.current);
+        const newYScale = event.transform.rescaleY(yScaleRef.current);
+
+        if (onView) {
+          onView(newXScale.domain(), newYScale.domain(), event.transform);
+        }
+      })
+      .on('end', (event) => {
+        if (updateCenteredIndicesRef.current) {
+          updateCenteredIndicesRef.current(event.transform);
+        }
+      });
+
+    const zoomSelection = select(canvas).call(zoomBehavior);
+
+    const zoomOutFactor = 0.8;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const initialTransform = zoomIdentity
+      .translate(centerX, centerY)
+      .scale(zoomOutFactor)
+      .translate(-centerX, -centerY);
+
+    zoomSelection.call(zoomBehavior.transform, initialTransform);
+
+    return () => {
+      select(canvas).on('.zoom', null);
+      if (reglRef.current) {
+        reglRef.current.destroy();
+      }
+    };
+  }, [width, height]);
+
+  // Rebuild buffers and draw command when points change — does NOT touch zoom
+  useEffect(() => {
+    if (!reglRef.current) return;
+
     const positionBuffer = reglRef.current.buffer(points.map((p) => [p[0], p[1]]));
     const colorBuffer = reglRef.current.buffer(
       points.map(([, , valueA]) => {
@@ -193,7 +230,6 @@ function ScatterGL({
       points.map(([, , valueA]) => calculatePointSize(valueA))
     );
 
-    // Redefine your drawPoints command to take these buffers as attributes.
     drawPointsRef.current = reglRef.current({
       vert: `
         precision mediump float;
@@ -201,39 +237,35 @@ function ScatterGL({
         attribute vec3 color;
         attribute float opacity;
         attribute float size;
-        
-        // Instead of separate translate/scale uniforms, we pass in a single transform matrix.
+
         uniform vec2 uTranslate;
         uniform float uScale;
         uniform vec2 uScreenSize;
-        
+
         uniform float pointScale;
         uniform float dotScaleFactor;
-        
+
         varying vec3 v_color;
         varying float v_opacity;
-        
+
         void main() {
           v_color = color;
           v_opacity = opacity;
 
-          // First map from [-1,1] to screen coordinates
           vec2 screen = vec2(
             (position.x + 1.0) * 0.5 * uScreenSize.x,
             (1.0 - position.y) * 0.5 * uScreenSize.y
           );
-          
-          // Apply d3-zoom transform
+
           vec2 transformed = screen * uScale + uTranslate;
-          
-          // Map back to clip space
+
           vec2 clip = vec2(
             (transformed.x / uScreenSize.x) * 2.0 - 1.0,
             -(transformed.y / uScreenSize.y) * 2.0 + 1.0
           );
 
           gl_Position = vec4(clip, 0, 1);
-          
+
           gl_PointSize = pointScale * size * dotScaleFactor;
         }
       `,
@@ -254,9 +286,9 @@ function ScatterGL({
             alpha = v_opacity * (1.0 - pow(dist, uScale * dotScaleFactor * 2.0));
           }
           vec3 color = v_color * 0.95;
-          
+
           gl_FragColor = vec4(color * alpha*1.25, alpha);
-          
+
         }
       `,
       attributes: {
@@ -267,25 +299,13 @@ function ScatterGL({
       },
       uniforms: {
         pointScale: (context, props) => props.pointScale,
-        // Compute a single 3x3 matrix that converts your point (in data space)
-        // into clip space. This matrix encapsulates the conversion from [-1,1] to pixel coordinates,
-        // the zoom transform and the conversion from screen to clip space.
-        // uMatrix: (context, props) =>
-        //   computeTransformMatrix(props.width, props.height, props.transform),
         uTranslate: (context, props) => [props.transform.x, props.transform.y],
         uScale: (context, props) => props.transform.k,
         uScreenSize: (context, props) => [props.width, props.height],
         dotScaleFactor: (context, props) => {
-          const minScaleFactor = 6;
-          let sf = 1.25 + (props.transform.k / maxZoom) * 4; // (maxZoom - 1);
-          // console.log('dotScaleFactor', props.transform.k, sf);
+          let sf = 1.25 + (props.transform.k / maxZoom) * 4;
           return sf;
         },
-        // edgeExp: (context, props) => {
-        //   let v = 1 + (props.transform.k - 1); // / (maxZoom - 1)) * 12;
-        //   // console.log('edgeExp', v, Math.pow(0.01, v), Math.pow(0.99, v));
-        //   return v;
-        // },
         isDarkMode: (context, props) => isDarkMode,
       },
       count: points.length,
@@ -298,43 +318,7 @@ function ScatterGL({
       },
       depth: { enable: false },
     });
-
-    const zoomBehavior = zoom()
-      .scaleExtent([minZoom, maxZoom])
-      .on('zoom', (event) => {
-        setTransform(event.transform);
-        const newXScale = event.transform.rescaleX(xScaleRef.current);
-        const newYScale = event.transform.rescaleY(yScaleRef.current);
-
-        if (onView) {
-          onView(newXScale.domain(), newYScale.domain(), event.transform);
-        }
-      });
-
-    const zoomSelection = select(canvas).call(zoomBehavior);
-
-    // Calculate initial transform to center the view
-    const zoomOutFactor = 0.8;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    // First translate to center, then scale, then translate back
-    // This ensures the scaling happens around the center point
-    const initialTransform = zoomIdentity
-      .translate(centerX, centerY)
-      // .scale(1 / zoomOutFactor) // Use inverse of zoom factor to zoom out
-      .scale(zoomOutFactor)
-      .translate(-centerX, -centerY);
-
-    zoomSelection.call(zoomBehavior.transform, initialTransform);
-
-    return () => {
-      select(canvas).on('.zoom', null);
-      if (reglRef.current) {
-        reglRef.current.destroy();
-      }
-    };
-  }, [width, height, points]);
+  }, [points, featureIsSelected]);
 
   const dynamicSize = useMemo(() => {
     let size = calculateDynamicPointScale(points.length, width, height);
@@ -455,7 +439,7 @@ function ScatterGL({
   );
 
   // Find the n closest points to the given data coordinates (dataX, dataY)
-  const findNClosestPoints = (dataX, dataY, n) => {
+  const findNClosestPoints = useCallback((dataX, dataY, n) => {
     const closestPoints = [];
 
     // Search radius in data coordinates
@@ -498,7 +482,7 @@ function ScatterGL({
     return closestPoints.map(({ point }) =>
       points.findIndex((p) => p[0] === point[0] && p[1] === point[1])
     );
-  };
+  }, [points]);
 
   const handleMouseMove = useCallback(
     (event) => {
@@ -531,33 +515,27 @@ function ScatterGL({
     [points, onSelect, findNearestPoint]
   );
 
-  const updateCenteredIndices = (transform) => {
-    const newCenter = getCenterCoordinates(
-      width,
-      height,
-      transform,
-      xScaleRef.current,
-      yScaleRef.current
-    );
-    const closest = findNClosestPoints(newCenter.x, newCenter.y, TOP_N_POINTS);
-    debouncedSetCenteredIndices(closest);
+  const updateCenteredIndices = useCallback(
+    (transform) => {
+      if (!isSmallScreen) return;
+      const newCenter = getCenterCoordinates(
+        width,
+        height,
+        transform,
+        xScaleRef.current,
+        yScaleRef.current
+      );
+      if (!quadtreeRef.current) return;
+      const closest = findNClosestPoints(newCenter.x, newCenter.y, TOP_N_POINTS);
+      debouncedSetCenteredIndices(closest);
+    },
+    [width, height, debouncedSetCenteredIndices, findNClosestPoints, isSmallScreen]
+  );
 
-    // if (useDefaultIndices) {
-    //   const closest = findNearestPoint(newCenter.x, newCenter.y);
-    //   if (closest !== -1) {
-    //     setHoveredIndex(closest);
-    //     const cluster = clusterMap[closest];
-    //     if (cluster) {
-    //       setHoveredCluster(cluster);
-    //     }
-
-    //     if (isSmallScreen) {
-    //       debouncedSetFilteredIndices([closest]);
-    //     } else {
-    //     }
-    //   }
-    // }
-  };
+  // Keep the ref in sync so the zoom end handler always calls the latest version
+  useEffect(() => {
+    updateCenteredIndicesRef.current = updateCenteredIndices;
+  }, [updateCenteredIndices]);
 
   return (
     <canvas
