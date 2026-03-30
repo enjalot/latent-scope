@@ -1,36 +1,29 @@
 #!/bin/bash
-
-version=$1
-echo "Version specified: $version"
-
-# Exit in case of error
 set -e
 
-echo "Cleaning build directories..."
-rm -rf build/
-rm -rf dist/
-rm -rf latentscope/web/dist
+version=${1:-$(python3 -c "exec(open('latentscope/__version__.py').read()); print(__version__)")}
+echo "Building latentscope v${version}"
 
-echo "Removing old virtual environment..."
-rm -rf testenv-whl/
+echo "Cleaning build artifacts..."
+rm -rf dist/ build/ *.egg-info latentscope/web/dist
 
-echo "Deactivating the virtual environment..."
-# just in case we are in a virtual env already
-# deactivate
+echo "Building web assets..."
+(cd web && npm ci && npm run production)
 
-echo "Building the wheel..."
-python3 setup.py sdist bdist_wheel
+echo "Copying web assets into package tree..."
+mkdir -p latentscope/web/dist
+cp -r web/dist/production/* latentscope/web/dist/
 
-echo "Creating a new virtual environment..."
-python3 -m venv testenv-whl
+echo "Building wheel and sdist..."
+uv build
 
-echo "Activating the virtual environment..."
-source testenv-whl/bin/activate
+echo "Build complete. Artifacts:"
+ls -la dist/
 
-echo "Installing the wheel..."
-pip install "dist/latentscope-${version}-py3-none-any.whl"
-
-echo "Deactivating the virtual environment..."
-deactivate
-
-echo "Build and preparation completed."
+echo ""
+echo "To test installation:"
+echo "  uv venv testenv --python 3.12"
+echo "  uv pip install \"dist/latentscope-${version}-py3-none-any.whl\" --python testenv/bin/python"
+echo ""
+echo "To publish to PyPI:"
+echo "  uv publish"
