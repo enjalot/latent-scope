@@ -1,3 +1,4 @@
+import errno
 import os
 import warnings
 
@@ -36,6 +37,8 @@ def _safe_set_key(env_file, key, value):
     try:
         set_key(env_file, key, value)
     except OSError as exc:
+        if exc.errno not in (errno.EACCES, errno.EROFS):
+            raise
         warnings.warn(
             f"Could not write to {env_file}: {exc}. "
             "The value has been set in the current process environment but "

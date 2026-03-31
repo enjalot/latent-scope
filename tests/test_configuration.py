@@ -164,12 +164,32 @@ class TestNoDotenvOptOut:
         assert len(calls) == 1
 
     def test_safe_set_key_warns_on_readonly(self, tmp_path, monkeypatch):
-        """_safe_set_key emits a warning instead of raising on write failure."""
+        """_safe_set_key emits a warning instead of raising on permission error."""
+        import errno as _errno
+
         from latentscope.util.configuration import _safe_set_key
-        # Point at a non-existent directory so the write fails
-        bad_path = str(tmp_path / "no-such-dir" / ".env")
+
+        def _raise_permission_error(*args, **kwargs):
+            raise OSError(_errno.EACCES, "Permission denied")
+
+        monkeypatch.setattr("latentscope.util.configuration.set_key", _raise_permission_error)
+        env_file = str(tmp_path / ".env")
         with pytest.warns(UserWarning, match="Could not write"):
-            _safe_set_key(bad_path, "FOO", "bar")
+            _safe_set_key(env_file, "FOO", "bar")
+
+    def test_safe_set_key_reraises_non_permission_oserror(self, tmp_path, monkeypatch):
+        """_safe_set_key re-raises OSError that is not a permission/read-only error."""
+        import errno as _errno
+
+        from latentscope.util.configuration import _safe_set_key
+
+        def _raise_other_oserror(*args, **kwargs):
+            raise OSError(_errno.ENOSPC, "No space left on device")
+
+        monkeypatch.setattr("latentscope.util.configuration.set_key", _raise_other_oserror)
+        env_file = str(tmp_path / ".env")
+        with pytest.raises(OSError, match="No space left on device"):
+            _safe_set_key(env_file, "FOO", "bar")
 
     def test_get_data_dir_works_with_no_dotenv(self, monkeypatch):
         """get_data_dir should work when dotenv is disabled and env var is set."""
