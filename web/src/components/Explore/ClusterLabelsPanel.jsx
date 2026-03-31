@@ -113,18 +113,6 @@ const SORT_ORDERS = {
   },
 };
 
-const ClusterBar = ({ count, maxCount, isActive }) => {
-  const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
-  return (
-    <div className={styles.clusterBar}>
-      <div
-        className={`${styles.clusterBarFill} ${isActive ? styles.clusterBarFillActive : ''}`}
-        style={{ width: `${percentage}%` }}
-      />
-    </div>
-  );
-};
-
 const ClusterLabelsPanel = () => {
   const [sortOrder, setSortOrder] = useState('nearestNeighbor');
   const { clusterLabels, scopeRows } = useScope();
@@ -158,11 +146,6 @@ const ClusterLabelsPanel = () => {
     }
     return [...clusterLabels].sort(sortConfig.compareFn);
   }, [clusterLabels, sortOrder, clusterCentroids]);
-
-  const maxCount = useMemo(() => {
-    if (!clusterLabels || clusterLabels.length === 0) return 0;
-    return Math.max(...clusterLabels.map((c) => c.count));
-  }, [clusterLabels]);
 
   const totalPoints = useMemo(() => {
     if (!clusterLabels || clusterLabels.length === 0) return 0;
@@ -281,7 +264,6 @@ const ClusterLabelsPanel = () => {
                 <span className={styles.clusterLabel}>{item.label}</span>
                 <span className={styles.clusterCount}>{item.count.toLocaleString()}</span>
               </div>
-              <ClusterBar count={item.count} maxCount={maxCount} isActive={isActive} />
             </button>
           );
         })}

@@ -9,6 +9,7 @@ import SubNav from '../components/SubNav';
 import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/Explore/FilterDataTable';
+import ClusterLabelsPanel from '../components/Explore/ClusterLabelsPanel';
 
 import { ScopeProvider, useScope } from '../contexts/ScopeContext';
 import { FilterProvider, useFilter } from '../contexts/FilterContext';
@@ -124,6 +125,8 @@ function ExploreContent() {
       setHoverAnnotations([]);
     }
   }, [hoveredIndex, scopeRows]);
+
+  const [showClusters, setShowClusters] = useState(false);
 
   // Handlers for responding to individual data points
   const handleClicked = useCallback((_index) => {}, []);
@@ -283,7 +286,14 @@ function ExploreContent() {
         onScopeChange={handleScopeChange}
       />
       <div className="page-container">
-        <LeftPane dataset={dataset} scope={scope} deletedIndices={deletedIndices} tags={tags} />
+        <LeftPane
+          dataset={dataset}
+          scope={scope}
+          deletedIndices={deletedIndices}
+          tags={tags}
+          showClusters={showClusters}
+          onToggleClusters={() => setShowClusters(!showClusters)}
+        />
         <div
           ref={containerRef}
           className="full-screen-explore-container"
@@ -294,6 +304,11 @@ function ExploreContent() {
             style={{ position: 'relative', overflowX: 'hidden' }}
           >
             <div style={styles.dragHandle} onMouseDown={startDragging} />
+            {showClusters && (
+              <div className="cluster-accordion">
+                <ClusterLabelsPanel />
+              </div>
+            )}
             <div ref={filtersContainerRef}>
               <FilterActions
                 clusterLabels={clusterLabels}

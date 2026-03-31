@@ -4,11 +4,18 @@ import { Button } from 'react-element-forge';
 import { apiService } from '../../lib/apiService';
 import { compareVersions } from 'compare-versions';
 import ScopeHeader from './ScopeHeader';
-import ClusterLabelsPanel from './ClusterLabelsPanel';
 
-export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices, onScopeChange }) {
+export default function LeftPane({
+  dataset,
+  scope,
+  scopes,
+  tags,
+  deletedIndices,
+  onScopeChange,
+  showClusters,
+  onToggleClusters,
+}) {
   const [showMetadata, setShowMetadata] = useState(false);
-  const [showClusters, setShowClusters] = useState(false);
   const [lsVersion, setLsVersion] = useState(null);
 
   useEffect(() => {
@@ -17,14 +24,13 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
 
   const isOutdatedScope = useMemo(() => {
     if (!scope?.ls_version || !lsVersion) return false;
-    // Convert versions to minor by replacing patch with 0
     const scopeMinor = scope.ls_version.replace(/(\d+\.\d+)\.\d+/, '$1.0');
     const lsMinor = lsVersion.replace(/(\d+\.\d+)\.\d+/, '$1.0');
     return compareVersions(scopeMinor, lsMinor) < 0;
   }, [lsVersion, scope]);
 
   return (
-    <div className={`left-pane-container ${showClusters ? 'left-pane-expanded' : ''}`}>
+    <div className="left-pane-container">
       <div className="button-column main-buttons">
         <Button
           className="left-pane-button"
@@ -39,7 +45,7 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
           icon="grid"
           color={showClusters ? 'primary' : 'secondary'}
           title="Browse clusters"
-          onClick={() => setShowClusters(!showClusters)}
+          onClick={onToggleClusters}
           data-testid="toggle-clusters-button"
         />
         <Button
@@ -51,12 +57,6 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
           disabled
         />
       </div>
-
-      {showClusters && (
-        <div className="cluster-panel-container">
-          <ClusterLabelsPanel />
-        </div>
-      )}
 
       <div
         className="button-column info-button"
