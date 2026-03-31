@@ -117,7 +117,7 @@ function Embedding() {
   }, [setPresetModels]);
 
   const [customEmbeddingModels, setCustomEmbeddingModels] = useState([]);
-  useEffect(() => {
+  const fetchCustomEmbeddingModels = useCallback(() => {
     apiService
       .fetchCustomEmbeddingModels()
       .then((data) => {
@@ -129,6 +129,9 @@ function Embedding() {
       })
       .catch(console.error);
   }, []);
+  useEffect(() => {
+    fetchCustomEmbeddingModels();
+  }, [fetchCustomEmbeddingModels]);
 
   const [recentModels, setRecentModels] = useState([]);
   const fetchRecentModels = useCallback(() => {
@@ -163,10 +166,10 @@ function Embedding() {
   const [allOptionsGrouped, setAllOptionsGrouped] = useState([]);
   const [defaultModel, setDefaultModel] = useState(null);
   useEffect(() => {
-    const am = recentModels
+    const am = customEmbeddingModels
+      .concat(recentModels)
       .concat(HFModels)
       .concat(presetModels)
-      .concat(customEmbeddingModels)
       .filter((d) => !!d);
     let allOptions = am
       .map((m) => {
@@ -436,7 +439,10 @@ function Embedding() {
               onInputChange={searchHFModels}
             />
           </div>
-          <SettingsModal tooltip="Configure API keys for 3rd party models" />
+          <SettingsModal
+            tooltip="Configure API keys for 3rd party models"
+            onClose={fetchCustomEmbeddingModels}
+          />
 
           {/* The form for creating a new embedding */}
           <form onSubmit={handleNewEmbedding}>
