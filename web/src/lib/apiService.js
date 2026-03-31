@@ -284,6 +284,23 @@ export const apiService = {
       method: 'DELETE',
     }).then((response) => response.json());
   },
+  fetchCustomEmbeddingModels: async () => {
+    return fetch(`${apiUrl}/models/custom-embedding-models`).then((response) => response.json());
+  },
+  addCustomEmbeddingModel: async (modelData) => {
+    return fetch(`${apiUrl}/models/custom-embedding-models`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(modelData),
+    }).then((response) => response.json());
+  },
+  deleteCustomEmbeddingModel: async (modelId) => {
+    return fetch(`${apiUrl}/models/custom-embedding-models/${modelId}`, {
+      method: 'DELETE',
+    }).then((response) => response.json());
+  },
   getFeatures: async (url) => {
     const buffer = await asyncBufferFromUrl(url);
     return new Promise((resolve) => {

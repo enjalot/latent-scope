@@ -116,6 +116,23 @@ function Embedding() {
       .catch(console.error);
   }, [setPresetModels]);
 
+  const [customEmbeddingModels, setCustomEmbeddingModels] = useState([]);
+  const fetchCustomEmbeddingModels = useCallback(() => {
+    apiService
+      .fetchCustomEmbeddingModels()
+      .then((data) => {
+        const models = (data || []).map((m) => ({
+          ...m,
+          group: 'custom',
+        }));
+        setCustomEmbeddingModels(models);
+      })
+      .catch(console.error);
+  }, []);
+  useEffect(() => {
+    fetchCustomEmbeddingModels();
+  }, [fetchCustomEmbeddingModels]);
+
   const [recentModels, setRecentModels] = useState([]);
   const fetchRecentModels = useCallback(() => {
     apiService.getRecentEmbeddingModels().then((data) => {
@@ -142,15 +159,15 @@ function Embedding() {
     - top models from HF
       - search models from HF
     - 3rd party models
-    
-    TODO: custom list
-    
+    - custom embedding models (OpenAI-compatible APIs)
+
   */
   const [allModels, setAllModels] = useState([]);
   const [allOptionsGrouped, setAllOptionsGrouped] = useState([]);
   const [defaultModel, setDefaultModel] = useState(null);
   useEffect(() => {
-    const am = recentModels
+    const am = customEmbeddingModels
+      .concat(recentModels)
       .concat(HFModels)
       .concat(presetModels)
       .filter((d) => !!d);
@@ -177,7 +194,7 @@ function Embedding() {
     //   setDefaultModel(defaultOption);
     //   setModelId(defaultOption.id);
     // }
-  }, [presetModels, HFModels, recentModels, defaultModel]);
+  }, [presetModels, HFModels, recentModels, customEmbeddingModels, defaultModel]);
 
   useEffect(() => {
     if (embeddingsJob?.status === 'completed') {
@@ -422,7 +439,10 @@ function Embedding() {
               onInputChange={searchHFModels}
             />
           </div>
-          <SettingsModal tooltip="Configure API keys for 3rd party models" />
+          <SettingsModal
+            tooltip="Configure API keys for 3rd party models"
+            onClose={fetchCustomEmbeddingModels}
+          />
 
           {/* The form for creating a new embedding */}
           <form onSubmit={handleNewEmbedding}>
