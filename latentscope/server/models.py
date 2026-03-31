@@ -98,7 +98,7 @@ def add_custom_model():
     return jsonify(existing_models)
 
 
-@models_write_bp.route('/custom-models/<model_id>', methods=['DELETE'])
+@models_write_bp.route('/custom-models/<path:model_id>', methods=['DELETE'])
 def delete_custom_model(model_id):
     custom_models_path = os.path.join(_data_dir(), "custom_models.json")
     if not os.path.exists(custom_models_path):
@@ -141,7 +141,7 @@ def add_custom_embedding_model():
     return jsonify(existing_models)
 
 
-@models_write_bp.route('/custom-embedding-models/<model_id>', methods=['DELETE'])
+@models_write_bp.route('/custom-embedding-models/<path:model_id>', methods=['DELETE'])
 def delete_custom_embedding_model(model_id):
     custom_models_path = os.path.join(_data_dir(), "custom_embedding_models.json")
     if not os.path.exists(custom_models_path):
