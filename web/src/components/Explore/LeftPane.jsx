@@ -5,7 +5,16 @@ import { apiService } from '../../lib/apiService';
 import { compareVersions } from 'compare-versions';
 import ScopeHeader from './ScopeHeader';
 
-export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices, onScopeChange }) {
+export default function LeftPane({
+  dataset,
+  scope,
+  scopes,
+  tags,
+  deletedIndices,
+  onScopeChange,
+  showClusters,
+  onToggleClusters,
+}) {
   const [showMetadata, setShowMetadata] = useState(false);
   const [lsVersion, setLsVersion] = useState(null);
 
@@ -15,7 +24,6 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
 
   const isOutdatedScope = useMemo(() => {
     if (!scope?.ls_version || !lsVersion) return false;
-    // Convert versions to minor by replacing patch with 0
     const scopeMinor = scope.ls_version.replace(/(\d+\.\d+)\.\d+/, '$1.0');
     const lsMinor = lsVersion.replace(/(\d+\.\d+)\.\d+/, '$1.0');
     return compareVersions(scopeMinor, lsMinor) < 0;
@@ -31,13 +39,15 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
           color="primary"
           title="Filter data points"
         />
-        {/* <Button
-          className="left-pane-button disabled"
+        <Button
+          className={`left-pane-button ${showClusters ? 'selected' : ''}`}
           size="small"
-          icon="edit"
-          color="secondary"
-          title="View scope metadata"
-        /> */}
+          icon="grid"
+          color={showClusters ? 'primary' : 'secondary'}
+          title="Browse clusters"
+          onClick={onToggleClusters}
+          data-testid="toggle-clusters-button"
+        />
         <Button
           className="left-pane-button disabled"
           size="small"
@@ -47,6 +57,7 @@ export default function LeftPane({ dataset, scope, scopes, tags, deletedIndices,
           disabled
         />
       </div>
+
       <div
         className="button-column info-button"
         onMouseEnter={() => setShowMetadata(true)}

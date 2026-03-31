@@ -48,15 +48,20 @@
   }
   
   .filter-table-container {
-    /* position: absolute;
-    top: 5%;
-    left: 5%;
-    z-index: 100;
-    width: 33%;
-    */
     /* height: 100%; */
     padding: 20px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cluster-accordion {
+    max-height: 40%;
+    overflow-y: auto;
+    border: 1px solid var(--borders-color-border-1, #ddd);
+    border-radius: 5px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
   }
   
   /* Responsive */
@@ -355,6 +360,10 @@
   
     .full-screen-explore-container {
       background: #111
+    }
+
+    .cluster-accordion {
+      border-color: var(--borders-color-border-3, #555);
     }
   
     .visualization-pane-container {
