@@ -178,6 +178,10 @@ const ClusterLabelsPanel = () => {
         setFilterConfig(null);
         setUrlParams((prev) => {
           prev.delete('cluster');
+          prev.delete('feature');
+          prev.delete('search');
+          prev.delete('column');
+          prev.delete('value');
           return new URLSearchParams(prev);
         });
       } else {
@@ -190,6 +194,10 @@ const ClusterLabelsPanel = () => {
         });
         setFilterActive(true);
         setUrlParams((prev) => {
+          prev.delete('feature');
+          prev.delete('search');
+          prev.delete('column');
+          prev.delete('value');
           prev.set('cluster', clusterItem.cluster);
           return new URLSearchParams(prev);
         });
@@ -205,6 +213,10 @@ const ClusterLabelsPanel = () => {
     setFilterConfig(null);
     setUrlParams((prev) => {
       prev.delete('cluster');
+      prev.delete('feature');
+      prev.delete('search');
+      prev.delete('column');
+      prev.delete('value');
       return new URLSearchParams(prev);
     });
   }, [clusterFilter, setFilterConfig, setFilterActive, setFilterQuery, setUrlParams]);
