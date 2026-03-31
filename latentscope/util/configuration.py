@@ -1,4 +1,6 @@
+import errno
 import os
+import warnings
 
 from dotenv import load_dotenv, set_key
 
@@ -12,13 +14,46 @@ _SUPPORTED_API_KEYS = [
 ]
 
 
+def _dotenv_disabled():
+    """Return True when the user has opted out of dotenv loading.
+
+    Set the environment variable ``LATENT_SCOPE_NO_DOTENV=1`` to skip all
+    ``load_dotenv()`` calls.  This is useful in read-only environments
+    (e.g. Docker containers) where writing or reading a ``.env`` file is
+    undesirable or impossible.
+    """
+    return os.environ.get("LATENT_SCOPE_NO_DOTENV", "") == "1"
+
+
+def _load_dotenv(*args, **kwargs):
+    """Wrapper around ``load_dotenv`` that respects the opt-out flag."""
+    if _dotenv_disabled():
+        return
+    load_dotenv(*args, **kwargs)
+
+
+def _safe_set_key(env_file, key, value):
+    """Write *key=value* to *env_file*, swallowing errors on read-only filesystems."""
+    try:
+        set_key(env_file, key, value)
+    except OSError as exc:
+        if exc.errno not in (errno.EACCES, errno.EROFS):
+            raise
+        warnings.warn(
+            f"Could not write to {env_file}: {exc}. "
+            "The value has been set in the current process environment but "
+            "will not persist across restarts.",
+            stacklevel=3,
+        )
+
+
 def get_data_dir():
     """Return the data directory from the LATENT_SCOPE_DATA environment variable.
 
     Raises RuntimeError if the variable is not set, so callers (including
     library users) get a proper exception rather than a hard sys.exit().
     """
-    load_dotenv()
+    _load_dotenv()
     data_dir = os.getenv('LATENT_SCOPE_DATA')
     if data_dir is None:
         raise RuntimeError(
@@ -32,7 +67,7 @@ def get_data_dir():
 
 def update_data_dir(directory, env_file=".env"):
     """Create or update the data directory setting in the env file."""
-    load_dotenv(env_file)
+    _load_dotenv(env_file)
     if not directory or directory == "":
         directory = os.getenv('LATENT_SCOPE_DATA')
         if not directory:
@@ -43,7 +78,7 @@ def update_data_dir(directory, env_file=".env"):
         directory = os.path.expanduser(directory)
     if directory.startswith("./") or directory.startswith("../") or not directory.startswith("/"):
         directory = os.path.abspath(directory)
-    set_key(env_file, 'LATENT_SCOPE_DATA', directory)
+    _safe_set_key(env_file, 'LATENT_SCOPE_DATA', directory)
     os.environ['LATENT_SCOPE_DATA'] = directory
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -52,7 +87,7 @@ def update_data_dir(directory, env_file=".env"):
 
 def get_key(key, env_file=".env"):
     """Retrieve any environment variable, loading from env_file first."""
-    load_dotenv(env_file)
+    _load_dotenv(env_file)
     return os.getenv(key)
 
 
@@ -76,8 +111,8 @@ def set_api_key(key_name, value, env_file=".env"):
         raise ValueError(
             f"Unknown API key '{key_name}'. Supported keys: {_SUPPORTED_API_KEYS}"
         )
-    load_dotenv(env_file)
-    set_key(env_file, key_name, value)
+    _load_dotenv(env_file)
+    _safe_set_key(env_file, key_name, value)
     os.environ[key_name] = value
 
 
