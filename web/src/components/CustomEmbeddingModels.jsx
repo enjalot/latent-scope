@@ -55,11 +55,11 @@ function CustomEmbeddingModels() {
         <div className={styles['custom-models-form']}>
           <form onSubmit={handleAddModel}>
             <label>
-              <span className={styles['form-label']}>Model: </span>
+              <span className={styles['form-label']}>Model name: </span>
               <input
                 type="text"
                 name="name"
-                placeholder="text-embedding-ada-002"
+                placeholder="all-minilm"
                 required
                 disabled={isSubmitting}
               />
@@ -85,7 +85,7 @@ function CustomEmbeddingModels() {
             <div className={styles['item']} key={index}>
               <div className={styles['item-info']}>
                 <span className={styles['item-name']}>{model.name}</span>
-                <span className={styles['item-url']}>{model.url}</span>
+                <span className={styles['item-url']}>{model.base_url || model.url}</span>
               </div>
 
               <Button

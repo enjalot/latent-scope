@@ -69,6 +69,10 @@ def get_embedding_model(model_id):
                 )
         else:
             raise ValueError("No custom_embedding_models.json found in data directory")
+        # Route directly — custom embedding models always use OpenAI-compatible API
+        return OpenAIEmbedProvider(
+            model['name'], model.get('params', {}), base_url=model['base_url']
+        )
     else:
         model = get_embedding_model_dict(model_id)
 

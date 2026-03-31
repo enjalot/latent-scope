@@ -133,6 +133,9 @@ def add_custom_embedding_model():
             existing_models = json.load(file)
 
     data["id"] = "custom_embedding-" + data["name"]
+    # Normalize: frontend may send 'url', backend stores as 'base_url'
+    if "url" in data and "base_url" not in data:
+        data["base_url"] = data.pop("url")
     existing_models.append(data)
 
     with open(custom_models_path, 'w', encoding='utf-8') as file:
