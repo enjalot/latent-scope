@@ -7,6 +7,7 @@ import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
+import EstimatePanel from './EstimatePanel';
 
 import Preview from './Preview';
 
@@ -104,6 +105,22 @@ function Cluster() {
     [startClusterJob, umap]
   );
 
+  // Estimation
+  const [clusterEstimate, setClusterEstimate] = useState(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
+  const handleEstimateCluster = useCallback(() => {
+    if (!umap?.id || !dataset?.id) return;
+    setEstimateLoading(true);
+    apiService
+      .estimateCluster(dataset.id, umap.id)
+      .then((data) => {
+        setClusterEstimate(data);
+        setEstimateLoading(false);
+      })
+      .catch(() => setEstimateLoading(false));
+  }, [dataset, umap]);
+
   const handleNextStep = useCallback(() => {
     if (savedScope?.cluster_id == cluster?.id) {
       updateScope({ ...savedScope });
@@ -176,6 +193,14 @@ function Cluster() {
                 balance the density of clusters. Set to 0 to use pure HDBSCAN.
               </Tooltip>
             </label>
+            {umap && (
+              <EstimatePanel
+                estimate={clusterEstimate}
+                onEstimate={handleEstimateCluster}
+                loading={estimateLoading}
+                step="cluster"
+              />
+            )}
             <Button
               type="submit"
               color={cluster ? 'secondary' : 'primary'}

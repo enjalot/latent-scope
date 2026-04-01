@@ -1,10 +1,10 @@
 # Usage: ls-embed <dataset_id> <text_column> <model_id>
+import argparse
+import json
 import os
 import re
 import sys
-import json
 import time
-import argparse
 from datetime import datetime
 
 try:
@@ -13,18 +13,20 @@ try:
         from tqdm.notebook import tqdm
     else:
         from tqdm import tqdm
-except ImportError as e:
+except ImportError:
     # Fallback to the standard console version if import fails
     from tqdm import tqdm
 
-from latentscope.models import get_embedding_model, TransformersEmbedProvider
+from latentscope.models import TransformersEmbedProvider, get_embedding_model
 from latentscope.util import get_data_dir
+
 
 def chunked_iterable(iterable, size):
     """Yield successive chunks from an iterable."""
     for i in range(0, len(iterable), size):
         yield iterable[i:i + size]
 
+# Legacy HDF5 functions kept for backward compatibility
 def append_to_hdf5(file_path, new_data):
     import h5py
     dataset_name = "embeddings"
@@ -63,29 +65,40 @@ def main():
     embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length)
 
 def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None):
-    import pandas as pd
     import numpy as np
+    import pandas as pd
+
+    from latentscope.util.embedding_store import append_embeddings, get_embedding_count
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
-    
+
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
     if not os.path.exists(embedding_dir):
         os.makedirs(embedding_dir)
     # determine the embedding id
     if rerun is not None:
         embedding_id = rerun
-        starting_batch = get_last_batch(os.path.join(embedding_dir, f"{embedding_id}.h5")) // batch_size
+        # Check LanceDB first, then fallback to HDF5
+        starting_batch = get_embedding_count(DATA_DIR, dataset_id, embedding_id) // batch_size
+        if starting_batch == 0:
+            # Fallback: check legacy HDF5
+            starting_batch = get_last_batch(os.path.join(embedding_dir, f"{embedding_id}.h5")) // batch_size
     else:
-        # determine the index of the last umap run by looking in the dataset directory
-        # for files named umap-<number>.json
+        # determine the index of the last embedding run
+        # Check both HDF5 files and LanceDB tables
         embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
-        if len(embedding_files) > 0:
-            last_umap = sorted(embedding_files)[-1]
-            last_embedding_number = int(last_umap.split("-")[1].split(".")[0])
-            next_embedding_number = last_embedding_number + 1
+        embedding_jsons = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.json", f)]
+        all_files = embedding_files + embedding_jsons
+        if len(all_files) > 0:
+            numbers = []
+            for f in all_files:
+                match = re.search(r"embedding-(\d+)", f)
+                if match:
+                    numbers.append(int(match.group(1)))
+            next_embedding_number = max(numbers) + 1 if numbers else 1
         else:
             next_embedding_number = 1
-        # make the umap name from the number, zero padded to 3 digits
+        # make the embedding name from the number, zero padded to 3 digits
         embedding_id = f"embedding-{next_embedding_number:03d}"
         starting_batch = 0
 
@@ -96,15 +109,17 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     print("loading", model.name)
     model.load_model()
 
+    # Check if this is a late interaction model
+    is_late_interaction = getattr(model, 'late_interaction', False)
+    if is_late_interaction:
+        print("Late interaction model detected - will store per-token vectors")
+
     if max_seq_length is not None and isinstance(model, TransformersEmbedProvider):
         # Check if max_seq_length is a setter property
         try:
             model.model.max_seq_length = max_seq_length
         except AttributeError:
             print("Warning: This model does not support setting max_seq_length. Continuing with default length.")
-        # else:
-        #     print("Warning: max_seq_length is not a settable property, setting may not work")
-        #     model.model.max_seq_length = max_seq_length
 
     print("Checking for empty inputs")
     sentences = df[text_column].tolist()
@@ -116,7 +131,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print(i,s, "text is empty, adding a [space]")
             s = " "
         prefixed.append(prefix + s)
-    sentences = prefixed #[prefix + s for s in sentences]
+    sentences = prefixed
 
     total_batches = len(sentences)//batch_size
 
@@ -129,8 +144,20 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print(f"skipping batch {i}/{total_batches}", flush=True)
             continue
         try:
-            embeddings = np.array(model.embed(batch, dimensions=dimensions))
-            append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
+            start_index = i * batch_size
+            if is_late_interaction:
+                mean_vectors, token_vectors_list = model.embed_multi(batch, dimensions=dimensions)
+                append_embeddings(
+                    DATA_DIR, dataset_id, embedding_id,
+                    mean_vectors, start_index=start_index,
+                    token_vectors_list=token_vectors_list,
+                )
+            else:
+                embeddings = np.array(model.embed(batch, dimensions=dimensions))
+                append_embeddings(
+                    DATA_DIR, dataset_id, embedding_id,
+                    embeddings, start_index=start_index,
+                )
         except Exception as e:
             print(batch)
             print("error embedding batch", i, e)
@@ -155,87 +182,80 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         with open(history_file_path, 'w') as history_file:
             history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
 
+    # Get stats from the stored embeddings
+    from latentscope.util.embedding_store import get_embedding_stats
+    stats = get_embedding_stats(DATA_DIR, dataset_id, embedding_id)
 
-    # Calculate min and max values for each index
-    min_values = np.min(embeddings, axis=0)
-    max_values = np.max(embeddings, axis=0)
+    meta = {
+        "id": embedding_id,
+        "model_id": model_id,
+        "dataset_id": dataset_id,
+        "text_column": text_column,
+        "dimensions": stats["dimensions"],
+        "max_seq_length": max_seq_length,
+        "prefix": prefix,
+        "late_interaction": is_late_interaction,
+        "min_values": stats["min_values"],
+        "max_values": stats["max_values"],
+    }
+
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
-        json.dump({
-            "id": embedding_id,
-            "model_id": model_id,
-            "dataset_id": dataset_id,
-            "text_column": text_column,
-            # "dimensions": np_embeds.shape[1],
-            "dimensions": embeddings.shape[1],
-            "max_seq_length": max_seq_length,
-            "prefix": prefix,
-            "min_values": min_values.tolist(),
-            "max_values": max_values.tolist(),
-            }, f, indent=2)
+        json.dump(meta, f, indent=2)
 
-
-    # np.save(os.path.join(embedding_dir, f"{embedding_id}.npy"), np_embeds)
     print("done with", embedding_id)
 
 def truncate():
     parser = argparse.ArgumentParser(description='Make a copy of an existing embedding truncated to a smaller number of dimensions')
     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
-    parser.add_argument('embedding_id', type=str, help='ID of embedding to use') 
-    parser.add_argument('dimensions', type=int, help='Number of dimensions to truncate to') 
+    parser.add_argument('embedding_id', type=str, help='ID of embedding to use')
+    parser.add_argument('dimensions', type=int, help='Number of dimensions to truncate to')
     args = parser.parse_args()
     embed_truncate(args.dataset_id, args.embedding_id, args.dimensions)
 
 def embed_truncate(dataset_id, embedding_id, dimensions):
     import numpy as np
-    import h5py
+
+    from latentscope.util.embedding_store import append_embeddings
+    from latentscope.util.embedding_store import load_embeddings as lance_load
 
     DATA_DIR = get_data_dir()
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
 
     embedding_meta_path = os.path.join(embedding_dir, f"{embedding_id}.json")
-    with open(embedding_meta_path, 'r') as f:
+    with open(embedding_meta_path) as f:
         embedding_meta = json.load(f)
-    # Load the embedding model
-    # model_id = embedding_meta["model_id"]
-    # model = get_embedding_model_dict(model_id)
-    # print("model params", model["params"])
-    # Check if the model has the attribute 'dimensions'
-    # try:
-    #     dims = model["params"]['dimensions']
-    # except KeyError:
-    #     raise KeyError(f"The model {model_id} does not have the 'dimensions' parameter meaning it cannot be truncated.")
 
-    # determine the index of the last umap run by looking in the dataset directory
-    # for files named umap-<number>.json
+    # Determine next embedding number
+    embedding_jsons = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.json", f)]
     embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
-    if len(embedding_files) > 0:
-        last_umap = sorted(embedding_files)[-1]
-        last_embedding_number = int(last_umap.split("-")[1].split(".")[0])
-        next_embedding_number = last_embedding_number + 1
+    all_files = embedding_jsons + embedding_files
+    if len(all_files) > 0:
+        numbers = []
+        for f in all_files:
+            match = re.search(r"embedding-(\d+)", f)
+            if match:
+                numbers.append(int(match.group(1)))
+        next_embedding_number = max(numbers) + 1 if numbers else 1
     else:
         next_embedding_number = 1
-    # make the umap name from the number, zero padded to 3 digits
     new_embedding_id = f"embedding-{next_embedding_number:03d}"
     print("RUNNING:", new_embedding_id)
 
-    # read in the embeddings from embedding_id
-    embedding_path = os.path.join(embedding_dir, f"{embedding_id}.h5")
-    with h5py.File(embedding_path, 'r') as f:
-        dataset = f["embeddings"]
-        embeddings = np.array(dataset)
-   
+    # Load embeddings (from LanceDB or HDF5)
+    embeddings = lance_load(DATA_DIR, dataset_id, embedding_id)
 
     print("truncating to", dimensions, "dimensions")
     matroyshka = embeddings[:, :dimensions]
     # Normalize the truncated embeddings
     matroyshka = matroyshka / np.linalg.norm(matroyshka, axis=1, keepdims=True)
-    append_to_hdf5(os.path.join(embedding_dir, f"{new_embedding_id}.h5"), matroyshka)
 
+    # Store in LanceDB
+    append_embeddings(DATA_DIR, dataset_id, new_embedding_id, matroyshka, start_index=0)
 
     # Calculate min and max values for each index
-    min_values = np.min(matroyshka, axis=0)
-    max_values = np.max(matroyshka, axis=0)
-    
+    np.min(matroyshka, axis=0)
+    np.max(matroyshka, axis=0)
+
     with open(os.path.join(embedding_dir, f"{new_embedding_id}.json"), 'w') as f:
         json.dump({
             "id": new_embedding_id,
@@ -245,34 +265,32 @@ def embed_truncate(dataset_id, embedding_id, dimensions):
             "max_seq_length": embedding_meta.get("max_seq_length"),
             "dimensions": matroyshka.shape[1],
             "prefix": embedding_meta["prefix"],
-            # "min_values": min_values.tolist(),
-            # "max_values": max_values.tolist(),
+            "late_interaction": False,
             }, f, indent=2)
 
-    print("wrote", os.path.join(embedding_dir, f"{new_embedding_id}.h5"))
+    print("wrote", new_embedding_id, "to LanceDB")
     print("done")
 
 
 def update_embedding_stats():
-    parser = argparse.ArgumentParser(description='Update embedding stats') 
+    parser = argparse.ArgumentParser(description='Update embedding stats')
     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
-    parser.add_argument('embedding_id', type=str, help='ID of embedding to use') 
+    parser.add_argument('embedding_id', type=str, help='ID of embedding to use')
     args = parser.parse_args()
     embedding_stats(args.dataset_id, args.embedding_id)
 
 def embedding_stats(dataset_id, embedding_id):
     import os
-    import h5py
+
     import numpy as np
-    # from latentscope.utils import get_data_dir
+
+    from latentscope.util.embedding_store import load_embeddings as lance_load
 
     DATA_DIR = get_data_dir()
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
-    embedding_path = os.path.join(embedding_dir, f"{embedding_id}.h5")
 
-    # Read the embeddings
-    with h5py.File(embedding_path, 'r') as f:
-        embeddings = np.array(f["embeddings"])
+    # Load embeddings from LanceDB or HDF5
+    embeddings = lance_load(DATA_DIR, dataset_id, embedding_id)
 
     # Calculate min and max values for each index
     min_values = np.min(embeddings, axis=0)
@@ -280,7 +298,7 @@ def embedding_stats(dataset_id, embedding_id):
 
     metadata_path = os.path.join(embedding_dir, f"{embedding_id}.json")
     # Read existing metadata
-    with open(metadata_path, 'r') as f:
+    with open(metadata_path) as f:
         metadata = json.load(f)
 
     # Add min and max values to metadata
@@ -314,16 +332,14 @@ def embed_debug(parquet_file, model_id, text_column):
         print("original index:", row[0])
         text = row[1][text_column]
         print("text:", text)
-        # print("tokens:", len(model.tokenizer.encode(text)))
-        # print("batch index:", i, "DataFrame index:", row[0], "Text:", row[1][text_column])
         embedding = model.embed([text])
         print("embedding", embedding)
-        
-def importer():
-    import pandas as pd
-    import numpy as np
 
-    parser = argparse.ArgumentParser(description='Import embeddings from an input dataset column to a standard HDF5 file')
+def importer():
+    import numpy as np
+    import pandas as pd
+
+    parser = argparse.ArgumentParser(description='Import embeddings from an input dataset column')
     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data/)')
     parser.add_argument('embedding_column', type=str, help='Column to use as embedding input')
     parser.add_argument('model_id', type=str, help='ID of embedding to use')
@@ -333,35 +349,42 @@ def importer():
     DATA_DIR = get_data_dir()
     # read the input parquet
     df = pd.read_parquet(os.path.join(DATA_DIR, args.dataset_id, "input.parquet"))
-    # extract the column 
+    # extract the column
     embeddings = df[args.embedding_column].to_numpy()
     # Ensure embeddings is an ndarray with shape [N, M]
     if not isinstance(embeddings, np.ndarray):
         embeddings = np.array(list(embeddings))
     if embeddings.ndim == 1:
         embeddings = np.stack(embeddings)
-    
+
 
     import_embeddings(args.dataset_id, embeddings, args.model_id, args.text_column)
 
 def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefix=""):
     import numpy as np
+
+    from latentscope.util.embedding_store import append_embeddings
     DATA_DIR = get_data_dir()
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
-    # determine the index of the last umap run by looking in the dataset directory
-    # for files named umap-<number>.json
+    os.makedirs(embedding_dir, exist_ok=True)
+
+    # Determine next embedding number
+    embedding_jsons = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.json", f)]
     embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
-    if len(embedding_files) > 0:
-        last_umap = sorted(embedding_files)[-1]
-        last_embedding_number = int(last_umap.split("-")[1].split(".")[0])
-        next_embedding_number = last_embedding_number + 1
+    all_files = embedding_jsons + embedding_files
+    if len(all_files) > 0:
+        numbers = []
+        for f in all_files:
+            match = re.search(r"embedding-(\d+)", f)
+            if match:
+                numbers.append(int(match.group(1)))
+        next_embedding_number = max(numbers) + 1 if numbers else 1
     else:
         next_embedding_number = 1
-    # make the umap name from the number, zero padded to 3 digits
     embedding_id = f"embedding-{next_embedding_number:03d}"
 
-    print("importing embeddings with shape", embeddings.shape, "to", os.path.join(embedding_dir, f"{embedding_id}.h5"))
-    append_to_hdf5(os.path.join(embedding_dir, f"{embedding_id}.h5"), embeddings)
+    print("importing embeddings with shape", embeddings.shape, "to LanceDB as", embedding_id)
+    append_embeddings(DATA_DIR, dataset_id, embedding_id, embeddings, start_index=0)
 
     # Calculate min and max values for each index
     min_values = np.min(embeddings, axis=0)
@@ -375,10 +398,11 @@ def import_embeddings(dataset_id, embeddings, model_id="", text_column="", prefi
             "dimensions": embeddings.shape[1],
             "text_column": text_column,
             "prefix": prefix,
+            "late_interaction": False,
             "min_values": min_values.tolist(),
             "max_values": max_values.tolist(),
         }, f, indent=2)
     print("done with", embedding_id)
 
 if __name__ == "__main__":
-   main() 
+   main()
