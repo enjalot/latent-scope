@@ -1,0 +1,92 @@
+.estimatePanel {
+  margin: 8px 0;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: var(--bg-secondary, #f8f9fa);
+  font-size: 0.85em;
+}
+
+.estimateHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.estimateActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.estimateResults, .benchmarkResults {
+  margin-top: 8px;
+}
+
+.benchmarkResults {
+  border-top: 1px solid var(--border-color, #ddd);
+  padding-top: 8px;
+}
+
+.benchmarkHeader {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.estimateSummary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.estimateItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.estimateLabel {
+  font-size: 0.8em;
+  color: var(--text-secondary, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.estimateValue {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.lateInteractionBadge {
+  background: var(--accent-color, #6366f1);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.estimateNote {
+  margin-top: 4px;
+  font-size: 0.85em;
+  color: var(--text-secondary, #888);
+  font-style: italic;
+}
+
+.detailsToggle {
+  background: none;
+  border: none;
+  color: var(--link-color, #4a90d9);
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 0.85em;
+  text-decoration: underline;
+}
+
+.estimateDetails {
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: var(--bg-tertiary, #f0f0f0);
+  border-radius: 4px;
+  font-size: 0.9em;
+  line-height: 1.6;
+}

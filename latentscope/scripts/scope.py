@@ -1,10 +1,11 @@
+import argparse
+import json
 import os
 import re
-import json
-import argparse
 from datetime import datetime
-from latentscope.util import get_data_dir
+
 from latentscope import __version__
+from latentscope.util import get_data_dir
 
 
 def main():
@@ -25,19 +26,21 @@ def main():
 
 
 def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
-    import lancedb
-    import pandas as pd
     import h5py
+    import lancedb
     import numpy as np
+    import pandas as pd
+
+    from latentscope.util.embedding_store import load_embeddings as lance_load_embeddings
 
     dataset_path = os.path.join(directory, dataset)
     print(f"Exporting scope {scope_id} to LanceDB database in {dataset_path}")
-    
+
     # Validate directory
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory")
         return
-    
+
     # Load the scope
     scope_path = os.path.join(dataset_path, "scopes")
 
@@ -45,32 +48,35 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
     scope_df = pd.read_parquet(os.path.join(scope_path, f"{scope_id}-input.parquet"))
     scope_meta = json.load(open(os.path.join(scope_path, f"{scope_id}.json")))
 
-    print(f"Loading embeddings from {dataset_path}/embeddings/{scope_meta['embedding_id']}.h5")
-    embeddings = h5py.File(os.path.join(dataset_path, "embeddings", f"{scope_meta['embedding_id']}.h5"), "r")
+    # Load embeddings from LanceDB store (with HDF5 fallback)
+    embedding_id = scope_meta['embedding_id']
+    print(f"Loading embeddings for {embedding_id}")
+    embeddings = lance_load_embeddings(directory, dataset, embedding_id)
 
     db_uri = os.path.join(dataset_path, "lancedb")
     db = lancedb.connect(db_uri)
 
-    print(f"Converting embeddings to numpy arrays", embeddings['embeddings'].shape)
-    scope_df["vector"] = [np.array(row) for row in embeddings['embeddings']]
+    print("Converting embeddings to numpy arrays", embeddings.shape)
+    scope_df["vector"] = [np.array(row) for row in embeddings]
 
     if "sae_id" in scope_meta and scope_meta["sae_id"]:
-        print(f"SAE scope detected, adding metadata")
+        print("SAE scope detected, adding metadata")
         # read in the sae indices
         sae_path = os.path.join(dataset_path, "saes", f"{scope_meta['sae_id']}.h5")
         with h5py.File(sae_path, 'r') as f:
             all_top_indices = np.array(f["top_indices"])
             all_top_acts = np.array(f["top_acts"])
 
-        # scope_df["sae_indices"] = all_top_indices
-        # scope_df["sae_acts"] = all_top_acts
         scope_df["sae_indices"] = [row.tolist() for row in all_top_indices]
         scope_df["sae_acts"] = [row.tolist() for row in all_top_acts]
 
     table_name = scope_id
 
     # Check if the table already exists
-    if scope_id in db.table_names():
+    table_names = db.list_tables()
+    if hasattr(table_names, 'tables'):
+        table_names = table_names.tables
+    if scope_id in table_names:
         # Remove the existing table and its index
         db.drop_table(table_name)
         print(f"Existing table '{table_name}' has been removed.")
@@ -79,10 +85,15 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
     tbl = db.create_table(table_name, scope_df)
 
     print(f"Creating ANN index for embeddings on table '{table_name}'")
-    dim = embeddings['embeddings'].shape[1]
-    sub_vectors = dim // 16
-    print(f"Partitioning into {partitions} partitions, {sub_vectors} sub-vectors")
-    tbl.create_index(num_partitions=partitions, num_sub_vectors=sub_vectors, metric=metric)
+    dim = embeddings.shape[1]
+    num_rows = len(scope_df)
+    actual_partitions = min(partitions, max(1, num_rows // 10))
+    sub_vectors = max(1, dim // 16)
+    if num_rows >= 256:
+        print(f"Partitioning into {actual_partitions} partitions, {sub_vectors} sub-vectors")
+        tbl.create_index(num_partitions=actual_partitions, num_sub_vectors=sub_vectors, metric=metric)
+    else:
+        print(f"Dataset too small ({num_rows} rows) for IVF index, skipping ANN index")
 
     print(f"Creating index for cluster on table '{table_name}'")
     tbl.create_scalar_index("cluster", index_type="BTREE")
@@ -91,8 +102,7 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
         print(f"Creating index for sae_indices on table '{table_name}'")
         tbl.create_scalar_index("sae_indices", index_type="LABEL_LIST")
 
-
-    print(f"Table '{table_name}' created successfully")  
+    print(f"Table '{table_name}' created successfully")
 
 def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, label, description, scope_id=None, sae_id=None):
     DATA_DIR = get_data_dir()
@@ -158,12 +168,12 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     with open(umap_file) as f:
         umap = json.load(f)
         scope["umap"] = umap
-    
+
     cluster_file = os.path.join(DATA_DIR, dataset_id, "clusters", cluster_id + ".json")
     with open(cluster_file) as f:
         cluster = json.load(f)
         scope["cluster"] = cluster
-    
+
     if cluster_labels_id == "default":
         cluster_labels_id = cluster_id + "-labels-default"
         scope["cluster_labels"] = {"id": cluster_labels_id, "cluster_id": cluster_id}
@@ -183,7 +193,7 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     cluster_labels_df["hull"] = cluster_labels_df["hull"].apply(lambda x: x.tolist())
     cluster_labels_df["cluster"] = cluster_labels_df.index
     scope["cluster_labels_lookup"] = cluster_labels_df.to_dict(orient="records")
-    
+
     # create a scope parquet by combining the parquets from umap and cluster, as well as getting the labels from cluster_labels
     # then write the parquet to the scopes directory
     umap_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", umap_id + ".parquet"))
@@ -194,15 +204,15 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     def make_tiles(x, y, num_tiles=64):
         import numpy as np
         tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
-        
+
         # Calculate row and column indices (0-63) for each point
         col_indices = np.floor((x + 1) / tile_size).astype(int)
         row_indices = np.floor((y + 1) / tile_size).astype(int)
-        
+
         # Clip indices to valid range in case of numerical edge cases
         col_indices = np.clip(col_indices, 0, num_tiles - 1)
         row_indices = np.clip(row_indices, 0, num_tiles - 1)
-        
+
         # Convert 2D grid indices to 1D tile index (row * num_cols + col)
         tile_indices = row_indices * num_tiles + col_indices
         return tile_indices
@@ -241,16 +251,16 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     scope["columns"] = scope_parquet.columns.tolist()
     scope["size"] = os.path.getsize(os.path.join(directory, id + ".parquet"))
     scope["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
+
     file_path = os.path.join(directory, id + ".json")
     with open(file_path, 'w') as f:
         json.dump(scope, f, indent=2)
-    
+
     transactions_file_path = os.path.join(directory, id + "-transactions.json")
     if not os.path.exists(transactions_file_path):
         with open(transactions_file_path, 'w') as f:
             json.dump([], f)
-    
+
     print("creating combined scope-input parquet")
     input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
     input_df.reset_index(inplace=True)

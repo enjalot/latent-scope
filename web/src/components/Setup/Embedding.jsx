@@ -16,6 +16,7 @@ import SettingsModal from '../SettingsModal';
 
 import Sae from './Sae';
 import Preview from './Preview';
+import EstimatePanel from './EstimatePanel';
 
 import styles from './Embedding.module.scss';
 
@@ -216,6 +217,43 @@ function Embedding() {
 
   const [batchSize, setBatchSize] = useState(100);
   const [maxSeqLength, setMaxSeqLength] = useState(512);
+
+  // Estimation state
+  const [embedEstimate, setEmbedEstimate] = useState(null);
+  const [embedBenchmark, setEmbedBenchmark] = useState(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
+  const handleEstimate = useCallback(() => {
+    if (!modelId || !textColumn || !datasetId) return;
+    setEstimateLoading(true);
+    setEmbedEstimate(null);
+    apiService
+      .estimateEmbed(datasetId, modelId, textColumn, dimensions)
+      .then((data) => {
+        setEmbedEstimate(data);
+        setEstimateLoading(false);
+      })
+      .catch(() => setEstimateLoading(false));
+  }, [datasetId, modelId, textColumn, dimensions]);
+
+  const handleBenchmark = useCallback(() => {
+    if (!modelId || !textColumn || !datasetId) return;
+    setEstimateLoading(true);
+    setEmbedBenchmark(null);
+    apiService
+      .benchmarkEmbed(datasetId, modelId, textColumn, 10, dimensions)
+      .then((data) => {
+        setEmbedBenchmark(data);
+        setEstimateLoading(false);
+      })
+      .catch(() => setEstimateLoading(false));
+  }, [datasetId, modelId, textColumn, dimensions]);
+
+  // Reset estimates when model changes
+  useEffect(() => {
+    setEmbedEstimate(null);
+    setEmbedBenchmark(null);
+  }, [modelId]);
 
   // from the dataset, if a column is flagged as a potential embedding
   const [potentialEmbeddings, setPotentialEmbeddings] = useState([]);
@@ -508,6 +546,17 @@ function Embedding() {
                   })}
                 </select>
               : null} */}
+
+            {modelId && textColumn && (
+              <EstimatePanel
+                estimate={embedEstimate}
+                onEstimate={handleEstimate}
+                onBenchmark={handleBenchmark}
+                benchmarkResult={embedBenchmark}
+                loading={estimateLoading}
+                step="embed"
+              />
+            )}
 
             <Button
               type="submit"

@@ -48,6 +48,7 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
 def load_embeddings(dataset_id, embedding_id):
     import h5py
     import numpy as np
+    from latentscope.util.embedding_store import load_embeddings as lance_load_embeddings
     DATA_DIR = get_data_dir()
 
     if embedding_id[0:3] == "sae":
@@ -59,22 +60,16 @@ def load_embeddings(dataset_id, embedding_id):
         # read the meta json for sae
         with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{embedding_id}.json"), 'r') as f:
             meta = json.load(f)
-        # print("SAE META", meta["id"], meta["num_features"], "features", meta["model_id"], meta["k_expansion"])
-        
+
         import scipy
-        # print("ALL ACTS SHAPE", all_acts.shape)
-        # print("ALL INDS SHAPE", all_indices.shape)
         matrix = scipy.sparse.lil_matrix((all_acts.shape[0], meta["num_features"]), dtype=np.float32)
         for i in range(all_acts.shape[0]):
             matrix.rows[i] = all_indices[i].tolist()
             matrix.data[i] = all_acts[i].tolist()
         return matrix
     else:
-        emb_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
-        with h5py.File(emb_path, 'r') as f:
-            dataset = f["embeddings"]
-            embeddings = np.array(dataset)
-            return embeddings
+        # Use LanceDB-backed store (with HDF5 fallback)
+        return lance_load_embeddings(DATA_DIR, dataset_id, embedding_id)
 
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None, seed=None):
     DATA_DIR = get_data_dir()
