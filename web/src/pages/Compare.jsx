@@ -1,321 +1,223 @@
-import { useReducer, useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { extent } from 'd3-array';
 import { scaleSymlog } from 'd3-scale';
-import {
-  interpolateMagma,
-  interpolateReds,
-  interpolateViridis,
-  interpolateTurbo,
-  interpolateCool,
-} from 'd3-scale-chromatic';
 
-// import DataTable from '../components/DataTable';
-import IndexDataTable from '../components/IndexDataTable';
-import Scatter from '../components/Scatter';
-import AnnotationPlot from '../components/AnnotationPlot';
-// import HullPlot from '../components/HullPlot';
+import CompareControls from '../components/Compare/CompareControls';
+import TransitionView from '../components/Compare/TransitionView';
+import SideBySideView from '../components/Compare/SideBySideView';
+import CompareDataPanel from '../components/Compare/CompareDataPanel';
 
 import styles from './Compare.module.css';
-console.log('styles', styles);
 
 const apiUrl = import.meta.env.VITE_API_URL;
-const readonly = import.meta.env.MODE == 'read_only';
 
-// unfortunately regl-scatter doesn't even render in iOS
-const isIOS = () => {
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
-};
-// let's warn mobile users (on demo in read-only) that desktop is better experience
-const isMobileDevice = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
-const initialState = {
-  dataset: null,
-};
-
-function reducer(state, action) {}
-
-function processHulls(labels, points) {
-  return labels.map((d) => {
-    return d.hull.map((i) => points[i]);
-  });
-}
+const viewModes = [
+  { id: 'transition', name: 'Transition' },
+  { id: 'side-by-side', name: 'Side by Side' },
+];
 
 function Compare() {
-  const [dataset, setDataset] = useState(null);
   const { dataset: datasetId } = useParams();
-
-  const navigate = useNavigate();
-
-  const containerRef = useRef(null);
-
-  // let's fill the container and update the width and height if window resizes
-  const [scopeWidth, scopeHeight] = useWindowSize();
-  function useWindowSize() {
-    const [size, setSize] = useState([500, 500]);
-    useEffect(() => {
-      function updateSize() {
-        if (!containerRef.current) return;
-        const { height, width } = containerRef.current.getBoundingClientRect();
-        // console.log("width x height", width, height)
-        // let swidth = width > 500 ? 500 : width - 50
-        setSize([width - 15, height - 25]);
-      }
-      window.addEventListener('resize', updateSize);
-      updateSize();
-      setTimeout(updateSize, 200);
-      return () => window.removeEventListener('resize', updateSize);
-    }, []);
-    return size;
-  }
-
-  // Tabs
-  const tabs = [
-    { id: 0, name: 'Selected' },
-    { id: 1, name: 'Search' },
-  ];
-  const [activeTab, setActiveTab] = useState(0);
-
-  useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('dataset', data);
-        setDataset(data);
-      });
-  }, [datasetId, setDataset]);
-
+  const [dataset, setDataset] = useState(null);
   const [embeddings, setEmbeddings] = useState([]);
   const [umaps, setUmaps] = useState([]);
-  useEffect(() => {
-    Promise.all([
-      fetch(`${apiUrl}/datasets/${datasetId}/embeddings`).then((response) => response.json()),
-      fetch(`${apiUrl}/datasets/${datasetId}/umaps`).then((response) => response.json()),
-    ]).then(([embeddingsData, umapsData]) => {
-      console.log('embeddings', embeddingsData);
-      console.log('umaps', umapsData);
-      setEmbeddings(embeddingsData);
-      umapsData
-        .filter((d) => !!d.align_id)
-        .sort((a, b) => {
-          if (b.align_id < a.align_id) return -1;
-          if (b.align_id > a.align_id) return 1;
-          if (a.id < b.id) return -1;
-          if (a.id > b.id) return 1;
-          return 0;
-        });
-      setUmaps(umapsData);
-    });
-  }, [datasetId, setEmbeddings, setUmaps]);
 
-  const [direction, setDirection] = useState('left');
+  // UMAP selection
   const [left, setLeft] = useState(null);
   const [right, setRight] = useState(null);
-  useEffect(() => {
-    if (umaps) {
-      setLeft(umaps[0]);
-      setRight(umaps[1]);
-    }
-  }, [umaps]);
 
-  const [umap, setUmap] = useState(null);
-  const [points, setPoints] = useState([]);
-  const [drawPoints, setDrawPoints] = useState([]); // this is the points with the cluster number
+  // Points for both sides (loaded eagerly)
+  const [leftPoints, setLeftPoints] = useState([]);
+  const [rightPoints, setRightPoints] = useState([]);
+
+  // Displacement data and display points
+  const [drawPoints, setDrawPoints] = useState([]);
   const drawPointsRef = useRef([]);
-  const pointsRef = useRef([]);
-  useEffect(() => {
-    if (umaps && left && right && direction) {
-      const decision = direction === 'left' ? left : right;
-
-      Promise.all([
-        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${decision.id}`).then((response) =>
-          response.json()
-        ),
-        fetch(`${apiUrl}/datasets/${datasetId}/umaps/${decision.id}/points`).then((response) =>
-          response.json()
-        ),
-      ])
-        .then(([umapData, pointsData]) => {
-          // console.log("umap", umapData);
-          setUmap(umapData);
-
-          // console.log("set points")
-          const pts = pointsData.map((d) => [d.x, d.y]);
-          setPoints(pts);
-          pointsRef.current = pts;
-
-          // const dpts = pointsData.map((d, i) => [d.x, d.y, i/pts.length])
-          const dpts = pointsData.map((d, i) => {
-            let c = drawPointsRef.current[i];
-            return [d.x, d.y, c ? c[2] : 0, c ? c[3] : 0];
-          });
-          setDrawPoints(dpts);
-          drawPointsRef.current = dpts;
-        })
-        .catch((error) => console.error('Fetching data failed', error));
-    }
-  }, [datasetId, direction, left, right, umaps, setUmap, setPoints, setDrawPoints]);
-
-  let firstPoints = useRef(false);
-  let dispChange = useRef('');
   const [displacementLoading, setDisplacementLoading] = useState(false);
   const [threshold, setThreshold] = useState(0.5);
+  const [aboveThresholdCount, setAboveThresholdCount] = useState(0);
 
-  useEffect(() => {
-    let change = left?.id + right?.id + firstPoints.current;
-    if (left && right && points.length) {
-      if (dispChange.current !== change) {
-        setDisplacementLoading(true);
-        fetch(
-          `${apiUrl}/search/compare?dataset=${datasetId}&umap_left=${left.id}&umap_right=${right.id}&k=10`
-        )
-          .then((response) => response.json())
-          .then((displacementData) => {
-            // console.log('DISPLACEMENT DATA', displacementData);
-            const log = scaleSymlog(extent(displacementData), [0, 1]);
-            const dpts = pointsRef.current.map((d, i) => {
-              const displacement = log(displacementData[i]);
-              return [d[0], d[1], displacement < threshold ? 1 : 0, displacement];
-            });
-            setDrawPoints(dpts);
-            setAboveThresholdPoints(dpts.filter((d) => d[2] != 1));
-            // console.log('DRAW POINTS', drawPoints);
-            drawPointsRef.current = dpts;
-            setDisplacementLoading(false);
-            firstPoints.current = true;
-            dispChange.current = left?.id + right?.id + firstPoints.current;
-          });
-      }
-    }
-  }, [datasetId, left, right, points, threshold]);
+  // Metric controls
+  const [metric, setMetric] = useState('displacement');
+  const [metricK, setMetricK] = useState(10);
 
-  const [pointSizeRange, setPointSizeRange] = useState([5, 1]);
-  const [opacityRange, setOpacityRange] = useState([1, 0.2]);
-  const [aboveThresholdPoints, setAboveThresholdPoints] = useState([]);
-  useEffect(() => {
-    if (drawPointsRef.current.length > 0) {
-      const newPoints = drawPointsRef.current.map((point) => [
-        point[0],
-        point[1],
-        point[3] < threshold ? 1 : 0,
-        point[3],
-      ]);
-      setDrawPoints(newPoints);
-      setAboveThresholdPoints(newPoints.filter((d) => d[2] != 1));
-    }
-  }, [threshold]);
+  // View mode
+  const [viewMode, setViewMode] = useState('transition');
+  const [direction, setDirection] = useState('left');
 
-  // The search model is the embeddings model that we pass to the nearest neighbor query
-  // we want to enable searching with any embedding set
-  const [searchModel, setSearchModel] = useState(null);
-
-  useEffect(() => {
-    if (embeddings) {
-      setSearchModel(embeddings[0]);
-    }
-  }, [embeddings, setSearchModel]);
-
-  // const [activeUmap, setActiveUmap] = useState(null)
-  const handleModelSelect = useCallback(
-    (model) => {
-      console.log('selected', model);
-      setSearchModel(embeddings.find((e) => e.id == model));
-    },
-    [embeddings]
-  );
-
-  const hydrateIndices = useCallback(
-    (indices, setter, distances = []) => {
-      fetch(`${apiUrl}/indexed`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ dataset: datasetId, indices: indices }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (!dataset) return;
-          let rows = data.map((row, index) => {
-            return {
-              index: indices[index],
-              ...row,
-            };
-          });
-          setter(rows);
-        });
-    },
-    [dataset, datasetId]
-  );
-
-  // ====================================================================================================
-  // Scatterplot related logic
-  // ====================================================================================================
-  // this is a reference to the regl scatterplot instance
-  // so we can do stuff like clear selections without re-rendering
-  const [scatter, setScatter] = useState({});
+  // Scatterplot state
+  const [scatter, setScatter] = useState(null);
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
-  const handleView = useCallback(
-    (xDomain, yDomain) => {
-      setXDomain(xDomain);
-      setYDomain(yDomain);
-    },
-    [setXDomain, setYDomain]
-  );
-  // Selection via Scatterplot
-  // indices of items selected by the scatter plot
+
+  // Selection state
   const [selectedIndices, setSelectedIndices] = useState([]);
-
-  const handleSelected = useCallback(
-    (indices) => {
-      console.log('handle selected', indices);
-      setSelectedIndices(indices);
-      setActiveTab(0);
-      // for now we dont zoom because if the user is selecting via scatter they can easily zoom themselves
-      // scatter?.zoomToPoints(indices, { transition: true })
-    },
-    [setSelectedIndices, setActiveTab]
-  );
-
-  // Hover via scatterplot or tables
-  // index of item being hovered over
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [hovered, setHovered] = useState(null);
-  // useEffect(() => {
-  //   if (hoveredIndex !== null && hoveredIndex !== undefined) {
-  //     hydrateIndices([hoveredIndex], (results) => {
-  //       setHovered(results[0])
-  //     })
-  //   } else {
-  //     setHovered(null)
-  //   }
-  // }, [hoveredIndex, setHovered, hydrateIndices])
 
-  const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  useEffect(() => {
-    if (hoveredIndex !== null && hoveredIndex !== undefined) {
-      setHoverAnnotations([points[hoveredIndex]]);
-    } else {
-      setHoverAnnotations([]);
-    }
-  }, [hoveredIndex, points]);
-  // Search
-  // the indices returned from similarity search
+  // Search state
+  const [searchModel, setSearchModel] = useState(null);
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
 
-  const searchQuery = useCallback(
+  // Layout sizing
+  const containerRef = useRef(null);
+  const [containerSize, setContainerSize] = useState([500, 500]);
+
+  useEffect(() => {
+    function updateSize() {
+      if (!containerRef.current) return;
+      const { height, width } = containerRef.current.getBoundingClientRect();
+      setContainerSize([width - 15, height - 25]);
+    }
+    window.addEventListener('resize', updateSize);
+    updateSize();
+    setTimeout(updateSize, 200);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const [scopeWidth, scopeHeight] = containerSize;
+
+  // ===== Data Loading =====
+
+  useEffect(() => {
+    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
+      .then((r) => r.json())
+      .then(setDataset);
+  }, [datasetId]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${apiUrl}/datasets/${datasetId}/embeddings`).then((r) => r.json()),
+      fetch(`${apiUrl}/datasets/${datasetId}/umaps`).then((r) => r.json()),
+    ]).then(([embData, umapData]) => {
+      setEmbeddings(embData);
+      setUmaps(umapData);
+    });
+  }, [datasetId]);
+
+  // Auto-select first two UMAPs
+  useEffect(() => {
+    if (umaps.length >= 2) {
+      setLeft(umaps[0]);
+      setRight(umaps[1]);
+    } else if (umaps.length === 1) {
+      setLeft(umaps[0]);
+      setRight(umaps[0]);
+    }
+  }, [umaps]);
+
+  // Auto-select first embedding for search
+  useEffect(() => {
+    if (embeddings.length) {
+      setSearchModel(embeddings[0]);
+    }
+  }, [embeddings]);
+
+  // Load both point sets eagerly when UMAPs are selected
+  useEffect(() => {
+    if (!left || !right) return;
+    Promise.all([
+      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${left.id}/points`).then((r) => r.json()),
+      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${right.id}/points`).then((r) => r.json()),
+    ]).then(([lp, rp]) => {
+      setLeftPoints(lp.map((d) => [d.x, d.y]));
+      setRightPoints(rp.map((d) => [d.x, d.y]));
+    });
+  }, [datasetId, left, right]);
+
+  // ===== Displacement Computation =====
+
+  const prevCompareKey = useRef('');
+
+  useEffect(() => {
+    if (!left || !right || !leftPoints.length || !rightPoints.length) return;
+    const key = `${left.id}:${right.id}:${metric}:${metricK}`;
+    if (prevCompareKey.current === key) return;
+
+    setDisplacementLoading(true);
+    fetch(
+      `${apiUrl}/search/compare?dataset=${datasetId}&umap_left=${left.id}&umap_right=${right.id}&metric=${metric}&k=${metricK}`
+    )
+      .then((r) => r.json())
+      .then((displacementData) => {
+        const log = scaleSymlog(extent(displacementData), [0, 1]);
+        const dpts = leftPoints.map((d, i) => {
+          const displacement = log(displacementData[i]);
+          return [d[0], d[1], displacement < threshold ? 1 : 0, displacement];
+        });
+        setDrawPoints(dpts);
+        drawPointsRef.current = dpts;
+        setAboveThresholdCount(dpts.filter((d) => d[2] !== 1).length);
+        setDisplacementLoading(false);
+        prevCompareKey.current = key;
+      });
+  }, [datasetId, left, right, leftPoints, rightPoints, metric, metricK, threshold]);
+
+  // Update threshold without re-fetching
+  useEffect(() => {
+    if (!drawPointsRef.current.length) return;
+    const newPoints = drawPointsRef.current.map((point) => [
+      point[0],
+      point[1],
+      point[3] < threshold ? 1 : 0,
+      point[3],
+    ]);
+    setDrawPoints(newPoints);
+    setAboveThresholdCount(newPoints.filter((d) => d[2] !== 1).length);
+  }, [threshold]);
+
+  // ===== Interaction Handlers =====
+
+  const handleView = useCallback((xd, yd) => {
+    setXDomain(xd);
+    setYDomain(yd);
+  }, []);
+
+  const handleSelected = useCallback((indices) => {
+    setSelectedIndices(indices);
+  }, []);
+
+  const handleHover = useCallback((index) => {
+    setHoveredIndex(index);
+  }, []);
+
+  const handleClicked = useCallback(
+    (index) => {
+      scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 });
+    },
+    [scatter]
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIndices([]);
+    scatter?.select([]);
+    scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
+  }, [scatter]);
+
+  const handleSetLeft = useCallback(
+    (id) => {
+      setLeft(umaps.find((d) => d.id === id));
+    },
+    [umaps]
+  );
+
+  const handleSetRight = useCallback(
+    (id) => {
+      setRight(umaps.find((d) => d.id === id));
+    },
+    [umaps]
+  );
+
+  // Search
+  const handleSearch = useCallback(
     (query) => {
+      if (!searchModel) return;
       fetch(
         `${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&embedding_id=${searchModel.id}&dimensions=${searchModel.dimensions}`
       )
-        .then((response) => response.json())
+        .then((r) => r.json())
         .then((data) => {
-          // console.log("search", data)
           setDistances(data.distances);
           setSearchIndices(data.indices);
           scatter?.zoomToPoints(data.indices, {
@@ -325,299 +227,126 @@ function Compare() {
           });
         });
     },
-    [searchModel, datasetId, scatter, setDistances, setSearchIndices]
+    [searchModel, datasetId, scatter]
   );
 
-  const [searchAnnotations, setSearchAnnotations] = useState([]);
-  useEffect(() => {
-    const annots = searchIndices.map((index) => points[index]);
-    setSearchAnnotations(annots);
-  }, [searchIndices, points]);
-
-  // Handlers for responding to individual data points
-  const handleClicked = useCallback(
-    (index) => {
-      scatter?.zoomToPoints([index], { transition: true, padding: 0.9, transitionDuration: 1500 });
+  const handleSearchModelChange = useCallback(
+    (id) => {
+      setSearchModel(embeddings.find((e) => e.id === id));
     },
-    [scatter]
+    [embeddings]
   );
 
-  const handleHover = useCallback(
-    (index) => {
-      setHoveredIndex(index);
-    },
-    [setHoveredIndex]
-  );
+  const handleClearSearch = useCallback(() => {
+    setSearchIndices([]);
+    setDistances([]);
+  }, []);
 
-  const handleSetLeft = useCallback(
-    (e) => {
-      setLeft(umaps.find((d) => d.id == e.target.value));
-      setDirection('left');
-    },
-    [umaps, setLeft, setDirection]
-  );
-  const handleSetRight = useCallback(
-    (e) => {
-      setRight(umaps.find((d) => d.id == e.target.value));
-      setDirection('right');
-    },
-    [umaps, setRight, setDirection]
-  );
+  // Annotations
+  const activePoints = direction === 'left' ? leftPoints : rightPoints;
+  const searchAnnotations = searchIndices.map((i) => activePoints[i]).filter(Boolean);
+  const hoverAnnotations =
+    hoveredIndex != null && activePoints[hoveredIndex] ? [activePoints[hoveredIndex]] : [];
+
+  const pointSizeRange = [5, 1];
+  const opacityRange = [1, 0.2];
 
   if (!dataset) return <div>Loading...</div>;
 
   return (
     <div className={styles['container']}>
-      <div className={styles['controls']}>
-        <div className={styles['summary']}>
-          <div className={styles['scope-card']}>
-            {/* <h3> */}
-            {isMobileDevice() ? <i>Use a desktop browser for full interactivity!</i> : null}
-            <div className={styles['heading']}>
-              <b>{datasetId}</b>
-              <span>{dataset?.length} rows</span>
-              {readonly ? null : <Link to={`/datasets/${dataset?.id}/setup`}>Configure</Link>}
-            </div>
-            {/* </h3> */}
-          </div>
-          <div className={styles['umap-selectors']}>
-            <select name="left" value={left?.id} onChange={handleSetLeft}>
-              {umaps.map((um, index) => {
-                let emb = embeddings.find((d) => um.embedding_id == d.id);
-                return (
-                  <option key={index} value={um.id}>
-                    {um.embedding_id} - {um.id} - {emb?.model_id || um.embedding_id} [
-                    {emb?.dimensions}] {um.align_id}
-                  </option>
-                );
-              })}
-            </select>
-            <div>
-              <label>
-                👈
-                <input
-                  type="radio"
-                  value="left"
-                  name="direction"
-                  checked={direction === 'left'}
-                  onChange={() => setDirection('left')}
-                />
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="right"
-                  name="direction"
-                  checked={direction === 'right'}
-                  onChange={() => setDirection('right')}
-                />{' '}
-                👉
-              </label>
-            </div>
-            <select name="right" onChange={handleSetRight} value={right?.id}>
-              {umaps.map((um, index) => {
-                let emb = embeddings.find((d) => um.embedding_id == d.id);
-                return (
-                  <option key={index} value={um.id}>
-                    {um.embedding_id} - {um.id} - {emb?.model_id || um.embedding_id} [
-                    {emb?.dimensions}] {um.align_id}
-                  </option>
-                );
-              })}
-            </select>
-            <div>
-              <label>
-                Displacement Threshold: {threshold.toFixed(2)}
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={threshold}
-                  onChange={(e) => setThreshold(parseFloat(e.target.value))}
-                  style={{ width: '100%' }}
-                />
-                <span>{aboveThresholdPoints.length} points above threshold</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div ref={containerRef} className={styles['umap-container']}>
-        <div className={styles['scatters']} style={{ width: scopeWidth, height: scopeHeight }}>
-          {points.length ? (
-            <>
-              <div className={styles['scatter']}>
-                {!isIOS() ? (
-                  <Scatter
-                    points={drawPoints}
-                    duration={2000}
-                    pointScale={1}
-                    pointSizeRange={pointSizeRange}
-                    opacityRange={opacityRange}
-                    width={scopeWidth}
-                    height={scopeHeight}
-                    colorScaleType="continuous"
-                    colorInterpolator={interpolateReds}
-                    opacityBy="valueA"
-                    onScatter={setScatter}
-                    onView={handleView}
-                    onSelect={handleSelected}
-                    onHover={handleHover}
-                  />
-                ) : (
-                  <AnnotationPlot
-                    points={points}
-                    fill="gray"
-                    size="8"
-                    xDomain={xDomain}
-                    yDomain={yDomain}
-                    width={scopeWidth}
-                    height={scopeHeight}
-                  />
-                )}
-              </div>
-              <AnnotationPlot
-                points={searchAnnotations}
-                stroke="black"
-                fill="steelblue"
-                size="8"
-                xDomain={xDomain}
-                yDomain={yDomain}
-                width={scopeWidth}
-                height={scopeHeight}
-              />
-              <AnnotationPlot
-                points={hoverAnnotations}
-                stroke="black"
-                fill="orange"
-                size="16"
-                xDomain={xDomain}
-                yDomain={yDomain}
-                width={scopeWidth}
-                height={scopeHeight}
-              />
-            </>
-          ) : null}
-        </div>
-        {/* {!isMobileDevice() ? <div className={styles["hovered-point"]}>
-          {hovered && Object.keys(hovered).map((key) => (
-            <span key={key}>
-              <span className={styles["key"]}>{key}:</span>
-              <span className={styles["value"]}>{hovered[key]}</span>
-            </span>
-          ))}
-          {hoveredCluster ? <span><span className={styles["key"]}>Cluster {hoveredCluster.index}:</span><span className={styles["value"]}>{hoveredCluster.label}</span></span> : null}
-        </div> : null } */}
-      </div>
+      <CompareControls
+        dataset={dataset}
+        datasetId={datasetId}
+        umaps={umaps}
+        embeddings={embeddings}
+        left={left}
+        right={right}
+        onSetLeft={handleSetLeft}
+        onSetRight={handleSetRight}
+        threshold={threshold}
+        onThresholdChange={setThreshold}
+        aboveThresholdCount={aboveThresholdCount}
+        metric={metric}
+        onMetricChange={setMetric}
+        metricK={metricK}
+        onMetricKChange={setMetricK}
+        displacementLoading={displacementLoading}
+      />
 
-      <div className={styles['data']}>
-        <div className={styles['tab-header']}>
-          {tabs.map((tab) => (
+      <div className={styles['visualization']}>
+        <div className={styles['view-tabs']}>
+          {viewModes.map((mode) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={tab.id === activeTab ? styles['tab-active'] : styles['tab-inactive']}
+              key={mode.id}
+              onClick={() => setViewMode(mode.id)}
+              className={
+                mode.id === viewMode ? styles['view-tab-active'] : styles['view-tab-inactive']
+              }
             >
-              {tab.name}
+              {mode.name}
             </button>
           ))}
         </div>
 
-        {activeTab === 0 ? (
-          <div className={styles['tab-content']}>
-            <span>
-              Selected: {selectedIndices?.length}
-              {selectedIndices?.length > 0 ? (
-                <button
-                  className={styles['deselect']}
-                  onClick={() => {
-                    setSelectedIndices([]);
-                    scatter?.select([]);
-                    scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
-                  }}
-                >
-                  X
-                </button>
-              ) : null}
-            </span>
-            {selectedIndices?.length > 0 ? (
-              <IndexDataTable
-                indices={selectedIndices}
-                // clusterIndices={clusterIndices}
-                // clusterLabels={clusterLabels}
-                // tagset={tagset}
-                dataset={dataset}
-                maxRows={150}
-                // onTagset={(data) => setTagset(data)}
-                onHover={handleHover}
-                onClick={handleClicked}
-              />
-            ) : null}
-          </div>
-        ) : null}
+        <div ref={containerRef} className={styles['view-container']}>
+          {viewMode === 'transition' && (
+            <TransitionView
+              leftPoints={leftPoints}
+              rightPoints={rightPoints}
+              drawPoints={drawPoints}
+              width={scopeWidth}
+              height={scopeHeight}
+              direction={direction}
+              onDirectionChange={setDirection}
+              onScatter={setScatter}
+              onView={handleView}
+              onSelect={handleSelected}
+              onHover={handleHover}
+              xDomain={xDomain}
+              yDomain={yDomain}
+              searchAnnotations={searchAnnotations}
+              hoverAnnotations={hoverAnnotations}
+              pointSizeRange={pointSizeRange}
+              opacityRange={opacityRange}
+            />
+          )}
 
-        {activeTab === 1 ? (
-          <div className={styles['tab-content']}>
-            <div className={styles['search-box']}>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  searchQuery(e.target.elements.searchBox.value);
-                  setActiveTab(1);
-                }}
-              >
-                <input type="text" id="searchBox" />
-                <button type="submit">Similarity Search</button>
-                <br />
-                <label htmlFor="embeddingModel"></label>
-                <select
-                  id="embeddingModel"
-                  onChange={(e) => handleModelSelect(e.target.value)}
-                  defaultValue={searchModel?.id}
-                >
-                  {embeddings.map((emb, index) => (
-                    <option key={index} value={emb.id}>
-                      {emb.id} - {emb.model_id} - {emb.dimensions}
-                    </option>
-                  ))}
-                </select>
-              </form>
-            </div>
-            <span>
-              {searchIndices.length ? (
-                <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span>
-              ) : null}
-              {searchIndices.length > 0 ? (
-                <button
-                  className={styles['deselect']}
-                  onClick={() => {
-                    setSearchIndices([]);
-                    document.getElementById('searchBox').value = '';
-                  }}
-                >
-                  X
-                </button>
-              ) : null}
-            </span>
-            {searchIndices.length > 0 ? (
-              <IndexDataTable
-                indices={searchIndices}
-                distances={distances}
-                // clusterIndices={clusterIndices}
-                // clusterLabels={clusterLabels}
-                // tagset={tagset}
-                dataset={dataset}
-                // onTagset={(data) => setTagset(data)}
-                onHover={handleHover}
-                onClick={handleClicked}
-              />
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* </div> */}
+          {viewMode === 'side-by-side' && (
+            <SideBySideView
+              leftPoints={leftPoints}
+              rightPoints={rightPoints}
+              drawPoints={drawPoints}
+              width={scopeWidth}
+              height={scopeHeight}
+              onScatter={setScatter}
+              onSelect={handleSelected}
+              onHover={handleHover}
+              searchAnnotations={searchAnnotations}
+              hoverAnnotations={hoverAnnotations}
+              pointSizeRange={pointSizeRange}
+              opacityRange={opacityRange}
+              hoveredIndex={hoveredIndex}
+            />
+          )}
+        </div>
       </div>
+
+      <CompareDataPanel
+        dataset={dataset}
+        datasetId={datasetId}
+        embeddings={embeddings}
+        selectedIndices={selectedIndices}
+        onClearSelection={handleClearSelection}
+        searchIndices={searchIndices}
+        distances={distances}
+        onClearSearch={handleClearSearch}
+        onSearch={handleSearch}
+        searchModel={searchModel}
+        onSearchModelChange={handleSearchModelChange}
+        onHover={handleHover}
+        onClick={handleClicked}
+      />
     </div>
   );
 }
