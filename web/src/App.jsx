@@ -3,6 +3,7 @@ import Home from './components/Home';
 import Settings from './pages/Settings';
 import Explore from './pages/FullScreenExplore';
 import Compare from './pages/Compare';
+import CompareClusters from './pages/CompareClusters';
 import Setup from './pages/Setup';
 import Jobs from './pages/Jobs';
 import Export from './pages/Export';
@@ -39,6 +40,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/datasets/:dataset/explore/:scope" element={<Explore />} />
           <Route path="/datasets/:dataset/compare/" element={<Compare />} />
+          <Route path="/datasets/:dataset/compare-clusters/" element={<CompareClusters />} />
           <Route path="/datasets/:dataset/export" element={<Export />} />
           <Route path="/datasets/:dataset/export/:scope" element={<Export />} />
           <Route path="/datasets/:dataset/plot/:scope" element={<DataMapPlot />} />

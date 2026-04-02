@@ -1,0 +1,276 @@
+.container {
+  display: grid;
+  grid-template-rows: auto 1fr 1fr;
+  gap: 6px;
+  height: 100%;
+  overflow: hidden;
+  padding: 6px;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid lightgray;
+  border-radius: 5px;
+}
+
+.controls-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1em;
+}
+
+.selectors {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.selector label {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #666;
+}
+
+.selector select {
+  width: 100%;
+  padding: 4px 6px;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 16px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #f9f9f9;
+}
+
+.metric-label {
+  font-size: 0.75em;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #333;
+}
+
+.diff-toggle {
+  font-size: 0.85em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.loading {
+  font-style: italic;
+  color: #999;
+  font-size: 0.85em;
+}
+
+/* Scatter area */
+.scatter-area {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scatter-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scatter-label {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+  padding: 2px 0;
+}
+
+.scatter-container {
+  position: relative;
+  border: 1px solid gray;
+  border-radius: 5px;
+  padding: 6px;
+}
+
+.scatter canvas {
+  background-color: #111;
+}
+
+/* Bottom panel */
+.bottom-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.tab-header {
+  height: 32px;
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  border-bottom: none;
+}
+
+.tab-header button {
+  height: 32px;
+  display: inline-block;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 6px 24px;
+  cursor: pointer;
+}
+
+.tab-header button:hover {
+  background-color: #ddd;
+}
+
+.tab-header button:focus,
+.tab-header button:focus-visible {
+  outline: none;
+}
+
+.tab-active {
+  background-color: white;
+  border-top: 2px solid seagreen;
+  font-weight: bold;
+}
+
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid lightgray;
+  padding: 12px;
+  min-height: 0;
+}
+
+.overlap-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.overlap-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  color: #888;
+}
+
+.points-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.points-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.clear-button {
+  padding: 2px 10px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 0.85em;
+}
+
+.clear-button:hover {
+  background: #e0e0e0;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .controls {
+    border-color: #555;
+  }
+
+  .selector label,
+  .scatter-label {
+    color: #aaa;
+  }
+
+  .metric-card {
+    background: #333;
+    border-color: #555;
+  }
+
+  .metric-value {
+    color: #ddd;
+  }
+
+  .tab-header {
+    background-color: #333;
+  }
+
+  .tab-header button:hover {
+    background-color: #444;
+  }
+
+  .tab-active {
+    background-color: #444;
+  }
+
+  .tab-content {
+    border-color: #555;
+  }
+
+  .scatter-container {
+    border-color: #555;
+  }
+}
+
+/* Responsive */
+@media screen and (max-width: 1024px) {
+  .container {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .selectors {
+    flex-direction: column;
+  }
+
+  .scatter-area {
+    flex-direction: column;
+  }
+}
