@@ -1,11 +1,13 @@
 import json
-from .providers.transformers import TransformersEmbedProvider, TransformersChatProvider
-from .providers.openai import OpenAIEmbedProvider, OpenAIChatProvider
-from .providers.mistralai import MistralAIEmbedProvider, MistralAIChatProvider
+
 from .providers.cohereai import CohereAIEmbedProvider
-from .providers.togetherai import TogetherAIEmbedProvider
-from .providers.voyageai import VoyageAIEmbedProvider
+from .providers.late_interaction import ColBERTEmbedProvider, ColPaliEmbedProvider
+from .providers.mistralai import MistralAIChatProvider, MistralAIEmbedProvider
 from .providers.nltk import NLTKChatProvider
+from .providers.openai import OpenAIChatProvider, OpenAIEmbedProvider
+from .providers.togetherai import TogetherAIEmbedProvider
+from .providers.transformers import TransformersChatProvider, TransformersEmbedProvider
+from .providers.voyageai import VoyageAIEmbedProvider
 
 # Universal model ID scheme:
 #   <provider>-<model-name>  where "/" in the model name is replaced by "___"
@@ -36,7 +38,7 @@ def get_embedding_model_list():
     """Return the list of available embedding models."""
     from importlib.resources import files
     embedding_path = files('latentscope.models').joinpath('embedding_models.json')
-    with open(embedding_path, "r") as f:
+    with open(embedding_path) as f:
         return json.load(f)
 
 
@@ -49,18 +51,32 @@ def get_embedding_model_dict(model_id):
     return model
 
 
+def _parse_colbert_model_id(model_id):
+    """Return the model name from a colbert model_id, or None if not colbert."""
+    if model_id.startswith("colbert-"):
+        # Strip the "colbert-" prefix and restore "/" from "___"
+        return model_id[len("colbert-"):].replace("___", "/")
+    return None
+
+
 def get_embedding_model(model_id):
     """Return a ModelProvider instance for the given embedding model id."""
+    # Check for ColBERT/late interaction models first
+    colbert_name = _parse_colbert_model_id(model_id)
+    if colbert_name:
+        return ColBERTEmbedProvider(colbert_name, {"late_interaction": True})
+
     hf_name = _parse_hf_model_id(model_id)
     if hf_name:
         model = {"provider": _HF_PROVIDER, "name": hf_name, "params": {}}
     elif model_id.startswith("custom_embedding-"):
         import os
+
         from latentscope.util import get_data_dir
         data_dir = get_data_dir()
         custom_models_path = os.path.join(data_dir, "custom_embedding_models.json")
         if os.path.exists(custom_models_path):
-            with open(custom_models_path, "r") as f:
+            with open(custom_models_path) as f:
                 custom_models = json.load(f)
             model = next((m for m in custom_models if m["id"] == model_id), None)
             if model is None:
@@ -92,6 +108,10 @@ def get_embedding_model(model_id):
         return VoyageAIEmbedProvider(model['name'], model['params'])
     if provider == "custom_embedding":
         return OpenAIEmbedProvider(model['name'], model['params'], base_url=model['url'])
+    if provider == "colbert":
+        return ColBERTEmbedProvider(model['name'], model['params'])
+    if provider == "colpali":
+        return ColPaliEmbedProvider(model['name'], model['params'])
     raise ValueError(f"Unknown embedding provider '{provider}' for model '{model_id}'")
 
 
@@ -99,7 +119,7 @@ def get_chat_model_list():
     """Return the list of available chat models."""
     from importlib.resources import files
     chat_path = files('latentscope.models').joinpath('chat_models.json')
-    with open(chat_path, "r") as f:
+    with open(chat_path) as f:
         return json.load(f)
 
 
@@ -119,11 +139,12 @@ def get_chat_model(model_id):
         model = {"provider": _HF_PROVIDER, "name": hf_name, "params": {}}
     elif model_id.startswith("custom-"):
         import os
+
         from latentscope.util import get_data_dir
         data_dir = get_data_dir()
         custom_models_path = os.path.join(data_dir, "custom_models.json")
         if os.path.exists(custom_models_path):
-            with open(custom_models_path, "r") as f:
+            with open(custom_models_path) as f:
                 custom_models = json.load(f)
             model = next((m for m in custom_models if m["id"] == model_id), None)
             if model is None:

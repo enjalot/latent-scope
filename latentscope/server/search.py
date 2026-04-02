@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 from flask import Blueprint, current_app, jsonify, request
 
 from latentscope.models import get_embedding_model
@@ -22,9 +23,7 @@ DATAFRAMES = {}
 
 @search_bp.route('/nn', methods=['GET'])
 def nn():
-    import h5py
     import numpy as np
-    from sklearn.neighbors import NearestNeighbors
 
     DATA_DIR = _data_dir()
     dataset = request.args.get('dataset')
@@ -33,29 +32,62 @@ def nn():
     dimensions = request.args.get('dimensions')
     dimensions = int(dimensions) if dimensions else None
     query = request.args.get('query')
+    use_late_interaction = request.args.get('late_interaction', 'false').lower() == 'true'
 
-    if embedding_id not in EMBEDDINGS:
-        with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json"), 'r') as f:
+    cache_key = dataset + "-" + embedding_id
+    if cache_key not in EMBEDDINGS:
+        with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json")) as f:
             metadata = json.load(f)
         model_id = metadata.get('model_id')
         model = get_embedding_model(model_id)
         model.load_model()
-        EMBEDDINGS[dataset + "-" + embedding_id] = model
+        EMBEDDINGS[cache_key] = model
     else:
-        model = EMBEDDINGS[dataset + "-" + embedding_id]
+        model = EMBEDDINGS[cache_key]
 
-    # If lancedb is available, use it for search
+    # Check if late interaction search is requested and supported
+    is_late_interaction = getattr(model, 'late_interaction', False)
+    embedding_meta_path = os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json")
+    with open(embedding_meta_path) as f:
+        emb_meta = json.load(f)
+    has_token_vecs = emb_meta.get('late_interaction', False)
+
+    if use_late_interaction and is_late_interaction and has_token_vecs:
+        return nn_late_interaction(DATA_DIR, dataset, embedding_id, model, query, dimensions)
+
+    # If lancedb is available, use it for search (scope-level table)
     if scope_id is not None:
         lance_path = os.path.join(DATA_DIR, dataset, "lancedb", scope_id + ".lance")
         if os.path.exists(lance_path):
             return nn_lance(DATA_DIR, dataset, scope_id, model, query, dimensions)
 
-    # Otherwise use sklearn NearestNeighbors
+    # Try embedding-level LanceDB table first
+    from latentscope.util.embedding_store import get_embedding_count, search_nn
+    try:
+        count = get_embedding_count(DATA_DIR, dataset, embedding_id)
+        if count > 0:
+            embedding = np.array(model.embed([query], dimensions=dimensions))
+            query_vec = embedding[0] if embedding.ndim > 1 else embedding
+            indices, distances = search_nn(
+                DATA_DIR, dataset, embedding_id, query_vec, limit=150
+            )
+            return jsonify(
+                indices=indices,
+                distances=distances,
+                search_embedding=embedding.tolist(),
+            )
+    except Exception:
+        pass  # Fall through to sklearn
+
+    # Fallback: sklearn NearestNeighbors with HDF5 or LanceDB-loaded embeddings
+    import h5py
+    from sklearn.neighbors import NearestNeighbors
+
+    from latentscope.util.embedding_store import load_embeddings as lance_load
+
     num = 150
     if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
-        embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
-        with h5py.File(embedding_path, 'r') as f:
-            embeddings = np.array(f["embeddings"])
+        embeddings = lance_load(DATA_DIR, dataset, embedding_id)
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
         if dataset not in DATASETS:
@@ -84,10 +116,37 @@ def nn_lance(data_dir, dataset, scope_id, model, query, dimensions):
     return jsonify(indices=indices, distances=distances, search_embedding=embedding)
 
 
+def nn_late_interaction(data_dir, dataset, embedding_id, model, query, dimensions):
+    """Late interaction (MaxSim) search using per-token embeddings."""
+    import numpy as np
+
+    from latentscope.util.embedding_store import search_late_interaction
+
+    # Get per-token query embeddings
+    _, query_token_vectors = model.embed_multi([query], dimensions=dimensions)
+    query_tokens = query_token_vectors[0]  # (Q, D)
+
+    # Also get the mean embedding for the response
+    mean_embedding = query_tokens.mean(axis=0)
+    mean_embedding = mean_embedding / (np.linalg.norm(mean_embedding) + 1e-10)
+
+    indices, scores = search_late_interaction(
+        data_dir, dataset, embedding_id,
+        query_tokens, prefilter_limit=200, final_limit=100,
+    )
+
+    return jsonify(
+        indices=indices,
+        distances=scores,
+        search_embedding=mean_embedding.tolist(),
+        search_type="late_interaction",
+    )
+
+
 @search_bp.route('/feature_summary', methods=['POST'])
 def feature_summary():
-    dataset = request.args.get('dataset')
-    feature_id = request.args.get('feature_id')
+    request.args.get('dataset')
+    request.args.get('feature_id')
 
 
 @search_bp.route('/feature', methods=['GET'])
@@ -134,9 +193,10 @@ def feature():
 
 @search_bp.route('/features', methods=['GET'])
 def features():
-    import h5py
     import numpy as np
     from sklearn.neighbors import NearestNeighbors
+
+    from latentscope.util.embedding_store import load_embeddings as lance_load
 
     DATA_DIR = _data_dir()
     dataset = request.args.get('dataset')
@@ -146,7 +206,7 @@ def features():
 
     num = 150
     if embedding_id not in EMBEDDINGS:
-        with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json"), 'r') as f:
+        with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json")) as f:
             metadata = json.load(f)
         model_id = metadata.get('model_id')
         model = get_embedding_model(model_id)
@@ -156,9 +216,7 @@ def features():
         model = EMBEDDINGS[embedding_id]
 
     if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
-        embedding_path = os.path.join(DATA_DIR, dataset, "embeddings", f"{embedding_id}.h5")
-        with h5py.File(embedding_path, 'r') as f:
-            embeddings = np.array(f["embeddings"])
+        embeddings = lance_load(DATA_DIR, dataset, embedding_id)
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
         if dataset not in DATASETS:
