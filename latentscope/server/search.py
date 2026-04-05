@@ -231,3 +231,80 @@ def compare():
         result = np.zeros_like(result)
 
     return jsonify(result.tolist())
+
+
+@search_bp.route('/compare-clusters', methods=['GET'])
+def compare_clusters():
+    import numpy as np
+    import pandas as pd
+
+    DATA_DIR = _data_dir()
+    dataset = request.args.get('dataset')
+    cluster_left = request.args.get('cluster_left')
+    cluster_right = request.args.get('cluster_right')
+
+    if not all([dataset, cluster_left, cluster_right]):
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    cluster_dir = os.path.join(DATA_DIR, dataset, "clusters")
+
+    # Load cluster metadata to verify same UMAP
+    with open(os.path.join(cluster_dir, f"{cluster_left}.json"), 'r') as f:
+        meta_left = json.load(f)
+    with open(os.path.join(cluster_dir, f"{cluster_right}.json"), 'r') as f:
+        meta_right = json.load(f)
+
+    if meta_left["umap_id"] != meta_right["umap_id"]:
+        return jsonify({"error": "Clusters must be on the same UMAP"}), 400
+
+    # Load cluster assignments
+    left_df = pd.read_parquet(os.path.join(cluster_dir, f"{cluster_left}.parquet"))
+    right_df = pd.read_parquet(os.path.join(cluster_dir, f"{cluster_right}.parquet"))
+    labels_left = left_df['cluster'].to_numpy()
+    labels_right = right_df['cluster'].to_numpy()
+
+    if len(labels_left) != len(labels_right):
+        return jsonify({"error": "Cluster assignments have different lengths"}), 400
+
+    from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
+
+    ari = float(adjusted_rand_score(labels_left, labels_right))
+    nmi = float(normalized_mutual_info_score(labels_left, labels_right))
+
+    # Build overlap matrix
+    left_clusters = sorted(np.unique(labels_left).tolist())
+    right_clusters = sorted(np.unique(labels_right).tolist())
+    left_idx_map = {c: i for i, c in enumerate(left_clusters)}
+    right_idx_map = {c: i for i, c in enumerate(right_clusters)}
+
+    matrix = np.zeros((len(left_clusters), len(right_clusters)), dtype=int)
+    for i in range(len(labels_left)):
+        li = left_idx_map[labels_left[i]]
+        ri = right_idx_map[labels_right[i]]
+        matrix[li][ri] += 1
+
+    # Equivalence map: for each left cluster, the right cluster with max overlap
+    equivalence_map = {}
+    for i, lc in enumerate(left_clusters):
+        best_right_idx = int(np.argmax(matrix[i]))
+        equivalence_map[str(lc)] = right_clusters[best_right_idx]
+
+    # Changed indices: points whose right cluster != equivalent of their left cluster
+    changed_indices = []
+    for i in range(len(labels_left)):
+        expected_right = equivalence_map[str(labels_left[i])]
+        if labels_right[i] != expected_right:
+            changed_indices.append(i)
+
+    return jsonify({
+        "ari": round(ari, 4),
+        "nmi": round(nmi, 4),
+        "overlap_matrix": matrix.tolist(),
+        "left_clusters": left_clusters,
+        "right_clusters": right_clusters,
+        "changed_indices": changed_indices,
+        "n_changed": len(changed_indices),
+        "n_total": len(labels_left),
+        "equivalence_map": equivalence_map,
+        "umap_id": meta_left["umap_id"],
+    })

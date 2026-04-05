@@ -39,12 +39,60 @@ def main():
     parser.add_argument('min_samples', type=int, help='Minimum samples for HDBSCAN')
     parser.add_argument('cluster_selection_epsilon', type=float, help='Cluster selection Epsilon', default=0)
     parser.add_argument('column', type=str, nargs='?', help='Use column as cluster labels', default=None)
-    
+    parser.add_argument('--method', type=str, default='evoc', choices=['evoc', 'hdbscan'],
+                        help='Clustering method (default: evoc)')
+    parser.add_argument('--n_neighbors', type=int, default=15,
+                        help='Number of neighbors for EVoC kNN graph (default: 15)')
+    parser.add_argument('--noise_level', type=float, default=0.5,
+                        help='EVoC noise level 0.0-1.0 (default: 0.5)')
+
     args = parser.parse_args()
-    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples, args.cluster_selection_epsilon, args.column)
+    clusterer(args.dataset_id, args.umap_id, args.samples, args.min_samples,
+              args.cluster_selection_epsilon, args.column,
+              method=args.method, n_neighbors=args.n_neighbors, noise_level=args.noise_level)
 
 
-def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon, column):
+def _load_embeddings(dataset_id, embedding_id):
+    """Load raw embedding vectors for a dataset."""
+    import h5py
+    import numpy as np
+    DATA_DIR = get_data_dir()
+    emb_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
+    with h5py.File(emb_path, 'r') as f:
+        dataset = f["embeddings"]
+        embeddings = np.array(dataset)
+        return embeddings
+
+
+def _run_evoc(embeddings, samples, n_neighbors=15, noise_level=0.5):
+    """Run EVoC clustering on raw embedding vectors."""
+    import evoc
+    print(f"Running EVoC clustering with base_min_cluster_size={samples}, n_neighbors={n_neighbors}, noise_level={noise_level}")
+    clusterer = evoc.EVoC(
+        base_min_cluster_size=samples,
+        n_neighbors=n_neighbors,
+        noise_level=noise_level,
+    )
+    labels = clusterer.fit_predict(embeddings)
+    return labels
+
+
+def _run_hdbscan(umap_embeddings, samples, min_samples, cluster_selection_epsilon):
+    """Run HDBSCAN clustering on UMAP projections."""
+    import hdbscan
+    print(f"Running HDBSCAN clustering with min_cluster_size={samples}, min_samples={min_samples}, epsilon={cluster_selection_epsilon}")
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=samples,
+        min_samples=min_samples,
+        metric='euclidean',
+        cluster_selection_epsilon=cluster_selection_epsilon,
+    )
+    clusterer.fit(umap_embeddings)
+    return clusterer.labels_
+
+
+def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon, column,
+              method='evoc', n_neighbors=15, noise_level=0.5):
     DATA_DIR = get_data_dir()
     cluster_dir = os.path.join(DATA_DIR, dataset_id, "clusters")
     # Check if clusters directory exists, if not, create it
@@ -64,7 +112,6 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     cluster_id = f"cluster-{next_cluster_number:03d}"
     print("RUNNING:", cluster_id)
 
-    import hdbscan
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -79,11 +126,18 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
         input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, f"input.parquet"))
         # use the column as the cluster labels
         cluster_labels = input_df[column].to_numpy()
+    elif method == 'evoc':
+        # EVoC clusters on raw embeddings, not UMAP projections
+        # Look up embedding_id from the UMAP metadata
+        with open(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.json"), 'r') as f:
+            umap_meta = json.load(f)
+        embedding_id = umap_meta['embedding_id']
+        print(f"Loading embeddings from {embedding_id}")
+        embeddings = _load_embeddings(dataset_id, embedding_id)
+        cluster_labels = _run_evoc(embeddings, samples, n_neighbors=n_neighbors, noise_level=noise_level)
     else:
-        clusterer = hdbscan.HDBSCAN(min_cluster_size=samples, min_samples=min_samples, metric='euclidean', cluster_selection_epsilon=cluster_selection_epsilon)
-        clusterer.fit(umap_embeddings)
-        # Get the cluster labels
-        cluster_labels = clusterer.labels_
+        cluster_labels = _run_hdbscan(umap_embeddings, samples, min_samples, cluster_selection_epsilon)
+
     # copy cluster labels to another array
     raw_cluster_labels = cluster_labels.copy()
 
@@ -92,8 +146,6 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     non_noise_labels = unique_labels[unique_labels != -1]
     centroids = [umap_embeddings[cluster_labels == label].mean(axis=0) for label in non_noise_labels]
 
-    # TODO: look into soft clustering
-    # https://hdbscan.readthedocs.io/en/latest/soft_clustering.html
     # Assign noise points to the closest cluster centroid
     noise_points = umap_embeddings[cluster_labels == -1]
     if(non_noise_labels.shape[0] > 0):
@@ -104,7 +156,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
       new_assignments = [non_noise_labels[index] for index in closest_centroid_indices]
       cluster_labels[noise_indices] = new_assignments
 
-    
+
     print("n_clusters:", len(non_noise_labels))
     print("noise points assigned to clusters:", len(noise_points))
 
@@ -125,7 +177,6 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     for label in non_noise_labels:
         indices = np.where(cluster_labels == label)[0]
         points = umap_embeddings[indices]
-        # points = umap_embeddings[cluster_labels == label]
         hull = ConvexHull(points)
         hull_list = [indices[s] for s in hull.vertices.tolist()]
         hulls.append(hull_list)
@@ -136,17 +187,23 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
     plt.savefig(os.path.join(cluster_dir, f"{cluster_id}.png"))
 
-    with open(os.path.join(cluster_dir,f"{cluster_id}.json"), 'w') as f:
-        json.dump({
-            "id": cluster_id,
-            "umap_id": umap_id, 
-            "samples": samples, 
-            "min_samples": min_samples,
-            "cluster_selection_epsilon": cluster_selection_epsilon,
-            "n_clusters": len(non_noise_labels),
-            "n_noise": len(noise_points)
-        }, f, indent=2)
-    f.close()
+    # Build metadata - include method-specific params
+    meta = {
+        "id": cluster_id,
+        "umap_id": umap_id,
+        "method": method,
+        "samples": samples,
+        "min_samples": min_samples,
+        "cluster_selection_epsilon": cluster_selection_epsilon,
+        "n_clusters": len(non_noise_labels),
+        "n_noise": len(noise_points),
+    }
+    if method == 'evoc':
+        meta["n_neighbors"] = n_neighbors
+        meta["noise_level"] = noise_level
+
+    with open(os.path.join(cluster_dir, f"{cluster_id}.json"), 'w') as f:
+        json.dump(meta, f, indent=2)
 
     # create the data structure for labeling clusters
     # get the indices of each item in a cluster

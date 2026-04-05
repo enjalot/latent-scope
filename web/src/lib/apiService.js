@@ -58,6 +58,16 @@ export const apiService = {
         return array;
       });
   },
+  fetchClusterQuality: async (datasetId, clusterId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/quality`).then(
+      (response) => response.json()
+    );
+  },
+  compareClusters: async (datasetId, clusterLeft, clusterRight) => {
+    return fetch(
+      `${apiUrl}/search/compare-clusters?dataset=${datasetId}&cluster_left=${clusterLeft}&cluster_right=${clusterRight}`
+    ).then((response) => response.json());
+  },
   getEmbeddingModels: async () => {
     return fetch(`${apiUrl}/models/embedding_models`).then((response) => response.json());
   },

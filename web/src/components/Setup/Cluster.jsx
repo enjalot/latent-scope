@@ -1,5 +1,6 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
 import { Button } from 'react-element-forge';
 
@@ -36,6 +37,8 @@ function Cluster() {
   const [embedding, setEmbedding] = useState(null);
   const [umap, setUmap] = useState(null);
   const [cluster, setCluster] = useState(null);
+  const [method, setMethod] = useState('evoc');
+  const [qualityMetrics, setQualityMetrics] = useState({});
 
   useEffect(() => {
     setPreviewLabel(cluster?.id);
@@ -70,6 +73,19 @@ function Cluster() {
     }
   }, [dataset]);
 
+  // Fetch quality metrics for clusters on current UMAP
+  useEffect(() => {
+    if (!dataset || !clusters?.length || !umap) return;
+    const umapClusters = clusters.filter((c) => c.umap_id === umap.id);
+    umapClusters.forEach((cl) => {
+      if (!qualityMetrics[cl.id]) {
+        apiService.fetchClusterQuality(dataset.id, cl.id).then((metrics) => {
+          setQualityMetrics((prev) => ({ ...prev, [cl.id]: metrics }));
+        });
+      }
+    });
+  }, [dataset, clusters, umap]);
+
   // Update clusters after job completion
   useEffect(() => {
     if (clusterJob?.status == 'completed') {
@@ -94,14 +110,20 @@ function Cluster() {
       e.preventDefault();
       const form = e.target;
       const data = new FormData(form);
-      startClusterJob({
+      const params = {
         umap_id: umap.id,
         samples: data.get('samples'),
         min_samples: data.get('min_samples'),
         cluster_selection_epsilon: data.get('cluster_selection_epsilon'),
-      });
+        method,
+      };
+      if (method === 'evoc') {
+        params.n_neighbors = data.get('n_neighbors');
+        params.noise_level = data.get('noise_level');
+      }
+      startClusterJob(params);
     },
-    [startClusterJob, umap]
+    [startClusterJob, umap, method]
   );
 
   const handleNextStep = useCallback(() => {
@@ -118,10 +140,26 @@ function Cluster() {
       <div className={styles['cluster-setup']}>
         <div className={styles['cluster-form']}>
           <div>
-            Cluster the 2D points using{' '}
-            <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a>.
+            Cluster using{' '}
+            {method === 'evoc' ? (
+              <a href="https://github.com/TutteInstitute/evoc">EVoC</a>
+            ) : (
+              <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a>
+            )}
+            .
           </div>
           <form onSubmit={handleNewCluster}>
+            <label>
+              <span className={styles['cluster-form-label']}>Method:</span>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                disabled={!!clusterJob || !umap}
+              >
+                <option value="evoc">EVoC</option>
+                <option value="hdbscan">HDBSCAN</option>
+              </select>
+            </label>
             <label>
               <span className={styles['cluster-form-label']}>Min Cluster Size:</span>
               <input
@@ -134,48 +172,89 @@ function Cluster() {
                 🤔
               </span>
               <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
-                This parameter determines the minimum number of data points you need to make a
-                cluster. Lower values mean more clusters.
+                The minimum number of data points needed to form a cluster. Lower values mean more
+                clusters.
               </Tooltip>
             </label>
-            <label>
-              <span className={styles['cluster-form-label']}>Min Samples:</span>
-              <input
-                type="number"
-                name="min_samples"
-                defaultValue={dataset.length < 1000 ? 2 : 5}
-                disabled={!!clusterJob || !umap}
-              />
-              <span className="tooltip" data-tooltip-id="min_samples">
-                🤔
-              </span>
-              <Tooltip id="min_samples" place="top" effect="solid" className="tooltip-area">
-                The number of samples in a neighborhood for a point to be considered a core point.
-                Lower values mean more clusters.
-              </Tooltip>
-            </label>
-            <label>
-              <span className={styles['cluster-form-label']}>Epsilon:</span>
-              <input
-                type="number"
-                name="cluster_selection_epsilon"
-                defaultValue={dataset.length < 1000 ? 0.05 : 0.005}
-                step="0.0001"
-                disabled={!!clusterJob || !umap}
-              />
-              <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">
-                🤔
-              </span>
-              <Tooltip
-                id="cluster_selection_epsilon"
-                place="top"
-                effect="solid"
-                className="tooltip-area"
-              >
-                The cluster selection epsilon parameter sets a distance threshold that allows you to
-                balance the density of clusters. Set to 0 to use pure HDBSCAN.
-              </Tooltip>
-            </label>
+            {method === 'evoc' ? (
+              <>
+                <label>
+                  <span className={styles['cluster-form-label']}>Neighbors:</span>
+                  <input
+                    type="number"
+                    name="n_neighbors"
+                    defaultValue={15}
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="n_neighbors">
+                    🤔
+                  </span>
+                  <Tooltip id="n_neighbors" place="top" effect="solid" className="tooltip-area">
+                    Number of neighbors for the kNN graph. Higher values capture broader structure.
+                  </Tooltip>
+                </label>
+                <label>
+                  <span className={styles['cluster-form-label']}>Noise Level:</span>
+                  <input
+                    type="number"
+                    name="noise_level"
+                    defaultValue={0.5}
+                    step="0.1"
+                    min="0"
+                    max="1"
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="noise_level">
+                    🤔
+                  </span>
+                  <Tooltip id="noise_level" place="top" effect="solid" className="tooltip-area">
+                    Controls the noise threshold (0.0-1.0). Lower values cluster more data points;
+                    higher values are more selective and leave more points as noise.
+                  </Tooltip>
+                </label>
+              </>
+            ) : (
+              <>
+                <label>
+                  <span className={styles['cluster-form-label']}>Min Samples:</span>
+                  <input
+                    type="number"
+                    name="min_samples"
+                    defaultValue={dataset.length < 1000 ? 2 : 5}
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="min_samples">
+                    🤔
+                  </span>
+                  <Tooltip id="min_samples" place="top" effect="solid" className="tooltip-area">
+                    The number of samples in a neighborhood for a point to be considered a core
+                    point. Lower values mean more clusters.
+                  </Tooltip>
+                </label>
+                <label>
+                  <span className={styles['cluster-form-label']}>Epsilon:</span>
+                  <input
+                    type="number"
+                    name="cluster_selection_epsilon"
+                    defaultValue={dataset.length < 1000 ? 0.05 : 0.005}
+                    step="0.0001"
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">
+                    🤔
+                  </span>
+                  <Tooltip
+                    id="cluster_selection_epsilon"
+                    place="top"
+                    effect="solid"
+                    className="tooltip-area"
+                  >
+                    The cluster selection epsilon parameter sets a distance threshold that allows you
+                    to balance the density of clusters. Set to 0 to use pure HDBSCAN.
+                  </Tooltip>
+                </label>
+              </>
+            )}
             <Button
               type="submit"
               color={cluster ? 'secondary' : 'primary'}
@@ -209,6 +288,9 @@ function Cluster() {
                     />
                     <span>
                       {cl.id}{' '}
+                      <span className={styles['method-badge']}>
+                        {cl.method === 'hdbscan' ? 'HDBSCAN' : 'EVoC'}
+                      </span>
                       {savedScope?.cluster_id == cl.id ? (
                         <span className="tooltip" data-tooltip-id="saved">
                           💾
@@ -216,10 +298,19 @@ function Cluster() {
                       ) : null}
                     </span>
                     <div className={styles['item-info']}>
-                      <span>Samples: {cl.samples}</span>
-                      <span>Min Samples: {cl.min_samples}</span>
-                      {cl.cluster_selection_epsilon && (
-                        <span>Epsilon: {cl.cluster_selection_epsilon}</span>
+                      <span>Min Size: {cl.samples}</span>
+                      {cl.method === 'hdbscan' || !cl.method ? (
+                        <>
+                          <span>Min Samples: {cl.min_samples}</span>
+                          {cl.cluster_selection_epsilon ? (
+                            <span>Epsilon: {cl.cluster_selection_epsilon}</span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          {cl.n_neighbors && <span>Neighbors: {cl.n_neighbors}</span>}
+                          {cl.noise_level != null && <span>Noise: {cl.noise_level}</span>}
+                        </>
                       )}
                     </div>
                   </label>
@@ -230,6 +321,32 @@ function Cluster() {
                     <span>Clusters: {cl.n_clusters}</span>
                     <span>Noise points: {cl.n_noise}</span>
                   </div>
+
+                  {qualityMetrics[cl.id] && qualityMetrics[cl.id].silhouette != null && (
+                    <div className={styles['quality-metrics']}>
+                      <span className={styles['metric-badge']}>
+                        Sil: {qualityMetrics[cl.id].silhouette}
+                        <span className="tooltip" data-tooltip-id={`sil-${cl.id}`}>🤔</span>
+                      </span>
+                      <span className={styles['metric-badge']}>
+                        CH: {Math.round(qualityMetrics[cl.id].calinski_harabasz)}
+                        <span className="tooltip" data-tooltip-id={`ch-${cl.id}`}>🤔</span>
+                      </span>
+                      <span className={styles['metric-badge']}>
+                        DB: {qualityMetrics[cl.id].davies_bouldin}
+                        <span className="tooltip" data-tooltip-id={`db-${cl.id}`}>🤔</span>
+                      </span>
+                      <Tooltip id={`sil-${cl.id}`} place="top" effect="solid" className="tooltip-area">
+                        Silhouette Score [-1,1]: higher means clusters are well-separated
+                      </Tooltip>
+                      <Tooltip id={`ch-${cl.id}`} place="top" effect="solid" className="tooltip-area">
+                        Calinski-Harabasz: higher means denser, well-separated clusters
+                      </Tooltip>
+                      <Tooltip id={`db-${cl.id}`} place="top" effect="solid" className="tooltip-area">
+                        Davies-Bouldin: lower means better separation between clusters
+                      </Tooltip>
+                    </div>
+                  )}
 
                   {cluster?.id == cl.id ? (
                     <div className={styles['navigate']}>
@@ -249,6 +366,13 @@ function Cluster() {
                   />
                 </div>
               ))}
+          {umap && clusters.filter((c) => c.umap_id === umap?.id).length >= 2 && (
+            <div className={styles['compare-link']}>
+              <Link to={`/datasets/${dataset?.id}/compare-clusters/`}>
+                ↗ Compare Clusters
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 

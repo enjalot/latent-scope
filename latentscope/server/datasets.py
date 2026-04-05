@@ -166,6 +166,76 @@ def get_dataset_cluster_labels(dataset, cluster, id):
     return df.to_json(orient="records")
 
 
+@datasets_bp.route('/<dataset>/clusters/<cluster>/quality', methods=['GET'])
+def get_dataset_cluster_quality(dataset, cluster):
+    import numpy as np
+    import pandas as pd
+
+    DATA_DIR = _data_dir()
+    cluster_dir = os.path.join(DATA_DIR, dataset, "clusters")
+
+    # Load cluster metadata
+    meta_path = os.path.join(cluster_dir, f"{cluster}.json")
+    with open(meta_path, 'r', encoding='utf-8') as f:
+        meta = json.load(f)
+
+    # Return cached metrics if available
+    if "quality_metrics" in meta:
+        return jsonify(meta["quality_metrics"])
+
+    n_clusters = meta.get("n_clusters", 0)
+    if n_clusters < 2:
+        result = {
+            "silhouette": None,
+            "calinski_harabasz": None,
+            "davies_bouldin": None,
+            "message": "Need at least 2 clusters for quality metrics",
+        }
+        return jsonify(result)
+
+    # Load UMAP points
+    umap_id = meta["umap_id"]
+    umap_path = os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}.parquet")
+    umap_df = pd.read_parquet(umap_path)
+    umap_points = np.column_stack((umap_df['x'], umap_df['y']))
+
+    # Load cluster assignments
+    cluster_df = pd.read_parquet(os.path.join(cluster_dir, f"{cluster}.parquet"))
+    labels = cluster_df['cluster'].to_numpy()
+
+    # Check we have at least 2 unique labels
+    unique_labels = np.unique(labels)
+    if len(unique_labels) < 2:
+        result = {
+            "silhouette": None,
+            "calinski_harabasz": None,
+            "davies_bouldin": None,
+            "message": "All points assigned to same cluster",
+        }
+        return jsonify(result)
+
+    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+
+    # For large datasets, sample for silhouette (O(n^2))
+    n_points = len(labels)
+    sample_size = min(n_points, 10000) if n_points > 50000 else None
+
+    result = {
+        "silhouette": round(float(silhouette_score(
+            umap_points, labels, sample_size=sample_size
+        )), 4),
+        "calinski_harabasz": round(float(calinski_harabasz_score(umap_points, labels)), 2),
+        "davies_bouldin": round(float(davies_bouldin_score(umap_points, labels)), 4),
+    }
+
+    # Cache in metadata
+    meta["quality_metrics"] = result
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        json.dump(meta, f, indent=2)
+
+    return jsonify(result)
+
+
 @datasets_bp.route('/<dataset>/clusters/<cluster>/labels_available', methods=['GET'])
 def get_dataset_cluster_labels_available(dataset, cluster):
     return scan_for_json_files(

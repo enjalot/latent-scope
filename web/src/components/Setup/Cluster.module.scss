@@ -43,6 +43,14 @@
   width: 125px;
   display: inline-block;
 }
+.method-badge {
+  font-size: 0.75em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  color: #555;
+  margin-left: 4px;
+}
 .cluster-form input {
   width: 84px;
 }
@@ -52,4 +60,31 @@
   width: 120px;
   height: 120px;
   user-select: none;
+}
+
+.quality-metrics {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.metric-badge {
+  font-size: 0.7em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #d4edda;
+  color: #155724;
+}
+.compare-link {
+  padding: 8px 0;
+  text-align: center;
+}
+.compare-link a {
+  color: seagreen;
+  font-weight: 600;
+  text-decoration: none;
+}
+.compare-link a:hover {
+  text-decoration: underline;
 }

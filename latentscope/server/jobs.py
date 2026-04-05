@@ -467,6 +467,9 @@ def run_cluster():
     samples = request.args.get('samples')
     min_samples = request.args.get('min_samples')
     cluster_selection_epsilon = request.args.get('cluster_selection_epsilon')
+    method = request.args.get('method', 'evoc')
+    n_neighbors = request.args.get('n_neighbors')
+    noise_level = request.args.get('noise_level')
 
     err = _require_params(dataset=dataset, umap_id=umap_id, samples=samples,
                           min_samples=min_samples,
@@ -475,7 +478,12 @@ def run_cluster():
         return err
 
     job_id = str(uuid.uuid4())
-    command = ['ls-cluster', dataset, umap_id, samples, min_samples, cluster_selection_epsilon]
+    command = ['ls-cluster', dataset, umap_id, samples, min_samples,
+               cluster_selection_epsilon, f'--method={method}']
+    if n_neighbors is not None:
+        command.append(f'--n_neighbors={n_neighbors}')
+    if noise_level is not None:
+        command.append(f'--noise_level={noise_level}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
