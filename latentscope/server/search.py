@@ -186,22 +186,51 @@ def compare():
     dataset = request.args.get('dataset')
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
+    metric = request.args.get('metric', 'displacement')
     k = request.args.get('k')
-    k = int(k) if k else 5
+    k = int(k) if k else 10
 
     umap_dir = os.path.join(DATA_DIR, dataset, "umaps")
     left = pd.read_parquet(os.path.join(umap_dir, f"{umap_left}.parquet")).to_numpy()
     right = pd.read_parquet(os.path.join(umap_dir, f"{umap_right}.parquet")).to_numpy()
 
-    absolute_displacement = np.linalg.norm(right - left, axis=1)
-    min_abs = np.min(absolute_displacement)
-    max_abs = np.max(absolute_displacement)
-    if max_abs - min_abs > 0:
-        absolute_displacement = (absolute_displacement - min_abs) / (max_abs - min_abs)
+    if metric == 'neighborhood':
+        from sklearn.neighbors import NearestNeighbors
+        nn_left = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(left)
+        nn_right = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(right)
+        _, idx_left = nn_left.kneighbors(left)
+        _, idx_right = nn_right.kneighbors(right)
+        scores = np.zeros(len(left))
+        for i in range(len(left)):
+            set_l = set(idx_left[i])
+            set_r = set(idx_right[i])
+            jaccard = len(set_l & set_r) / len(set_l | set_r)
+            scores[i] = 1 - jaccard  # 0 = same neighborhood, 1 = completely different
+        result = scores
+    elif metric == 'relative':
+        from sklearn.neighbors import NearestNeighbors
+        displacement = np.linalg.norm(right - left, axis=1)
+        nn_left = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(left)
+        _, idx_left = nn_left.kneighbors(left)
+        # For each point, subtract the mean displacement of its neighbors
+        relative = np.zeros(len(left))
+        for i in range(len(left)):
+            neighbor_mean = np.mean(displacement[idx_left[i]])
+            relative[i] = abs(displacement[i] - neighbor_mean)
+        result = relative
     else:
-        absolute_displacement = np.zeros_like(absolute_displacement)
+        # Default: absolute displacement (L2)
+        result = np.linalg.norm(right - left, axis=1)
 
-    return jsonify(absolute_displacement.tolist())
+    # Normalize to [0, 1]
+    min_val = np.min(result)
+    max_val = np.max(result)
+    if max_val - min_val > 0:
+        result = (result - min_val) / (max_val - min_val)
+    else:
+        result = np.zeros_like(result)
+
+    return jsonify(result.tolist())
 
 
 @search_bp.route('/compare-clusters', methods=['GET'])
