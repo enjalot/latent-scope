@@ -54,7 +54,8 @@ function VisualizationPane({
 }) {
   const { scopeRows, clusterLabels, clusterMap, deletedIndices, scope, features } = useScope();
 
-  const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig } = useFilter();
+  const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
+    useFilter();
 
   // only show the hull if we are filtering by cluster
   const showHull = filterConfig?.type === filterConstants.CLUSTER;
@@ -301,15 +302,17 @@ function VisualizationPane({
           />
         )}
         {/* green dots for all filtered points beyond the table page */}
-        <FilteredPointsOverlay
-          scopeRows={scopeRows}
-          filteredIndices={filteredIndices}
-          shownIndices={shownIndices}
-          xDomain={xDomain}
-          yDomain={yDomain}
-          width={width}
-          height={height}
-        />
+        {filterActive && (
+          <FilteredPointsOverlay
+            scopeRows={scopeRows}
+            filteredIndices={filteredIndices}
+            shownIndices={shownIndices}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+          />
+        )}
         {/* show all the hulls */}
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot

@@ -253,6 +253,8 @@ def compare_neighbors():
 
     # Find k-NN based on which side was clicked
     source = left if side == 'left' else right
+    # Clamp k to dataset size to avoid sklearn error
+    k = min(k, len(source) - 1)
     nn = NearestNeighbors(n_neighbors=k + 1, algorithm='auto').fit(source)
     _, indices = nn.kneighbors([source[point_index]])
     # Remove the point itself from neighbors
