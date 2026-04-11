@@ -233,6 +233,40 @@ def compare():
     return jsonify(result.tolist())
 
 
+@search_bp.route('/compare/neighbors', methods=['GET'])
+def compare_neighbors():
+    import numpy as np
+    import pandas as pd
+    from sklearn.neighbors import NearestNeighbors
+
+    DATA_DIR = _data_dir()
+    dataset = request.args.get('dataset')
+    umap_left = request.args.get('umap_left')
+    umap_right = request.args.get('umap_right')
+    point_index = int(request.args.get('point_index'))
+    side = request.args.get('side', 'left')
+    k = int(request.args.get('k', 10))
+
+    umap_dir = os.path.join(DATA_DIR, dataset, "umaps")
+    left = pd.read_parquet(os.path.join(umap_dir, f"{umap_left}.parquet")).to_numpy()
+    right = pd.read_parquet(os.path.join(umap_dir, f"{umap_right}.parquet")).to_numpy()
+
+    # Find k-NN based on which side was clicked
+    source = left if side == 'left' else right
+    # Clamp k to dataset size to avoid sklearn error
+    k = min(k, len(source) - 1)
+    nn = NearestNeighbors(n_neighbors=k + 1, algorithm='auto').fit(source)
+    _, indices = nn.kneighbors([source[point_index]])
+    # Remove the point itself from neighbors
+    neighbor_indices = [int(i) for i in indices[0] if i != point_index][:k]
+
+    return jsonify({
+        "point_index": point_index,
+        "side": side,
+        "neighbor_indices": neighbor_indices,
+    })
+
+
 @search_bp.route('/compare-clusters', methods=['GET'])
 def compare_clusters():
     import numpy as np

@@ -1,7 +1,7 @@
 .container {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   height: 100%;
   overflow: hidden;
   padding: 6px;
@@ -13,6 +13,7 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  flex: 1;
 }
 
 .view-tabs {
@@ -49,11 +50,33 @@
   overflow: hidden;
 }
 
+/* Drag handle between visualization and data panel */
+.drag-handle {
+  height: 8px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.drag-handle:hover .drag-grip,
+.drag-handle:active .drag-grip {
+  background: #aaa;
+}
+
+.drag-grip {
+  width: 40px;
+  height: 3px;
+  border-radius: 2px;
+  background: #ccc;
+  transition: background 0.15s;
+}
+
 /* Responsive */
 @media screen and (max-width: 1024px) {
   .container {
-    display: flex;
-    flex-direction: column;
     overflow-y: auto;
   }
 }
@@ -65,5 +88,14 @@
 
   .view-tab-inactive:hover {
     background: #333;
+  }
+
+  .drag-grip {
+    background: #555;
+  }
+
+  .drag-handle:hover .drag-grip,
+  .drag-handle:active .drag-grip {
+    background: #888;
   }
 }

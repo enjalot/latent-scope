@@ -274,6 +274,13 @@ function Umap({}) {
           </form>
         </div>
         {/* The list of available UMAPS */}
+        {umaps.filter((d) => d.embedding_id == embedding?.id).length >= 2 && (
+          <div style={{ padding: '4px 0', textAlign: 'center' }}>
+            <Link to={`/datasets/${dataset?.id}/compare`} style={{ color: 'seagreen', fontWeight: 600, textDecoration: 'none' }}>
+              ↗ Compare UMAPs
+            </Link>
+          </div>
+        )}
         <div className={styles['umap-list']}>
           {umaps
             .filter((d) => d.embedding_id == embedding?.id)
@@ -313,21 +320,12 @@ function Umap({}) {
                 <img src={um.url} alt={um.id} />
 
                 {um.align ? (
-                  <div>
-                    <Link to={`/datasets/${dataset?.id}/compare`}>↗ Compare Aligned UMAPs </Link>
-                    <span className="tooltip" data-tooltip-id="compare-umaps">
-                      🤔
-                    </span>
-                    <div className={styles['umap-align-list']}>
-                      {umaps
-                        .filter((d) => d.align_id == um.id && d.id != um.id)
-                        .map((d) => {
-                          return <img key={d.id} src={d.url} alt={d.id} />;
-                        })}
-                    </div>
-                    <Tooltip id="compare-umaps" place="top" effect="solid">
-                      An interface for comparing Aligned UMAPS.
-                    </Tooltip>
+                  <div className={styles['umap-align-list']}>
+                    {umaps
+                      .filter((d) => d.align_id == um.id && d.id != um.id)
+                      .map((d) => {
+                        return <img key={d.id} src={d.url} alt={d.id} />;
+                      })}
                   </div>
                 ) : null}
 

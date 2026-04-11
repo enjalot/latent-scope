@@ -10,6 +10,7 @@ import TilePlot from '../TilePlot';
 import { Tooltip } from 'react-tooltip';
 import CrossHair from './Crosshair';
 import { processHulls } from './util';
+import FilteredPointsOverlay from './FilteredPointsOverlay';
 import PointLabel from './PointLabel';
 import { filterConstants } from './Search/utils';
 
@@ -53,7 +54,8 @@ function VisualizationPane({
 }) {
   const { scopeRows, clusterLabels, clusterMap, deletedIndices, scope, features } = useScope();
 
-  const { featureFilter, clusterFilter, shownIndices, filterConfig } = useFilter();
+  const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
+    useFilter();
 
   // only show the hull if we are filtering by cluster
   const showHull = filterConfig?.type === filterConstants.CLUSTER;
@@ -299,6 +301,18 @@ function VisualizationPane({
             isSmallScreen={isSmallScreen}
           />
         )}
+        {/* green dots for all filtered points beyond the table page */}
+        {filterActive && (
+          <FilteredPointsOverlay
+            scopeRows={scopeRows}
+            filteredIndices={filteredIndices}
+            shownIndices={shownIndices}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+          />
+        )}
         {/* show all the hulls */}
         {vizConfig.showClusterOutlines && hulls.length && (
           <HullPlot
@@ -317,7 +331,7 @@ function VisualizationPane({
             height={height}
           />
         )}
-        {hoveredCluster && hoveredHulls && scope.cluster_labels_lookup && (
+        {hoveredCluster && hoveredHulls?.length > 0 && scope.cluster_labels_lookup && (
           <HullPlot
             hulls={hoveredHulls}
             fill="#8bcf66"
@@ -339,7 +353,7 @@ function VisualizationPane({
         {/* Cluster is selected via filter */}
         {showHull &&
           clusterFilter.cluster &&
-          clusterFilter.cluster.hull &&
+          clusterFilter.cluster.hull?.length > 0 &&
           !scope.ignore_hulls &&
           scope.cluster_labels_lookup && (
             <HullPlot

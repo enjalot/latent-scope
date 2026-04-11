@@ -1,5 +1,20 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import styles from './Compare.module.css';
+
+const METRIC_INFO = {
+  displacement: {
+    label: 'Displacement (L2)',
+    description: 'Euclidean distance each point moved between the two UMAPs. High values mean the point landed in a very different position.',
+  },
+  neighborhood: {
+    label: 'Neighborhood Change',
+    description: 'Jaccard distance of each point\'s k nearest neighbors between the two UMAPs. High values mean the point\'s local neighborhood changed, regardless of global position.',
+  },
+  relative: {
+    label: 'Relative Displacement',
+    description: 'How much a point moved relative to its neighbors. High values mean the point moved away from its neighbors (not just with them).',
+  },
+};
 
 function CompareControls({
   dataset,
@@ -63,10 +78,13 @@ function CompareControls({
         <div className={styles['metric-selector']}>
           <label>Metric</label>
           <select value={metric} onChange={(e) => onMetricChange(e.target.value)}>
-            <option value="displacement">Displacement (L2)</option>
-            <option value="neighborhood">Neighborhood Change</option>
-            <option value="relative">Relative Displacement</option>
+            {Object.entries(METRIC_INFO).map(([key, info]) => (
+              <option key={key} value={key}>{info.label}</option>
+            ))}
           </select>
+          <span className={styles['metric-description']}>
+            {METRIC_INFO[metric]?.description}
+          </span>
         </div>
         {metric !== 'displacement' && (
           <div className={styles['metric-k']}>

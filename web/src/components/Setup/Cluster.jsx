@@ -113,13 +113,14 @@ function Cluster() {
       const params = {
         umap_id: umap.id,
         samples: data.get('samples'),
-        min_samples: data.get('min_samples'),
-        cluster_selection_epsilon: data.get('cluster_selection_epsilon'),
         method,
       };
       if (method === 'evoc') {
         params.n_neighbors = data.get('n_neighbors');
         params.noise_level = data.get('noise_level');
+      } else {
+        params.min_samples = data.get('min_samples');
+        params.cluster_selection_epsilon = data.get('cluster_selection_epsilon');
       }
       startClusterJob(params);
     },

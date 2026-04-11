@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { range } from 'd3-array';
-import { interpolatePurples } from 'd3-scale-chromatic';
+import { interpolatePurples, interpolateSpectral } from 'd3-scale-chromatic';
 
 import { Input, Button } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
@@ -273,12 +273,14 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [clusterLabels, setClusterLabels] = useState([]);
   const [clusterIndices, setClusterIndices] = useState([]);
   const [hulls, setHulls] = useState([]);
+  const [hasHulls, setHasHulls] = useState(false);
   useEffect(() => {
     if (cluster && drawPoints.length) {
       apiService.fetchClusterLabels(datasetId, cluster.id, labelId).then((data) => {
-        // console.log("cluster labels", data)
         setClusterLabelData(data);
-        setHulls(processHulls(data, drawPoints));
+        const processedHulls = processHulls(data, drawPoints);
+        setHulls(processedHulls);
+        setHasHulls(processedHulls.length > 0);
         let ci = [];
         let cl = [];
         let cm = {};
@@ -292,9 +294,15 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         setClusterIndices(ci);
         setClusterLabels(cl);
         setClusterMap(cm);
+
+        // When there are no hulls (EVoC), color points by cluster ID
+        if (processedHulls.length === 0) {
+          const clusterPoints = drawPoints.map((d, i) => [d[0], d[1], ci[i] ?? 0]);
+          setDrawPoints(clusterPoints);
+        }
       });
     }
-  }, [datasetId, cluster, drawPoints, labelId]);
+  }, [datasetId, cluster, drawPoints.length, labelId]);
 
   const [pointSize, setPointSize] = useState(0.25);
   useEffect(() => {
@@ -365,11 +373,12 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             height={umapHeight}
             duration={1000}
             colorScaleType="categorical"
-            colorRange={mapSelectionColorsLight}
-            colorDomain={mapSelectionDomain}
-            opacityRange={mapSelectionOpacity}
-            pointSizeRange={pointSizeRange}
-            opacityBy="valueA"
+            colorInterpolator={cluster && !hasHulls ? interpolateSpectral : undefined}
+            colorRange={cluster && !hasHulls ? undefined : mapSelectionColorsLight}
+            colorDomain={cluster && !hasHulls ? undefined : mapSelectionDomain}
+            opacityRange={cluster && !hasHulls ? undefined : mapSelectionOpacity}
+            pointSizeRange={cluster && !hasHulls ? undefined : pointSizeRange}
+            opacityBy={cluster && !hasHulls ? undefined : 'valueA'}
             onScatter={setScatter}
             onView={handleView}
             onSelect={handleSelected}

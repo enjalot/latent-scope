@@ -39,11 +39,14 @@ function Compare() {
   const [aboveThresholdCount, setAboveThresholdCount] = useState(0);
 
   // Metric controls
-  const [metric, setMetric] = useState('displacement');
+  const [metric, setMetric] = useState('relative');
   const [metricK, setMetricK] = useState(10);
 
+  // Raw displacement data (before threshold) for tooltip display
+  const [rawDisplacementData, setRawDisplacementData] = useState([]);
+
   // View mode
-  const [viewMode, setViewMode] = useState('transition');
+  const [viewMode, setViewMode] = useState('side-by-side');
   const [direction, setDirection] = useState('left');
 
   // Scatterplot state
@@ -54,6 +57,10 @@ function Compare() {
   // Selection state
   const [selectedIndices, setSelectedIndices] = useState([]);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  // Neighbor selection state (from SideBySideView clicks)
+  const [neighborSelectedIndex, setNeighborSelectedIndex] = useState(null);
+  const [neighborIndices, setNeighborIndices] = useState([]);
 
   // Search state
   const [searchModel, setSearchModel] = useState(null);
@@ -141,6 +148,7 @@ function Compare() {
     )
       .then((r) => r.json())
       .then((displacementData) => {
+        setRawDisplacementData(displacementData);
         const log = scaleSymlog(extent(displacementData), [0, 1]);
         const dpts = leftPoints.map((d, i) => {
           const displacement = log(displacementData[i]);
@@ -191,6 +199,8 @@ function Compare() {
 
   const handleClearSelection = useCallback(() => {
     setSelectedIndices([]);
+    setNeighborSelectedIndex(null);
+    setNeighborIndices([]);
     scatter?.select([]);
     scatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
   }, [scatter]);
@@ -242,6 +252,16 @@ function Compare() {
     setDistances([]);
   }, []);
 
+  const handleNeighborSelect = useCallback((pointIndex, neighbors) => {
+    setNeighborSelectedIndex(pointIndex);
+    setNeighborIndices(neighbors || []);
+    if (pointIndex != null) {
+      setSelectedIndices([pointIndex, ...(neighbors || [])]);
+    } else {
+      setSelectedIndices([]);
+    }
+  }, []);
+
   // Annotations
   const activePoints = direction === 'left' ? leftPoints : rightPoints;
   const searchAnnotations = searchIndices.map((i) => activePoints[i]).filter(Boolean);
@@ -250,6 +270,35 @@ function Compare() {
 
   const pointSizeRange = [5, 1];
   const opacityRange = [1, 0.2];
+
+  // Resizable bottom panel
+  const [panelHeight, setPanelHeight] = useState(200);
+  const isDraggingRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartHeightRef = useRef(0);
+
+  const handleDragStart = useCallback((e) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartHeightRef.current = panelHeight;
+
+    const handleDragMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const delta = dragStartYRef.current - e.clientY;
+      const newHeight = Math.max(40, Math.min(600, dragStartHeightRef.current + delta));
+      setPanelHeight(newHeight);
+    };
+
+    const handleDragEnd = () => {
+      isDraggingRef.current = false;
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
+    };
+
+    document.addEventListener('mousemove', handleDragMove);
+    document.addEventListener('mouseup', handleDragEnd);
+  }, [panelHeight]);
 
   if (!dataset) return <div>Loading...</div>;
 
@@ -314,39 +363,51 @@ function Compare() {
 
           {viewMode === 'side-by-side' && (
             <SideBySideView
+              datasetId={datasetId}
+              dataset={dataset}
+              left={left}
+              right={right}
               leftPoints={leftPoints}
               rightPoints={rightPoints}
               drawPoints={drawPoints}
+              displacementData={rawDisplacementData}
               width={scopeWidth}
               height={scopeHeight}
               onScatter={setScatter}
               onSelect={handleSelected}
               onHover={handleHover}
-              searchAnnotations={searchAnnotations}
-              hoverAnnotations={hoverAnnotations}
+              onNeighborSelect={handleNeighborSelect}
               pointSizeRange={pointSizeRange}
               opacityRange={opacityRange}
               hoveredIndex={hoveredIndex}
+              metricK={metricK}
             />
           )}
         </div>
       </div>
 
-      <CompareDataPanel
-        dataset={dataset}
-        datasetId={datasetId}
-        embeddings={embeddings}
-        selectedIndices={selectedIndices}
-        onClearSelection={handleClearSelection}
-        searchIndices={searchIndices}
-        distances={distances}
-        onClearSearch={handleClearSearch}
-        onSearch={handleSearch}
-        searchModel={searchModel}
-        onSearchModelChange={handleSearchModelChange}
-        onHover={handleHover}
-        onClick={handleClicked}
-      />
+      <div className={styles['drag-handle']} onMouseDown={handleDragStart}>
+        <div className={styles['drag-grip']} />
+      </div>
+      <div style={{ height: panelHeight, minHeight: 40 }}>
+        <CompareDataPanel
+          dataset={dataset}
+          datasetId={datasetId}
+          embeddings={embeddings}
+          selectedIndices={selectedIndices}
+          neighborSelectedIndex={neighborSelectedIndex}
+          neighborIndices={neighborIndices}
+          onClearSelection={handleClearSelection}
+          searchIndices={searchIndices}
+          distances={distances}
+          onClearSearch={handleClearSearch}
+          onSearch={handleSearch}
+          searchModel={searchModel}
+          onSearchModelChange={handleSearchModelChange}
+          onHover={handleHover}
+          onClick={handleClicked}
+        />
+      </div>
     </div>
   );
 }

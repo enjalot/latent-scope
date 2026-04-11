@@ -91,7 +91,8 @@ const HullPlot = ({
   };
 
   useEffect(() => {
-    if (!xDomain || !yDomain || !hulls.length) return;
+    const validHulls = hulls.filter((h) => h && h.length > 0);
+    if (!xDomain || !yDomain || !validHulls.length) return;
 
     // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
     const hullsChanged =
@@ -266,7 +267,7 @@ const HullPlot = ({
 
   // This effect will rerender instantly when the fill, stroke, strokeWidth, or domain changes
   useEffect(() => {
-    if (!xDomain || !yDomain || !hulls.length) return;
+    if (!xDomain || !yDomain || !hulls.filter((h) => h && h.length > 0).length) return;
     const svg = select(svgRef.current);
 
     // Calculate scale factors
