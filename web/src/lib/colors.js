@@ -13,8 +13,8 @@ export const baseColor = '#b87333';
 export const baseColorDark = '#E0EFFF';
 
 export const mapSelectionColorsLight = [
-  baseColor, // normaimage.pngl
-  baseColor, // selected
+  baseColor, // normal
+  '#5cb85c', // selected (green to stand out from base)
   baseColor, // not selected
   '#8bcf66', // hovered
   '#fcfbfd', // hidden
@@ -22,10 +22,10 @@ export const mapSelectionColorsLight = [
 
 export const mapSelectionColorsDark = [
   baseColorDark,
+  '#5cb85c', // selected (green)
   baseColorDark,
   baseColorDark,
-  baseColorDark,
-  '#fcfbfd', // 99, hidden
+  '#fcfbfd', // hidden
 ];
 
 export const mapSelectionOpacity = [

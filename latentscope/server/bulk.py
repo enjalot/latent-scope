@@ -57,14 +57,28 @@ def change_cluster():
     df.to_parquet(scope_file)
     update_combined(DATA_DIR, df, dataset_id, scope_id)
 
+    # Only recompute hulls for methods that cluster on UMAP coordinates (not EVoC)
+    cluster_meta_file = os.path.join(DATA_DIR, dataset_id, "clusters",
+                                     scope_meta.get("cluster_id", "") + ".json")
+    skip_hulls = False
+    if os.path.exists(cluster_meta_file):
+        with open(cluster_meta_file) as cmf:
+            skip_hulls = json.load(cmf).get("method") == "evoc"
+
     for c in clusters:
-        indices = df[df['cluster'] == c["cluster"]]["ls_index"].tolist()
-        label_points = df[df['cluster'] == c["cluster"]][['x', 'y']].values
-        if len(label_points) > 0:
-            hull = ConvexHull(label_points)
-            c["hull"] = [indices[s] for s in hull.vertices.tolist()]
-        else:
+        if skip_hulls:
             c["hull"] = []
+        else:
+            indices = df[df['cluster'] == c["cluster"]]["ls_index"].tolist()
+            label_points = df[df['cluster'] == c["cluster"]][['x', 'y']].values
+            if len(label_points) > 0:
+                try:
+                    hull = ConvexHull(label_points)
+                    c["hull"] = [indices[s] for s in hull.vertices.tolist()]
+                except Exception:
+                    c["hull"] = []
+            else:
+                c["hull"] = []
 
     with open(scope_meta_file, "w") as f:
         json.dump(scope_meta, f, indent=2)
@@ -131,14 +145,25 @@ def delete_rows():
     with open(scope_meta_file) as f:
         scope_meta = json.load(f)
     clusters = scope_meta["cluster_labels_lookup"]
+
+    cluster_meta_file = os.path.join(DATA_DIR, dataset_id, "clusters",
+                                     scope_meta.get("cluster_id", "") + ".json")
+    skip_hulls = False
+    if os.path.exists(cluster_meta_file):
+        with open(cluster_meta_file) as cmf:
+            skip_hulls = json.load(cmf).get("method") == "evoc"
+
     for c in clusters:
-        indices = df[df['cluster'] == c["cluster"]]["ls_index"].tolist()
-        label_points = df[df['cluster'] == c["cluster"]][['x', 'y']].values
-        try:
-            hull = ConvexHull(label_points)
-            c["hull"] = [indices[s] for s in hull.vertices.tolist()]
-        except Exception:
+        if skip_hulls:
             c["hull"] = []
+        else:
+            indices = df[df['cluster'] == c["cluster"]]["ls_index"].tolist()
+            label_points = df[df['cluster'] == c["cluster"]][['x', 'y']].values
+            try:
+                hull = ConvexHull(label_points)
+                c["hull"] = [indices[s] for s in hull.vertices.tolist()]
+            except Exception:
+                c["hull"] = []
 
     scope_meta["rows"] = len(df)
     with open(scope_meta_file, "w") as f:

@@ -172,16 +172,26 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     point_size = calculate_point_size(umap_embeddings.shape[0])
     print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
     plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5, c=cluster_labels, cmap='Spectral')
-    # plot a convex hull around each cluster
-    hulls = []
+    # Compute convex hulls around each cluster on the UMAP 2D coordinates.
+    # For HDBSCAN (which clusters on UMAP coords), hulls are spatially coherent.
+    # For EVoC (which clusters on raw embeddings), clusters may be scattered
+    # across the 2D projection, so convex hulls are not meaningful — skip them.
+    hulls_by_label = {}
+    compute_hulls = (method != 'evoc')
     for label in non_noise_labels:
         indices = np.where(cluster_labels == label)[0]
         points = umap_embeddings[indices]
-        hull = ConvexHull(points)
-        hull_list = [indices[s] for s in hull.vertices.tolist()]
-        hulls.append(hull_list)
-        for simplex in hull.simplices:
-            plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
+        if not compute_hulls or len(points) < 3:
+            hulls_by_label[label] = []
+            continue
+        try:
+            hull = ConvexHull(points)
+            hull_list = [indices[s] for s in hull.vertices.tolist()]
+            hulls_by_label[label] = hull_list
+            for simplex in hull.simplices:
+                plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
+        except Exception:
+            hulls_by_label[label] = []
 
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
@@ -211,10 +221,11 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
 
     # iterate over the clusters and create a row for each in a new dataframe with a label, description and array of indicies
     slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
-    for cluster, indices in tqdm(cluster_indices.items()):
-        label = f"Cluster {cluster}"
-        description = f"This is cluster {cluster} with {len(indices)} items."
-        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hull': [hulls[cluster]]})
+    for cluster_label, indices in tqdm(cluster_indices.items()):
+        label = f"Cluster {cluster_label}"
+        description = f"This is cluster {cluster_label} with {len(indices)} items."
+        hull = hulls_by_label.get(cluster_label, [])
+        new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hull': [hull]})
         slides_df = pd.concat([slides_df, new_row], ignore_index=True)
 
     # write the df to parquet

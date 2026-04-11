@@ -471,19 +471,25 @@ def run_cluster():
     n_neighbors = request.args.get('n_neighbors')
     noise_level = request.args.get('noise_level')
 
-    err = _require_params(dataset=dataset, umap_id=umap_id, samples=samples,
-                          min_samples=min_samples,
-                          cluster_selection_epsilon=cluster_selection_epsilon)
+    err = _require_params(dataset=dataset, umap_id=umap_id, samples=samples)
     if err:
         return err
+
+    # min_samples and cluster_selection_epsilon are positional in the CLI
+    # Default them when not provided (EVoC doesn't use them)
+    if not min_samples or min_samples == 'null':
+        min_samples = '5'
+    if not cluster_selection_epsilon or cluster_selection_epsilon == 'null':
+        cluster_selection_epsilon = '0'
 
     job_id = str(uuid.uuid4())
     command = ['ls-cluster', dataset, umap_id, samples, min_samples,
                cluster_selection_epsilon, f'--method={method}']
-    if n_neighbors is not None:
-        command.append(f'--n_neighbors={n_neighbors}')
-    if noise_level is not None:
-        command.append(f'--noise_level={noise_level}')
+    if method == 'evoc':
+        if n_neighbors is not None:
+            command.append(f'--n_neighbors={n_neighbors}')
+        if noise_level is not None:
+            command.append(f'--noise_level={noise_level}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
