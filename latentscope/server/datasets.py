@@ -90,6 +90,25 @@ def get_dataset_embedding(dataset, embedding):
     return jsonify(json_contents)
 
 
+@datasets_bp.route('/<dataset>/embeddings/<embedding>/format', methods=['GET'])
+def get_embedding_format(dataset, embedding):
+    from latentscope.util.embedding_store import get_storage_format
+    fmt = get_storage_format(_data_dir(), dataset, embedding)
+    return jsonify({"format": fmt, "embedding_id": embedding})
+
+
+@datasets_bp.route('/<dataset>/embeddings/<embedding>/migrate', methods=['POST'])
+def migrate_embedding(dataset, embedding):
+    from latentscope.util.embedding_store import get_storage_format, migrate_hdf5_to_lancedb
+    fmt = get_storage_format(_data_dir(), dataset, embedding)
+    if fmt == "lancedb":
+        return jsonify({"status": "already_migrated", "format": "lancedb"})
+    if fmt == "none":
+        return jsonify({"error": "No embedding data found"}), 404
+    result = migrate_hdf5_to_lancedb(_data_dir(), dataset, embedding)
+    return jsonify(result)
+
+
 @datasets_bp.route('/<dataset>/saes', methods=['GET'])
 def get_dataset_saes(dataset):
     return scan_for_json_files(os.path.join(_data_dir(), dataset, "saes"))

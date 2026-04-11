@@ -39,6 +39,9 @@ function Embedding() {
   const [clusters, setClusters] = useState([]);
   const [sae, setSae] = useState(null);
 
+  const [embeddingFormats, setEmbeddingFormats] = useState({});
+  const [migratingId, setMigratingId] = useState(null);
+
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
   const [dimensions, setDimensions] = useState(null);
@@ -89,10 +92,17 @@ function Embedding() {
 
   useEffect(() => {
     if (dataset) {
-      apiService.fetchEmbeddings(dataset?.id).then((embs) => setEmbeddings(embs));
+      apiService.fetchEmbeddings(dataset?.id).then((embs) => {
+        setEmbeddings(embs);
+        // Fetch format for each embedding
+        embs.forEach((emb) => {
+          apiService.fetchEmbeddingFormat(dataset.id, emb.id).then((data) => {
+            setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: data.format }));
+          });
+        });
+      });
       apiService.fetchUmaps(dataset?.id).then((ums) => setUmaps(ums));
       apiService.fetchClusters(dataset?.id).then((cls) => setClusters(cls));
-      // apiService.fetchSaes(dataset?.id).then((saes) => setSaes(saes));
       setTextColumn(dataset?.text_column);
     }
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
@@ -622,7 +632,31 @@ function Embedding() {
                       ) : null}
                     </span>
                     <span>{emb.model_id?.replace('___', '/')}</span>
-                    <span>{emb.dimensions} dimensions</span>
+                    <span>
+                      {emb.dimensions} dimensions
+                      {embeddingFormats[emb.id] === 'hdf5' && (
+                        <>
+                          <span className={styles['format-badge-hdf5']}>HDF5</span>
+                          <button
+                            className={styles['migrate-button']}
+                            disabled={migratingId === emb.id}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setMigratingId(emb.id);
+                              apiService.migrateEmbedding(dataset.id, emb.id).then((result) => {
+                                setMigratingId(null);
+                                setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: 'lancedb' }));
+                              });
+                            }}
+                          >
+                            {migratingId === emb.id ? 'Migrating...' : 'Migrate to LanceDB'}
+                          </button>
+                        </>
+                      )}
+                      {embeddingFormats[emb.id] === 'lancedb' && (
+                        <span className={styles['format-badge-lance']}>LanceDB</span>
+                      )}
+                    </span>
                     {umps.length || cls.length ? (
                       <div className={styles['item-deps']}>
                         {umps.length ? <span>{umps.length} umaps</span> : null}

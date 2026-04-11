@@ -300,6 +300,73 @@ def get_embedding_stats(data_dir, dataset_id, embedding_id):
     }
 
 
+def get_storage_format(data_dir, dataset_id, embedding_id):
+    """Detect the storage format for an embedding.
+
+    Returns
+    -------
+    str : "lancedb", "hdf5", or "none"
+    """
+    db = _connect(data_dir, dataset_id)
+    table_name = _embedding_table_name(embedding_id)
+    if table_name in _get_table_names(db):
+        return "lancedb"
+
+    emb_path = os.path.join(data_dir, dataset_id, "embeddings", f"{embedding_id}.h5")
+    if os.path.exists(emb_path):
+        return "hdf5"
+
+    return "none"
+
+
+def migrate_hdf5_to_lancedb(data_dir, dataset_id, embedding_id, batch_size=1000,
+                             on_progress=None):
+    """Migrate an HDF5 embedding to LanceDB format.
+
+    Parameters
+    ----------
+    on_progress : callable or None
+        Called with (current_row, total_rows) for progress reporting.
+
+    Returns
+    -------
+    dict with migration stats
+    """
+    import h5py
+
+    emb_path = os.path.join(data_dir, dataset_id, "embeddings", f"{embedding_id}.h5")
+    if not os.path.exists(emb_path):
+        raise FileNotFoundError(f"No HDF5 file at {emb_path}")
+
+    # Check if already migrated
+    db = _connect(data_dir, dataset_id)
+    table_name = _embedding_table_name(embedding_id)
+    if table_name in _get_table_names(db):
+        tbl = db.open_table(table_name)
+        return {"status": "already_migrated", "rows": tbl.count_rows()}
+
+    # Load from HDF5
+    with h5py.File(emb_path, "r") as f:
+        total_rows = f["embeddings"].shape[0]
+        dimensions = f["embeddings"].shape[1]
+
+        # Write in batches to avoid memory issues
+        for start in range(0, total_rows, batch_size):
+            end = min(start + batch_size, total_rows)
+            vectors = np.array(f["embeddings"][start:end])
+            append_embeddings(data_dir, dataset_id, embedding_id,
+                            vectors, start_index=start)
+            if on_progress:
+                on_progress(end, total_rows)
+
+    return {
+        "status": "migrated",
+        "rows": total_rows,
+        "dimensions": dimensions,
+        "source": emb_path,
+    }
+
+
 def estimate_embedding_storage(num_rows, dimensions, has_tokens=False, avg_tokens_per_doc=50):
     """Estimate storage requirements for embeddings.
 

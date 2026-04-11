@@ -68,7 +68,9 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     import numpy as np
     import pandas as pd
 
-    from latentscope.util.embedding_store import append_embeddings, get_embedding_count
+    from latentscope.util.embedding_store import (
+        append_embeddings, get_embedding_count, get_storage_format, migrate_hdf5_to_lancedb,
+    )
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
 
@@ -79,10 +81,18 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     if rerun is not None:
         embedding_id = rerun
         # Check LanceDB first, then fallback to HDF5
-        starting_batch = get_embedding_count(DATA_DIR, dataset_id, embedding_id) // batch_size
-        if starting_batch == 0:
-            # Fallback: check legacy HDF5
-            starting_batch = get_last_batch(os.path.join(embedding_dir, f"{embedding_id}.h5")) // batch_size
+        fmt = get_storage_format(DATA_DIR, dataset_id, embedding_id)
+        if fmt == "lancedb":
+            starting_batch = get_embedding_count(DATA_DIR, dataset_id, embedding_id) // batch_size
+        elif fmt == "hdf5":
+            # Migrate HDF5 to LanceDB before resuming so new batches go to same store
+            print(f"Migrating {embedding_id} from HDF5 to LanceDB before resuming...")
+            result = migrate_hdf5_to_lancedb(DATA_DIR, dataset_id, embedding_id,
+                                             on_progress=lambda cur, tot: print(f"  migrated {cur}/{tot}"))
+            print(f"Migration complete: {result}")
+            starting_batch = get_embedding_count(DATA_DIR, dataset_id, embedding_id) // batch_size
+        else:
+            starting_batch = 0
     else:
         # determine the index of the last embedding run
         # Check both HDF5 files and LanceDB tables

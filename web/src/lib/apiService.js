@@ -58,6 +58,16 @@ export const apiService = {
         return array;
       });
   },
+  fetchEmbeddingFormat: async (datasetId, embeddingId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/format`).then(
+      (response) => response.json()
+    );
+  },
+  migrateEmbedding: async (datasetId, embeddingId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/migrate`, {
+      method: 'POST',
+    }).then((response) => response.json());
+  },
   fetchClusterQuality: async (datasetId, clusterId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/quality`).then(
       (response) => response.json()

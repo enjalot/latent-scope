@@ -82,3 +82,37 @@
   gap: 4px;
 }
 
+.format-badge-hdf5 {
+  font-size: 0.65em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #fff3cd;
+  color: #856404;
+  margin-left: 6px;
+}
+.format-badge-lance {
+  font-size: 0.65em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #d4edda;
+  color: #155724;
+  margin-left: 6px;
+}
+.migrate-button {
+  font-size: 0.7em;
+  padding: 1px 6px;
+  border: 1px solid #856404;
+  border-radius: 3px;
+  background: #fff3cd;
+  color: #856404;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.migrate-button:hover {
+  background: #ffe69c;
+}
+.migrate-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
