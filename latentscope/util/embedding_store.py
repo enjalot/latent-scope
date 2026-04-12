@@ -359,11 +359,36 @@ def migrate_hdf5_to_lancedb(data_dir, dataset_id, embedding_id, batch_size=1000,
             if on_progress:
                 on_progress(end, total_rows)
 
+    # Verify migration: check row count and spot-check a few vectors
+    lance_count = get_embedding_count(data_dir, dataset_id, embedding_id)
+    if lance_count != total_rows:
+        raise RuntimeError(
+            f"Migration verification failed: expected {total_rows} rows, "
+            f"got {lance_count} in LanceDB"
+        )
+
+    # Spot-check first and last vectors match
+    lance_vectors = load_embeddings(data_dir, dataset_id, embedding_id)
+    with h5py.File(emb_path, "r") as f:
+        h5_first = np.array(f["embeddings"][0])
+        h5_last = np.array(f["embeddings"][-1])
+    if not np.allclose(lance_vectors[0], h5_first, atol=1e-6):
+        raise RuntimeError("Migration verification failed: first vector mismatch")
+    if not np.allclose(lance_vectors[-1], h5_last, atol=1e-6):
+        raise RuntimeError("Migration verification failed: last vector mismatch")
+
+    # Verification passed — remove the HDF5 file
+    h5_size = os.path.getsize(emb_path)
+    os.remove(emb_path)
+
     return {
         "status": "migrated",
         "rows": total_rows,
         "dimensions": dimensions,
         "source": emb_path,
+        "hdf5_removed": True,
+        "space_freed_bytes": h5_size,
+        "space_freed": _human_readable_size(h5_size),
     }
 
 
