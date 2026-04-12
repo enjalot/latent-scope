@@ -58,6 +58,16 @@ export const apiService = {
         return array;
       });
   },
+  fetchEmbeddingFormat: async (datasetId, embeddingId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/format`).then(
+      (response) => response.json()
+    );
+  },
+  migrateEmbedding: async (datasetId, embeddingId) => {
+    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/migrate`, {
+      method: 'POST',
+    }).then((response) => response.json());
+  },
   fetchClusterQuality: async (datasetId, clusterId) => {
     return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/quality`).then(
       (response) => response.json()
@@ -369,5 +379,43 @@ export const apiService = {
       },
       body: JSON.stringify({ dataset: datasetId, filters: filters }),
     }).then((response) => response.json());
+  },
+
+  // Estimation API
+  estimateEmbed: async (datasetId, modelId, textColumn, dimensions) => {
+    const params = new URLSearchParams({
+      dataset: datasetId,
+      model_id: modelId,
+      text_column: textColumn,
+      ...(dimensions ? { dimensions } : {}),
+    });
+    return fetch(`${apiUrl}/estimate/embed?${params}`).then((response) => response.json());
+  },
+  estimateUmap: async (datasetId, embeddingId, neighbors) => {
+    const params = new URLSearchParams({
+      dataset: datasetId,
+      embedding_id: embeddingId,
+      ...(neighbors ? { neighbors } : {}),
+    });
+    return fetch(`${apiUrl}/estimate/umap?${params}`).then((response) => response.json());
+  },
+  estimateCluster: async (datasetId, umapId) => {
+    const params = new URLSearchParams({
+      dataset: datasetId,
+      umap_id: umapId,
+    });
+    return fetch(`${apiUrl}/estimate/cluster?${params}`).then((response) => response.json());
+  },
+  benchmarkEmbed: async (datasetId, modelId, textColumn, sampleSize = 10, dimensions) => {
+    const params = new URLSearchParams({
+      dataset: datasetId,
+      model_id: modelId,
+      text_column: textColumn,
+      sample_size: sampleSize,
+      ...(dimensions ? { dimensions } : {}),
+    });
+    return fetch(`${apiUrl}/estimate/benchmark/embed?${params}`).then((response) =>
+      response.json()
+    );
   },
 };

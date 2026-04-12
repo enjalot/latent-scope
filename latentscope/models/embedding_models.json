@@ -56,5 +56,35 @@
       "truncation": true,
       "max_tokens": 32000
     }
+  },
+  {
+    "provider": "colbert",
+    "name": "colbert-ir/colbertv2.0",
+    "id": "colbert-colbert-ir___colbertv2.0",
+    "group": "late_interaction",
+    "params": {
+      "late_interaction": true,
+      "max_tokens": 512
+    }
+  },
+  {
+    "provider": "colbert",
+    "name": "answerdotai/answerai-colbert-small-v1",
+    "id": "colbert-answerdotai___answerai-colbert-small-v1",
+    "group": "late_interaction",
+    "params": {
+      "late_interaction": true,
+      "max_tokens": 512
+    }
+  },
+  {
+    "provider": "colbert",
+    "name": "jinaai/jina-colbert-v2",
+    "id": "colbert-jinaai___jina-colbert-v2",
+    "group": "late_interaction",
+    "params": {
+      "late_interaction": true,
+      "max_tokens": 8192
+    }
   }
 ]

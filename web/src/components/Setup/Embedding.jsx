@@ -16,6 +16,7 @@ import SettingsModal from '../SettingsModal';
 
 import Sae from './Sae';
 import Preview from './Preview';
+import EstimatePanel from './EstimatePanel';
 
 import styles from './Embedding.module.scss';
 
@@ -37,6 +38,9 @@ function Embedding() {
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
   const [sae, setSae] = useState(null);
+
+  const [embeddingFormats, setEmbeddingFormats] = useState({});
+  const [migratingId, setMigratingId] = useState(null);
 
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
@@ -88,10 +92,17 @@ function Embedding() {
 
   useEffect(() => {
     if (dataset) {
-      apiService.fetchEmbeddings(dataset?.id).then((embs) => setEmbeddings(embs));
+      apiService.fetchEmbeddings(dataset?.id).then((embs) => {
+        setEmbeddings(embs);
+        // Fetch format for each embedding
+        embs.forEach((emb) => {
+          apiService.fetchEmbeddingFormat(dataset.id, emb.id).then((data) => {
+            setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: data.format }));
+          });
+        });
+      });
       apiService.fetchUmaps(dataset?.id).then((ums) => setUmaps(ums));
       apiService.fetchClusters(dataset?.id).then((cls) => setClusters(cls));
-      // apiService.fetchSaes(dataset?.id).then((saes) => setSaes(saes));
       setTextColumn(dataset?.text_column);
     }
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
@@ -216,6 +227,43 @@ function Embedding() {
 
   const [batchSize, setBatchSize] = useState(100);
   const [maxSeqLength, setMaxSeqLength] = useState(512);
+
+  // Estimation state
+  const [embedEstimate, setEmbedEstimate] = useState(null);
+  const [embedBenchmark, setEmbedBenchmark] = useState(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
+  const handleEstimate = useCallback(() => {
+    if (!modelId || !textColumn || !datasetId) return;
+    setEstimateLoading(true);
+    setEmbedEstimate(null);
+    apiService
+      .estimateEmbed(datasetId, modelId, textColumn, dimensions)
+      .then((data) => {
+        setEmbedEstimate(data);
+        setEstimateLoading(false);
+      })
+      .catch(() => setEstimateLoading(false));
+  }, [datasetId, modelId, textColumn, dimensions]);
+
+  const handleBenchmark = useCallback(() => {
+    if (!modelId || !textColumn || !datasetId) return;
+    setEstimateLoading(true);
+    setEmbedBenchmark(null);
+    apiService
+      .benchmarkEmbed(datasetId, modelId, textColumn, 10, dimensions)
+      .then((data) => {
+        setEmbedBenchmark(data);
+        setEstimateLoading(false);
+      })
+      .catch(() => setEstimateLoading(false));
+  }, [datasetId, modelId, textColumn, dimensions]);
+
+  // Reset estimates when model changes
+  useEffect(() => {
+    setEmbedEstimate(null);
+    setEmbedBenchmark(null);
+  }, [modelId]);
 
   // from the dataset, if a column is flagged as a potential embedding
   const [potentialEmbeddings, setPotentialEmbeddings] = useState([]);
@@ -509,6 +557,17 @@ function Embedding() {
                 </select>
               : null} */}
 
+            {modelId && textColumn && (
+              <EstimatePanel
+                estimate={embedEstimate}
+                onEstimate={handleEstimate}
+                onBenchmark={handleBenchmark}
+                benchmarkResult={embedBenchmark}
+                loading={estimateLoading}
+                step="embed"
+              />
+            )}
+
             <Button
               type="submit"
               color={embedding ? 'secondary' : 'primary'}
@@ -573,7 +632,31 @@ function Embedding() {
                       ) : null}
                     </span>
                     <span>{emb.model_id?.replace('___', '/')}</span>
-                    <span>{emb.dimensions} dimensions</span>
+                    <span>
+                      {emb.dimensions} dimensions
+                      {embeddingFormats[emb.id] === 'hdf5' && (
+                        <>
+                          <span className={styles['format-badge-hdf5']}>HDF5</span>
+                          <button
+                            className={styles['migrate-button']}
+                            disabled={migratingId === emb.id}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setMigratingId(emb.id);
+                              apiService.migrateEmbedding(dataset.id, emb.id).then((result) => {
+                                setMigratingId(null);
+                                setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: 'lancedb' }));
+                              });
+                            }}
+                          >
+                            {migratingId === emb.id ? 'Migrating...' : 'Migrate to LanceDB'}
+                          </button>
+                        </>
+                      )}
+                      {embeddingFormats[emb.id] === 'lancedb' && (
+                        <span className={styles['format-badge-lance']}>LanceDB</span>
+                      )}
+                    </span>
                     {umps.length || cls.length ? (
                       <div className={styles['item-deps']}>
                         {umps.length ? <span>{umps.length} umaps</span> : null}

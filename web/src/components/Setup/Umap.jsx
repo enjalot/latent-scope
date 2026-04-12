@@ -10,6 +10,7 @@ import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
 
 import Preview from './Preview';
+import EstimatePanel from './EstimatePanel';
 
 import styles from './Umap.module.scss';
 
@@ -131,6 +132,22 @@ function Umap({}) {
   const toggleSave = useCallback(() => {
     setSave(!save);
   }, [save, setSave]);
+
+  // Estimation
+  const [umapEstimate, setUmapEstimate] = useState(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
+  const handleEstimateUmap = useCallback(() => {
+    if (!embedding?.id || !dataset?.id) return;
+    setEstimateLoading(true);
+    apiService
+      .estimateUmap(dataset.id, embedding.id, 25)
+      .then((data) => {
+        setUmapEstimate(data);
+        setEstimateLoading(false);
+      })
+      .catch(() => setEstimateLoading(false));
+  }, [dataset, embedding]);
 
   const handleNextStep = useCallback(() => {
     if (savedScope?.umap_id == umap?.id) {
@@ -261,6 +278,15 @@ function Umap({}) {
                   (proportional the the data used to make it).
                 </Tooltip>
               </div>
+            )}
+
+            {embedding && (
+              <EstimatePanel
+                estimate={umapEstimate}
+                onEstimate={handleEstimateUmap}
+                loading={estimateLoading}
+                step="umap"
+              />
             )}
 
             <Button

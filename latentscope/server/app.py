@@ -93,6 +93,9 @@ def create_app(data_dir=None, read_only=None):
     if not read_only:
         app.register_blueprint(models_write_bp, url_prefix='/api/models')
 
+    from .estimate import estimate_bp
+    app.register_blueprint(estimate_bp, url_prefix='/api/estimate')
+
     # ------------------------------------------------------------------
     # File / data routes defined directly on the app
     # ------------------------------------------------------------------
@@ -129,12 +132,12 @@ def create_app(data_dir=None, read_only=None):
         rows['index'] = valid_indices
 
         if embedding_id:
-            embedding_path = os.path.join(data_dir, dataset, "embeddings", f"{embedding_id}.h5")
-            with h5py.File(embedding_path, 'r') as f:
-                npvi = np.array(valid_indices)
-                sorted_indices = np.argsort(npvi)
-                sorted_embeddings = np.array(f["embeddings"][npvi[sorted_indices]])
-                filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
+            from latentscope.util.embedding_store import load_embeddings as lance_load
+            all_embeddings = lance_load(data_dir, dataset, embedding_id)
+            npvi = np.array(valid_indices)
+            sorted_indices = np.argsort(npvi)
+            sorted_embeddings = all_embeddings[npvi[sorted_indices]]
+            filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
             rows['ls_embedding'] = filtered_embeddings
 
         if sae_id:
@@ -216,12 +219,12 @@ def create_app(data_dir=None, read_only=None):
             rows = rows.loc[indices]
 
         if embedding_id:
-            embedding_path = os.path.join(data_dir, dataset, "embeddings", f"{embedding_id}.h5")
-            with h5py.File(embedding_path, 'r') as f:
-                npvi = np.array(rows.index)
-                sorted_indices = np.argsort(npvi)
-                sorted_embeddings = np.array(f["embeddings"][npvi[sorted_indices]])
-                filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
+            from latentscope.util.embedding_store import load_embeddings as lance_load
+            all_embeddings = lance_load(data_dir, dataset, embedding_id)
+            npvi = np.array(rows.index)
+            sorted_indices = np.argsort(npvi)
+            sorted_embeddings = all_embeddings[npvi[sorted_indices]]
+            filtered_embeddings = sorted_embeddings[np.argsort(sorted_indices)]
             rows['ls_embedding'] = filtered_embeddings.tolist()
 
         if sae_id:
