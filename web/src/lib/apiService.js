@@ -1,6 +1,5 @@
 export const apiUrl = import.meta.env.VITE_API_URL;
 
-const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
 
 /**
  * Fetch a URL and parse the response as JSON, throwing a useful Error on
@@ -326,6 +325,9 @@ export const apiService = {
     });
   },
   getFeatures: async (url) => {
+    // Load hyparquet lazily so the (large) parquet parser is only fetched
+    // when features are actually requested, instead of blocking app boot.
+    const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
     // hyparquet handles fetching the parquet file itself; asyncBufferFromUrl
     // performs its own response status checks and throws on failure.
     const buffer = await asyncBufferFromUrl(url);
