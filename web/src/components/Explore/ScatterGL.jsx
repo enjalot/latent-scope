@@ -7,7 +7,6 @@ import { quadtree } from 'd3-quadtree';
 import REGL from 'regl';
 import {
   mapSelectionColorsLight,
-  mapSelectionColorsDark,
   mapSelectionOpacity,
   mapPointSizeRange,
   mapSelectionKey,
@@ -306,7 +305,7 @@ function ScatterGL({
           let sf = 1.25 + (props.transform.k / maxZoom) * 4;
           return sf;
         },
-        isDarkMode: (context, props) => isDarkMode,
+        isDarkMode: () => isDarkMode,
       },
       count: points.length,
       primitive: 'points',

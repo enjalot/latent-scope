@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import JobProgress from '../components/Job/Progress';
 import { useStartJobPolling } from '../components/Job/Run';
 import SubNav from '../components/SubNav';

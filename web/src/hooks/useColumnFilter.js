@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { apiService } from '../lib/apiService';
 
 const useColumnFilter = (datasetId, scope) => {

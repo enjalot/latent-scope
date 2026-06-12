@@ -25,8 +25,7 @@ const TilePlot = ({
   fill,
   stroke,
   size,
-  symbol,
-  xDomain, 
+  xDomain,
   yDomain, 
   width, 
   height
@@ -67,7 +66,7 @@ const TilePlot = ({
 
       console.log("tiles", tiles)
 
-      tiles.map((tile, i) => {
+      tiles.map((tile) => {
         if(!tile) return;
         let tx = xScale(tile.tile_index % tileMeta.cols * tileMeta.size - tileMeta.cols * tileMeta.size / 2)
         let ty = yScale(Math.floor(tile.tile_index / tileMeta.cols) * tileMeta.size - tileMeta.cols * tileMeta.size / 2 + tileMeta.size)

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 import PropTypes from 'prop-types';
 import Select, { components } from 'react-select';
@@ -79,7 +79,7 @@ const Option = (props) => {
               size="small"
               className={styles.resultButton}
             />
-            <span>Search for nearest neighbors to: "{data.value}"</span>
+            <span>Search for nearest neighbors to: &quot;{data.value}&quot;</span>
           </div>
         </components.Option>
       </div>

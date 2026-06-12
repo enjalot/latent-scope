@@ -1,5 +1,5 @@
 // NearestNeighborResults.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /*
  * NearestNeighborResults performs the vector (nearest neighbor) search using the current query.

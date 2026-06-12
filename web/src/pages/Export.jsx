@@ -129,8 +129,8 @@ function Export() {
             import pandas as pd<br/>
             <br/>
             df = pd.read_parquet({scopeFiles[1]?.[3]})<br/>
-            with h5py.File({scopeSubFiles.embeddings?.[0]?.[3]}, 'r') as emb_file:<br/>
-            &nbsp;&nbsp;embeddings = np.array(emb_file["embeddings"])<br/>
+            with h5py.File({scopeSubFiles.embeddings?.[0]?.[3]}, &apos;r&apos;) as emb_file:<br/>
+            &nbsp;&nbsp;embeddings = np.array(emb_file[&quot;embeddings&quot;])<br/>
             </code>
 
             {hasLance ? (
@@ -139,11 +139,11 @@ function Export() {
                 <code>
                   import lancedb
                   <br />
-                  db = lancedb.connect("{hasLance[3].split('/scopes')[0]}")
+                  db = lancedb.connect(&quot;{hasLance[3].split('/scopes')[0]}&quot;)
                   <br />
-                  table = db.open_table("{scopeId}")
+                  table = db.open_table(&quot;{scopeId}&quot;)
                   <br />
-                  results = table.search(query).metric("cosine").limit(10).to_list()
+                  results = table.search(query).metric(&quot;cosine&quot;).limit(10).to_list()
                 </code>
               </div>
             ) : null}

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { apiService, apiUrl } from '../lib/apiService';
+import { useState, useCallback } from 'react';
+import { apiService } from '../lib/apiService';
 
 export default function useNearestNeighborsSearch({ datasetId, scope, deletedIndices }) {
   const [distances, setDistances] = useState([]);

@@ -81,7 +81,7 @@ export function ScopeProvider({ children }) {
   }, [scope, sae, embeddings]);
 
   const [clusterMap, setClusterMap] = useState({});
-  const [clusterIndices, setClusterIndices] = useState([]);
+  const [, setClusterIndices] = useState([]);
   const [clusterLabels, setClusterLabels] = useState([]);
 
   const [scopeRows, setScopeRows] = useState([]);

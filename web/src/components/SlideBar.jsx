@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 import './SlideBar.css';
@@ -10,7 +9,7 @@ SlideBar.propTypes = {
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
-function SlideBar({ dataset, slides, selected, onHover, onClick }) {
+function SlideBar({ slides, selected, onHover, onClick }) {
 
   return (
     <div className="slide-bar">

@@ -1,5 +1,5 @@
 // FilterContext.js
-import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useScope } from './ScopeContext'; // Assuming this provides scopeRows, deletedIndices, etc.
 import useColumnFilter from '../hooks/useColumnFilter';

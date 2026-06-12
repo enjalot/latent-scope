@@ -44,7 +44,7 @@ function Embedding() {
 
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
-  const [dimensions, setDimensions] = useState(null);
+  const [dimensions] = useState(null);
 
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(

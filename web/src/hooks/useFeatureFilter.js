@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { apiService } from '../lib/apiService';
-import { useScope } from '../contexts/ScopeContext';
 const MIN_THRESHOLD = 0.01;
-const MAX_THRESHOLD = 0.2;
 
 const DEFAULT_FEATURE = -1;
 
-export default function useFeatureFilter({ datasetId, scope, scopeLoaded }) {
+export default function useFeatureFilter({ datasetId, scope }) {
   const [feature, setFeature] = useState(DEFAULT_FEATURE);
   const [threshold, setThreshold] = useState(MIN_THRESHOLD);
   // const { features } = useScope();

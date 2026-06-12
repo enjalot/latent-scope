@@ -22,7 +22,7 @@ import {
 import styles from './Preview.module.scss';
 
 function Preview({ embedding, umap, cluster, labelId } = {}) {
-  const { datasetId, dataset, scope, currentStep, stepIds } = useSetup();
+  const { datasetId, dataset, scope } = useSetup();
 
   const length = dataset?.length || 100;
   // Search related state

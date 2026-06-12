@@ -20,9 +20,9 @@ function MobileExplore() {
 
   const [scatter, setScatter] = useState({});
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [hovered, setHovered] = useState(null);
+  const [hovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
-  const [hoverAnnotations, setHoverAnnotations] = useState([]);
+  const [hoverAnnotations] = useState([]);
 
   const [size, setSize] = useState([window.innerWidth, window.innerHeight - 200]);
   const vizContainerRef = useRef(null);

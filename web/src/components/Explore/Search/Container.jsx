@@ -1,10 +1,9 @@
 // SearchContainer.jsx
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from 'react-element-forge';
 import { useSearchParams } from 'react-router-dom';
 
 import SearchResults from './SearchResults';
-import { useScope } from '../../../contexts/ScopeContext';
 import styles from './Container.module.scss';
 import { useFilter } from '../../../contexts/FilterContext';
 import { filterConstants } from './utils';
@@ -19,9 +18,8 @@ import { filterConstants } from './utils';
  */
 const Container = () => {
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const [urlParams, setUrlParams] = useSearchParams();
+  const [, setUrlParams] = useSearchParams();
 
-  const { clusterLabels, scopeLoaded } = useScope();
   const {
     searchFilter,
     featureFilter,
@@ -31,7 +29,6 @@ const Container = () => {
     columnFilter,
     filterConfig,
     setFilterConfig,
-    filterActive,
     setFilterActive,
   } = useFilter();
 

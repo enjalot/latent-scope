@@ -3,7 +3,6 @@
 import { SetupProvider, useSetup } from '../contexts/SetupContext';
 import SetupHeader from '../components/Setup/Header';
 import Embedding from '../components/Setup/Embedding';
-import Sae from '../components/Setup/Sae';
 import Umap from '../components/Setup/Umap';
 import Cluster from '../components/Setup/Cluster';
 import ClusterLabels from '../components/Setup/ClusterLabels';
@@ -11,7 +10,6 @@ import Scope from '../components/Setup/Scope';
 
 import StepProgress from '../components/Setup/StepProgress';
 
-import Stage from '../components/Setup/Stage';
 import styles from './Setup.module.scss';
 
  

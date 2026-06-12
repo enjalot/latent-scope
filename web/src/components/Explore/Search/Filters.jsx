@@ -1,5 +1,4 @@
 // FilterResults.jsx
-import React from 'react';
 import Select from 'react-select';
 
 /*
@@ -25,7 +24,7 @@ const FilterResults = ({ query }) => {
   ];
 
   // Handle filter option selection; trigger filter-specific code here
-  const handleSelectChange = (_selectedOption) => {};
+  const handleSelectChange = () => {};
 
   return (
     <div className="filter-results">
