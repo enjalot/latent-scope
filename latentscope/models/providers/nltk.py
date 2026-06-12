@@ -1,15 +1,17 @@
 from .base import ChatModelProvider
 
+
 class NLTKChatProvider(ChatModelProvider):
     def load_model(self):
         from collections import Counter
+
         from nltk.corpus import stopwords
         self.Counter = Counter
         self.stopwords = stopwords
-        from nltk.tokenize import word_tokenize
         import nltk
+        from nltk.tokenize import word_tokenize
 
-        class Encoder():
+        class Encoder:
             def encode(self, text):
                 tokens = word_tokenize(text)
                 return tokens

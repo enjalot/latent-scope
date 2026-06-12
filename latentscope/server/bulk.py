@@ -1,6 +1,7 @@
-import os
 import json
+import os
 from datetime import datetime
+
 from flask import Blueprint, current_app, jsonify, request
 
 # Create a Blueprint
@@ -18,7 +19,7 @@ def write_transaction(dataset_id, scope_id, action, payload):
     if not os.path.exists(transactions_file_path):
         with open(transactions_file_path, 'w') as f:
             json.dump([], f)
-    with open(transactions_file_path, 'r') as f:
+    with open(transactions_file_path) as f:
         transactions = json.load(f)
     new_transaction = {
         "action": action,

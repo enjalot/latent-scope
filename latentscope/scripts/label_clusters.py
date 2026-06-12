@@ -1,10 +1,10 @@
 # Usage: ls-label <dataset_id> <text_column> <cluster_id> <model_id> <context>
+import argparse
+import json
 import os
 import re
 import sys
-import json
 import time
-import argparse
 from datetime import datetime
 
 try:
@@ -13,12 +13,13 @@ try:
         from tqdm.notebook import tqdm
     else:
         from tqdm import tqdm
-except ImportError as e:
+except ImportError:
     # Fallback to the standard console version if import fails
     from tqdm import tqdm
 
-from latentscope.util import get_data_dir
 from latentscope.models import get_chat_model
+from latentscope.util import get_data_dir
+
 
 def chunked_iterable(iterable, size):
     """Yield successive chunks from an iterable."""
@@ -64,12 +65,12 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     # initialize the labeled property to false when loading default clusters
     clusters = clusters.copy()
     clusters['labeled'] = False
-    
+
     cluster_rows = pd.read_parquet(os.path.join(cluster_dir, f"{cluster_id}.parquet"))
     df["cluster"] = cluster_rows["cluster"]
     df["raw_cluster"] = cluster_rows["raw_cluster"]
 
-    with open(os.path.join(cluster_dir, f"{cluster_id}.json"), 'r') as f:
+    with open(os.path.join(cluster_dir, f"{cluster_id}.json")) as f:
         cluster_meta = json.load(f)
     umap_id = cluster_meta["umap_id"]
     umap = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
@@ -83,7 +84,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
         # find the first row where labeled isnt True
         unlabeled_row = clusters[~clusters['labeled']].first_valid_index()
         tqdm.write(f"First unlabeled row: {unlabeled_row}")
-        
+
 
     else:
         # Determine the label id for the given cluster_id by checking existing label files
@@ -111,7 +112,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     model = get_chat_model(model_id)
     model.load_model()
     enc = model.encoder
-    tqdm.write(f"Model loaded")
+    tqdm.write("Model loaded")
 
     # unescape the context
     context = context.replace('\\"', '"')
@@ -134,13 +135,13 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
             # Sort cluster items by distance from centroid
             # Get x,y coordinates for items
             coords = cluster_items[['x', 'y']].values
-            
+
             # Calculate centroid
             centroid = coords.mean(axis=0)
-            
+
             # Calculate distances from centroid
             distances = np.sqrt(np.sum((coords - centroid) ** 2, axis=1))
-            
+
             # Add distances as column and sort
             cluster_items = cluster_items.assign(centroid_dist=distances)
             cluster_items = cluster_items.sort_values('centroid_dist')
@@ -151,7 +152,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
         items = items.drop_duplicates()
         items = items[text_column]
         # tqdm.write(f"{i} items: {len(items)}")
-        
+
         total_tokens = 0
         keep_items = []
         if enc is not None:
@@ -201,7 +202,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
             # tqdm.write(f"Summarizing {batch[0]}")
             label = model.summarize(batch[0], context)
             labels.append(label)
-            
+
             # do some cleanup of the labels when the model doesn't follow instructions
             clean_label = label.replace("\n", " ")
             clean_label = clean_label.replace("<|eot_id|>", "")
@@ -216,7 +217,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
                 tqdm.write(f"cluster {i} label: {clean_label}")
                 tqdm.write(f"batch: {batch[0]}")
                 tqdm.write(f"label: {label}")
-            
+
             tqdm.write(f"cluster {i} label: {clean_label}")
             clusters.loc[i, 'label'] = clean_label
             clusters.loc[i, 'label_raw'] = label
@@ -226,9 +227,9 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
             # clusters_df.loc[unlabled_row:unlabled_row+length, 'label_raw'] = labels
             # clusters_df.loc[unlabled_row:unlabled_row+length, 'labeled'] = [True for i in range(0, len(labels))]
             clusters.to_parquet(os.path.join(cluster_dir, f"{label_id}.parquet"))
-            # update 
+            # update
 
-        except Exception as e: 
+        except Exception as e:
             tqdm.write(f"{batch[0]}")
             tqdm.write(f"ERROR: {e}")
             tqdm.write("exiting")
@@ -242,7 +243,7 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
         json.dump({
             "id": label_id,
             "cluster_id": cluster_id,
-            "model_id": model_id, 
+            "model_id": model_id,
             "text_column": text_column,
             "samples": samples,
             "context": context,

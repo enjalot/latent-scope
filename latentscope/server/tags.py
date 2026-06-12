@@ -33,7 +33,7 @@ def tags():
         if f.endswith(".indices"):
             tag = f.split(".")[0]
             indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-            if type(indices) == int:
+            if isinstance(indices, int):
                 indices = [indices]
             tagsets[dataset][tag] = indices
     return jsonify(tagsets[dataset])
@@ -50,7 +50,7 @@ def new_tag():
         if f.endswith(".indices"):
             dtag = f.split(".")[0]
             indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", dtag + ".indices"), dtype=int).tolist()
-            if type(indices) == int:
+            if isinstance(indices, int):
                 indices = [indices]
             tagsets[dataset][dtag] = indices
 
@@ -75,7 +75,7 @@ def add_tag():
         ts = tagsets[dataset]
     if tag not in ts:
         indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if type(indices) == int:
+        if isinstance(indices, int):
             indices = [indices]
         ts[tag] = indices
     else:
@@ -104,7 +104,7 @@ def add_tags():
         ts = tagsets[dataset]
     if tag not in ts:
         indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if type(indices) == int:
+        if isinstance(indices, int):
             indices = [indices]
         ts[tag] = indices
     else:
@@ -134,7 +134,7 @@ def remove_tag():
         ts = tagsets[dataset]
     if tag not in ts:
         indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if type(indices) == int:
+        if isinstance(indices, int):
             indices = [indices]
         ts[tag] = indices
     else:
@@ -160,7 +160,7 @@ def remove_tags():
         ts = tagsets[dataset]
     if tag not in ts:
         indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if type(indices) == int:
+        if isinstance(indices, int):
             indices = [indices]
         ts[tag] = indices
     else:

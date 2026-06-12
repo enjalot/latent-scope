@@ -1,12 +1,13 @@
 # Usage: python umapper.py <dataset_id> <model> <neighbors> <min_dist>
 # Example: python umapper.py dadabase-curated BAAI_bge-small-en-v1.5 50 0.075
+import argparse
+import json
 import os
 import re
 import sys
-import json
-import argparse
 
 from latentscope.util import get_data_dir
+
 
 def main():
     parser = argparse.ArgumentParser(description='UMAP embeddings for a dataset')
@@ -48,6 +49,7 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
 def load_embeddings(dataset_id, embedding_id):
     import h5py
     import numpy as np
+
     from latentscope.util.embedding_store import load_embeddings as lance_load_embeddings
     DATA_DIR = get_data_dir()
 
@@ -58,7 +60,7 @@ def load_embeddings(dataset_id, embedding_id):
             all_indices = f.get("top_indices")[:]
 
         # read the meta json for sae
-        with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{embedding_id}.json"), 'r') as f:
+        with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{embedding_id}.json")) as f:
             meta = json.load(f)
 
         import scipy
@@ -73,7 +75,7 @@ def load_embeddings(dataset_id, embedding_id):
 
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None, seed=None):
     DATA_DIR = get_data_dir()
-    # read in the embeddings 
+    # read in the embeddings
 
     umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
     if not os.path.exists(umap_dir):
@@ -93,12 +95,13 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     umap_id = f"umap-{next_umap_number:03d}"
     print("RUNNING:", umap_id)
 
-    import umap
-    import h5py
     import pickle
+
+    import h5py
+    import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
-    import matplotlib.pyplot as plt
+    import umap
 
     print("loading embeddings")
     # embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
@@ -125,15 +128,15 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         # Calculate tile indices for a 64x64 grid from -1 to 1
         # def make_tiles(x, y, num_tiles=64):
         #     tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
-            
+
         #     # Calculate row and column indices (0-63) for each point
         #     col_indices = np.floor((x + 1) / tile_size).astype(int)
         #     row_indices = np.floor((y + 1) / tile_size).astype(int)
-            
+
         #     # Clip indices to valid range in case of numerical edge cases
         #     col_indices = np.clip(col_indices, 0, num_tiles - 1)
         #     row_indices = np.clip(row_indices, 0, num_tiles - 1)
-            
+
         #     # Convert 2D grid indices to 1D tile index (row * num_cols + col)
         #     tile_indices = row_indices * num_tiles + col_indices
         #     return tile_indices
@@ -158,9 +161,9 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
             meta = {
-                "id": umap_id, 
+                "id": umap_id,
                 "embedding_id": emb_id,
-                "neighbors": neighbors, 
+                "neighbors": neighbors,
                 "min_dist": min_dist,
                 "min_values": min_values.tolist(),
                 "max_values": max_values.tolist(),
@@ -193,7 +196,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             print("loaded", emb, "shape", a_emb.shape)
             a_embeddings.append(a_emb)
             a_embedding_ids.append(emb)
-        
+
         reducer = umap.AlignedUMAP(
             n_neighbors=neighbors,
             min_dist=min_dist,
@@ -212,7 +215,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             process_umap_embeddings(f"umap-{next_umap_number+i:03d}", aligned[i], emb, umap_id)
 
         print("done with aligned umap")
-        return 
+        return
 
     if init is not None and init != "":
         print("loading umap", init)
@@ -239,7 +242,6 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         )
     print("reducing", embeddings.shape[1], "embeddings to 2 dimensions")
 
-    import sys
     sys.stdout.flush()
 
     umap_embeddings = reducer.fit_transform(embeddings)
@@ -254,7 +256,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
 
 def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False, init=None, seed=None):
     DATA_DIR = get_data_dir()
-    # read in the embeddings 
+    # read in the embeddings
 
     umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
     if not os.path.exists(umap_dir):
@@ -274,12 +276,13 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
     umap_id = f"umap-{next_umap_number:03d}"
     print("RUNNING:", umap_id)
 
-    import umap
-    import h5py
     import pickle
+
+    import h5py
+    import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
-    import matplotlib.pyplot as plt
+    import umap
 
     print("loading sparse embeddings")
     matrix = load_embeddings(dataset_id, sae_id)
@@ -292,7 +295,7 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
     # with open(os.path.join(DATA_DIR, dataset_id, "saes", f"{sae_id}.json"), 'r') as f:
     #     meta = json.load(f)
     # print("SAE META", meta["id"], meta["num_features"], "features", meta["model_id"], meta["k_expansion"])
-    
+
     # import scipy
     # print("ALL ACTS SHAPE", all_acts.shape)
     # print("ALL INDS SHAPE", all_indices.shape)
@@ -302,7 +305,7 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
     # for i in range(all_acts.shape[0]):
     #     matrix.rows[i] = all_indices[i].tolist()
     #     matrix.data[i] = all_acts[i].tolist()
-    
+
     def process_umap_embeddings(umap_id, umap_embeddings, emb_id, sae_id, align_id=None):
         min_values = np.min(umap_embeddings, axis=0)
         max_values = np.max(umap_embeddings, axis=0)
@@ -332,10 +335,10 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
             meta = {
-                "id": umap_id, 
+                "id": umap_id,
                 "embedding_id": emb_id,
                 "sae_id": sae_id,
-                "neighbors": neighbors, 
+                "neighbors": neighbors,
                 "min_dist": min_dist,
             }
             if init is not None and init != "":
@@ -368,7 +371,6 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
             verbose=True,
         )
     print("reducing", matrix.shape[0], "sparse features to 2 dimensions")
-    import sys
     sys.stdout.flush()
 
     import time

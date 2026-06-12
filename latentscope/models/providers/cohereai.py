@@ -1,8 +1,10 @@
 import os
 import time
-from .base import EmbedModelProvider
 
 from latentscope.util import get_key
+
+from .base import EmbedModelProvider
+
 
 class CohereAIEmbedProvider(EmbedModelProvider):
     def load_model(self):

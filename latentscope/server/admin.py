@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 from flask import Blueprint, current_app, jsonify, request
 
 # Create a Blueprint
@@ -20,7 +21,7 @@ def get_datasets():
         meta_file_path = os.path.join(DATA_DIR, dir, 'meta.json')
         entry = {'id': dir}
         if os.path.exists(meta_file_path):
-            with open(meta_file_path, 'r', encoding='utf-8') as meta_file:
+            with open(meta_file_path, encoding='utf-8') as meta_file:
                 try:
                     meta_contents = json.load(meta_file)
                     entry['length'] = meta_contents.get('length')

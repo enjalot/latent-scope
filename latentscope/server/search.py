@@ -341,9 +341,9 @@ def compare_clusters():
     cluster_dir = os.path.join(DATA_DIR, dataset, "clusters")
 
     # Load cluster metadata to verify same UMAP
-    with open(os.path.join(cluster_dir, f"{cluster_left}.json"), 'r') as f:
+    with open(os.path.join(cluster_dir, f"{cluster_left}.json")) as f:
         meta_left = json.load(f)
-    with open(os.path.join(cluster_dir, f"{cluster_right}.json"), 'r') as f:
+    with open(os.path.join(cluster_dir, f"{cluster_right}.json")) as f:
         meta_right = json.load(f)
 
     if meta_left["umap_id"] != meta_right["umap_id"]:

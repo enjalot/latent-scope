@@ -1,5 +1,7 @@
 import argparse
+
 from latentscope.util import update_data_dir
+
 
 def start():
   parser = argparse.ArgumentParser(description='Start the Latent Scope API')

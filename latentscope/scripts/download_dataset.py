@@ -3,17 +3,20 @@ Usage:
 python latentscope/scripts/download_dataset.py "enjalot/ls-datavis-misunderstood" ~/latent-scope-data/datavis-misunderstood
 """
 
-from datasets import load_dataset
-from huggingface_hub import hf_hub_download, snapshot_download
-from pathlib import Path
 import argparse
 import os
+from pathlib import Path
+
+from datasets import load_dataset
+from huggingface_hub import hf_hub_download, snapshot_download
+
 from latentscope.util import get_key
+
 
 def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
     """
     Download a latentscope dataset from Hugging Face.
-    
+
     Args:
         dataset_path (str): Path to the dataset on Hugging Face (e.g., 'username/dataset-name')
         output_dir (str): Local directory to save the downloaded files
@@ -22,10 +25,10 @@ def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
     # Get token from .env if not provided
     if not token:
         token = get_key("HUGGINGFACE_TOKEN")
-    
+
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-    
+
     try:
         # Download the latentscope directory into output_dir/dataset_name
         latentscope_path = Path(output_dir) / dataset_name
@@ -72,17 +75,17 @@ def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
         meta_path = latentscope_path / "meta.json"
         if meta_path.exists():
             import json
-            with open(meta_path, 'r') as f:
+            with open(meta_path) as f:
                 meta = json.load(f)
             meta['id'] = dataset_name
             with open(meta_path, 'w') as f:
                 json.dump(meta, f, indent=2)
-        
+
         # Update dataset.id in all scope JSON files
         scopes_dir = latentscope_path / "scopes"
         if scopes_dir.exists():
             for scope_file in scopes_dir.glob("scopes-*.json"):
-                with open(scope_file, 'r') as f:
+                with open(scope_file) as f:
                     scope_data = json.load(f)
                 if 'dataset' in scope_data:
                     scope_data['dataset']['id'] = dataset_name
@@ -90,7 +93,7 @@ def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
                         json.dump(scope_data, f, indent=2)
 
         print(f"Successfully downloaded latentscope files to: {latentscope_path}")
-            
+
     except Exception as e:
         print(f"Error downloading scope: {e}")
         raise
@@ -101,9 +104,9 @@ def main():
     parser.add_argument('dataset_name', help='Name of the dataset')
     parser.add_argument('output_dir', help='Local directory to save the downloaded files')
     parser.add_argument('--token', help='Hugging Face API token', default=None)
-    
+
     args = parser.parse_args()
-    
+
     download_from_huggingface(args.dataset_repo, args.dataset_name, args.output_dir, args.token)
 
 if __name__ == "__main__":
