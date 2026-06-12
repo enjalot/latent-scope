@@ -21,6 +21,70 @@ def _parse_bool_env(value):
     return value.lower() in ('true', '1', 't', 'y', 'yes')
 
 
+def _image_columns(data_dir, dataset):
+    """Column names flagged ``type: "image"`` in the dataset's meta.json."""
+    meta_path = os.path.join(data_dir, dataset, "meta.json")
+    try:
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    column_metadata = meta.get("column_metadata") or {}
+    return [
+        col for col, col_meta in column_metadata.items()
+        if isinstance(col_meta, dict) and col_meta.get("type") == "image"
+    ]
+
+
+def _load_dataset_dataframe(data_dir, dataset, dataframes):
+    """Load (and cache) a dataset's input.parquet, excluding image columns.
+
+    Binary image columns are dropped at parquet-read time: their bytes can't
+    be JSON serialized and would otherwise bloat the in-memory DATAFRAMES
+    cache by GBs. The frontend reconstructs image display from column
+    metadata + row index via /api/datasets/<dataset>/image. Datasets with no
+    image columns are read exactly as before.
+    """
+    if dataset in dataframes:
+        return dataframes[dataset]
+
+    import pandas as pd
+
+    file_path = os.path.join(data_dir, dataset, "input.parquet")
+    image_cols = _image_columns(data_dir, dataset)
+    if image_cols:
+        import pyarrow.parquet as pq
+        schema_names = pq.ParquetFile(file_path).schema_arrow.names
+        keep = [col for col in schema_names if col not in image_cols]
+        df = pd.read_parquet(file_path, columns=keep)
+    else:
+        df = pd.read_parquet(file_path)
+    dataframes[dataset] = df
+    return df
+
+
+def _sanitize_bytes_for_json(df):
+    """Defensively null out values that would break ``DataFrame.to_json``.
+
+    Raw bytes (or HF-style dicts containing bytes) can't be serialized as
+    JSON; any such value that still reaches the serialization path is
+    replaced with None rather than 500ing. Mutates and returns ``df`` (pass
+    a copy)."""
+    def _contains_bytes(value):
+        if isinstance(value, (bytes, bytearray)):
+            return True
+        if isinstance(value, dict):
+            return any(isinstance(v, (bytes, bytearray)) for v in value.values())
+        return False
+
+    for col in df.columns:
+        if df[col].dtype == object:
+            mask = df[col].map(_contains_bytes)
+            if mask.any():
+                df[col] = df[col].where(~mask, None)
+    return df
+
+
 def create_app(data_dir=None, read_only=None):
     """Application factory.
 
@@ -137,7 +201,6 @@ def create_app(data_dir=None, read_only=None):
     def indexed():
         import h5py
         import numpy as np
-        import pandas as pd
 
         req = request.get_json()
         dataset = req['dataset']
@@ -146,15 +209,12 @@ def create_app(data_dir=None, read_only=None):
         embedding_id = req.get('embedding_id')
         sae_id = req.get('sae_id')
 
-        dataframes = app.config['DATAFRAMES']
-        if dataset not in dataframes:
-            df = pd.read_parquet(os.path.join(data_dir, dataset, "input.parquet"))
-            dataframes[dataset] = df
-        else:
-            df = dataframes[dataset]
+        df = _load_dataset_dataframe(data_dir, dataset, app.config['DATAFRAMES'])
 
         if columns:
-            df = df[columns]
+            # image columns are excluded at read time, so drop them from any
+            # requested column list rather than KeyError-ing
+            df = df[[col for col in columns if col in df.columns]]
 
         valid_indices = [i for i in indices if i < len(df)]
         rows = df.iloc[valid_indices].copy()
@@ -181,22 +241,15 @@ def create_app(data_dir=None, read_only=None):
             rows['sae_acts'] = filtered_acts.tolist()
             rows['sae_indices'] = filtered_top_inds.tolist()
 
-        return rows.to_json(orient="records")
+        return _sanitize_bytes_for_json(rows).to_json(orient="records")
 
     @app.route('/api/column-filter', methods=['POST'])
     def column_filter():
-        import pandas as pd
-
         req = request.get_json()
         dataset = req['dataset']
         filters = req['filters']
 
-        dataframes = app.config['DATAFRAMES']
-        if dataset not in dataframes:
-            df = pd.read_parquet(os.path.join(data_dir, dataset, "input.parquet"))
-            dataframes[dataset] = df
-        else:
-            df = dataframes[dataset]
+        df = _load_dataset_dataframe(data_dir, dataset, app.config['DATAFRAMES'])
 
         rows = df.copy()
         if filters:
@@ -223,7 +276,6 @@ def create_app(data_dir=None, read_only=None):
     def query():
         import h5py
         import numpy as np
-        import pandas as pd
 
         per_page = 100
         req = request.get_json()
@@ -234,12 +286,7 @@ def create_app(data_dir=None, read_only=None):
         sae_id = req.get('sae_id')
         sort = req.get('sort')
 
-        dataframes = app.config['DATAFRAMES']
-        if dataset not in dataframes:
-            df = pd.read_parquet(os.path.join(data_dir, dataset, "input.parquet"))
-            dataframes[dataset] = df
-        else:
-            df = dataframes[dataset]
+        df = _load_dataset_dataframe(data_dir, dataset, app.config['DATAFRAMES'])
 
         rows = df.copy()
         rows['ls_index'] = rows.index
@@ -273,7 +320,8 @@ def create_app(data_dir=None, read_only=None):
         if sort:
             rows = rows.sort_values(by=sort['column'], ascending=sort['ascending'])
 
-        rows_json = json.loads(rows[page * per_page:page * per_page + per_page].to_json(orient="records"))
+        page_rows = rows[page * per_page:page * per_page + per_page].copy()
+        rows_json = json.loads(_sanitize_bytes_for_json(page_rows).to_json(orient="records"))
         return jsonify({
             "rows": rows_json,
             "page": page,
