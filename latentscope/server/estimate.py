@@ -18,6 +18,18 @@ def _data_dir():
     return current_app.config['DATA_DIR']
 
 
+def _is_image_column(data_dir, dataset, column):
+    """True if ingest flagged the column as a binary image column."""
+    if not column:
+        return False
+    meta_path = os.path.join(data_dir, dataset, "meta.json")
+    if not os.path.exists(meta_path):
+        return False
+    with open(meta_path) as f:
+        meta = json.load(f)
+    return meta.get("column_metadata", {}).get(column, {}).get("type") == "image"
+
+
 @estimate_bp.route('/embed', methods=['GET'])
 def estimate_embed():
     """Estimate compute time and storage for embedding a dataset.
@@ -45,8 +57,14 @@ def estimate_embed():
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
     num_rows = len(df)
 
-    # Get text stats
-    if text_column and text_column in df.columns:
+    # Get text stats (image columns get a flat per-row estimate; their
+    # values are binary blobs so text statistics are meaningless)
+    is_image_column = _is_image_column(DATA_DIR, dataset, text_column)
+    if is_image_column:
+        avg_text_length = 0
+        max_text_length = 0
+        avg_word_count = 0
+    elif text_column and text_column in df.columns:
         texts = df[text_column].fillna("").astype(str)
         avg_text_length = int(texts.str.len().mean())
         max_text_length = int(texts.str.len().max())
@@ -94,6 +112,9 @@ def estimate_embed():
     elif is_late_interaction:
         # Late interaction models are slower
         items_per_sec = 50  # conservative GPU estimate
+    elif group == 'image' or is_image_column:
+        # Vision encoders: decode + preprocess + forward per image
+        items_per_sec = 30  # conservative estimate
     else:
         # Local transformers model
         items_per_sec = 200  # conservative GPU estimate
@@ -226,10 +247,14 @@ def benchmark_embed():
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset, "input.parquet"))
     num_rows = len(df)
 
-    # Sample texts
+    # Sample inputs (PIL images for image columns, strings otherwise)
     sample_size = min(sample_size, num_rows)
     sample_df = df.sample(n=sample_size, random_state=42)
-    texts = sample_df[text_column].fillna(" ").astype(str).tolist()
+    if _is_image_column(DATA_DIR, dataset, text_column):
+        from latentscope.scripts.embed import decode_image_batch
+        texts = decode_image_batch(sample_df[text_column].tolist())
+    else:
+        texts = sample_df[text_column].fillna(" ").astype(str).tolist()
 
     # Load model
     model = get_embedding_model(model_id)
