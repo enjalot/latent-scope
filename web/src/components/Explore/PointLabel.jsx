@@ -10,7 +10,6 @@ function PointLabel({
   yDomain,
   width,
   height,
-  fill = '#7baf5a', // same as HullPlot default
   textColor = 'white',
   k,
   maxZoom,
@@ -36,11 +35,6 @@ function PointLabel({
     const FACTOR = 900;
     const scaleFactor = Math.min(width, height) / FACTOR;
     return Math.max(baseFontSize * scaleFactor, 8);
-  };
-
-  const calculateTextWidth = (text, fontSize) => {
-    const charWidth = fontSize * 0.6;
-    return text.length * charWidth + 2 * fontSize;
   };
 
   useEffect(() => {

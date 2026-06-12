@@ -1,4 +1,3 @@
-import { useState } from 'react';
 const apiUrl = import.meta.env.VITE_API_URL
 
 function Deleting({ dataset, scope, indices, onSuccess }) {
@@ -16,7 +15,7 @@ function Deleting({ dataset, scope, indices, onSuccess }) {
         }),
       })
       .then(response => response.json())
-      .then(data => {
+      .then(() => {
         onSuccess();
       });
     }}>Delete {indices.length} rows</button>

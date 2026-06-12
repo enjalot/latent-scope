@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 // import { scaleLinear } from 'd3-scale';
-import { line, curveLinearClosed, curveCatmullRomClosed } from 'd3-shape';
+import { line, curveLinearClosed } from 'd3-shape';
 import { select } from 'd3-selection';
-import { baseColor, baseColorDark } from '../lib/colors';
-import { transition } from 'd3-transition';
-import { easeExpOut, easeExpIn, easeCubicInOut } from 'd3-ease';
 // import { interpolate } from 'flubber';
 
 import './HullPlot.css';
@@ -42,11 +39,9 @@ const HullPlot = ({
   hulls,
   fill,
   stroke,
-  delay = 0,
   duration = 2000,
   strokeWidth,
   opacity = 0.75,
-  darkMode = false,
   xDomain,
   yDomain,
   width,
@@ -55,8 +50,6 @@ const HullPlot = ({
 }) => {
   const svgRef = useRef();
   const prevHulls = useRef();
-
-  const textColor = baseColor;
 
   const hasLabel = label !== undefined;
   let labelToShow = label;
@@ -132,11 +125,7 @@ const HullPlot = ({
 
     let sel = g.selectAll('path.hull').data(hulls);
 
-    // Add base font size calculation
-    const baseFontSize = 12;
-    const scaledFontSize = baseFontSize / Math.sqrt(xScaleFactor * yScaleFactor);
-
-    const exit = sel
+    sel
       .exit()
       // .transition()
       // .duration(duration)
@@ -145,7 +134,7 @@ const HullPlot = ({
       // .style("opacity", 0)
       .remove();
 
-    const enter = sel
+    sel
       .enter()
       .append('path')
       .classed('hull', true)
@@ -160,7 +149,7 @@ const HullPlot = ({
       //   .ease(easeExpOut)
       .style('opacity', opacity);
 
-    const update = sel
+    sel
       // .transition()
       // .duration(duration)
       // .delay(delay)
@@ -225,11 +214,11 @@ const HullPlot = ({
           const highest = hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height);
           return highest.y - 20; // Position above the highest point
         })
-        .attr('width', (d) => {
+        .attr('width', () => {
           const fontSize = calculateScaledFontSize(width, height);
           return calculateTextWidth(labelToShow, fontSize);
         })
-        .attr('height', (d) => {
+        .attr('height', () => {
           const fontSize = calculateScaledFontSize(width, height);
           return fontSize * 2; // Make height 1.5 times the font size for proper padding
         });

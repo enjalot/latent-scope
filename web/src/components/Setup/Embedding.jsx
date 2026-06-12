@@ -1,5 +1,5 @@
 // NewEmbedding.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { Select, Button } from 'react-element-forge';
 
@@ -44,7 +44,7 @@ function Embedding() {
 
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
-  const [dimensions, setDimensions] = useState(null);
+  const [dimensions] = useState(null);
 
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(
@@ -108,14 +108,15 @@ function Embedding() {
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
 
   const [HFModels, setHFModels] = useState([]);
-  const searchHFModels = useCallback((query) => {
-    debounce(
-      apiService.searchHFSTModels(query).then((hfm) => {
-        setHFModels(hfm);
-      }),
-      300
-    );
-  }, []);
+  const searchHFModels = useMemo(
+    () =>
+      debounce((query) => {
+        apiService.searchHFSTModels(query).then((hfm) => {
+          setHFModels(hfm);
+        });
+      }, 300),
+    []
+  );
 
   const [presetModels, setPresetModels] = useState([]);
   useEffect(() => {
@@ -356,13 +357,6 @@ function Embedding() {
     [setDefaultModel, setModelId]
   );
 
-  const handleDimensionsChange = useCallback(
-    (e) => {
-      setDimensions(+e.target.value);
-    },
-    [setDimensions]
-  );
-
   const handleTextColumnChange = useCallback(
     (e) => {
       setTextColumn(e.target.value);
@@ -404,8 +398,6 @@ function Embedding() {
     }
     goToNextStep();
   }, [updateScope, goToNextStep, embedding, savedScope, sae]);
-
-  const isComplete = embeddingsJob && embeddingsJob.status === 'completed';
 
   return (
     <div className={styles['embeddings']}>
@@ -541,7 +533,7 @@ function Embedding() {
                   </span>
                   <Tooltip className="tooltip-area" id="maxseqlength" place="top" effect="solid">
                     This controls the maximum number of tokens to embed for each item. <br></br>
-                    You can increase this number to the model's context length, and reduce it to
+                    You can increase this number to the model&apos;s context length, and reduce it to
                     save memory. <br></br>
                     If an item is too long, it will be truncated.
                   </Tooltip>
@@ -643,7 +635,7 @@ function Embedding() {
                             onClick={(e) => {
                               e.preventDefault();
                               setMigratingId(emb.id);
-                              apiService.migrateEmbedding(dataset.id, emb.id).then((result) => {
+                              apiService.migrateEmbedding(dataset.id, emb.id).then(() => {
                                 setMigratingId(null);
                                 setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: 'lancedb' }));
                               });
@@ -666,7 +658,7 @@ function Embedding() {
                     <span>text column: {emb.text_column}</span>
                     {emb.prefix ? (
                       <span>
-                        Prefix: "<code>{emb.prefix}</code>"<br />
+                        Prefix: &quot;<code>{emb.prefix}</code>&quot;<br />
                       </span>
                     ) : null}
                     {dims.length ? (

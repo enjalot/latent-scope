@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { groups } from 'd3-array';
-import PropTypes from 'prop-types';
 // import Scatter from '../Scatter';
 // import Scatter from '../ScatterCanvas';
 import Scatter from './ScatterGL';
@@ -19,10 +18,10 @@ import { filterConstants } from './Search/utils';
 import { useScope } from '../../contexts/ScopeContext';
 import { useFilter } from '../../contexts/FilterContext';
 
-import { mapSelectionOpacity, mapPointSizeRange, mapSelectionKey } from '../../lib/colors';
+import { mapSelectionKey } from '../../lib/colors';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
-import { Icon, Button } from 'react-element-forge';
+import { Button } from 'react-element-forge';
 
 // VisualizationPane.propTypes = {
 //   hoverAnnotations: PropTypes.array.isRequired,
@@ -41,9 +40,7 @@ import { Icon, Button } from 'react-element-forge';
 function VisualizationPane({
   width,
   height,
-  onScatter,
   hovered,
-  hoveredIndex,
   onHover,
   onSelect,
   hoverAnnotations,
@@ -52,7 +49,7 @@ function VisualizationPane({
   dataTableRows,
   isSmallScreen = false,
 }) {
-  const { scopeRows, clusterLabels, clusterMap, deletedIndices, scope, features } = useScope();
+  const { scopeRows, clusterLabels, scope, features } = useScope();
 
   const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
     useFilter();
@@ -75,11 +72,8 @@ function VisualizationPane({
   );
 
   // const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(true);
+  const [isFullScreen] = useState(true);
   const umapRef = useRef(null);
-  const [umapOffset, setUmapOffset] = useState(0);
-
-  const size = [width, height];
 
   const featureIsSelected = featureFilter.feature !== -1;
 
@@ -90,7 +84,7 @@ function VisualizationPane({
     }
 
     const lookup = new Map();
-    dataTableRows.forEach((data, index) => {
+    dataTableRows.forEach((data) => {
       const activatedIdx = data.sae_indices.indexOf(featureFilter.feature);
       if (activatedIdx !== -1) {
         const activatedFeature = data.sae_acts[activatedIdx];
@@ -129,14 +123,6 @@ function VisualizationPane({
       }
     });
   }, [scopeRows, shownIndices, featureActivationMap, featureIsSelected]);
-
-  const points = useMemo(() => {
-    return scopeRows
-      .filter((p) => !p.deleted)
-      .map((p) => {
-        return [p.x, p.y];
-      });
-  }, [scopeRows]);
 
   // const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   // useEffect(() => {
@@ -231,13 +217,6 @@ function VisualizationPane({
   const updatePointOpacity = useCallback((value) => {
     setVizConfig((prev) => ({ ...prev, pointOpacity: value }));
   }, []);
-
-  const pointSizeRange = useMemo(() => {
-    return mapPointSizeRange.map((d) => d * vizConfig.pointSize);
-  }, [vizConfig.pointSize]);
-  const pointOpacityRange = useMemo(() => {
-    return mapSelectionOpacity.map((d) => d * vizConfig.pointOpacity);
-  }, [vizConfig.pointOpacity]);
 
   // ensure the order of selectedPoints
   // exactly matches the ordering of indexes in shownIndices.

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-export default function useClusterFilter({ scopeRows, scopeLoaded, setFilteredIndices }) {
+export default function useClusterFilter({ scopeRows }) {
   const [cluster, setCluster] = useState(null);
 
   const filter = (cluster) => {

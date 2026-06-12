@@ -181,7 +181,7 @@ function CompareClusters() {
   }, []);
 
   const handleCellClick = useCallback(
-    (leftClusterId, rightClusterId, count) => {
+    (leftClusterId, rightClusterId) => {
       if (!leftLabels.length || !rightLabels.length) return;
       // Find indices that are in this cell
       const indices = [];

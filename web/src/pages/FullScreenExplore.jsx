@@ -40,11 +40,12 @@ const styles = {
 function ExploreContent() {
   // Get scope-related state from ScopeContext
   const {
-    userId,
     datasetId,
+    scopeId,
     dataset,
     scope,
     scopeLoaded,
+    error: scopeError,
     scopeRows,
     deletedIndices,
     clusterMap,
@@ -57,10 +58,12 @@ function ExploreContent() {
 
   const navigate = useNavigate();
 
+  // Set view of deletedIndices for O(1) membership checks in hot paths
+  // (hover handlers); the array remains the source of truth.
+  const deletedIndicesSet = useMemo(() => new Set(deletedIndices), [deletedIndices]);
+
   // Get filter-related state from FilterContext
   const {
-    loading: filterLoading,
-    shownIndices,
     setFilterQuery,
     featureFilter,
     searchFilter,
@@ -75,8 +78,10 @@ function ExploreContent() {
   const [hovered, setHovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  const [dataTableRows, setDataTableRows] = useState([]);
-  const [selectedAnnotations, setSelectedAnnotations] = useState([]);
+  // Note: these currently have no setters wired up; they exist to satisfy
+  // VisualizationPane's props with stable empty values.
+  const [dataTableRows] = useState([]);
+  const [selectedAnnotations] = useState([]);
 
   // Add a ref to track the latest requested index
   const latestHoverIndexRef = useRef(null);
@@ -92,17 +97,13 @@ function ExploreContent() {
         }
       });
     },
-    [userId, datasetId, scope]
+    [datasetId, scope]
   );
 
   const debouncedHydrateHoverText = useDebounce(hydrateHoverText, 5);
 
   useEffect(() => {
-    if (
-      hoveredIndex !== null &&
-      hoveredIndex !== undefined &&
-      !deletedIndices.includes(hoveredIndex)
-    ) {
+    if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndicesSet.has(hoveredIndex)) {
       debouncedHydrateHoverText(hoveredIndex, (text) => {
         setHovered({
           text: text,
@@ -114,7 +115,7 @@ function ExploreContent() {
       setHovered(null);
       latestHoverIndexRef.current = null; // Reset the ref when hover is cleared
     }
-  }, [hoveredIndex, deletedIndices, clusterMap, debouncedHydrateHoverText]);
+  }, [hoveredIndex, deletedIndicesSet, clusterMap, debouncedHydrateHoverText]);
 
   // Update hover annotations
   useEffect(() => {
@@ -129,11 +130,11 @@ function ExploreContent() {
   const [showClusters, setShowClusters] = useState(false);
 
   // Handlers for responding to individual data points
-  const handleClicked = useCallback((_index) => {}, []);
+  const handleClicked = useCallback(() => {}, []);
 
   const handleHover = useCallback(
     (index) => {
-      const nonDeletedIndex = deletedIndices.includes(index) ? null : index;
+      const nonDeletedIndex = deletedIndicesSet.has(index) ? null : index;
       setHoveredIndex(nonDeletedIndex);
       if (nonDeletedIndex >= 0) {
         setHoveredCluster(clusterMap[nonDeletedIndex]);
@@ -141,7 +142,7 @@ function ExploreContent() {
         setHoveredCluster(null);
       }
     },
-    [deletedIndices]
+    [deletedIndicesSet]
   );
 
   const containerRef = useRef(null);
@@ -161,34 +162,23 @@ function ExploreContent() {
     [dataset, navigate]
   );
 
+  // Track the filters container height. Depends on `dataset` because the
+  // container only renders once the dataset has loaded.
   useEffect(() => {
+    const node = filtersContainerRef.current;
+    if (!node) {
+      setFiltersHeight(0);
+      return;
+    }
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const { height } = entry.contentRect;
         setFiltersHeight(height);
       }
     });
-
-    let node = filtersContainerRef?.current;
-    if (node) {
-      resizeObserver.observe(node);
-    } else {
-      setTimeout(() => {
-        node = filtersContainerRef?.current;
-        if (node) {
-          resizeObserver.observe(node);
-        } else {
-          setFiltersHeight(0);
-        }
-      }, 100);
-    }
-
-    return () => {
-      if (node) {
-        resizeObserver.unobserve(node);
-      }
-    };
-  }, []);
+    resizeObserver.observe(node);
+    return () => resizeObserver.disconnect();
+  }, [dataset]);
 
   // ====================================================================================================
   // Fullscreen related logic
@@ -196,33 +186,22 @@ function ExploreContent() {
   const [size, setSize] = useState([500, 500]);
   const visualizationContainerRef = useRef(null);
 
-  function updateSize() {
-    if (visualizationContainerRef.current) {
-      const vizRect = visualizationContainerRef.current.getBoundingClientRect();
-      setSize([vizRect.width, vizRect.height]);
-    }
-  }
-
-  // initial size
+  // Size the visualization to its container. A ResizeObserver fires on
+  // initial observe and on any subsequent container resize (window resizes,
+  // drag-resizing the split panes, etc.). Depends on `dataset` because the
+  // container only renders once the dataset has loaded.
   useEffect(() => {
-    const observer = new MutationObserver((mutations, obs) => {
-      updateSize();
+    const node = visualizationContainerRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width, height } = entry.contentRect;
+        setSize([width, height]);
+      }
     });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
+    observer.observe(node);
     return () => observer.disconnect();
-  }, []);
-
-  // let's fill the container and update the width and height if window resizes
-  useEffect(() => {
-    window.addEventListener('resize', updateSize);
-    updateSize();
-    return () => window.removeEventListener('resize', updateSize);
-  }, [visualizationContainerRef, containerRef]);
+  }, [dataset]);
 
   const [width, height] = size;
 
@@ -243,7 +222,7 @@ function ExploreContent() {
       const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
       const newTemplate = `${Math.min(Math.max(percentage, 20), 80)}% 1fr`;
       setGridTemplate(newTemplate);
-      updateSize();
+      // The visualization container's ResizeObserver picks up the resulting resize.
     }
   };
 
@@ -268,10 +247,24 @@ function ExploreContent() {
     [featureFilter.setFeature, setFilterQuery, setFilterConfig, setFilterActive, setUrlParams]
   );
 
+  if (scopeError)
+    return (
+      <>
+        <SubNav dataset={dataset} scope={scope} scopes={scopes} />
+        <div style={{ padding: '1rem' }}>
+          <p>
+            Failed to load scope {scopeId} for dataset {datasetId}.
+          </p>
+          <p>{scopeError.message}</p>
+          <a href="/">Back to home</a>
+        </div>
+      </>
+    );
+
   if (!dataset)
     return (
       <>
-        <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />
+        <SubNav dataset={dataset} scope={scope} scopes={scopes} />
         <div>Loading...</div>
       </>
     );
@@ -279,7 +272,6 @@ function ExploreContent() {
   return (
     <>
       <SubNav
-        user={userId}
         dataset={dataset}
         scope={scope}
         scopes={scopes}
@@ -325,7 +317,6 @@ function ExploreContent() {
               }}
             >
               <FilterDataTable
-                userId={userId}
                 dataset={dataset}
                 scope={scope}
                 distances={searchFilter.distances}

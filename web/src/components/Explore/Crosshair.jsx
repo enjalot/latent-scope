@@ -1,5 +1,4 @@
-import React, { useEffect, useRef } from 'react';
-import { scaleLinear } from 'd3-scale';
+import { useEffect, useRef } from 'react';
 import scaleCanvas from '../../lib/canvas';
 
 const CrossHair = ({ xDomain, yDomain, width, height }) => {

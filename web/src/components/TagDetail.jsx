@@ -33,7 +33,7 @@ function TagDetail() {
 
   const [tagrows, setTagrows] = useState([]);
   useEffect(() => {
-    fetch(`${apiUrl}/tags/rows?dataset=${datasetId}&tag=${tagId}`)
+    fetch(`${apiUrl}/tags/rows?${new URLSearchParams({ dataset: datasetId, tag: tagId })}`)
       .then(response => response.json())
       .then(data => setTagrows(data));
   }, [datasetId, tagId])

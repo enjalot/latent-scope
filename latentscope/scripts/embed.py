@@ -72,6 +72,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         append_embeddings,
         get_embedding_count,
         get_storage_format,
+        list_embedding_ids,
         migrate_hdf5_to_lancedb,
     )
     DATA_DIR = get_data_dir()
@@ -86,34 +87,35 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         # Check LanceDB first, then fallback to HDF5
         fmt = get_storage_format(DATA_DIR, dataset_id, embedding_id)
         if fmt == "lancedb":
-            starting_batch = get_embedding_count(DATA_DIR, dataset_id, embedding_id) // batch_size
+            existing_count = get_embedding_count(DATA_DIR, dataset_id, embedding_id)
         elif fmt == "hdf5":
             # Migrate HDF5 to LanceDB before resuming so new batches go to same store
             print(f"Migrating {embedding_id} from HDF5 to LanceDB before resuming...")
             result = migrate_hdf5_to_lancedb(DATA_DIR, dataset_id, embedding_id,
                                              on_progress=lambda cur, tot: print(f"  migrated {cur}/{tot}"))
             print(f"Migration complete: {result}")
-            starting_batch = get_embedding_count(DATA_DIR, dataset_id, embedding_id) // batch_size
+            existing_count = get_embedding_count(DATA_DIR, dataset_id, embedding_id)
         else:
-            starting_batch = 0
+            existing_count = 0
     else:
-        # determine the index of the last embedding run
-        # Check both HDF5 files and LanceDB tables
+        # Determine the index of the last embedding run. Check HDF5 files,
+        # metadata JSONs, and LanceDB tables — a crashed run leaves only a
+        # LanceDB table (the .json is written at the end), and reusing its id
+        # would append a second run into the half-finished table.
         embedding_files = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.h5", f)]
         embedding_jsons = [f for f in os.listdir(embedding_dir) if re.match(r"embedding-\d+\.json", f)]
-        all_files = embedding_files + embedding_jsons
-        if len(all_files) > 0:
-            numbers = []
-            for f in all_files:
-                match = re.search(r"embedding-(\d+)", f)
-                if match:
-                    numbers.append(int(match.group(1)))
-            next_embedding_number = max(numbers) + 1 if numbers else 1
-        else:
-            next_embedding_number = 1
+        lancedb_ids = [i for i in list_embedding_ids(DATA_DIR, dataset_id)
+                       if re.match(r"embedding-\d+$", i)]
+        all_names = embedding_files + embedding_jsons + lancedb_ids
+        numbers = []
+        for f in all_names:
+            match = re.search(r"embedding-(\d+)", f)
+            if match:
+                numbers.append(int(match.group(1)))
+        next_embedding_number = max(numbers) + 1 if numbers else 1
         # make the embedding name from the number, zero padded to 3 digits
         embedding_id = f"embedding-{next_embedding_number:03d}"
-        starting_batch = 0
+        existing_count = 0
 
     print("RUNNING:", embedding_id)
     print("MODEL ID", model_id)
@@ -135,29 +137,36 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print("Warning: This model does not support setting max_seq_length. Continuing with default length.")
 
     print("Checking for empty inputs")
-    sentences = df[text_column].tolist()
-    prefixed = []
+    # Build the prefixed list directly from the column in a single pass so
+    # only one full copy of the text exists (the column itself stays in df).
     if prefix is None:
         prefix = ""
-    for i,s in enumerate(sentences):
+    sentences = []
+    for i, s in enumerate(df[text_column]):
         if s is None or s == "":
-            print(i,s, "text is empty, adding a [space]")
+            print(i, s, "text is empty, adding a [space]")
             s = " "
-        prefixed.append(prefix + s)
-    sentences = prefixed
+        sentences.append(prefix + s)
 
-    total_batches = len(sentences)//batch_size
+    total_batches = (len(sentences) + batch_size - 1) // batch_size
 
     print("embedding", len(sentences), "sentences", "in", total_batches, "batches")
-    if starting_batch > 0:
-        print("Rerunning starting at batch", starting_batch)
+    if existing_count > 0:
+        print(f"Resuming: {existing_count} rows already embedded")
 
     for i, batch in enumerate(tqdm(chunked_iterable(sentences, batch_size), total=total_batches)):
-        if i < starting_batch:
-            print(f"skipping batch {i}/{total_batches}", flush=True)
+        start_index = i * batch_size
+        end_index = start_index + len(batch)
+        if end_index <= existing_count:
+            # fully covered by a previous run — re-embedding would append
+            # duplicate ls_index rows
             continue
+        if start_index < existing_count:
+            # partial overlap (final partial batch of a completed run, or a
+            # changed batch_size): embed only the rows not yet stored
+            batch = batch[existing_count - start_index:]
+            start_index = existing_count
         try:
-            start_index = i * batch_size
             if is_late_interaction:
                 mean_vectors, token_vectors_list = model.embed_multi(batch, dimensions=dimensions)
                 append_embeddings(
@@ -176,7 +185,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print("error embedding batch", i, e)
             print("exiting prematurely", embedding_id)
             # extract the rows from the last batch from df
-            df_batch = df.iloc[i*batch_size:(i+1)*batch_size].copy()
+            df_batch = df.iloc[start_index:start_index + len(batch)].copy()
             df_batch["_ls_text_"] = batch
             batch_path = os.path.join(embedding_dir, f"{embedding_id}-batch-{i}.parquet")
             df_batch.to_parquet(batch_path)
@@ -195,8 +204,27 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         with open(history_file_path, 'w') as history_file:
             history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
 
+    # Compact fragments (one per batch was written) and index for search
+    from latentscope.util.embedding_store import (
+        create_scalar_index,
+        create_vector_index,
+        get_embedding_stats,
+        optimize_table,
+    )
+    # All rows are written at this point; never let housekeeping kill the run
+    # (searches fall back to a brute-force scan without the indexes).
+    try:
+        print("optimizing embedding table")
+        optimize_table(DATA_DIR, dataset_id, embedding_id)
+        print("creating indexes")
+        create_vector_index(DATA_DIR, dataset_id, embedding_id)
+        if is_late_interaction:
+            # token-vector lookups filter on ls_index
+            create_scalar_index(DATA_DIR, dataset_id, embedding_id)
+    except Exception as e:
+        print(f"Warning: table optimize/index failed ({e}); continuing without index")
+
     # Get stats from the stored embeddings
-    from latentscope.util.embedding_store import get_embedding_stats
     stats = get_embedding_stats(DATA_DIR, dataset_id, embedding_id)
 
     meta = {

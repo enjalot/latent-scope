@@ -18,7 +18,6 @@ function Scope() {
     setPreviewLabel,
     setScope,
     setSavedScope,
-    scopes,
     setScopes,
   } = useSetup();
 
@@ -45,7 +44,7 @@ function Scope() {
   const [clusterLabelSet, setClusterLabelSet] = useState(null);
 
   const [savedEmbedding, setSavedEmbedding] = useState(null);
-  const [savedUmap, setSavedUmap] = useState(null);
+  const [, setSavedUmap] = useState(null);
   const [savedCluster, setSavedCluster] = useState(null);
   const [savedClusterLabelSet, setSavedClusterLabelSet] = useState(null);
 

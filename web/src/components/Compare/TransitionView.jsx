@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
 import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';

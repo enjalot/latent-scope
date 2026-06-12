@@ -91,7 +91,11 @@ const nearestNeighborSort = (clusters, centroids) => {
     result.push(remaining.splice(nearestIdx, 1)[0]);
   }
 
-  return result.map(({ centroid, ...rest }) => rest);
+  return result.map((item) => {
+    const rest = { ...item };
+    delete rest.centroid;
+    return rest;
+  });
 };
 
 const SORT_ORDERS = {

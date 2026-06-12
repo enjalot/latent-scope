@@ -23,7 +23,6 @@ function SideBySideView({
   width,
   height,
   onScatter,
-  onSelect,
   onHover,
   onNeighborSelect,
   pointSizeRange,
@@ -227,12 +226,6 @@ function SideBySideView({
     hoveredIndex != null && leftPoints[hoveredIndex] ? leftPoints[hoveredIndex] : null;
   const rightHoverPoint =
     hoveredIndex != null && rightPoints[hoveredIndex] ? rightPoints[hoveredIndex] : null;
-
-  // Clicked crosshair points
-  const leftClickedPoint =
-    clickedIndex != null && leftPoints[clickedIndex] ? leftPoints[clickedIndex] : null;
-  const rightClickedPoint =
-    clickedIndex != null && rightPoints[clickedIndex] ? rightPoints[clickedIndex] : null;
 
   // Displacement value for hovered point
   const hoveredDisplacement =

@@ -6,16 +6,16 @@ import { compareVersions } from 'compare-versions';
 import { apiService } from '../../lib/apiService';
 import { isMobileDevice } from '../../utils';
 
-const readonly = import.meta.env.MODE == 'read_only';
-
-function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedIndices }) {
-  if (!dataset) return null;
-
+function DatasetHeader({ dataset, scope, tags, deletedIndices }) {
+  // Hooks must run unconditionally on every render, so they come before the
+  // early return below (this was previously a rules-of-hooks violation).
   const [lsVersion, setLsVersion] = useState(null);
 
   useEffect(() => {
     apiService.fetchVersion().then(setLsVersion);
   }, []);
+
+  if (!dataset) return null;
 
   return (
     <div className="summary">
@@ -56,7 +56,7 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
             </span>
             <span>
               {' '}
-              please "Overwrite" the scope in the last step on the{' '}
+              please &quot;Overwrite&quot; the scope in the last step on the{' '}
               <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to
               update.
             </span>
@@ -66,7 +66,7 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
             <span className="warning-header">Outdated Scope!</span>
             <span>
               {' '}
-              please "Overwrite" the scope in the last step on the{' '}
+              please &quot;Overwrite&quot; the scope in the last step on the{' '}
               <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure Page</Link> to
               update.
             </span>
@@ -113,8 +113,6 @@ function DatasetHeader({ dataset, scope, scopes, onScopeChange, tags, deletedInd
 DatasetHeader.propTypes = {
   dataset: PropTypes.object,
   scope: PropTypes.object,
-  scopes: PropTypes.array.isRequired,
-  onScopeChange: PropTypes.func.isRequired,
   isMobileDevice: PropTypes.bool,
   tags: PropTypes.array.isRequired,
 };

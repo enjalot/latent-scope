@@ -7,7 +7,7 @@ import { saeAvailable } from '../lib/SAE';
 const ScopeContext = createContext(null);
 
 export function ScopeProvider({ children }) {
-  const { user: userId, dataset: datasetId, scope: scopeId } = useParams();
+  const { dataset: datasetId, scope: scopeId } = useParams();
 
   // Core scope data
   const [scope, setScope] = useState(null);
@@ -15,19 +15,29 @@ export function ScopeProvider({ children }) {
   const [sae, setSae] = useState(null);
 
   const [scopeLoaded, setScopeLoaded] = useState(false);
+  // Set when fetching the scope (or its rows) fails, so consumers can render
+  // an error instead of waiting on "Loading..." forever.
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    apiService.fetchScope(datasetId, scopeId).then((scope) => {
-      if (saeAvailable[scope.embedding?.model_id]) {
-        setSae(scope.sae);
-      } else {
-        delete scope.sae;
-        delete scope.sae_id;
-      }
-      setScope(scope);
-      setDataset(scope.dataset);
-    });
-  }, [userId, datasetId, scopeId]);
+    setError(null);
+    apiService
+      .fetchScope(datasetId, scopeId)
+      .then((scope) => {
+        if (saeAvailable[scope.embedding?.model_id]) {
+          setSae(scope.sae);
+        } else {
+          delete scope.sae;
+          delete scope.sae_id;
+        }
+        setScope(scope);
+        setDataset(scope.dataset);
+      })
+      .catch((err) => {
+        console.error(`Error fetching scope ${scopeId} for dataset ${datasetId}`, err);
+        setError(err);
+      });
+  }, [datasetId, scopeId]);
 
   const [features, setFeatures] = useState([]);
 
@@ -71,7 +81,7 @@ export function ScopeProvider({ children }) {
   }, [scope, sae, embeddings]);
 
   const [clusterMap, setClusterMap] = useState({});
-  const [clusterIndices, setClusterIndices] = useState([]);
+  const [, setClusterIndices] = useState([]);
   const [clusterLabels, setClusterLabels] = useState([]);
 
   const [scopeRows, setScopeRows] = useState([]);
@@ -79,48 +89,54 @@ export function ScopeProvider({ children }) {
   const [deletedIndices, setDeletedIndices] = useState([]);
 
   const fetchScopeRows = useCallback(() => {
-    apiService.fetchScopeRows(datasetId, scope.id).then((scopeRows) => {
-      setScopeRows(scopeRows);
-      let clusterMap = {};
-      let nonDeletedClusters = new Set();
+    apiService
+      .fetchScopeRows(datasetId, scope.id)
+      .then((scopeRows) => {
+        setScopeRows(scopeRows);
+        let clusterMap = {};
+        let nonDeletedClusters = new Set();
 
-      // Build a fresh lookup copy to avoid mutating the scope object across re-fetches.
-      const freshLookup = scope.cluster_labels_lookup.map((c) => ({ ...c, count: 0 }));
+        // Build a fresh lookup copy to avoid mutating the scope object across re-fetches.
+        const freshLookup = scope.cluster_labels_lookup.map((c) => ({ ...c, count: 0 }));
 
-      scopeRows.forEach((d) => {
-        const cluster = freshLookup[d.cluster];
-        cluster.count += 1;
-        clusterMap[d.ls_index] = cluster;
-        if (!d.deleted) {
-          nonDeletedClusters.add(d.cluster);
-        }
+        scopeRows.forEach((d) => {
+          const cluster = freshLookup[d.cluster];
+          cluster.count += 1;
+          clusterMap[d.ls_index] = cluster;
+          if (!d.deleted) {
+            nonDeletedClusters.add(d.cluster);
+          }
+        });
+
+        // Also update the scope object's lookup so callers reading scope.cluster_labels_lookup
+        // see the updated counts without mutation across calls.
+        scope.cluster_labels_lookup = freshLookup;
+
+        const labelsData = freshLookup.filter((l) => nonDeletedClusters.has(l.cluster));
+        setClusterLabels(labelsData);
+        setClusterIndices(scopeRows.map((d) => d.cluster));
+        setClusterMap(clusterMap);
+        setDeletedIndices(scopeRows.filter((d) => d.deleted).map((d) => d.ls_index));
+        setScopeLoaded(true);
+      })
+      .catch((err) => {
+        console.error(`Error fetching scope rows for scope ${scope.id}`, err);
+        setError(err);
       });
-
-      // Also update the scope object's lookup so callers reading scope.cluster_labels_lookup
-      // see the updated counts without mutation across calls.
-      scope.cluster_labels_lookup = freshLookup;
-
-      const labelsData = freshLookup.filter((l) => nonDeletedClusters.has(l.cluster));
-      setClusterLabels(labelsData);
-      setClusterIndices(scopeRows.map((d) => d.cluster));
-      setClusterMap(clusterMap);
-      setDeletedIndices(scopeRows.filter((d) => d.deleted).map((d) => d.ls_index));
-      setScopeLoaded(true);
-    });
-  }, [userId, datasetId, scope]);
+  }, [datasetId, scope]);
 
   useEffect(() => {
     if (scope) fetchScopeRows();
   }, [scope, fetchScopeRows]);
 
   const value = {
-    userId,
     datasetId,
     scopeId,
     dataset,
     scope,
     sae,
     scopeLoaded,
+    error,
     clusterMap,
     clusterLabels,
     scopeRows,

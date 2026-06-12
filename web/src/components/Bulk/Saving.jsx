@@ -1,6 +1,4 @@
-import { useState } from 'react';
-
-function Saving({ indices }) {
+function Saving() {
   return <div>Saving</div>;
 }
 

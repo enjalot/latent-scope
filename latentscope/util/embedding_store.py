@@ -68,25 +68,55 @@ def append_embeddings(data_dir, dataset_id, embedding_id, vectors, start_index=0
     db = _connect(data_dir, dataset_id)
     table_name = _embedding_table_name(embedding_id)
 
-    n = vectors.shape[0]
+    n, dim = vectors.shape
 
-    # Build list of row dicts (LanceDB requires list-of-dicts for add/create)
-    rows = []
-    for i in range(n):
-        row = {
-            "ls_index": start_index + i,
-            "vector": vectors[i].tolist(),
-        }
-        if token_vectors_list is not None:
-            row["token_vectors"] = token_vectors_list[i].tolist()
-            row["num_tokens"] = len(token_vectors_list[i])
-        rows.append(row)
+    # Build an arrow table with an explicit schema. Without this, LanceDB
+    # infers `list<list<double>>` for token vectors from python lists —
+    # float64 storage is 4x the size of the float16 we use here, and the
+    # row-dict path creates millions of PyFloat objects per batch.
+    vectors = np.ascontiguousarray(vectors, dtype=np.float32)
+    columns = {
+        "ls_index": pa.array(range(start_index, start_index + n), pa.int64()),
+        "vector": pa.FixedSizeListArray.from_arrays(
+            pa.array(vectors.reshape(-1), pa.float32()), dim),
+    }
+    if token_vectors_list is not None:
+        lengths = [len(tv) for tv in token_vectors_list]
+        flat = np.concatenate(token_vectors_list).astype(np.float16)
+        flat = np.ascontiguousarray(flat).reshape(-1)
+        inner = pa.FixedSizeListArray.from_arrays(pa.array(flat, pa.float16()), dim)
+        offsets = np.zeros(n + 1, dtype=np.int32)
+        np.cumsum(lengths, out=offsets[1:])
+        columns["token_vectors"] = pa.ListArray.from_arrays(
+            pa.array(offsets, pa.int32()), inner)
+        columns["num_tokens"] = pa.array(lengths, pa.int32())
+    batch = pa.table(columns)
 
     if table_name in _get_table_names(db):
         tbl = db.open_table(table_name)
-        tbl.add(rows)
+        if tbl.schema != batch.schema:
+            # Legacy table (e.g. resuming a pre-schema run): cast to its schema
+            batch = batch.cast(tbl.schema)
+        tbl.add(batch)
     else:
-        db.create_table(table_name, rows)
+        db.create_table(table_name, batch)
+
+
+def list_embedding_ids(data_dir, dataset_id):
+    """Return embedding ids that have a LanceDB table (e.g. ["embedding-001"]).
+
+    Includes tables from crashed runs that never wrote their .json metadata,
+    so callers allocating the next embedding id don't reuse a taken one.
+    """
+    db_path = _lance_db_path(data_dir, dataset_id)
+    if not os.path.isdir(db_path):
+        return []
+    db = _connect(data_dir, dataset_id)
+    return [
+        name[len("emb-"):]
+        for name in _get_table_names(db)
+        if name.startswith("emb-")
+    ]
 
 
 def get_embedding_count(data_dir, dataset_id, embedding_id):
@@ -113,10 +143,15 @@ def load_embeddings(data_dir, dataset_id, embedding_id):
 
     if table_name in _get_table_names(db):
         tbl = db.open_table(table_name)
-        df = tbl.to_pandas()
-        df = df.sort_values("ls_index")
-        vectors = np.array(df["vector"].tolist(), dtype=np.float32)
-        return vectors
+        # Read only the columns we need: for late interaction tables the
+        # token_vectors column is 50-100x the size of the mean vectors and
+        # to_pandas() on all columns would materialize it for nothing.
+        data = tbl.to_lance().to_table(columns=["ls_index", "vector"])
+        order = np.argsort(data["ls_index"].to_numpy())
+        vec_col = data["vector"].combine_chunks()
+        flat = vec_col.flatten().to_numpy(zero_copy_only=False)
+        vectors = flat.reshape(len(data), -1).astype(np.float32, copy=False)
+        return np.ascontiguousarray(vectors[order])
 
     # Fallback: try legacy HDF5
     return _load_hdf5_embeddings(data_dir, dataset_id, embedding_id)
@@ -176,7 +211,11 @@ def has_token_vectors(data_dir, dataset_id, embedding_id):
 
 
 def create_vector_index(data_dir, dataset_id, embedding_id, metric="cosine"):
-    """Create an ANN index on the mean vector column."""
+    """Create an ANN index on the mean vector column.
+
+    No-op below 256 rows (too few for an IVF index); brute-force search is
+    fast at that scale anyway.
+    """
     db = _connect(data_dir, dataset_id)
     table_name = _embedding_table_name(embedding_id)
     if table_name not in _get_table_names(db):
@@ -185,14 +224,43 @@ def create_vector_index(data_dir, dataset_id, embedding_id, metric="cosine"):
     num_rows = tbl.count_rows()
     if num_rows < 256:
         return  # too few rows for IVF index
-    dim = len(tbl.to_pandas().iloc[0]["vector"])
+    dim = tbl.schema.field("vector").type.list_size
     partitions = min(256, num_rows // 10)
-    sub_vectors = max(1, dim // 16)
+    # IVF_PQ requires num_sub_vectors to divide the vector dimension; user
+    # supplied --dimensions values can be arbitrary, so pick the largest
+    # divisor of dim that is <= dim // 16 (falling back to 1).
+    target = max(1, dim // 16)
+    sub_vectors = next(d for d in range(target, 0, -1) if dim % d == 0)
     tbl.create_index(
         num_partitions=partitions,
         num_sub_vectors=sub_vectors,
         metric=metric,
+        vector_column_name="vector",
     )
+
+
+def create_scalar_index(data_dir, dataset_id, embedding_id, column="ls_index"):
+    """Create a BTREE index on a scalar column (used by token-vector lookups)."""
+    db = _connect(data_dir, dataset_id)
+    table_name = _embedding_table_name(embedding_id)
+    if table_name not in _get_table_names(db):
+        return
+    tbl = db.open_table(table_name)
+    tbl.create_scalar_index(column)
+
+
+def optimize_table(data_dir, dataset_id, embedding_id):
+    """Compact fragments and clean up old versions after a write-heavy run.
+
+    Embedding runs append one fragment per batch (10k fragments per 1M rows
+    at the default batch size); compaction keeps reads and count_rows fast.
+    """
+    db = _connect(data_dir, dataset_id)
+    table_name = _embedding_table_name(embedding_id)
+    if table_name not in _get_table_names(db):
+        return
+    tbl = db.open_table(table_name)
+    tbl.optimize()
 
 
 def search_nn(data_dir, dataset_id, embedding_id, query_vector, limit=150, metric="cosine"):
@@ -208,7 +276,7 @@ def search_nn(data_dir, dataset_id, embedding_id, query_vector, limit=150, metri
 
     tbl = db.open_table(table_name)
     results = (
-        tbl.search(query_vector)
+        tbl.search(query_vector, vector_column_name="vector")
         .metric(metric)
         .select(["ls_index"])
         .limit(limit)
@@ -220,10 +288,16 @@ def search_nn(data_dir, dataset_id, embedding_id, query_vector, limit=150, metri
 
 
 def search_late_interaction(data_dir, dataset_id, embedding_id, query_token_vectors,
-                            prefilter_limit=200, final_limit=50, metric="cosine"):
+                            prefilter_limit=None, final_limit=50, metric="cosine"):
     """Late interaction (MaxSim) search.
 
-    1. Use the mean of query token vectors to find candidate documents via ANN.
+    1. Gather candidates: ANN search on the mean query vector PLUS a search
+       per query token (union). A mean-pooled-query prefilter alone misses
+       documents matched by a single rare query token whose signal is diluted
+       by averaging; searching each query token separately recovers documents
+       whose mean leans toward that token. (Both searches still run against
+       mean *document* vectors — a true token-level index over all document
+       tokens is future work.)
     2. Load per-token vectors for candidates.
     3. Re-rank using MaxSim scoring.
 
@@ -231,8 +305,9 @@ def search_late_interaction(data_dir, dataset_id, embedding_id, query_token_vect
     ----------
     query_token_vectors : np.ndarray
         Shape (Q, D) - per-token vectors from the query.
-    prefilter_limit : int
-        Number of candidates to retrieve via ANN before re-ranking.
+    prefilter_limit : int or None
+        Number of candidates from the mean-vector search. Defaults to a
+        corpus-size-scaled value in [200, 2000].
     final_limit : int
         Number of final results to return.
 
@@ -241,13 +316,29 @@ def search_late_interaction(data_dir, dataset_id, embedding_id, query_token_vect
     indices : list[int]
     scores : list[float]
     """
-    # Step 1: ANN search using mean of query tokens
+    if prefilter_limit is None:
+        n_rows = get_embedding_count(data_dir, dataset_id, embedding_id)
+        prefilter_limit = int(min(max(200, n_rows // 100), 2000))
+
+    # Step 1a: ANN search using mean of query tokens
     query_mean = query_token_vectors.mean(axis=0).astype(np.float32)
-    candidate_indices, _ = search_nn(
+    mean_candidates, _ = search_nn(
         data_dir, dataset_id, embedding_id,
         query_mean, limit=prefilter_limit, metric=metric,
     )
+    candidates = set(mean_candidates)
 
+    # Step 1b: union in per-query-token candidates
+    n_query_tokens = len(query_token_vectors)
+    per_token_limit = max(20, prefilter_limit // max(n_query_tokens, 1))
+    for q_vec in query_token_vectors:
+        token_candidates, _ = search_nn(
+            data_dir, dataset_id, embedding_id,
+            q_vec.astype(np.float32), limit=per_token_limit, metric=metric,
+        )
+        candidates.update(token_candidates)
+
+    candidate_indices = sorted(candidates)
     if not candidate_indices:
         return [], []
 
@@ -257,6 +348,8 @@ def search_late_interaction(data_dir, dataset_id, embedding_id, query_token_vect
     )
 
     # Step 3: MaxSim re-ranking
+    q_norm = query_token_vectors / (
+        np.linalg.norm(query_token_vectors, axis=1, keepdims=True) + 1e-10)
     scores = []
     for doc_tokens in candidate_token_vecs:
         # doc_tokens shape: (T_d, D), query_token_vectors shape: (Q, D)
@@ -264,8 +357,6 @@ def search_late_interaction(data_dir, dataset_id, embedding_id, query_token_vect
         if len(doc_tokens) == 0:
             scores.append(0.0)
             continue
-        # Normalize for cosine similarity
-        q_norm = query_token_vectors / (np.linalg.norm(query_token_vectors, axis=1, keepdims=True) + 1e-10)
         d_norm = doc_tokens / (np.linalg.norm(doc_tokens, axis=1, keepdims=True) + 1e-10)
         sim_matrix = q_norm @ d_norm.T  # (Q, T_d)
         max_sims = sim_matrix.max(axis=1)  # (Q,)
@@ -338,44 +429,64 @@ def migrate_hdf5_to_lancedb(data_dir, dataset_id, embedding_id, batch_size=1000,
     if not os.path.exists(emb_path):
         raise FileNotFoundError(f"No HDF5 file at {emb_path}")
 
-    # Check if already migrated
     db = _connect(data_dir, dataset_id)
     table_name = _embedding_table_name(embedding_id)
-    if table_name in _get_table_names(db):
-        tbl = db.open_table(table_name)
-        return {"status": "already_migrated", "rows": tbl.count_rows()}
 
-    # Load from HDF5
     with h5py.File(emb_path, "r") as f:
         total_rows = f["embeddings"].shape[0]
         dimensions = f["embeddings"].shape[1]
 
-        # Write in batches to avoid memory issues
-        for start in range(0, total_rows, batch_size):
-            end = min(start + batch_size, total_rows)
-            vectors = np.array(f["embeddings"][start:end])
-            append_embeddings(data_dir, dataset_id, embedding_id,
-                            vectors, start_index=start)
-            if on_progress:
-                on_progress(end, total_rows)
+    # Check if already migrated. A table can also be left behind by an
+    # interrupted migration (killed process) — in that case it is shorter
+    # than the HDF5 source and must be dropped and re-migrated, otherwise it
+    # shadows the intact HDF5 in load_embeddings and silently truncates data.
+    if table_name in _get_table_names(db):
+        tbl = db.open_table(table_name)
+        existing = tbl.count_rows()
+        if existing == total_rows:
+            return {"status": "already_migrated", "rows": existing}
+        print(f"Found partial migration ({existing}/{total_rows} rows) — "
+              "dropping and re-migrating")
+        db.drop_table(table_name)
 
-    # Verify migration: check row count and spot-check a few vectors
-    lance_count = get_embedding_count(data_dir, dataset_id, embedding_id)
-    if lance_count != total_rows:
-        raise RuntimeError(
-            f"Migration verification failed: expected {total_rows} rows, "
-            f"got {lance_count} in LanceDB"
-        )
+    try:
+        # Copy from HDF5 in batches to avoid memory issues
+        with h5py.File(emb_path, "r") as f:
+            for start in range(0, total_rows, batch_size):
+                end = min(start + batch_size, total_rows)
+                vectors = np.array(f["embeddings"][start:end])
+                append_embeddings(data_dir, dataset_id, embedding_id,
+                                vectors, start_index=start)
+                if on_progress:
+                    on_progress(end, total_rows)
 
-    # Spot-check first and last vectors match
-    lance_vectors = load_embeddings(data_dir, dataset_id, embedding_id)
-    with h5py.File(emb_path, "r") as f:
-        h5_first = np.array(f["embeddings"][0])
-        h5_last = np.array(f["embeddings"][-1])
-    if not np.allclose(lance_vectors[0], h5_first, atol=1e-6):
-        raise RuntimeError("Migration verification failed: first vector mismatch")
-    if not np.allclose(lance_vectors[-1], h5_last, atol=1e-6):
-        raise RuntimeError("Migration verification failed: last vector mismatch")
+        # Verify migration: row count plus a random sample of vectors.
+        lance_count = get_embedding_count(data_dir, dataset_id, embedding_id)
+        if lance_count != total_rows:
+            raise RuntimeError(
+                f"Migration verification failed: expected {total_rows} rows, "
+                f"got {lance_count} in LanceDB"
+            )
+
+        lance_vectors = load_embeddings(data_dir, dataset_id, embedding_id)
+        rng = np.random.default_rng(0)
+        sample_size = min(16, total_rows)
+        sample = rng.choice(total_rows, size=sample_size, replace=False)
+        # Always include the endpoints
+        check_indices = sorted(set(sample.tolist()) | {0, total_rows - 1})
+        with h5py.File(emb_path, "r") as f:
+            for idx in check_indices:
+                h5_vec = np.array(f["embeddings"][idx])
+                if not np.allclose(lance_vectors[idx], h5_vec, atol=1e-6):
+                    raise RuntimeError(
+                        f"Migration verification failed: vector mismatch at row {idx}"
+                    )
+    except BaseException:
+        # Never leave a partial table behind: it would shadow the intact
+        # HDF5 file in load_embeddings.
+        if table_name in _get_table_names(db):
+            db.drop_table(table_name)
+        raise
 
     # Verification passed — remove the HDF5 file
     h5_size = os.path.getsize(emb_path)
@@ -397,15 +508,16 @@ def estimate_embedding_storage(num_rows, dimensions, has_tokens=False, avg_token
 
     Returns dict with estimated sizes in bytes and human-readable strings.
     """
-    bytes_per_float = 4  # float32
+    mean_bytes_per_float = 4  # float32
+    token_bytes_per_float = 2  # float16 (see append_embeddings schema)
 
     # Mean vector storage
-    mean_bytes = num_rows * dimensions * bytes_per_float
+    mean_bytes = num_rows * dimensions * mean_bytes_per_float
 
     # Token vector storage (if late interaction)
     token_bytes = 0
     if has_tokens:
-        token_bytes = num_rows * avg_tokens_per_doc * dimensions * bytes_per_float
+        token_bytes = num_rows * avg_tokens_per_doc * dimensions * token_bytes_per_float
 
     # LanceDB overhead (~20% for metadata, indices, etc.)
     overhead = 1.2

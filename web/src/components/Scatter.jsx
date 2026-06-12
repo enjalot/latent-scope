@@ -3,13 +3,7 @@ import createScatterplot from 'regl-scatterplot';
 import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
 import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
-import {
-  interpolateViridis,
-  interpolateTurbo,
-  interpolateCool,
-  interpolateReds,
-  interpolateOranges,
-} from 'd3-scale-chromatic';
+import { interpolateOranges } from 'd3-scale-chromatic';
 
 import styles from './Scatter.module.css';
 
@@ -70,7 +64,6 @@ function ScatterPlot({
   onSelect,
   onHover,
   activeFilterTab,
-  scope,
 }) {
   const container = useRef();
   const xDomain = useRef([-1, 1]);

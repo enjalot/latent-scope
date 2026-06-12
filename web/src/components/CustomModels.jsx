@@ -4,7 +4,7 @@ import { apiService } from '../lib/apiService';
 
 import styles from './CustomModels.module.scss';
 
-function CustomModels({ data_dir }) {
+function CustomModels() {
   const [customModels, setCustomModels] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

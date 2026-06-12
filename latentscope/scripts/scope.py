@@ -30,6 +30,7 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
     import lancedb
     import numpy as np
     import pandas as pd
+    import pyarrow as pa
 
     from latentscope.util.embedding_store import load_embeddings as lance_load_embeddings
 
@@ -56,8 +57,13 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
     db_uri = os.path.join(dataset_path, "lancedb")
     db = lancedb.connect(db_uri)
 
-    print("Converting embeddings to numpy arrays", embeddings.shape)
-    scope_df["vector"] = [np.array(row) for row in embeddings]
+    # Build the vector column directly from the float32 matrix as an arrow
+    # FixedSizeListArray — a pandas column of python-list rows would hold a
+    # second (and during conversion a third) full copy of the matrix.
+    print("Converting embeddings to arrow vectors", embeddings.shape)
+    dim = embeddings.shape[1]
+    flat = np.ascontiguousarray(embeddings, dtype=np.float32).reshape(-1)
+    vector_arr = pa.FixedSizeListArray.from_arrays(pa.array(flat, pa.float32()), dim)
 
     if "sae_id" in scope_meta and scope_meta["sae_id"]:
         print("SAE scope detected, adding metadata")
@@ -82,10 +88,11 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
         print(f"Existing table '{table_name}' has been removed.")
 
     print(f"Creating table '{table_name}'")
-    tbl = db.create_table(table_name, scope_df)
+    arrow_table = pa.Table.from_pandas(scope_df, preserve_index=False)
+    arrow_table = arrow_table.append_column("vector", vector_arr)
+    tbl = db.create_table(table_name, arrow_table)
 
     print(f"Creating ANN index for embeddings on table '{table_name}'")
-    dim = embeddings.shape[1]
     num_rows = len(scope_df)
     actual_partitions = min(partitions, max(1, num_rows // 10))
     sub_vectors = max(1, dim // 16)
@@ -224,7 +231,7 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     cluster_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_id + ".parquet"))
     cluster_labels_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_labels_id + ".parquet"))
     # create a column where we lookup the label from cluster_labels_df for the index found in the cluster_df
-    cluster_df["label"] = cluster_df["cluster"].apply(lambda x: cluster_labels_df.loc[x]["label"])
+    cluster_df["label"] = cluster_df["cluster"].map(cluster_labels_df["label"])
     print("cluster columns", cluster_df.columns)
     scope_parquet = pd.concat([umap_df, cluster_df], axis=1)
     # TODO: add the max activated feature to the scope_parquet
@@ -252,6 +259,8 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     scope["size"] = os.path.getsize(os.path.join(directory, id + ".parquet"))
     scope["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    input_parquet_path = os.path.join(DATA_DIR, dataset_id, "input.parquet")
+
     file_path = os.path.join(directory, id + ".json")
     with open(file_path, 'w') as f:
         json.dump(scope, f, indent=2)
@@ -261,12 +270,17 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
         with open(transactions_file_path, 'w') as f:
             json.dump([], f)
 
+    # {scope}-input.parquet is input JOINED with the scope columns (x, y,
+    # cluster, label, ...), and export_lance reads from it — it must be
+    # rewritten on every scope save. (A skip keyed on input.parquet alone
+    # served stale labels/coordinates when the scope itself changed.)
+    scope_input_path = os.path.join(directory, id + "-input.parquet")
     print("creating combined scope-input parquet")
-    input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
+    input_df = pd.read_parquet(input_parquet_path)
     input_df.reset_index(inplace=True)
     input_df = input_df[input_df['index'].isin(scope_parquet['ls_index'])]
     combined_df = input_df.join(scope_parquet.set_index('ls_index'), on='index', rsuffix='_ls')
-    combined_df.to_parquet(os.path.join(directory, id + "-input.parquet"))
+    combined_df.to_parquet(scope_input_path)
 
     print("exporting to lancedb")
     export_lance(DATA_DIR, dataset_id, id)

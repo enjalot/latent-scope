@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'react-tooltip';
 import { useFilter } from '../../contexts/FilterContext';
@@ -41,14 +41,12 @@ function FilterDataTable({
   dataset,
   distances = [],
   clusterMap = {},
-  showNavigation = true,
   sae_id = null,
   feature = -1,
   features = [],
   onHover = () => {},
 }) {
-  const { dataTableRows, page, setPage, totalPages, filterConfig, filterActive, loading } =
-    useFilter();
+  const { dataTableRows, page, setPage, totalPages, loading } = useFilter();
 
   // feature tooltip content
   const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
@@ -255,7 +253,7 @@ function FilterDataTable({
         <DataGrid
           rows={dataTableRows}
           columns={formattedColumns}
-          rowClass={(row, index) => {
+          rowClass={(row) => {
             if (row.ls_index === 0) {
               return 'test';
             }

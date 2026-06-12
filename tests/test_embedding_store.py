@@ -167,3 +167,207 @@ def test_get_embedding_stats(data_dir):
     assert stats["count"] == 2
     assert stats["min_values"] == [-1.0, 0.0, 3.0]
     assert stats["max_values"] == [1.0, 2.0, 5.0]
+
+
+def _write_h5(data_dir, embedding_id, vectors):
+    import h5py
+
+    h5_path = os.path.join(data_dir, "test-dataset", "embeddings", f"{embedding_id}.h5")
+    with h5py.File(h5_path, "w") as f:
+        f.create_dataset("embeddings", data=vectors)
+    return h5_path
+
+
+def test_migration_deletes_hdf5_after_verification(data_dir):
+    from latentscope.util.embedding_store import load_embeddings, migrate_hdf5_to_lancedb
+
+    vectors = np.random.rand(57, 16).astype(np.float32)
+    h5_path = _write_h5(data_dir, "embedding-001", vectors)
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                     batch_size=10)
+    assert result["status"] == "migrated"
+    assert result["rows"] == 57
+    assert not os.path.exists(h5_path)
+    np.testing.assert_allclose(
+        load_embeddings(data_dir, "test-dataset", "embedding-001"), vectors, atol=1e-6)
+
+
+def test_migration_redoes_partial_table(data_dir):
+    """An interrupted migration leaves a short LanceDB table that shadows the
+    intact HDF5. Re-running the migration must detect the count mismatch,
+    drop the partial table, and migrate fully (not report already_migrated)."""
+    from latentscope.util.embedding_store import (
+        append_embeddings,
+        load_embeddings,
+        migrate_hdf5_to_lancedb,
+    )
+
+    vectors = np.random.rand(40, 16).astype(np.float32)
+    _write_h5(data_dir, "embedding-001", vectors)
+    # simulate the partial table from a killed migration
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors[:15])
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                     batch_size=10)
+    assert result["status"] == "migrated"
+    loaded = load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (40, 16)
+    np.testing.assert_allclose(loaded, vectors, atol=1e-6)
+
+
+def test_migration_complete_table_reports_already_migrated(data_dir):
+    from latentscope.util.embedding_store import append_embeddings, migrate_hdf5_to_lancedb
+
+    vectors = np.random.rand(20, 16).astype(np.float32)
+    _write_h5(data_dir, "embedding-001", vectors)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors)
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001")
+    assert result["status"] == "already_migrated"
+    assert result["rows"] == 20
+
+
+def test_failed_migration_leaves_no_partial_table(data_dir, monkeypatch):
+    """If the copy fails mid-way the partial table must be dropped so it never
+    shadows the intact HDF5 file, and the HDF5 source must survive."""
+    import latentscope.util.embedding_store as store
+
+    vectors = np.random.rand(40, 16).astype(np.float32)
+    h5_path = _write_h5(data_dir, "embedding-001", vectors)
+
+    real_append = store.append_embeddings
+    calls = {"n": 0}
+
+    def flaky_append(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] > 2:
+            raise RuntimeError("simulated write failure")
+        return real_append(*args, **kwargs)
+
+    monkeypatch.setattr(store, "append_embeddings", flaky_append)
+    with pytest.raises(RuntimeError, match="simulated write failure"):
+        store.migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                      batch_size=10)
+
+    assert os.path.exists(h5_path)
+    assert store.get_storage_format(data_dir, "test-dataset", "embedding-001") == "hdf5"
+    # and load_embeddings reads the intact HDF5, not a truncated table
+    loaded = store.load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (40, 16)
+
+
+def test_list_embedding_ids(data_dir):
+    from latentscope.util.embedding_store import append_embeddings, list_embedding_ids
+
+    assert list_embedding_ids(data_dir, "test-dataset") == []
+    vectors = np.random.rand(5, 8).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors)
+    append_embeddings(data_dir, "test-dataset", "embedding-003", vectors)
+    assert sorted(list_embedding_ids(data_dir, "test-dataset")) == [
+        "embedding-001", "embedding-003"]
+
+
+def test_token_vectors_stored_as_float16(data_dir):
+    """The explicit schema stores token vectors fp16 (4x smaller than the
+    float64 LanceDB used to infer from python lists) and mean vectors fp32."""
+    import lancedb
+    import pyarrow as pa
+
+    from latentscope.util.embedding_store import append_embeddings, load_token_vectors
+
+    vectors = np.random.rand(4, 8).astype(np.float32)
+    token_vectors = [np.random.rand(t, 8).astype(np.float32) for t in (3, 5, 2, 7)]
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors,
+                      token_vectors_list=token_vectors)
+
+    db = lancedb.connect(os.path.join(data_dir, "test-dataset", "lancedb"))
+    schema = db.open_table("emb-embedding-001").schema
+    assert schema.field("vector").type == pa.list_(pa.float32(), 8)
+    assert schema.field("token_vectors").type == pa.list_(pa.list_(pa.float16(), 8))
+    assert schema.field("num_tokens").type == pa.int32()
+
+    # roundtrip within fp16 precision
+    loaded = load_token_vectors(data_dir, "test-dataset", "embedding-001")
+    assert [tv.shape for tv in loaded] == [(3, 8), (5, 8), (2, 8), (7, 8)]
+    np.testing.assert_allclose(loaded[1], token_vectors[1], atol=1e-3)
+
+
+def test_append_to_legacy_schema_table(data_dir):
+    """Resuming a run on a table created before the explicit schema must cast
+    the new batch to the legacy schema instead of failing."""
+    import lancedb
+
+    from latentscope.util.embedding_store import append_embeddings, load_embeddings
+
+    # simulate a legacy table created via list-of-dicts inference
+    legacy_rows = [
+        {"ls_index": i, "vector": np.random.rand(8).tolist()} for i in range(5)
+    ]
+    db = lancedb.connect(os.path.join(data_dir, "test-dataset", "lancedb"))
+    db.create_table("emb-embedding-001", legacy_rows)
+
+    vectors = np.random.rand(3, 8).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors,
+                      start_index=5)
+    loaded = load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (8, 8)
+    np.testing.assert_allclose(loaded[5], vectors[0], atol=1e-6)
+
+
+def test_indexes_and_optimize(data_dir):
+    """create_vector_index / create_scalar_index / optimize_table run cleanly
+    and search results are unchanged afterwards."""
+    from latentscope.util.embedding_store import (
+        append_embeddings,
+        create_scalar_index,
+        create_vector_index,
+        load_token_vectors,
+        optimize_table,
+        search_nn,
+    )
+
+    rng = np.random.default_rng(0)
+    n, dim = 400, 16
+    vectors = rng.normal(size=(n, dim)).astype(np.float32)
+    vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
+    token_vectors = [rng.normal(size=(4, dim)).astype(np.float32) for _ in range(n)]
+    # write in several batches like a real run (multiple fragments)
+    for start in range(0, n, 100):
+        append_embeddings(data_dir, "test-dataset", "embedding-001",
+                          vectors[start:start + 100], start_index=start,
+                          token_vectors_list=token_vectors[start:start + 100])
+
+    optimize_table(data_dir, "test-dataset", "embedding-001")
+    create_vector_index(data_dir, "test-dataset", "embedding-001")
+    create_scalar_index(data_dir, "test-dataset", "embedding-001")
+
+    indices, _ = search_nn(data_dir, "test-dataset", "embedding-001",
+                           vectors[37], limit=5)
+    assert 37 in indices
+    loaded = load_token_vectors(data_dir, "test-dataset", "embedding-001",
+                                indices=[37, 250])
+    assert len(loaded) == 2
+
+
+def test_estimate_storage_token_bytes():
+    from latentscope.util.embedding_store import estimate_embedding_storage
+
+    est = estimate_embedding_storage(1000, 128, has_tokens=True,
+                                     avg_tokens_per_doc=100)
+    assert est["mean_vector_bytes"] == 1000 * 128 * 4
+    assert est["token_vector_bytes"] == 1000 * 100 * 128 * 2  # fp16
+
+
+def test_vector_index_with_non_divisible_dimension(data_dir):
+    """IVF_PQ needs num_sub_vectors to divide dim; user-truncated dimensions
+    (e.g. --dimensions=33) must not crash index creation at the end of an
+    embedding run."""
+    from latentscope.util.embedding_store import append_embeddings, create_vector_index, search_nn
+
+    rng = np.random.default_rng(0)
+    vectors = rng.normal(size=(300, 33)).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors)
+    create_vector_index(data_dir, "test-dataset", "embedding-001")
+    indices, _ = search_nn(data_dir, "test-dataset", "embedding-001", vectors[5], limit=5)
+    assert 5 in indices

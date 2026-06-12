@@ -4,6 +4,8 @@ import os
 from flask import Blueprint, current_app, jsonify, request
 
 from latentscope.models import get_embedding_model
+from latentscope.server.job_utils import _safe_dataset
+from latentscope.util.lru import LRUCache
 
 # Create a Blueprint
 search_bp = Blueprint('search_bp', __name__)
@@ -13,12 +15,12 @@ def _data_dir():
     return current_app.config['DATA_DIR']
 
 
-# in memory cache of dataset metadata, embeddings, models and tokenizers
-DATASETS = {}
-DBS = {}
-EMBEDDINGS = {}
-FEATURES = {}
-DATAFRAMES = {}
+# Bounded in-memory caches. Embedding models can pin GPU memory and fitted
+# NearestNeighbors objects hold a full copy of the embedding matrix, so both
+# are capped; evicted entries are simply dropped (CUDA memory is freed when
+# the model object is garbage collected).
+EMBEDDINGS = LRUCache(maxsize=2)  # loaded embedding models
+NN_CACHE = LRUCache(maxsize=2)  # fitted sklearn NearestNeighbors, keyed (dataset, embedding_id)
 
 
 @search_bp.route('/nn', methods=['GET'])
@@ -26,7 +28,7 @@ def nn():
     import numpy as np
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     scope_id = request.args.get('scope_id')
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
@@ -35,15 +37,14 @@ def nn():
     use_late_interaction = request.args.get('late_interaction', 'false').lower() == 'true'
 
     cache_key = dataset + "-" + embedding_id
-    if cache_key not in EMBEDDINGS:
+    model = EMBEDDINGS.get(cache_key)
+    if model is None:
         with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json")) as f:
             metadata = json.load(f)
         model_id = metadata.get('model_id')
         model = get_embedding_model(model_id)
         model.load_model()
         EMBEDDINGS[cache_key] = model
-    else:
-        model = EMBEDDINGS[cache_key]
 
     # Check if late interaction search is requested and supported
     is_late_interaction = getattr(model, 'late_interaction', False)
@@ -61,40 +62,41 @@ def nn():
         if os.path.exists(lance_path):
             return nn_lance(DATA_DIR, dataset, scope_id, model, query, dimensions)
 
-    # Try embedding-level LanceDB table first
+    # Try embedding-level LanceDB table. Only the existence check is guarded:
+    # once a table exists this path is always taken, so an embed/search error
+    # surfaces instead of silently degrading to the full-matrix sklearn
+    # fallback below.
     from latentscope.util.embedding_store import get_embedding_count, search_nn
     try:
         count = get_embedding_count(DATA_DIR, dataset, embedding_id)
-        if count > 0:
-            embedding = np.array(model.embed([query], dimensions=dimensions))
-            query_vec = embedding[0] if embedding.ndim > 1 else embedding
-            indices, distances = search_nn(
-                DATA_DIR, dataset, embedding_id, query_vec, limit=150
-            )
-            return jsonify(
-                indices=indices,
-                distances=distances,
-                search_embedding=embedding.tolist(),
-            )
     except Exception:
-        pass  # Fall through to sklearn
+        count = 0
+    if count > 0:
+        embedding = np.array(model.embed([query], dimensions=dimensions))
+        query_vec = embedding[0] if embedding.ndim > 1 else embedding
+        indices, distances = search_nn(
+            DATA_DIR, dataset, embedding_id, query_vec, limit=150
+        )
+        return jsonify(
+            indices=indices,
+            distances=distances,
+            search_embedding=embedding.tolist(),
+        )
 
-    # Fallback: sklearn NearestNeighbors with HDF5 or LanceDB-loaded embeddings
-    import h5py
+    # Fallback: legacy HDF5-era embeddings (no lance table) — fit sklearn
+    # NearestNeighbors over the full embedding matrix, cached with an LRU cap.
     from sklearn.neighbors import NearestNeighbors
 
     from latentscope.util.embedding_store import load_embeddings as lance_load
 
     num = 150
-    if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
+    nn_key = (dataset, embedding_id)
+    nne = NN_CACHE.get(nn_key)
+    if nne is None:
         embeddings = lance_load(DATA_DIR, dataset, embedding_id)
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
-        if dataset not in DATASETS:
-            DATASETS[dataset] = {}
-        DATASETS[dataset][embedding_id] = nne
-    else:
-        nne = DATASETS[dataset][embedding_id]
+        NN_CACHE[nn_key] = nne
 
     embedding = np.array(model.embed([query], dimensions=dimensions))
     distances, indices = nne.kneighbors(embedding)
@@ -123,7 +125,7 @@ def nn_late_interaction(data_dir, dataset, embedding_id, model, query, dimension
     from latentscope.util.embedding_store import search_late_interaction
 
     # Get per-token query embeddings
-    _, query_token_vectors = model.embed_multi([query], dimensions=dimensions)
+    _, query_token_vectors = model.embed_multi([query], dimensions=dimensions, is_query=True)
     query_tokens = query_token_vectors[0]  # (Q, D)
 
     # Also get the mean embedding for the response
@@ -155,7 +157,7 @@ def feature():
     import numpy as np
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     sae_id = request.args.get('sae_id')
     feature_id = request.args.get('feature_id')
     threshold = request.args.get('threshold')
@@ -199,31 +201,28 @@ def features():
     from latentscope.util.embedding_store import load_embeddings as lance_load
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
     dimensions = int(dimensions) if dimensions else None
 
     num = 150
-    if embedding_id not in EMBEDDINGS:
+    model = EMBEDDINGS.get(embedding_id)
+    if model is None:
         with open(os.path.join(DATA_DIR, dataset, "embeddings", embedding_id + ".json")) as f:
             metadata = json.load(f)
         model_id = metadata.get('model_id')
         model = get_embedding_model(model_id)
         model.load_model()
         EMBEDDINGS[embedding_id] = model
-    else:
-        model = EMBEDDINGS[embedding_id]
 
-    if dataset not in DATASETS or embedding_id not in DATASETS[dataset]:
+    nn_key = (dataset, embedding_id)
+    nne = NN_CACHE.get(nn_key)
+    if nne is None:
         embeddings = lance_load(DATA_DIR, dataset, embedding_id)
         nne = NearestNeighbors(n_neighbors=num, metric="cosine")
         nne.fit(embeddings)
-        if dataset not in DATASETS:
-            DATASETS[dataset] = {}
-        DATASETS[dataset][embedding_id] = nne
-    else:
-        nne = DATASETS[dataset][embedding_id]
+        NN_CACHE[nn_key] = nne
 
     query = request.args.get('query')
     embedding = np.array(model.embed([query], dimensions=dimensions))
@@ -241,7 +240,7 @@ def compare():
     import pandas as pd
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
     metric = request.args.get('metric', 'displacement')
@@ -298,7 +297,7 @@ def compare_neighbors():
     from sklearn.neighbors import NearestNeighbors
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
     point_index = int(request.args.get('point_index'))
@@ -331,7 +330,7 @@ def compare_clusters():
     import pandas as pd
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     cluster_left = request.args.get('cluster_left')
     cluster_right = request.args.get('cluster_right')
 

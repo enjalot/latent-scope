@@ -4,6 +4,8 @@ from datetime import datetime
 
 from flask import Blueprint, current_app, jsonify, request
 
+from latentscope.server.job_utils import _safe_dataset
+
 # Create a Blueprint
 bulk_bp = Blueprint('bulk_bp', __name__)
 bulk_write_bp = Blueprint('bulk_write_bp', __name__)
@@ -39,7 +41,7 @@ def change_cluster():
 
     DATA_DIR = _data_dir()
     data = request.get_json()
-    dataset_id = data["dataset_id"]
+    dataset_id = _safe_dataset(data.get("dataset_id"), param="dataset_id")
     scope_id = data["scope_id"]
     row_ids = data["row_ids"]
     new_cluster = int(data["new_cluster"])
@@ -96,7 +98,7 @@ def change_cluster_name():
     import pandas as pd
 
     DATA_DIR = _data_dir()
-    dataset_id = request.args["dataset_id"]
+    dataset_id = _safe_dataset(request.args.get("dataset_id"), param="dataset_id")
     scope_id = request.args["scope_id"]
     cluster = int(request.args["cluster"])
     new_label = request.args["new_label"]
@@ -110,7 +112,7 @@ def change_cluster_name():
 
     clusters = scope_meta["cluster_labels_lookup"]
     clusters[cluster]["label"] = new_label
-    df[df['cluster'] == cluster]['label'] = new_label
+    df.loc[df['cluster'] == cluster, 'label'] = new_label
     df.to_parquet(scope_file)
     update_combined(DATA_DIR, df, dataset_id, scope_id)
 
@@ -131,7 +133,7 @@ def delete_rows():
 
     DATA_DIR = _data_dir()
     data = request.get_json()
-    dataset_id = data["dataset_id"]
+    dataset_id = _safe_dataset(data.get("dataset_id"), param="dataset_id")
     scope_id = data["scope_id"]
     row_ids = data["row_ids"]
 

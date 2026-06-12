@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { apiUrl } from '../../lib/apiService';
 import SubNav from '../SubNav';
-import { Select } from 'react-element-forge';
 
 import { useSetup } from '../../contexts/SetupContext';
 import { useStartJobPolling } from '../Job/Run';

@@ -54,15 +54,11 @@ def main():
 
 
 def _load_embeddings(dataset_id, embedding_id):
-    """Load raw embedding vectors for a dataset."""
-    import h5py
-    import numpy as np
+    """Load raw embedding vectors for a dataset (LanceDB with HDF5 fallback)."""
+    from latentscope.util.embedding_store import load_embeddings
+
     DATA_DIR = get_data_dir()
-    emb_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
-    with h5py.File(emb_path, 'r') as f:
-        dataset = f["embeddings"]
-        embeddings = np.array(dataset)
-        return embeddings
+    return load_embeddings(DATA_DIR, dataset_id, embedding_id)
 
 
 def _run_evoc(embeddings, samples, n_neighbors=15, noise_level=0.5):

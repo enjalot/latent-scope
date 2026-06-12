@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import './LeftPane.css';
 import { Button } from 'react-element-forge';
 import { apiService } from '../../lib/apiService';

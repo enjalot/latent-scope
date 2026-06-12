@@ -4,9 +4,18 @@ import re
 
 from flask import Blueprint, current_app, jsonify, request
 
+from latentscope.server.job_utils import _safe_dataset
+
 # Create a Blueprint
 datasets_bp = Blueprint('datasets_bp', __name__)
 datasets_write_bp = Blueprint('datasets_write_bp', __name__)
+
+
+@datasets_bp.url_value_preprocessor
+@datasets_write_bp.url_value_preprocessor
+def _validate_dataset_path_param(endpoint, values):
+    if values and 'dataset' in values:
+        _safe_dataset(values['dataset'])
 
 
 def _data_dir():

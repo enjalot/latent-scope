@@ -7,7 +7,7 @@ import { Tooltip } from 'react-tooltip';
 import 'react-data-grid/lib/styles.css';
 
 import DataGrid, { Row } from 'react-data-grid';
-import { scaleLog, scaleLinear, scalePow } from 'd3-scale';
+import { scalePow } from 'd3-scale';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -74,11 +74,6 @@ function FeatureModal({
   const itemStyle = (featIdx) => ({
     fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
   });
-
-  const handleFilterClick = (featIdx, activation) => {
-    handleFeatureClick(featIdx, activation);
-    onClose();
-  };
 
   return (
     <Modal
@@ -356,14 +351,6 @@ function FilterDataTable({
       // console.log("hydrate!", dataset)
       if (dataset && indices.length) {
         // setRowsLoading(true);
-        const body = {
-          dataset: dataset.id,
-          indices: indices,
-          embedding_id: showEmbeddings,
-          page,
-          sae_id: sae_id,
-        };
-        const timestamp = Date.now();
         // console.log('fetching query', body, timestamp);
 
         fetch(`${apiUrl}/query`, {
@@ -381,7 +368,7 @@ function FilterDataTable({
         })
           .then((response) => response.json())
           .then((data) => {
-            let { rows, totalPages, total } = data;
+            let { rows, totalPages } = data;
             // console.log('query fetched data', data);
             // console.log("pages", totalPages, total)
             setPageCount(totalPages);
@@ -583,7 +570,7 @@ function FilterDataTable({
         <DataGrid
           rows={rows}
           columns={formattedColumns}
-          rowClass={(row, index) => {
+          rowClass={(row) => {
             if (row.ls_index === 0) {
               return 'test';
             }

@@ -1,7 +1,7 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 
-import { Button, Modal } from 'react-element-forge';
+import { Modal } from 'react-element-forge';
 import Job from './Job';
 
 import SubNav from '../components/SubNav';
@@ -11,6 +11,7 @@ import styles from './Jobs.module.scss';
 function Jobs() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
+  const navigate = useNavigate();
   const [scopes, setScopes] = useState([]);
 
   useEffect(() => {
@@ -42,26 +43,6 @@ function Jobs() {
   const navigateToScope = (e) => {
     navigate(`/datasets/${datasetId}/jobs/${e.target.value}`);
   };
-
-  function handleKill(job) {
-    fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${job.id}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('killed job', data);
-        setJobs((jobs) => jobs.map((j) => (j.id === job.id ? data : j)));
-      })
-      .catch(console.error);
-  }
-
-  function handleRerun(job) {
-    fetch(`${apiUrl}/jobs/rerun?dataset=${datasetId}&job_id=${job.id}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log('rerun job', data);
-        setJobs((jobs) => jobs.map((j) => (j.id === job.id ? data : j)));
-      })
-      .catch(console.error);
-  }
 
   const [selectedJob, setSelectedJob] = useState(null);
 
