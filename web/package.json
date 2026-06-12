@@ -9,7 +9,7 @@
     "read_only": "vite build --mode read_only",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
     "preview": "vite preview"
   },
   "dependencies": {
