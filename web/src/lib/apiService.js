@@ -2,102 +2,164 @@ export const apiUrl = import.meta.env.VITE_API_URL;
 
 const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
 
+/**
+ * Fetch a URL and parse the response as JSON, throwing a useful Error on
+ * non-ok responses instead of attempting to JSON.parse an error page.
+ *
+ * Supports an optional AbortSignal via options.signal (passed straight
+ * through to fetch).
+ *
+ * @param {string} url
+ * @param {RequestInit} [options]
+ * @returns {Promise<any>} parsed JSON body
+ * @throws {Error} with .status and .body set when response is not ok
+ */
+export async function fetchJson(url, options = {}) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    let snippet = '';
+    try {
+      snippet = (await response.text()).slice(0, 200);
+    } catch {
+      // ignore failures reading the error body
+    }
+    const error = new Error(
+      `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''} for ${url}${
+        snippet ? `: ${snippet}` : ''
+      }`
+    );
+    error.status = response.status;
+    error.body = snippet;
+    throw error;
+  }
+  return response.json();
+}
+
+/**
+ * Same as fetchJson but returns the raw response text.
+ */
+export async function fetchText(url, options = {}) {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const error = new Error(`HTTP ${response.status} for ${url}`);
+    error.status = response.status;
+    throw error;
+  }
+  return response.text();
+}
+
+const postJsonOptions = (body) => ({
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify(body),
+});
+
 export const apiService = {
   fetchDataset: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/meta`)
-      .then((response) => response.json())
-      .catch((error) => {
-        console.error('Error fetching dataset metadata', error);
-        throw error;
-      });
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/meta`).catch((error) => {
+      console.error('Error fetching dataset metadata', error);
+      throw error;
+    });
   },
   updateDataset: async (datasetId, key, value) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/meta/update?key=${key}&value=${value}`).then(
-      (response) => response.json()
-    );
+    const params = new URLSearchParams({ key, value });
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/meta/update?${params}`);
   },
   fetchScope: async (datasetId, scopeId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}`);
   },
   fetchScopes: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/scopes`)
-      .then((response) => response.json())
-      .then((data) => {
-        const sorted = data.sort((a, b) => a.id.localeCompare(b.id));
-        return sorted;
-      });
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes`).then((data) => {
+      const sorted = data.sort((a, b) => a.id.localeCompare(b.id));
+      return sorted;
+    });
   },
   fetchEmbeddings: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/embeddings`);
   },
   fetchUmaps: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/umaps`)
-      .then((response) => response.json())
-      .then((data) => {
-        const array = data.map((d) => {
-          return {
-            ...d,
-            url: `${apiUrl}/files/${datasetId}/umaps/${d.id}.png`,
-          };
-        });
-        return array;
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/umaps`).then((data) => {
+      const array = data.map((d) => {
+        return {
+          ...d,
+          url: `${apiUrl}/files/${datasetId}/umaps/${d.id}.png`,
+        };
       });
+      return array;
+    });
   },
   fetchClusters: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/clusters`)
-      .then((response) => response.json())
-      .then((data) => {
-        const array = data.map((d) => {
-          return {
-            ...d,
-            url: `${apiUrl}/files/${datasetId}/clusters/${d.id}.png`,
-          };
-        });
-        return array;
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters`).then((data) => {
+      const array = data.map((d) => {
+        return {
+          ...d,
+          url: `${apiUrl}/files/${datasetId}/clusters/${d.id}.png`,
+        };
       });
+      return array;
+    });
   },
   fetchEmbeddingFormat: async (datasetId, embeddingId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/format`).then(
-      (response) => response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/format`);
   },
   migrateEmbedding: async (datasetId, embeddingId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/migrate`, {
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/embeddings/${embeddingId}/migrate`, {
       method: 'POST',
-    }).then((response) => response.json());
+    });
   },
   fetchClusterQuality: async (datasetId, clusterId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/quality`).then(
-      (response) => response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/quality`);
   },
   compareClusters: async (datasetId, clusterLeft, clusterRight) => {
-    return fetch(
-      `${apiUrl}/search/compare-clusters?dataset=${datasetId}&cluster_left=${clusterLeft}&cluster_right=${clusterRight}`
-    ).then((response) => response.json());
+    const params = new URLSearchParams({
+      dataset: datasetId,
+      cluster_left: clusterLeft,
+      cluster_right: clusterRight,
+    });
+    return fetchJson(`${apiUrl}/search/compare-clusters?${params}`);
   },
   getEmbeddingModels: async () => {
-    return fetch(`${apiUrl}/models/embedding_models`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/embedding_models`);
   },
   getRecentEmbeddingModels: async () => {
-    return fetch(`${apiUrl}/models/embedding_models/recent`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/embedding_models/recent`);
   },
   getRecentChatModels: async () => {
-    return fetch(`${apiUrl}/models/chat_models/recent`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/chat_models/recent`);
   },
   searchHFSTModels: async (query) => {
     let limit = query ? 5 : 5; // TODO: could change this
     let url = `https://huggingface.co/api/models?filter=sentence-transformers&sort=downloads&limit=${limit}&full=false&config=false`;
     if (query) {
-      url += `&search=${query}`;
+      url += `&search=${encodeURIComponent(query)}`;
     }
-    return fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        // convert the HF data format to ours
-        const hfm = data.map((d) => {
+    return fetchJson(url).then((data) => {
+      // convert the HF data format to ours
+      const hfm = data.map((d) => {
+        return {
+          id: '🤗-' + d.id.replace('/', '___'),
+          name: d.id,
+          provider: '🤗',
+          downloads: d.downloads,
+          params: {},
+        };
+      });
+      return hfm;
+    });
+  },
+  searchHFChatModels: async (query) => {
+    let limit = 100; //query ? 5 : 5; // TODO: could change this
+    let url = `https://huggingface.co/api/models?pipeline_tag=text-generation&library=transformers,safetensors&other=conversational&sort=downloads&limit=${limit}&full=false&config=false`;
+    if (query) {
+      url += `&search=${encodeURIComponent(query)}`;
+    }
+    return fetchJson(url).then((data) => {
+      // convert the HF data format to ours
+      const hfm = data
+        .filter((d) => d.tags.includes('conversational') && !d.tags.includes('gguf'))
+        .map((d) => {
           return {
             id: '🤗-' + d.id.replace('/', '___'),
             name: d.id,
@@ -105,60 +167,33 @@ export const apiService = {
             downloads: d.downloads,
             params: {},
           };
-        });
-        return hfm;
-      });
-  },
-  searchHFChatModels: async (query) => {
-    let limit = 100; //query ? 5 : 5; // TODO: could change this
-    let url = `https://huggingface.co/api/models?pipeline_tag=text-generation&library=transformers,safetensors&other=conversational&sort=downloads&limit=${limit}&full=false&config=false`;
-    if (query) {
-      url += `&search=${query}`;
-    }
-    return fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        // convert the HF data format to ours
-        const hfm = data
-          .filter((d) => d.tags.includes('conversational') && !d.tags.includes('gguf'))
-          .map((d) => {
-            return {
-              id: '🤗-' + d.id.replace('/', '___'),
-              name: d.id,
-              provider: '🤗',
-              downloads: d.downloads,
-              params: {},
-            };
-          })
-          .slice(0, 5); // TODO: figure out why the "conversational" filter in url isn't working
-        return hfm;
-      });
+        })
+        .slice(0, 5); // TODO: figure out why the "conversational" filter in url isn't working
+      return hfm;
+    });
   },
   searchHFDatasets: async (query) => {
     let limit = query ? 5 : 10; // TODO: could change this
     let url = `https://huggingface.co/api/datasets?filter=latent-scope&sort=downloads&limit=${limit}&full=false&config=false`;
     if (query) {
-      url += `&search=${query}`;
+      url += `&search=${encodeURIComponent(query)}`;
     }
-    return fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        return data.map((d) => {
-          let size = d.description.match(/Total size of dataset files: (\d+\.\d+ [A-Za-z]+)/)?.[1];
-          return {
-            id: d.id,
-            name: d.id,
-            provider: '',
-            downloads: d.downloads,
-            size: size,
-            params: {},
-          };
-        });
+    return fetchJson(url).then((data) => {
+      return data.map((d) => {
+        let size = d.description.match(/Total size of dataset files: (\d+\.\d+ [A-Za-z]+)/)?.[1];
+        return {
+          id: d.id,
+          name: d.id,
+          provider: '',
+          downloads: d.downloads,
+          size: size,
+          params: {},
+        };
       });
+    });
   },
   fetchOllamaChatModels: async () => {
-    return fetch(`http://localhost:11434/api/tags`)
-      .then((response) => response.json())
+    return fetchJson(`http://localhost:11434/api/tags`)
       .then((data) => {
         return data?.models?.map((d) => {
           return {
@@ -185,20 +220,18 @@ export const apiService = {
     });
 
     const nearestNeigborsUrl = `${apiUrl}/search/nn?${searchParams.toString()}`;
-    return fetch(nearestNeigborsUrl)
-      .then((response) => response.json())
-      .then((data) => {
-        let dists = [];
-        let inds = data.indices.map((idx, i) => {
-          dists.push(data.distances[i]);
-          return idx;
-        });
-        return {
-          distances: dists,
-          indices: inds,
-          searchEmbedding: data.search_embedding[0],
-        };
+    return fetchJson(nearestNeigborsUrl).then((data) => {
+      let dists = [];
+      let inds = data.indices.map((idx, i) => {
+        dists.push(data.distances[i]);
+        return idx;
       });
+      return {
+        distances: dists,
+        indices: inds,
+        searchEmbedding: data.search_embedding[0],
+      };
+    });
   },
   searchSaeFeature: async (datasetId, saeId, featureId, threshold, topN) => {
     const searchParams = new URLSearchParams({
@@ -208,120 +241,93 @@ export const apiService = {
       threshold,
       top_n: topN,
     });
-    return fetch(`${apiUrl}/search/feature?${searchParams.toString()}`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/search/feature?${searchParams.toString()}`);
   },
   fetchUmapPoints: async (datasetId, umapId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/umaps/${umapId}/points`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/umaps/${umapId}/points`);
   },
   fetchDataFromIndices: async (datasetId, indices, saeId) => {
-    return fetch(`${apiUrl}/indexed`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ dataset: datasetId, indices: indices, sae_id: saeId }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        let rows = data.map((row, index) => {
-          return {
-            index: indices[index],
-            ...row,
-          };
-        });
-        return rows;
+    return fetchJson(
+      `${apiUrl}/indexed`,
+      postJsonOptions({ dataset: datasetId, indices: indices, sae_id: saeId })
+    ).then((data) => {
+      let rows = data.map((row, index) => {
+        return {
+          index: indices[index],
+          ...row,
+        };
       });
+      return rows;
+    });
   },
   fetchClusterLabelsAvailable: async (datasetId, clusterId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels_available`).then(
-      (response) => response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels_available`);
   },
   fetchClusterLabels: async (datasetId, clusterId, labelId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels/${labelId}`).then(
-      (response) => response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels/${labelId}`);
   },
   fetchClusterIndices: async (datasetId, clusterId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/indices`)
-      .then((response) => response.json())
-      .then((data) => {
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/indices`).then(
+      (data) => {
         data.cluster_id = clusterId;
         return data;
-      });
+      }
+    );
   },
   fetchChatModels: async () => {
-    return fetch(`${apiUrl}/models/chat_models`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/chat_models`);
   },
   killJob: async (datasetId, jobId) => {
-    return fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${jobId}`).then((response) =>
-      response.json()
-    );
+    const params = new URLSearchParams({ dataset: datasetId, job_id: jobId });
+    return fetchJson(`${apiUrl}/jobs/kill?${params}`);
   },
   updateScopeLabelDescription: async (datasetId, scopeId, label, description) => {
-    return fetch(
-      `${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/description?label=${label}&description=${description}`
-    ).then((response) => response.json());
+    const params = new URLSearchParams({ label, description });
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/description?${params}`);
   },
   fetchSaes: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/saes`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/saes`);
   },
   fetchSae: async (datasetId, saeId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/saes/${saeId}`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/saes/${saeId}`);
   },
   fetchVersion: async () => {
-    return fetch(`${apiUrl}/version`).then((response) => response.text());
+    return fetchText(`${apiUrl}/version`);
   },
   fetchSettings: async () => {
-    return fetch(`${apiUrl}/settings`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/settings`);
   },
   fetchExportList: async (datasetId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/export/list`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/export/list`);
   },
   fetchDatasets: async () => {
-    return fetch(`${apiUrl}/datasets`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/datasets`);
   },
   fetchCustomModels: async () => {
-    return fetch(`${apiUrl}/models/custom-models`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/custom-models`);
   },
   addCustomModel: async (modelData) => {
-    return fetch(`${apiUrl}/models/custom-models`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(modelData),
-    }).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/custom-models`, postJsonOptions(modelData));
   },
   deleteCustomModel: async (modelId) => {
-    return fetch(`${apiUrl}/models/custom-models/${modelId}`, {
+    return fetchJson(`${apiUrl}/models/custom-models/${modelId}`, {
       method: 'DELETE',
-    }).then((response) => response.json());
+    });
   },
   fetchCustomEmbeddingModels: async () => {
-    return fetch(`${apiUrl}/models/custom-embedding-models`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/custom-embedding-models`);
   },
   addCustomEmbeddingModel: async (modelData) => {
-    return fetch(`${apiUrl}/models/custom-embedding-models`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(modelData),
-    }).then((response) => response.json());
+    return fetchJson(`${apiUrl}/models/custom-embedding-models`, postJsonOptions(modelData));
   },
   deleteCustomEmbeddingModel: async (modelId) => {
-    return fetch(`${apiUrl}/models/custom-embedding-models/${modelId}`, {
+    return fetchJson(`${apiUrl}/models/custom-embedding-models/${modelId}`, {
       method: 'DELETE',
-    }).then((response) => response.json());
+    });
   },
   getFeatures: async (url) => {
+    // hyparquet handles fetching the parquet file itself; asyncBufferFromUrl
+    // performs its own response status checks and throws on failure.
     const buffer = await asyncBufferFromUrl(url);
     return new Promise((resolve) => {
       parquetRead({
@@ -342,43 +348,31 @@ export const apiService = {
     });
   },
   getDatasetFeatures: async (datasetId, saeId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/features/${saeId}`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/features/${saeId}`);
   },
   getHoverText: async (scope, index) => {
-    return fetch(`${apiUrl}/query`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    return fetchJson(
+      `${apiUrl}/query`,
+      postJsonOptions({
         dataset: scope.dataset.id,
         indices: [index],
         page: 0,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        return data.rows[0][scope.dataset.text_column];
-      });
+      })
+    ).then((data) => {
+      return data.rows[0][scope.dataset.text_column];
+    });
   },
   fetchTags: async (datasetId) => {
-    return fetch(`${apiUrl}/tags?dataset=${datasetId}`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/tags?dataset=${datasetId}`);
   },
   fetchScopeRows: async (datasetId, scopeId) => {
-    return fetch(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/parquet`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/parquet`);
   },
   columnFilter: async (datasetId, filters) => {
-    return fetch(`${apiUrl}/column-filter`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ dataset: datasetId, filters: filters }),
-    }).then((response) => response.json());
+    return fetchJson(
+      `${apiUrl}/column-filter`,
+      postJsonOptions({ dataset: datasetId, filters: filters })
+    );
   },
 
   // Estimation API
@@ -389,7 +383,7 @@ export const apiService = {
       text_column: textColumn,
       ...(dimensions ? { dimensions } : {}),
     });
-    return fetch(`${apiUrl}/estimate/embed?${params}`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/estimate/embed?${params}`);
   },
   estimateUmap: async (datasetId, embeddingId, neighbors) => {
     const params = new URLSearchParams({
@@ -397,14 +391,14 @@ export const apiService = {
       embedding_id: embeddingId,
       ...(neighbors ? { neighbors } : {}),
     });
-    return fetch(`${apiUrl}/estimate/umap?${params}`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/estimate/umap?${params}`);
   },
   estimateCluster: async (datasetId, umapId) => {
     const params = new URLSearchParams({
       dataset: datasetId,
       umap_id: umapId,
     });
-    return fetch(`${apiUrl}/estimate/cluster?${params}`).then((response) => response.json());
+    return fetchJson(`${apiUrl}/estimate/cluster?${params}`);
   },
   benchmarkEmbed: async (datasetId, modelId, textColumn, sampleSize = 10, dimensions) => {
     const params = new URLSearchParams({
@@ -414,8 +408,6 @@ export const apiService = {
       sample_size: sampleSize,
       ...(dimensions ? { dimensions } : {}),
     });
-    return fetch(`${apiUrl}/estimate/benchmark/embed?${params}`).then((response) =>
-      response.json()
-    );
+    return fetchJson(`${apiUrl}/estimate/benchmark/embed?${params}`);
   },
 };
