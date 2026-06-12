@@ -87,6 +87,95 @@ def update_dataset_meta(dataset):
     return jsonify(json_contents)
 
 
+@datasets_bp.route('/<dataset>/image', methods=['GET'])
+def get_dataset_image(dataset):
+    """Serve a single image cell from input.parquet.
+
+    Query params:
+        column: name of an image-typed column (per meta.json column_metadata).
+        index:  row index into the dataset.
+        size:   optional max dimension; when given the image is thumbnailed
+                and re-encoded as WebP. Capped at 1024.
+
+    Only the row group containing the requested row is read (restricted to
+    the one column), so multi-GB image datasets are never fully loaded.
+    """
+    import io
+
+    import pyarrow.parquet as pq
+    from flask import Response
+    from PIL import Image
+
+    column = request.args.get('column')
+    meta_path = os.path.join(_data_dir(), dataset, "meta.json")
+    try:
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    except OSError:
+        return jsonify({"error": f"dataset {dataset} not found"}), 404
+    column_meta = (meta.get("column_metadata") or {}).get(column)
+    if not isinstance(column_meta, dict) or column_meta.get("type") != "image":
+        return jsonify({"error": f"column {column!r} is not an image column"}), 400
+
+    size = request.args.get('size')
+    if size is not None:
+        try:
+            size = int(size)
+        except ValueError:
+            return jsonify({"error": "size must be an integer"}), 400
+        if size < 1 or size > 1024:
+            return jsonify({"error": "size must be between 1 and 1024"}), 400
+
+    file_path = os.path.join(_data_dir(), dataset, "input.parquet")
+    parquet_file = pq.ParquetFile(file_path)
+    try:
+        index = int(request.args.get('index'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "index must be an integer"}), 404
+    if index < 0 or index >= parquet_file.metadata.num_rows:
+        return jsonify({"error": "index out of range"}), 404
+
+    # Locate the row group containing the row via cumulative row counts.
+    offset = 0
+    for row_group in range(parquet_file.metadata.num_row_groups):
+        n_rows = parquet_file.metadata.row_group(row_group).num_rows
+        if index < offset + n_rows:
+            break
+        offset += n_rows
+    table = parquet_file.read_row_group(row_group, columns=[column])
+    value = table.column(0)[index - offset].as_py()
+
+    # Cell values are HF-style {"bytes": ..., "path": ...} dicts or raw bytes.
+    if isinstance(value, dict):
+        value = value.get("bytes")
+    if isinstance(value, bytearray):
+        value = bytes(value)
+    if not isinstance(value, bytes) or len(value) == 0:
+        return jsonify({"error": "no image bytes at this index"}), 404
+
+    headers = {"Cache-Control": "public, max-age=86400"}
+
+    if size is not None:
+        try:
+            img = Image.open(io.BytesIO(value))
+            if img.mode not in ("RGB", "RGBA", "L"):
+                img = img.convert("RGB")
+            img.thumbnail((size, size))
+            buf = io.BytesIO()
+            img.save(buf, format="WEBP", quality=80)
+        except Exception:
+            return jsonify({"error": "could not decode image"}), 404
+        return Response(buf.getvalue(), mimetype="image/webp", headers=headers)
+
+    try:
+        fmt = Image.open(io.BytesIO(value)).format
+    except Exception:
+        fmt = None
+    Image.init()  # make sure Image.MIME is populated
+    mimetype = Image.MIME.get(fmt, "application/octet-stream")
+    return Response(value, mimetype=mimetype, headers=headers)
+
+
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     return scan_for_json_files(os.path.join(_data_dir(), dataset, "embeddings"))

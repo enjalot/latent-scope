@@ -19,6 +19,7 @@ import { useScope } from '../../contexts/ScopeContext';
 import { useFilter } from '../../contexts/FilterContext';
 
 import { mapSelectionKey } from '../../lib/colors';
+import { imageUrlFor } from '../../lib/imageUrl';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Button } from 'react-element-forge';
@@ -49,7 +50,13 @@ function VisualizationPane({
   dataTableRows,
   isSmallScreen = false,
 }) {
-  const { scopeRows, clusterLabels, scope, features } = useScope();
+  const { scopeRows, clusterLabels, scope, features, dataset } = useScope();
+
+  // first binary image column (if any) for the hover thumbnail
+  const hoverImageColumn = useMemo(() => {
+    const columnMetadata = dataset?.column_metadata || {};
+    return Object.keys(columnMetadata).find((col) => columnMetadata[col]?.type === 'image');
+  }, [dataset]);
 
   const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
     useFilter();
@@ -435,6 +442,20 @@ function VisualizationPane({
             )}
             <br></br>
             <span>Index: {hovered.index}</span>
+            {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
+              <img
+                loading="lazy"
+                src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
+                alt={`${hoverImageColumn} ${hovered.index}`}
+                style={{
+                  display: 'block',
+                  maxWidth: '150px',
+                  maxHeight: '150px',
+                  objectFit: 'contain',
+                  marginTop: '4px',
+                }}
+              />
+            )}
             <p className="tooltip-text">{hovered.text}</p>
           </div>
         </Tooltip>

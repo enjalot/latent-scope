@@ -8,6 +8,7 @@ import 'react-data-grid/lib/styles.css';
 
 import DataGrid, { Row } from 'react-data-grid';
 import { scalePow } from 'd3-scale';
+import { imageUrlFor } from '../lib/imageUrl';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -346,6 +347,13 @@ function FilterDataTable({
   const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
 
   const [rowsLoading, setRowsLoading] = useState(false);
+
+  // binary image columns get taller rows so thumbnails are visible
+  const hasBinaryImageColumns = useMemo(
+    () => Object.values(dataset?.column_metadata || {}).some((m) => m?.type === 'image'),
+    [dataset]
+  );
+
   const hydrateIndices = useCallback(
     (indices) => {
       // console.log("hydrate!", dataset)
@@ -421,7 +429,21 @@ function FilterDataTable({
       //   };
       // }
 
-      if (metadata?.image) {
+      if (metadata?.type === 'image') {
+        // binary image column: the value is excluded from row payloads, so
+        // reconstruct the display from dataset id + column + row index
+        return {
+          ...baseCol,
+          renderCell: ({ row }) => (
+            <img
+              loading="lazy"
+              src={imageUrlFor(dataset.id, col, row.ls_index, 100)}
+              alt={`${col} ${row.ls_index}`}
+              style={{ height: '100%', maxHeight: '48px', objectFit: 'contain' }}
+            />
+          ),
+        };
+      } else if (metadata?.image) {
         return {
           ...baseCol,
           renderCell: ({ row }) => (
@@ -577,7 +599,7 @@ function FilterDataTable({
             return '';
           }}
           rowGetter={(i) => rows[i]}
-          rowHeight={sae_id ? 50 : 35}
+          rowHeight={sae_id ? 50 : hasBinaryImageColumns ? 48 : 35}
           style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
           renderers={{ renderRow: renderRowWithHover }}
         />
