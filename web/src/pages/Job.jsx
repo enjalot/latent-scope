@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-import { useStartJobPolling, jobPolling } from '../components/Job/Run';
+import { useStartJobPolling, useJobPolling } from '../components/Job/Run';
 import JobProgress from '../components/Job/Progress';
 
-import { apiService, apiUrl } from '../lib/apiService';
+import { apiUrl } from '../lib/apiService';
 
 function Job({ datasetId, jobId }) {
   const [dataset, setDataset] = useState(null);
@@ -12,14 +12,18 @@ function Job({ datasetId, jobId }) {
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
 
+  // jobPolling only needs the dataset id; memoize so the polling callbacks
+  // stay stable and don't restart when the dataset metadata loads
+  const datasetRef = useMemo(() => ({ id: datasetId }), [datasetId]);
+  const { startPolling, stopPolling } = useJobPolling(datasetRef, setJob, 200);
+
   const jobCB = useCallback(
     (job) => {
-      console.log('new job', job);
       if (job) navigate(`/datasets/${datasetId}/jobs/${job.id}`);
     },
     [datasetId, navigate]
   );
-  const { startJob: rerunJob } = useStartJobPolling(dataset, jobCB, `${apiUrl}/jobs/rerun`);
+  const { startJob: rerunJob } = useStartJobPolling(datasetRef, jobCB, `${apiUrl}/jobs/rerun`);
 
   useEffect(() => {
     fetch(`${apiUrl}/datasets/${datasetId}/meta`)
@@ -29,18 +33,22 @@ function Job({ datasetId, jobId }) {
   }, [datasetId, setDataset]);
 
   useEffect(() => {
+    let cancelled = false;
     fetch(`${apiUrl}/jobs/job?dataset=${datasetId}&job_id=${jobId}`)
       .then((response) => response.json())
       .then((data) => {
-        console.log('job', data);
+        if (cancelled) return;
         setJob(data);
         if (data?.status === 'running') {
-          // start polling
-          jobPolling(dataset, setJob, data.id, 200);
+          startPolling(data.id);
         }
       })
       .catch(console.error);
-  }, [datasetId, jobId, setJob, dataset]);
+    return () => {
+      cancelled = true;
+      stopPolling();
+    };
+  }, [datasetId, jobId, startPolling, stopPolling]);
 
   function handleKill(job) {
     fetch(`${apiUrl}/jobs/kill?dataset=${datasetId}&job_id=${job.id}`)
@@ -66,8 +74,6 @@ function Job({ datasetId, jobId }) {
           <span className="job-status" style={{ fontWeight: 'bold', padding: '5px' }}>
             {job.status}
           </span>
-          {/* { job.status == "running" ? <button onClick={() => {handleKill(job)}}>💀 Kill</button> : null} */}
-          {/* { job.status == "error" || job.status == "dead" ? <button onClick={() => {handleRerun(job)}}>🔁 Rerun</button> : null} */}
           <JobProgress
             job={job}
             rerunJob={handleRerun}
