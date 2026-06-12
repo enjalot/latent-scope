@@ -7,7 +7,7 @@ import { saeAvailable } from '../lib/SAE';
 const ScopeContext = createContext(null);
 
 export function ScopeProvider({ children }) {
-  const { user: userId, dataset: datasetId, scope: scopeId } = useParams();
+  const { dataset: datasetId, scope: scopeId } = useParams();
 
   // Core scope data
   const [scope, setScope] = useState(null);
@@ -37,7 +37,7 @@ export function ScopeProvider({ children }) {
         console.error(`Error fetching scope ${scopeId} for dataset ${datasetId}`, err);
         setError(err);
       });
-  }, [userId, datasetId, scopeId]);
+  }, [datasetId, scopeId]);
 
   const [features, setFeatures] = useState([]);
 
@@ -123,14 +123,13 @@ export function ScopeProvider({ children }) {
         console.error(`Error fetching scope rows for scope ${scope.id}`, err);
         setError(err);
       });
-  }, [userId, datasetId, scope]);
+  }, [datasetId, scope]);
 
   useEffect(() => {
     if (scope) fetchScopeRows();
   }, [scope, fetchScopeRows]);
 
   const value = {
-    userId,
     datasetId,
     scopeId,
     dataset,

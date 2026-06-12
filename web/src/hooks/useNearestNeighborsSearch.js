@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { apiService, apiUrl } from '../lib/apiService';
 
-export default function useNearestNeighborsSearch({ userId, datasetId, scope, deletedIndices }) {
+export default function useNearestNeighborsSearch({ datasetId, scope, deletedIndices }) {
   const [distances, setDistances] = useState([]);
 
   const filter = async (query) => {

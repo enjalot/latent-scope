@@ -40,7 +40,6 @@ const styles = {
 function ExploreContent() {
   // Get scope-related state from ScopeContext
   const {
-    userId,
     datasetId,
     scopeId,
     dataset,
@@ -94,7 +93,7 @@ function ExploreContent() {
         }
       });
     },
-    [userId, datasetId, scope]
+    [datasetId, scope]
   );
 
   const debouncedHydrateHoverText = useDebounce(hydrateHoverText, 5);
@@ -273,7 +272,7 @@ function ExploreContent() {
   if (scopeError)
     return (
       <>
-        <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />
+        <SubNav dataset={dataset} scope={scope} scopes={scopes} />
         <div style={{ padding: '1rem' }}>
           <p>
             Failed to load scope {scopeId} for dataset {datasetId}.
@@ -287,7 +286,7 @@ function ExploreContent() {
   if (!dataset)
     return (
       <>
-        <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />
+        <SubNav dataset={dataset} scope={scope} scopes={scopes} />
         <div>Loading...</div>
       </>
     );
@@ -295,7 +294,6 @@ function ExploreContent() {
   return (
     <>
       <SubNav
-        user={userId}
         dataset={dataset}
         scope={scope}
         scopes={scopes}
@@ -341,7 +339,6 @@ function ExploreContent() {
               }}
             >
               <FilterDataTable
-                userId={userId}
                 dataset={dataset}
                 scope={scope}
                 distances={searchFilter.distances}

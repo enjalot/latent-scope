@@ -165,8 +165,8 @@ const CustomMenu = ({ children, ...props }) => {
 export const NUM_SEARCH_RESULTS = 4;
 
 const SearchResults = ({ query, menuIsOpen, onSelect, setFilterQuery }) => {
-  const { features, userId, datasetId, scope, clusterLabels } = useScope();
-  const columnFilter = useColumnFilter(userId, datasetId, scope);
+  const { features, datasetId, scope, clusterLabels } = useScope();
+  const columnFilter = useColumnFilter(datasetId, scope);
   const { columnFilters } = columnFilter;
 
   const featureOptions = useMemo(

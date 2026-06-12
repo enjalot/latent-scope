@@ -34,7 +34,6 @@ export function FilterProvider({ children }) {
     features,
     scopeRows,
     deletedIndices,
-    userId,
     datasetId,
     scope,
     scopeLoaded,
@@ -47,10 +46,10 @@ export function FilterProvider({ children }) {
   }, [scopeRows, deletedIndices]);
 
   // Column filter
-  const columnFilter = useColumnFilter(userId, datasetId, scope);
-  const featureFilter = useFeatureFilter({ userId, datasetId, scope, scopeLoaded });
+  const columnFilter = useColumnFilter(datasetId, scope);
+  const featureFilter = useFeatureFilter({ datasetId, scope, scopeLoaded });
   const clusterFilter = useClusterFilter({ scopeRows, scope, scopeLoaded });
-  const searchFilter = useNearestNeighborsSearch({ userId, datasetId, scope, deletedIndices });
+  const searchFilter = useNearestNeighborsSearch({ datasetId, scope, deletedIndices });
 
   const hasFilterInUrl = useMemo(() => {
     return (
@@ -182,7 +181,7 @@ export function FilterProvider({ children }) {
     if (scopeLoaded) {
       applyFilter();
     }
-  }, [filterConfig, baseIndices, scopeRows, deletedIndices, userId, datasetId, scope, scopeLoaded]);
+  }, [filterConfig, baseIndices, scopeRows, deletedIndices, datasetId, scope, scopeLoaded]);
 
   // When centeredIndices change on mobile, update filteredIndices only if no filter is active.
   // Separate from the main filter effect to avoid re-running async filters or resetting pagination.
@@ -261,7 +260,7 @@ export function FilterProvider({ children }) {
     } else {
       setDataTableRows([]);
     }
-  }, [shownIndices, deletedIndices, userId, datasetId, scope, filterConfig, page]);
+  }, [shownIndices, deletedIndices, datasetId, scope, filterConfig, page]);
 
   // The context exposes only the state and setters that consumer components need.
   const value = {

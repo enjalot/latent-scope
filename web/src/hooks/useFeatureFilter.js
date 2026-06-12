@@ -6,7 +6,7 @@ const MAX_THRESHOLD = 0.2;
 
 const DEFAULT_FEATURE = -1;
 
-export default function useFeatureFilter({ userId, datasetId, scope, scopeLoaded }) {
+export default function useFeatureFilter({ datasetId, scope, scopeLoaded }) {
   const [feature, setFeature] = useState(DEFAULT_FEATURE);
   const [threshold, setThreshold] = useState(MIN_THRESHOLD);
   // const { features } = useScope();

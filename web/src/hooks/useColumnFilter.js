@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiService } from '../lib/apiService';
 
-const useColumnFilter = (userId, datasetId, scope) => {
+const useColumnFilter = (datasetId, scope) => {
   const [columnToValue, setColumnToValue] = useState({});
 
   const dataset = useMemo(() => {
