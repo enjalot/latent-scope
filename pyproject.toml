@@ -19,9 +19,11 @@ dependencies = [
     "scikit-learn>=1.3,<2",
     "pandas>=2.0,<3",
     "h5py>=3.10,<4",
-    "lancedb>=0.30,<1",
-    # lancedb >=0.31 lazily imports pylance for table reads
-    "pylance>=0.20,<1",
+    # lancedb + pylance are pinned to a tested pair: fresh resolves of
+    # lancedb 0.33 + pylance 0.39 break (LanceDataset lost to_pandas).
+    # Widen deliberately, with the test suite as the gate.
+    "lancedb>=0.30,<0.31",
+    "pylance>=0.39,<0.40",
     # ML
     "torch>=2.1,<3",
     "transformers>=4.40,<6",
