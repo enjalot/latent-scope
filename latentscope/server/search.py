@@ -34,7 +34,10 @@ def nn():
     dimensions = request.args.get('dimensions')
     dimensions = int(dimensions) if dimensions else None
     query = request.args.get('query')
-    use_late_interaction = request.args.get('late_interaction', 'false').lower() == 'true'
+    # Late interaction (MaxSim over stored token vectors) is the point of a
+    # ColBERT-style embedding, so it's the default whenever the embedding
+    # supports it. Pass late_interaction=false to force mean-vector ANN.
+    use_late_interaction = request.args.get('late_interaction', 'true').lower() == 'true'
 
     cache_key = dataset + "-" + embedding_id
     model = EMBEDDINGS.get(cache_key)
