@@ -114,56 +114,67 @@ export function FilterProvider({ children }) {
   }, [features, urlParams, scopeLoaded]);
 
   // ==== Filtering ====
+  // Monotonic counter so that when multiple applyFilter runs overlap, only the
+  // most recent run is allowed to commit its results (stale responses lose).
+  const filterRequestIdRef = useRef(0);
+
   // compute filteredIndices based on the active filter.
   useEffect(() => {
     async function applyFilter() {
+      const requestId = ++filterRequestIdRef.current;
       setLoading(true);
       let indices = [];
-      // If no filter is active, use centeredIndices (via ref) if available, otherwise use baseIndices
-      if (!filterConfig && !hasFilterInUrl) {
-        if (centeredIndicesRef.current.length > 0) {
-          indices = centeredIndicesRef.current.filter((index) => !deletedIndices.includes(index));
-        } else {
-          indices = baseIndices;
-        }
-      } else if (filterConfig) {
-        const { type, value } = filterConfig;
-
-        switch (type) {
-          case filterConstants.CLUSTER: {
-            const { setCluster, filter } = clusterFilter;
-            const cluster = clusterLabels.find((cluster) => cluster.cluster === value);
-            if (cluster) {
-              setCluster(cluster);
-              indices = filter(cluster);
-            }
-            break;
-          }
-          case filterConstants.SEARCH: {
-            const { filter } = searchFilter;
-            indices = await filter(value);
-            break;
-          }
-          case filterConstants.FEATURE: {
-            const { setFeature, filter } = featureFilter;
-            const featureLabel = findFeatureLabel(features, parseInt(value));
-            if (featureLabel) {
-              setFeature(value);
-              indices = await filter();
-            }
-            break;
-          }
-          case filterConstants.COLUMN: {
-            const { filter } = columnFilter;
-            const { column } = filterConfig;
-            indices = await filter(column, value);
-            break;
-          }
-          default: {
+      try {
+        // If no filter is active, use centeredIndices (via ref) if available, otherwise use baseIndices
+        if (!filterConfig && !hasFilterInUrl) {
+          if (centeredIndicesRef.current.length > 0) {
+            indices = centeredIndicesRef.current.filter((index) => !deletedIndices.includes(index));
+          } else {
             indices = baseIndices;
           }
+        } else if (filterConfig) {
+          const { type, value } = filterConfig;
+
+          switch (type) {
+            case filterConstants.CLUSTER: {
+              const { setCluster, filter } = clusterFilter;
+              const cluster = clusterLabels.find((cluster) => cluster.cluster === value);
+              if (cluster) {
+                setCluster(cluster);
+                indices = filter(cluster);
+              }
+              break;
+            }
+            case filterConstants.SEARCH: {
+              const { filter } = searchFilter;
+              indices = await filter(value);
+              break;
+            }
+            case filterConstants.FEATURE: {
+              const { setFeature, filter } = featureFilter;
+              const featureLabel = findFeatureLabel(features, parseInt(value));
+              if (featureLabel) {
+                setFeature(value);
+                indices = await filter();
+              }
+              break;
+            }
+            case filterConstants.COLUMN: {
+              const { filter } = columnFilter;
+              const { column } = filterConfig;
+              indices = await filter(column, value);
+              break;
+            }
+            default: {
+              indices = baseIndices;
+            }
+          }
         }
+      } catch (err) {
+        console.error('Error applying filter', err);
       }
+      // A newer applyFilter run started while we awaited; let it win.
+      if (requestId !== filterRequestIdRef.current) return;
       setFilteredIndices(indices);
       setPage(0); // Reset to first page when filter changes.
       setLoading(false);
@@ -198,8 +209,10 @@ export function FilterProvider({ children }) {
     return nonDeletedIndices.slice(start, start + ROWS_PER_PAGE);
   }, [filteredIndices, page, deletedIndices]);
 
-  // Keep track of the latest request
-  const lastRequestRef = useRef('');
+  // Monotonic counter identifying the latest table-rows request.
+  // (A timestamp is not unique enough: two requests within the same
+  // millisecond would collide.)
+  const rowsRequestIdRef = useRef(0);
 
   // Create a cache Map to store API responses for default requests.
   const rowsCache = useRef(new Map());
@@ -208,9 +221,7 @@ export function FilterProvider({ children }) {
     if (shownIndices.length) {
       const nonDeletedIndices = shownIndices.filter((index) => !deletedIndices.includes(index));
 
-      // Use a timestamp in ms as a unique key for this request.
-      const requestTimestamp = Date.now();
-      lastRequestRef.current = requestTimestamp;
+      const requestId = ++rowsRequestIdRef.current;
 
       const cacheKey = `${JSON.stringify(nonDeletedIndices)}-${page}`;
 
@@ -223,25 +234,30 @@ export function FilterProvider({ children }) {
         }
       }
 
-      apiService.fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id).then((rows) => {
-        // Only update state if this is the latest request.
-        if (lastRequestRef.current !== requestTimestamp) {
-          // Discard stale result.
-          return;
-        }
-        const rowsWithIdx = rows.map((row, idx) => ({
-          ...row,
-          idx,
-          ls_index: row.index,
-        }));
-        setDataTableRows(rowsWithIdx);
+      apiService
+        .fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id)
+        .then((rows) => {
+          // Only update state if this is the latest request.
+          if (rowsRequestIdRef.current !== requestId) {
+            // Discard stale result.
+            return;
+          }
+          const rowsWithIdx = rows.map((row, idx) => ({
+            ...row,
+            idx,
+            ls_index: row.index,
+          }));
+          setDataTableRows(rowsWithIdx);
 
-        // only cache the result if there is no filter config
-        // i.e. we are showing the default set of rows
-        if (!filterConfig) {
-          rowsCache.current.set(cacheKey, rowsWithIdx);
-        }
-      });
+          // only cache the result if there is no filter config
+          // i.e. we are showing the default set of rows
+          if (!filterConfig) {
+            rowsCache.current.set(cacheKey, rowsWithIdx);
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching data table rows', err);
+        });
     } else {
       setDataTableRows([]);
     }

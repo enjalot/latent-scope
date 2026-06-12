@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
 vi.mock('hyparquet', () => ({
@@ -46,12 +46,17 @@ vi.mock('../lib/apiService', () => ({
   },
 }));
 
-// Mock all hooks used by FilterContext to isolate its own logic
+// Mock all hooks used by FilterContext to isolate its own logic.
+// searchFilterMock is hoisted + stable so individual tests can control
+// the promises returned by filter().
+const { searchFilterMock } = vi.hoisted(() => ({
+  searchFilterMock: { filter: vi.fn(), distances: [] },
+}));
 vi.mock('../hooks/useColumnFilter', () => ({
   default: () => ({ filter: vi.fn().mockResolvedValue([]), columnFilters: [] }),
 }));
 vi.mock('../hooks/useNearestNeighborsSearch', () => ({
-  default: () => ({ filter: vi.fn().mockResolvedValue([]), distances: [] }),
+  default: () => searchFilterMock,
 }));
 vi.mock('../hooks/useClusterFilter', () => ({
   default: () => ({ filter: vi.fn().mockReturnValue([]), setCluster: vi.fn() }),
@@ -63,16 +68,34 @@ vi.mock('../hooks/useFeatureFilter', () => ({
 const { ScopeProvider } = await import('./ScopeContext');
 const { FilterProvider, useFilter } = await import('./FilterContext');
 const { apiService } = await import('../lib/apiService');
+const { filterConstants } = await import('../components/Explore/Search/utils');
 
 function FilterConsumer() {
-  const { shownIndices, filteredIndices, totalPages, page, loading } = useFilter();
+  const { shownIndices, filteredIndices, totalPages, page, loading, setFilterConfig } = useFilter();
   return (
     <div>
       <div data-testid="shown-count">{shownIndices.length}</div>
       <div data-testid="filtered-count">{filteredIndices.length}</div>
+      <div data-testid="filtered-indices">{filteredIndices.join(',')}</div>
       <div data-testid="total-pages">{totalPages}</div>
       <div data-testid="page">{page}</div>
       <div data-testid="loading">{loading ? 'true' : 'false'}</div>
+      <button
+        data-testid="search-first"
+        onClick={() =>
+          setFilterConfig({ type: filterConstants.SEARCH, value: 'first', label: 'first' })
+        }
+      >
+        search first
+      </button>
+      <button
+        data-testid="search-second"
+        onClick={() =>
+          setFilterConfig({ type: filterConstants.SEARCH, value: 'second', label: 'second' })
+        }
+      >
+        search second
+      </button>
     </div>
   );
 }
@@ -104,6 +127,11 @@ function renderWithProviders({ scopeRows = makeScopeRows(25) } = {}) {
 }
 
 describe('FilterContext', () => {
+  beforeEach(() => {
+    searchFilterMock.filter.mockReset();
+    searchFilterMock.filter.mockResolvedValue([]);
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
@@ -161,5 +189,43 @@ describe('FilterContext', () => {
       expect(screen.getByTestId('shown-count').textContent).toBe('10');
       expect(screen.getByTestId('total-pages').textContent).toBe('1');
     });
+  });
+
+  it('discards stale filter results when a newer run resolves first', async () => {
+    // Controllable promises keyed by the search value.
+    const resolvers = {};
+    searchFilterMock.filter.mockImplementation(
+      (value) =>
+        new Promise((resolve) => {
+          resolvers[value] = resolve;
+        })
+    );
+
+    renderWithProviders({ scopeRows: makeScopeRows(25) });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('filtered-count').textContent).toBe('25');
+    });
+
+    // Start the first search, then a second one before the first resolves.
+    fireEvent.click(screen.getByTestId('search-first'));
+    await waitFor(() => expect(resolvers.first).toBeDefined());
+    fireEvent.click(screen.getByTestId('search-second'));
+    await waitFor(() => expect(resolvers.second).toBeDefined());
+
+    // Resolve out of order: the newer (second) run resolves first...
+    await act(async () => {
+      resolvers.second([1, 2]);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('filtered-indices').textContent).toBe('1,2');
+    });
+
+    // ...then the stale first run resolves. It must not overwrite the results.
+    await act(async () => {
+      resolvers.first([3, 4, 5]);
+    });
+    expect(screen.getByTestId('filtered-indices').textContent).toBe('1,2');
+    expect(screen.getByTestId('loading').textContent).toBe('false');
   });
 });
