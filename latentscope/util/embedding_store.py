@@ -226,7 +226,11 @@ def create_vector_index(data_dir, dataset_id, embedding_id, metric="cosine"):
         return  # too few rows for IVF index
     dim = tbl.schema.field("vector").type.list_size
     partitions = min(256, num_rows // 10)
-    sub_vectors = max(1, dim // 16)
+    # IVF_PQ requires num_sub_vectors to divide the vector dimension; user
+    # supplied --dimensions values can be arbitrary, so pick the largest
+    # divisor of dim that is <= dim // 16 (falling back to 1).
+    target = max(1, dim // 16)
+    sub_vectors = next(d for d in range(target, 0, -1) if dim % d == 0)
     tbl.create_index(
         num_partitions=partitions,
         num_sub_vectors=sub_vectors,

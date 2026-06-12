@@ -211,13 +211,18 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         get_embedding_stats,
         optimize_table,
     )
-    print("optimizing embedding table")
-    optimize_table(DATA_DIR, dataset_id, embedding_id)
-    print("creating indexes")
-    create_vector_index(DATA_DIR, dataset_id, embedding_id)
-    if is_late_interaction:
-        # token-vector lookups filter on ls_index
-        create_scalar_index(DATA_DIR, dataset_id, embedding_id)
+    # All rows are written at this point; never let housekeeping kill the run
+    # (searches fall back to a brute-force scan without the indexes).
+    try:
+        print("optimizing embedding table")
+        optimize_table(DATA_DIR, dataset_id, embedding_id)
+        print("creating indexes")
+        create_vector_index(DATA_DIR, dataset_id, embedding_id)
+        if is_late_interaction:
+            # token-vector lookups filter on ls_index
+            create_scalar_index(DATA_DIR, dataset_id, embedding_id)
+    except Exception as e:
+        print(f"Warning: table optimize/index failed ({e}); continuing without index")
 
     # Get stats from the stored embeddings
     stats = get_embedding_stats(DATA_DIR, dataset_id, embedding_id)

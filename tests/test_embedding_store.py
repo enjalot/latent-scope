@@ -357,3 +357,17 @@ def test_estimate_storage_token_bytes():
                                      avg_tokens_per_doc=100)
     assert est["mean_vector_bytes"] == 1000 * 128 * 4
     assert est["token_vector_bytes"] == 1000 * 100 * 128 * 2  # fp16
+
+
+def test_vector_index_with_non_divisible_dimension(data_dir):
+    """IVF_PQ needs num_sub_vectors to divide dim; user-truncated dimensions
+    (e.g. --dimensions=33) must not crash index creation at the end of an
+    embedding run."""
+    from latentscope.util.embedding_store import append_embeddings, create_vector_index, search_nn
+
+    rng = np.random.default_rng(0)
+    vectors = rng.normal(size=(300, 33)).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors)
+    create_vector_index(data_dir, "test-dataset", "embedding-001")
+    indices, _ = search_nn(data_dir, "test-dataset", "embedding-001", vectors[5], limit=5)
+    assert 5 in indices
