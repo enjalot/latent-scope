@@ -56,8 +56,10 @@ def create_app(data_dir=None, read_only=None):
     app.logger.info("Data directory: %s", data_dir)
     app.logger.info("Read-only mode: %s", read_only)
 
-    # In-memory cache of DataFrames, keyed by dataset id
-    app.config['DATAFRAMES'] = {}
+    # In-memory cache of DataFrames, keyed by dataset id. Bounded so the
+    # server doesn't accumulate a full copy of every dataset ever touched.
+    from latentscope.util.lru import LRUCache
+    app.config['DATAFRAMES'] = LRUCache(maxsize=4)
 
     # ------------------------------------------------------------------
     # JSON error handlers
