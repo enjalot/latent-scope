@@ -1,8 +1,9 @@
 import os
 import time
-from .base import EmbedModelProvider,ChatModelProvider
 
 from latentscope.util import get_key
+
+from .base import ChatModelProvider, EmbedModelProvider
 
 # TODO verify these tokenizers somehow
 # derived from:
@@ -31,8 +32,8 @@ class MistralAIEmbedProvider(EmbedModelProvider):
 class MistralAIChatProvider(ChatModelProvider):
     def load_model(self):
         from mistralai.client import MistralClient
-        from transformers import AutoTokenizer
         from mistralai.models.chat_completion import ChatMessage
+        from transformers import AutoTokenizer
         self.ChatMessage = ChatMessage
         api_key = get_key("MISTRAL_API_KEY")
         if api_key is None:

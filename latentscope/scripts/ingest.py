@@ -1,10 +1,10 @@
 # Usage: ls-ingest <dataset_id>
-import os
-import json
 import argparse
+import json
+import os
 
-from latentscope.util import get_data_dir
 from latentscope import __version__
+from latentscope.util import get_data_dir
 
 
 # TODO make a parquet version of these
@@ -77,8 +77,8 @@ def ingest(dataset_id, df, text_column=None):
     print(df.columns)
 
     print("checking column types")
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     # determine the types of the values in columns, especially string, number or array of numbers
     # we will store these in the metadata
@@ -126,7 +126,7 @@ def ingest(dataset_id, df, text_column=None):
                 unique_values_count = len(set(df[column].dropna().apply(json.dumps)))
             else:
                 unique_values_count = df[column].nunique(dropna=True)
-        except:
+        except Exception:
             unique_values_count = -1
 
         # Store the metadata

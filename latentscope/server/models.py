@@ -1,8 +1,9 @@
-import os
 import csv
 import json
+import os
 import uuid
 from importlib.resources import files
+
 from flask import Blueprint, current_app, jsonify, request
 
 # Create a Blueprint
@@ -46,7 +47,7 @@ def get_recent_models(model_type="embedding"):
     if not os.path.exists(recent_models_path):
         return jsonify([])
 
-    with open(recent_models_path, 'r', encoding='utf-8') as file:
+    with open(recent_models_path, encoding='utf-8') as file:
         reader = csv.reader(file)
         recent_models = []
         for row in reader:
@@ -73,7 +74,7 @@ def get_custom_models():
     custom_models_path = os.path.join(_data_dir(), "custom_models.json")
     if not os.path.exists(custom_models_path):
         return jsonify([])
-    with open(custom_models_path, 'r', encoding='utf-8') as file:
+    with open(custom_models_path, encoding='utf-8') as file:
         custom_models = json.load(file)
     return jsonify(custom_models)
 
@@ -86,7 +87,7 @@ def add_custom_model():
 
     existing_models = []
     if os.path.exists(custom_models_path):
-        with open(custom_models_path, 'r', encoding='utf-8') as file:
+        with open(custom_models_path, encoding='utf-8') as file:
             existing_models = json.load(file)
 
     data["id"] = "custom-" + data["name"]
@@ -103,7 +104,7 @@ def delete_custom_model(model_id):
     custom_models_path = os.path.join(_data_dir(), "custom_models.json")
     if not os.path.exists(custom_models_path):
         return jsonify([])
-    with open(custom_models_path, 'r', encoding='utf-8') as file:
+    with open(custom_models_path, encoding='utf-8') as file:
         custom_models = json.load(file)
     custom_models = [m for m in custom_models if m["id"] != model_id]
     with open(custom_models_path, 'w', encoding='utf-8') as file:
@@ -116,7 +117,7 @@ def get_custom_embedding_models():
     custom_models_path = os.path.join(_data_dir(), "custom_embedding_models.json")
     if not os.path.exists(custom_models_path):
         return jsonify([])
-    with open(custom_models_path, 'r', encoding='utf-8') as file:
+    with open(custom_models_path, encoding='utf-8') as file:
         custom_models = json.load(file)
     return jsonify(custom_models)
 
@@ -129,7 +130,7 @@ def add_custom_embedding_model():
 
     existing_models = []
     if os.path.exists(custom_models_path):
-        with open(custom_models_path, 'r', encoding='utf-8') as file:
+        with open(custom_models_path, encoding='utf-8') as file:
             existing_models = json.load(file)
 
     data["id"] = "custom_embedding-" + data["name"]
@@ -149,7 +150,7 @@ def delete_custom_embedding_model(model_id):
     custom_models_path = os.path.join(_data_dir(), "custom_embedding_models.json")
     if not os.path.exists(custom_models_path):
         return jsonify([])
-    with open(custom_models_path, 'r', encoding='utf-8') as file:
+    with open(custom_models_path, encoding='utf-8') as file:
         custom_models = json.load(file)
     custom_models = [m for m in custom_models if m["id"] != model_id]
     with open(custom_models_path, 'w', encoding='utf-8') as file:

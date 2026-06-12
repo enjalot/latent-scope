@@ -1,9 +1,10 @@
+import argparse
+import json
 import os
 import re
-import json
-import argparse
-from latentscope.util import get_data_dir
+
 from latentscope import __version__
+from latentscope.util import get_data_dir
 
 
 def main():
@@ -65,11 +66,11 @@ def dmp(dataset_id, scope_id, plot_config=None):
     # read each json file and add its contents to the scope file
     dataset_file = os.path.join(DATA_DIR, dataset_id, "meta.json")
     with open(dataset_file) as f:
-        dataset = json.load(f)
+        json.load(f)
 
     scope_file = os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + ".json")
     with open(scope_file) as f:
-        scope = json.load(f)
+        json.load(f)
 
     print("loaded dataset and scope")
     # load the actual labels and save everything but the indices in a dict
@@ -90,7 +91,7 @@ def dmp(dataset_id, scope_id, plot_config=None):
     label_sizes.reset_index()
     print(label_sizes)
 
-    
+
     threshold = -1
     if plot_config:
         plot_config = json.loads(plot_config)

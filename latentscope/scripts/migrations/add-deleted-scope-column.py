@@ -1,9 +1,12 @@
-import pandas as pd
-from latentscope.util import get_data_dir
-from latentscope.server.bulk import update_combined
-import os
 import json
+import os
+
+import pandas as pd
+
 from latentscope import __version__
+from latentscope.server.bulk import update_combined
+from latentscope.util import get_data_dir
+
 
 # add a deleted column to the scope parquet
 def add_scope_deleted_column(dataset_id, scope_id, write=True):
@@ -36,7 +39,7 @@ def add_scope_deleted_column(dataset_id, scope_id, write=True):
     # we also need to get the umap, cluster, and cluster labels files to create the deleted rows
     with open(os.path.join(DATA_DIR, dataset_id, "scopes", scope_id + ".json")) as f:
         scope_meta = json.load(f)
-    
+
     scope_meta["ls_version"] = __version__
 
     umap_file = scope_meta["umap_id"]
@@ -80,7 +83,7 @@ def add_scope_deleted_column(dataset_id, scope_id, write=True):
         scope_df.to_parquet(scope_file)
         # update the combined file
         update_combined(scope_df, dataset_id, scope_id)
-    
+
     return
 
 # if __name__ == "__main__":

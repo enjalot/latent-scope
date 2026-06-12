@@ -1,6 +1,7 @@
+import json
 import os
 import re
-import json
+
 from flask import Blueprint, current_app, jsonify, request
 
 # Create a Blueprint
@@ -19,7 +20,7 @@ def get_datasets():
     for dir in os.listdir(DATA_DIR):
         file_path = os.path.join(DATA_DIR, dir, 'meta.json')
         if os.path.isfile(file_path):
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(file_path, encoding='utf-8') as file:
                 try:
                     jsonData = json.load(file)
                     jsonData['id'] = dir
@@ -37,14 +38,14 @@ def scan_for_json_files(directory_path, match_pattern=r".*\.json$"):
             key=lambda x: os.path.getmtime(os.path.join(directory_path, x)),
             reverse=True,
         )
-    except OSError as err:
+    except OSError:
         return jsonify({"error": "Unable to scan directory"}), 500
 
     json_files = [file for file in files if re.match(match_pattern, file)]
     json_contents = []
     for file in json_files:
         try:
-            with open(os.path.join(directory_path, file), 'r', encoding='utf-8') as json_file:
+            with open(os.path.join(directory_path, file), encoding='utf-8') as json_file:
                 json_contents.append(json.load(json_file))
         except json.JSONDecodeError:
             pass
@@ -54,7 +55,7 @@ def scan_for_json_files(directory_path, match_pattern=r".*\.json$"):
 @datasets_bp.route('/<dataset>/meta', methods=['GET'])
 def get_dataset_meta(dataset):
     file_path = os.path.join(_data_dir(), dataset, "meta.json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
@@ -69,7 +70,7 @@ def update_dataset_meta(dataset):
         pass
 
     file_path = os.path.join(_data_dir(), dataset, "meta.json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     json_contents[key] = value
     with open(file_path, 'w', encoding='utf-8') as json_file:
@@ -85,7 +86,7 @@ def get_dataset_embeddings(dataset):
 @datasets_bp.route('/<dataset>/embeddings/<embedding>', methods=['GET'])
 def get_dataset_embedding(dataset, embedding):
     file_path = os.path.join(_data_dir(), dataset, "embeddings", embedding + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
@@ -117,7 +118,7 @@ def get_dataset_saes(dataset):
 @datasets_bp.route('/<dataset>/saes/<sae>', methods=['GET'])
 def get_dataset_sae(dataset, sae):
     file_path = os.path.join(_data_dir(), dataset, "saes", sae + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
@@ -138,7 +139,7 @@ def get_dataset_umaps(dataset):
 @datasets_bp.route('/<dataset>/umaps/<umap>', methods=['GET'])
 def get_dataset_umap(dataset, umap):
     file_path = os.path.join(_data_dir(), dataset, "umaps", umap + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
@@ -162,7 +163,7 @@ def get_dataset_clusters(dataset):
 @datasets_bp.route('/<dataset>/clusters/<cluster>', methods=['GET'])
 def get_dataset_cluster(dataset, cluster):
     file_path = os.path.join(_data_dir(), dataset, "clusters", cluster + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
@@ -195,7 +196,7 @@ def get_dataset_cluster_quality(dataset, cluster):
 
     # Load cluster metadata
     meta_path = os.path.join(cluster_dir, f"{cluster}.json")
-    with open(meta_path, 'r', encoding='utf-8') as f:
+    with open(meta_path, encoding='utf-8') as f:
         meta = json.load(f)
 
     # Return cached metrics if available
@@ -233,7 +234,7 @@ def get_dataset_cluster_quality(dataset, cluster):
         }
         return jsonify(result)
 
-    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+    from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
 
     # For large datasets, sample for silhouette (O(n^2))
     n_points = len(labels)
@@ -287,7 +288,7 @@ def get_dataset_scopes(dataset):
 @datasets_bp.route('/<dataset>/scopes/<scope>', methods=['GET'])
 def get_dataset_scope(dataset, scope):
     file_path = os.path.join(_data_dir(), dataset, "scopes", scope + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
     return jsonify(json_contents)
 
@@ -306,7 +307,7 @@ def overwrite_scope_description(dataset, scope):
     new_description = request.args.get('description')
 
     file_path = os.path.join(_data_dir(), dataset, "scopes", scope + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
 
     json_contents['label'] = new_label
@@ -323,7 +324,7 @@ def new_scope_cluster(dataset, scope):
     new_label = request.args.get('label')
 
     file_path = os.path.join(_data_dir(), dataset, "scopes", scope + ".json")
-    with open(file_path, 'r', encoding='utf-8') as json_file:
+    with open(file_path, encoding='utf-8') as json_file:
         json_contents = json.load(json_file)
 
     clusters = json_contents.get('cluster_labels_lookup', [])

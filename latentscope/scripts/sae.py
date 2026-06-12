@@ -1,12 +1,13 @@
 # Usage: python umapper.py <dataset_id> <model> <neighbors> <min_dist>
 # Example: python umapper.py dadabase-curated BAAI_bge-small-en-v1.5 50 0.075
+import argparse
+import json
 import os
 import re
 import sys
-import json
-import argparse
 
 from latentscope.util import get_data_dir
+
 
 def main():
     parser = argparse.ArgumentParser(description='Generate SAE features from embeddings for a dataset')
@@ -23,7 +24,7 @@ def main():
 
 def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     DATA_DIR = get_data_dir()
-    # read in the embeddings 
+    # read in the embeddings
 
     sae_dir = os.path.join(DATA_DIR, dataset_id, "saes")
     if not os.path.exists(sae_dir):
@@ -43,11 +44,11 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     sae_id = f"sae-{next_sae_number:03d}"
     print("RUNNING:", sae_id)
 
-    from latentsae.sae import Sae
     import h5py
     import numpy as np
     import pandas as pd
     import torch
+    from latentsae.sae import Sae
 
     print("loading embeddings")
     embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
@@ -117,7 +118,7 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
         'count': feature_counts,
         'avg_activation': avg_activations
     })
-    
+
     # Save features to parquet
     features_df.to_parquet(os.path.join(sae_dir, f"{sae_id}_features.parquet"))
 

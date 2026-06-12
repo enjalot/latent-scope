@@ -69,7 +69,10 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     import pandas as pd
 
     from latentscope.util.embedding_store import (
-        append_embeddings, get_embedding_count, get_storage_format, migrate_hdf5_to_lancedb,
+        append_embeddings,
+        get_embedding_count,
+        get_storage_format,
+        migrate_hdf5_to_lancedb,
     )
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))

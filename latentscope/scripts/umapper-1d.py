@@ -1,14 +1,15 @@
 # Usage: python umapper.py <dataset_name> <neighbors> <min_dist>
 # Example: python umapper.py dadabase-curated 50 0.075
 # TODO: update this to match latest improvements in umapper.py
+import json
 import os
 import re
 import sys
-import json
-import umap
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import umap
 
 
 def umapper(dataset_name, neighbors=25, min_dist=0.075):
@@ -59,14 +60,14 @@ def umapper(dataset_name, neighbors=25, min_dist=0.075):
     print("wrote", output_file)
 
     # generate a scatterplot of the umap embeddings and save it to a file
-    
+
     fig, ax = plt.subplots(figsize=(6, 6))
     y_values = np.full(len(umap_embeddings), 0.5)
     plt.scatter(umap_embeddings[:, 0], y=y_values, s=1, alpha=0.5)
     plt.axis('off')  # remove axis
     plt.gca().set_position([0, 0, 1, 1])  # remove margins
     plt.savefig(f"../data/{dataset_name}/umaps/{umap_name}.png")
-    
+
 
 
 if __name__ == "__main__":

@@ -1,13 +1,14 @@
-# Usage: python cluster.py <dataset_name> <umap_name> <samples> 
+# Usage: python cluster.py <dataset_name> <umap_name> <samples>
 # Example: python cluster.py dadabase-curated umap1d-001 50
+import json
 import os
 import re
 import sys
-import json
+
 import hdbscan
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 
 
@@ -60,8 +61,8 @@ def clusterer(dataset_name, umap_name, samples, min_samples):
 
     with open(f'../data/{dataset_name}/clusters/{cluster_name}.json', 'w') as f:
         json.dump({
-            "umap_name": umap_name, 
-            "samples": samples, 
+            "umap_name": umap_name,
+            "samples": samples,
             "min_samples": min_samples,
             "n_clusters": len(non_noise_labels),
             "n_noise": len(noise_points)

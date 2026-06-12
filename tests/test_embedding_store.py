@@ -1,7 +1,7 @@
 """Tests for the LanceDB-backed embedding store."""
 
-import os
 import json
+import os
 import tempfile
 
 import numpy as np
@@ -31,8 +31,8 @@ def test_append_and_load(data_dir):
 def test_append_batches(data_dir):
     from latentscope.util.embedding_store import (
         append_embeddings,
-        load_embeddings,
         get_embedding_count,
+        load_embeddings,
     )
 
     v1 = np.random.rand(5, 64).astype(np.float32)
@@ -53,8 +53,8 @@ def test_append_batches(data_dir):
 def test_token_vectors(data_dir):
     from latentscope.util.embedding_store import (
         append_embeddings,
-        load_token_vectors,
         has_token_vectors,
+        load_token_vectors,
     )
 
     mean_vecs = np.random.rand(3, 128).astype(np.float32)
@@ -129,6 +129,7 @@ def test_late_interaction_search(data_dir):
 def test_hdf5_fallback(data_dir):
     """Test backward compatibility with HDF5 files."""
     import h5py
+
     from latentscope.util.embedding_store import load_embeddings
 
     vectors = np.random.rand(10, 64).astype(np.float32)

@@ -1,8 +1,10 @@
 import os
 import time
-from .base import EmbedModelProvider, ChatModelProvider
 
 from latentscope.util import get_key
+
+from .base import ChatModelProvider, EmbedModelProvider
+
 
 class OpenAIEmbedProvider(EmbedModelProvider):
     def __init__(self, name, params, base_url=None):
@@ -57,9 +59,9 @@ class OpenAIEmbedProvider(EmbedModelProvider):
 
 class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
-        from openai import OpenAI, AsyncOpenAI
-        import tiktoken
         import outlines
+        import tiktoken
+        from openai import AsyncOpenAI, OpenAI
         from outlines.models.openai import OpenAIConfig
         if self.base_url is None:
             self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"))
@@ -68,7 +70,7 @@ class OpenAIChatProvider(ChatModelProvider):
             self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"), base_url=self.base_url)
             # even if this is some other model, we wont be able to figure out the tokenizer from custom API
             # so we just use gpt-4o as a fallback, it should be roughly correct for token counts
-            self.encoder = tiktoken.encoding_for_model("gpt-4o") 
+            self.encoder = tiktoken.encoding_for_model("gpt-4o")
         config = OpenAIConfig(self.name)
         self.model = outlines.models.openai(self.client, config)
         self.generator = outlines.generate.text(self.model)

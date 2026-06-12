@@ -1,10 +1,10 @@
 # Usage: python cluster.py <dataset_id> <umap_id> <samples> <min_samples>
 # Example: python cluster.py dadabase-curated umap-001 50 5
+import argparse
+import json
 import os
 import re
 import sys
-import json
-import argparse
 
 try:
     # Check if the runtime environment is a Jupyter notebook
@@ -12,11 +12,12 @@ try:
         from tqdm.notebook import tqdm
     else:
         from tqdm import tqdm
-except ImportError as e:
+except ImportError:
     # Fallback to the standard console version if import fails
     from tqdm import tqdm
 
 from latentscope.util import get_data_dir
+
 
 # TODO move this into shared space
 def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=100):
@@ -112,9 +113,9 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     cluster_id = f"cluster-{next_cluster_number:03d}"
     print("RUNNING:", cluster_id)
 
+    import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
-    import matplotlib.pyplot as plt
     from scipy.spatial import ConvexHull
     from scipy.spatial.distance import cdist
 
@@ -123,13 +124,13 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     umap_embeddings = np.column_stack((umap_embeddings_df['x'], umap_embeddings_df['y']))
 
     if column is not None:
-        input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, f"input.parquet"))
+        input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
         # use the column as the cluster labels
         cluster_labels = input_df[column].to_numpy()
     elif method == 'evoc':
         # EVoC clusters on raw embeddings, not UMAP projections
         # Look up embedding_id from the UMAP metadata
-        with open(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.json"), 'r') as f:
+        with open(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.json")) as f:
             umap_meta = json.load(f)
         embedding_id = umap_meta['embedding_id']
         print(f"Loading embeddings from {embedding_id}")
