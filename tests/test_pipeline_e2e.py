@@ -279,3 +279,120 @@ def test_full_pipeline_evoc_default_method(pipeline_env):
     assert len(cluster_df) == n_total
     assert cluster_df["cluster"].nunique() >= 2
     assert (cluster_df["cluster"] >= 0).all()
+
+
+class FakeLateInteractionProvider(FakeEmbedProvider):
+    """Deterministic late-interaction provider: per-token vectors are noisy
+    copies of the topic direction plus one distinctive 'rare token' direction
+    for a handful of marked documents."""
+
+    late_interaction = True
+
+    def __init__(self, dim=DIM):
+        super().__init__(dim)
+        rng = np.random.default_rng(7)
+        self.rare_dir = rng.normal(size=dim)
+        self.rare_dir /= np.linalg.norm(self.rare_dir)
+
+    def embed_multi(self, batch, dimensions=None, is_query=False):
+        token_vectors_list = []
+        mean_vectors = []
+        for text in batch:
+            base = self._vector(text)
+            seed = int.from_bytes(hashlib.sha256(text.encode()).digest()[4:8], "little")
+            rng = np.random.default_rng(seed)
+            n_tokens = 3 + int(seed % 5)
+            tokens = base + rng.normal(scale=0.05, size=(n_tokens, self.dim))
+            if "zyzzyva" in text:
+                tokens[0] = self.rare_dir
+            tokens /= np.linalg.norm(tokens, axis=1, keepdims=True)
+            token_vectors_list.append(tokens.astype(np.float32))
+            mean = tokens.mean(axis=0)
+            mean_vectors.append(mean / np.linalg.norm(mean))
+        return np.array(mean_vectors, dtype=np.float32), token_vectors_list
+
+    def embed(self, batch, dimensions=None):
+        mean_vectors, _ = self.embed_multi(batch, dimensions)
+        return mean_vectors.tolist()
+
+
+def test_late_interaction_pipeline_and_maxsim_search(pipeline_env, monkeypatch):
+    """embed with a late-interaction provider -> token vectors stored fp16,
+    UMAP runs on the mean vectors, and MaxSim search surfaces the document
+    containing the rare token."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-li"
+    n_total = N_PER_TOPIC * len(TOPICS)
+
+    from latentscope.scripts.ingest import ingest
+    df = make_input_df()
+    # plant a rare token in one document
+    rare_idx = 17
+    df.loc[rare_idx, "text"] = df.loc[rare_idx, "text"] + " zyzzyva"
+    ingest(dataset_id, df, text_column="text")
+
+    import latentscope.scripts.embed as embed_mod
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeLateInteractionProvider())
+    embed_mod.embed(dataset_id, "text", "fake-li-model", prefix=None, rerun=None,
+                    dimensions=None, batch_size=50)
+
+    from latentscope.util.embedding_store import (
+        get_embedding_count,
+        has_token_vectors,
+        load_embeddings,
+        search_late_interaction,
+    )
+    assert get_embedding_count(data_dir, dataset_id, "embedding-001") == n_total
+    assert has_token_vectors(data_dir, dataset_id, "embedding-001")
+    with open(os.path.join(data_dir, dataset_id, "embeddings", "embedding-001.json")) as f:
+        assert json.load(f)["late_interaction"] is True
+
+    # mean vectors feed UMAP without touching the token payload
+    vectors = load_embeddings(data_dir, dataset_id, "embedding-001")
+    assert vectors.shape == (n_total, DIM)
+    from latentscope.scripts.umapper import umapper
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1)
+    umap_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "umaps", "umap-001.parquet"))
+    assert len(umap_df) == n_total
+
+    # MaxSim search with a query consisting of just the rare-token direction
+    provider = FakeLateInteractionProvider()
+    query_tokens = provider.rare_dir[None, :].astype(np.float32)
+    indices, scores = search_late_interaction(
+        data_dir, dataset_id, "embedding-001", query_tokens, final_limit=5)
+    assert indices[0] == rare_idx, (
+        f"expected rare-token doc {rare_idx} first, got {indices[:5]}")
+
+
+@pytest.mark.skipif(not os.environ.get("LS_TEST_REAL_MODELS"),
+                    reason="set LS_TEST_REAL_MODELS=1 to run model-download tests")
+def test_colbert_provider_real_model():
+    """The ColBERT provider must produce projected (96-dim for
+    answerai-colbert-small-v1), normalized token vectors and expanded
+    queries — i.e. actual ColBERT geometry, not raw BERT states."""
+    from latentscope.models.providers.late_interaction import ColBERTEmbedProvider
+
+    provider = ColBERTEmbedProvider("answerdotai/answerai-colbert-small-v1",
+                                    {"late_interaction": True})
+    provider.device = "cpu"
+    provider.load_model()
+
+    docs = ["The quick brown fox jumps over the lazy dog.",
+            "A short document about cooking pasta."]
+    mean_vectors, token_vectors = provider.embed_multi(docs)
+    assert mean_vectors.shape == (2, 96)
+    assert all(tv.shape[1] == 96 for tv in token_vectors)
+    assert token_vectors[0].shape[0] != token_vectors[1].shape[0]
+    np.testing.assert_allclose(np.linalg.norm(token_vectors[0], axis=1), 1.0,
+                               atol=1e-4)
+
+    _, query_tokens = provider.embed_multi(["fox jumping"], is_query=True)
+    assert query_tokens[0].shape == (32, 96)  # ColBERT query expansion
+
+    # MaxSim sanity: the fox query scores the fox doc higher
+    def maxsim(q, d):
+        return float((q @ d.T).max(axis=1).sum())
+    assert maxsim(query_tokens[0], token_vectors[0]) > maxsim(query_tokens[0],
+                                                              token_vectors[1])

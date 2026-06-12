@@ -123,7 +123,7 @@ def nn_late_interaction(data_dir, dataset, embedding_id, model, query, dimension
     from latentscope.util.embedding_store import search_late_interaction
 
     # Get per-token query embeddings
-    _, query_token_vectors = model.embed_multi([query], dimensions=dimensions)
+    _, query_token_vectors = model.embed_multi([query], dimensions=dimensions, is_query=True)
     query_tokens = query_token_vectors[0]  # (Q, D)
 
     # Also get the mean embedding for the response

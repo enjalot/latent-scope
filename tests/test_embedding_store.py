@@ -266,3 +266,94 @@ def test_list_embedding_ids(data_dir):
     append_embeddings(data_dir, "test-dataset", "embedding-003", vectors)
     assert sorted(list_embedding_ids(data_dir, "test-dataset")) == [
         "embedding-001", "embedding-003"]
+
+
+def test_token_vectors_stored_as_float16(data_dir):
+    """The explicit schema stores token vectors fp16 (4x smaller than the
+    float64 LanceDB used to infer from python lists) and mean vectors fp32."""
+    import lancedb
+    import pyarrow as pa
+
+    from latentscope.util.embedding_store import append_embeddings, load_token_vectors
+
+    vectors = np.random.rand(4, 8).astype(np.float32)
+    token_vectors = [np.random.rand(t, 8).astype(np.float32) for t in (3, 5, 2, 7)]
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors,
+                      token_vectors_list=token_vectors)
+
+    db = lancedb.connect(os.path.join(data_dir, "test-dataset", "lancedb"))
+    schema = db.open_table("emb-embedding-001").schema
+    assert schema.field("vector").type == pa.list_(pa.float32(), 8)
+    assert schema.field("token_vectors").type == pa.list_(pa.list_(pa.float16(), 8))
+    assert schema.field("num_tokens").type == pa.int32()
+
+    # roundtrip within fp16 precision
+    loaded = load_token_vectors(data_dir, "test-dataset", "embedding-001")
+    assert [tv.shape for tv in loaded] == [(3, 8), (5, 8), (2, 8), (7, 8)]
+    np.testing.assert_allclose(loaded[1], token_vectors[1], atol=1e-3)
+
+
+def test_append_to_legacy_schema_table(data_dir):
+    """Resuming a run on a table created before the explicit schema must cast
+    the new batch to the legacy schema instead of failing."""
+    import lancedb
+
+    from latentscope.util.embedding_store import append_embeddings, load_embeddings
+
+    # simulate a legacy table created via list-of-dicts inference
+    legacy_rows = [
+        {"ls_index": i, "vector": np.random.rand(8).tolist()} for i in range(5)
+    ]
+    db = lancedb.connect(os.path.join(data_dir, "test-dataset", "lancedb"))
+    db.create_table("emb-embedding-001", legacy_rows)
+
+    vectors = np.random.rand(3, 8).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors,
+                      start_index=5)
+    loaded = load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (8, 8)
+    np.testing.assert_allclose(loaded[5], vectors[0], atol=1e-6)
+
+
+def test_indexes_and_optimize(data_dir):
+    """create_vector_index / create_scalar_index / optimize_table run cleanly
+    and search results are unchanged afterwards."""
+    from latentscope.util.embedding_store import (
+        append_embeddings,
+        create_scalar_index,
+        create_vector_index,
+        load_token_vectors,
+        optimize_table,
+        search_nn,
+    )
+
+    rng = np.random.default_rng(0)
+    n, dim = 400, 16
+    vectors = rng.normal(size=(n, dim)).astype(np.float32)
+    vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
+    token_vectors = [rng.normal(size=(4, dim)).astype(np.float32) for _ in range(n)]
+    # write in several batches like a real run (multiple fragments)
+    for start in range(0, n, 100):
+        append_embeddings(data_dir, "test-dataset", "embedding-001",
+                          vectors[start:start + 100], start_index=start,
+                          token_vectors_list=token_vectors[start:start + 100])
+
+    optimize_table(data_dir, "test-dataset", "embedding-001")
+    create_vector_index(data_dir, "test-dataset", "embedding-001")
+    create_scalar_index(data_dir, "test-dataset", "embedding-001")
+
+    indices, _ = search_nn(data_dir, "test-dataset", "embedding-001",
+                           vectors[37], limit=5)
+    assert 37 in indices
+    loaded = load_token_vectors(data_dir, "test-dataset", "embedding-001",
+                                indices=[37, 250])
+    assert len(loaded) == 2
+
+
+def test_estimate_storage_token_bytes():
+    from latentscope.util.embedding_store import estimate_embedding_storage
+
+    est = estimate_embedding_storage(1000, 128, has_tokens=True,
+                                     avg_tokens_per_doc=100)
+    assert est["mean_vector_bytes"] == 1000 * 128 * 4
+    assert est["token_vector_bytes"] == 1000 * 100 * 128 * 2  # fp16

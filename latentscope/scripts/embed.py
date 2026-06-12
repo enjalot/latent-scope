@@ -204,8 +204,22 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         with open(history_file_path, 'w') as history_file:
             history_file.write(f"{datetime.now().isoformat()},{model_id}\n")
 
+    # Compact fragments (one per batch was written) and index for search
+    from latentscope.util.embedding_store import (
+        create_scalar_index,
+        create_vector_index,
+        get_embedding_stats,
+        optimize_table,
+    )
+    print("optimizing embedding table")
+    optimize_table(DATA_DIR, dataset_id, embedding_id)
+    print("creating indexes")
+    create_vector_index(DATA_DIR, dataset_id, embedding_id)
+    if is_late_interaction:
+        # token-vector lookups filter on ls_index
+        create_scalar_index(DATA_DIR, dataset_id, embedding_id)
+
     # Get stats from the stored embeddings
-    from latentscope.util.embedding_store import get_embedding_stats
     stats = get_embedding_stats(DATA_DIR, dataset_id, embedding_id)
 
     meta = {

@@ -55,6 +55,7 @@ dependencies = [
     # Util
     "python-dotenv>=1.0,<2",
     "tqdm>=4.66,<5",
+    "pylate>=1.6.0",
 ]
 
 [project.urls]

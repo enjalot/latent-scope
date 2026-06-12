@@ -10,31 +10,49 @@ from .base import EmbedModelProvider
 
 
 class ColBERTEmbedProvider(EmbedModelProvider):
-    """Provider for ColBERT-style models via sentence-transformers.
+    """Provider for ColBERT-style models via pylate.
 
     Compatible with models like:
     - colbert-ir/colbertv2.0
     - answerdotai/answerai-colbert-small-v1
     - jinaai/jina-colbert-v2
 
-    These models use the ColBERT architecture which produces per-token embeddings.
+    pylate loads the trained ColBERT head: the linear projection (e.g.
+    768->128 / 384->96), the [Q]/[D] marker tokens, query expansion, and
+    punctuation masking on documents. Loading these checkpoints through plain
+    sentence-transformers (the previous implementation) silently skipped all
+    of that and stored raw, unprojected BERT token states.
     """
+
+    # Documents are encoded in small sub-batches regardless of the pipeline
+    # batch size: one padded forward over a whole pipeline batch (100+ docs at
+    # up to max_seq_length each) OOMs on long-context models like
+    # jina-colbert-v2 (8192 tokens).
+    ENCODE_BATCH_SIZE = 8
 
     def __init__(self, name, params):
         super().__init__(name, params)
         self.late_interaction = True
         import torch
         self.torch = torch
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available()
-            else "mps" if torch.backends.mps.is_available()
-            else "cpu"
-        )
+        try:
+            if torch.cuda.is_available():
+                self.device = "cuda"
+            elif torch.backends.mps.is_available():
+                self.device = "mps"
+            else:
+                self.device = "cpu"
+        except Exception:
+            self.device = "cpu"
 
     def load_model(self):
-        from sentence_transformers import SentenceTransformer
-        self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)
-        self.tokenizer = self.model.tokenizer
+        from pylate import models as pylate_models
+
+        self.model = pylate_models.ColBERT(
+            model_name_or_path=self.name,
+            device=self.device,
+            trust_remote_code=True,
+        )
 
     def embed(self, inputs, dimensions=None):
         """Return mean embeddings as a list of lists (standard interface).
@@ -44,65 +62,46 @@ class ColBERTEmbedProvider(EmbedModelProvider):
         mean_vectors, _ = self.embed_multi(inputs, dimensions=dimensions)
         return mean_vectors.tolist()
 
-    def embed_multi(self, inputs, dimensions=None):
+    def embed_multi(self, inputs, dimensions=None, is_query=False):
         """Return both mean and per-token embeddings.
+
+        Parameters
+        ----------
+        is_query : bool
+            Encode as ColBERT queries ([Q] marker + query expansion) instead
+            of documents ([D] marker + punctuation masking).
 
         Returns
         -------
         mean_vectors : np.ndarray of shape (N, D)
-            Mean-pooled embeddings for each input.
+            Mean-pooled embeddings for each input (L2-normalized).
         token_vectors_list : list[np.ndarray]
             Per-token embeddings for each input. Each element has shape (T_i, D)
             where T_i is the number of tokens for that input.
         """
         import numpy as np
 
-        # Get the raw model output with all token embeddings
-        # sentence-transformers encode() returns pooled by default,
-        # so we need to use the underlying model for token-level output
-        features = self.tokenizer(
-            inputs,
-            padding=True,
-            truncation=True,
-            return_tensors="pt",
-            max_length=getattr(self.model, "max_seq_length", 512),
-        ).to(self.device)
+        token_vectors_list = self.model.encode(
+            list(inputs),
+            is_query=is_query,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+            batch_size=self.ENCODE_BATCH_SIZE,
+        )
 
-        with self.torch.no_grad():
-            model_output = self.model.forward(features)
-
-        # model_output typically has 'token_embeddings' and 'sentence_embedding'
-        if hasattr(model_output, "token_embeddings"):
-            all_token_embs = model_output.token_embeddings
-        elif isinstance(model_output, dict) and "token_embeddings" in model_output:
-            all_token_embs = model_output["token_embeddings"]
-        else:
-            # Fallback: use the last hidden state directly
-            all_token_embs = model_output.get(
-                "last_hidden_state", model_output[0]
-            )
-
-        attention_mask = features["attention_mask"]
-
-        # Truncate dimensions if requested (Matryoshka-style)
         if dimensions is not None and dimensions > 0:
-            all_token_embs = all_token_embs[:, :, :dimensions]
+            truncated = []
+            for tv in token_vectors_list:
+                tv = tv[:, :dimensions]
+                norms = np.linalg.norm(tv, axis=1, keepdims=True)
+                truncated.append(tv / (norms + 1e-10))
+            token_vectors_list = truncated
 
-        # Normalize token embeddings
-        all_token_embs = self.torch.nn.functional.normalize(all_token_embs, p=2, dim=-1)
+        token_vectors_list = [tv.astype(np.float32) for tv in token_vectors_list]
 
-        token_vectors_list = []
         mean_vectors_list = []
-
-        for i in range(len(inputs)):
-            mask = attention_mask[i].bool()
-            # Skip special tokens (CLS, SEP, PAD) - keep only real tokens
-            # For most models, position 0 is CLS. We keep it for ColBERT compatibility.
-            token_embs = all_token_embs[i][mask].cpu().numpy()
-            token_vectors_list.append(token_embs)
-
-            # Mean pool for the dense vector
-            mean_vec = token_embs.mean(axis=0)
+        for tv in token_vectors_list:
+            mean_vec = tv.mean(axis=0)
             mean_vec = mean_vec / (np.linalg.norm(mean_vec) + 1e-10)
             mean_vectors_list.append(mean_vec)
 
@@ -111,14 +110,14 @@ class ColBERTEmbedProvider(EmbedModelProvider):
 
 
 class ColPaliEmbedProvider(EmbedModelProvider):
-    """Provider for ColPali-style vision-language late interaction models.
+    """EXPERIMENTAL: ColPali-style vision-language late interaction models.
 
-    Compatible with models like:
-    - vidore/colpali-v1.2
-    - vidore/colqwen2-v1.0
-
-    These models embed both text queries and document images, producing
-    per-patch/per-token embeddings for late interaction retrieval.
+    Not registered in embedding_models.json and not reachable from the UI.
+    The current implementation only encodes *text* through the processor and
+    reads raw last_hidden_state (not the trained retrieval projection) — image
+    ingestion does not exist in the pipeline yet. Proper image support
+    (including fixing this provider to use the trained ColPali head) is
+    tracked as part of the image-embeddings work (issues #87/#24).
     """
 
     def __init__(self, name, params):
@@ -144,7 +143,7 @@ class ColPaliEmbedProvider(EmbedModelProvider):
         mean_vectors, _ = self.embed_multi(inputs, dimensions=dimensions)
         return mean_vectors.tolist()
 
-    def embed_multi(self, inputs, dimensions=None):
+    def embed_multi(self, inputs, dimensions=None, is_query=False):
         """Return both mean and per-token embeddings for text inputs."""
         import numpy as np
 
