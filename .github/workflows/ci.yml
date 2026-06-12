@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python tests + lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install package (CPU torch)
+        # Bypasses uv.lock so CI pulls CPU-only torch instead of the
+        # multi-GB CUDA wheels the lockfile resolves on linux.
+        run: |
+          uv venv
+          uv pip install --torch-backend=cpu -e . pytest pytest-cov ruff
+
+      - name: Lint (ruff)
+        run: uv run --no-sync ruff check latentscope/ tests/
+
+      - name: Tests (pytest)
+        run: uv run --no-sync pytest tests/ -q --cov=latentscope --cov-report=term
+
+  web-test:
+    name: Web tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Tests (vitest)
+        run: npm test
+
+  web-lint:
+    name: Web lint (advisory)
+    runs-on: ubuntu-latest
+    # Existing lint debt (~190 errors) is being burned down in the frontend
+    # health pass; this job flips to required once that lands.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint (eslint)
+        run: npm run lint

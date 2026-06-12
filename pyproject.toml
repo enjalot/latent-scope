@@ -92,6 +92,7 @@ include = [
 [dependency-groups]
 dev = [
     "pytest>=7.0",
+    "pytest-cov>=5.0",
     "ruff>=0.4",
 ]
 

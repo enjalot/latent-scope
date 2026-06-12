@@ -16,5 +16,7 @@ module.exports = {
       'warn',
       { allowConstantExport: true },
     ],
+    // Plain-JSX codebase: runtime prop validation isn't enforced.
+    'react/prop-types': 'off',
   },
 }
