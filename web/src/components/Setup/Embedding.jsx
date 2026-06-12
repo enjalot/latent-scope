@@ -10,6 +10,11 @@ import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
+import {
+  isImageColumn,
+  modelSupportsImages,
+  filterModelsForColumn,
+} from '../../lib/embeddingColumns';
 import { saeAvailable } from '../../lib/SAE';
 import { debounce } from '../../utils';
 import SettingsModal from '../SettingsModal';
@@ -45,6 +50,11 @@ function Embedding() {
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
   const [dimensions] = useState(null);
+
+  // metadata for the currently selected column; image columns are embedded
+  // as images by the backend and only image-capable models apply
+  const textColumnMeta = dataset?.column_metadata?.[textColumn];
+  const imageColumn = isImageColumn(textColumnMeta);
 
   const [embeddingsJob, setEmbeddingsJob] = useState(null);
   const { startJob: startEmbeddingsJob } = useStartJobPolling(
@@ -183,7 +193,9 @@ function Embedding() {
       .concat(HFModels)
       .concat(presetModels)
       .filter((d) => !!d);
-    let allOptions = am
+    // only offer models compatible with the selected column: image columns
+    // get image-capable models only; text columns exclude image-only models
+    let allOptions = filterModelsForColumn(am, textColumnMeta)
       .map((m) => {
         return {
           ...m,
@@ -206,7 +218,12 @@ function Embedding() {
     //   setDefaultModel(defaultOption);
     //   setModelId(defaultOption.id);
     // }
-  }, [presetModels, HFModels, recentModels, customEmbeddingModels, defaultModel]);
+  }, [presetModels, HFModels, recentModels, customEmbeddingModels, defaultModel, textColumnMeta]);
+
+  // guardrail: a stale model selection (e.g. picked before switching to an
+  // image column) that can't embed images shouldn't be runnable
+  const selectedModel = allModels.find((m) => m.id === modelId);
+  const imageModelMismatch = imageColumn && !!modelId && !modelSupportsImages(selectedModel);
 
   useEffect(() => {
     if (embeddingsJob?.status === 'completed') {
@@ -331,7 +348,8 @@ function Embedding() {
       const form = e.target;
       const data = new FormData(form);
       // const model = allModels.find(model => model.id === data.get('modelName'));
-      const prefix = data.get('prefix');
+      // prefix doesn't apply to image columns (the textarea is hidden)
+      const prefix = imageColumn ? '' : data.get('prefix');
       let job = {
         text_column: textColumn,
         model_id: modelId,
@@ -342,7 +360,7 @@ function Embedding() {
       if (dimensions) job.dimensions = dimensions;
       startEmbeddingsJob(job);
     },
-    [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId, maxSeqLength]
+    [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId, maxSeqLength, imageColumn]
   );
 
   const handleRerunEmbedding = (job) => {
@@ -464,7 +482,12 @@ function Embedding() {
             {dataset?.columns.length ? (
               <Select
                 value={textColumn}
-                options={dataset?.columns.map((column) => ({ label: column, value: column }))}
+                options={dataset?.columns.map((column) => ({
+                  label: isImageColumn(dataset?.column_metadata?.[column])
+                    ? `${column} (image)`
+                    : column,
+                  value: column,
+                }))}
                 onChange={handleTextColumnChange}
               />
             ) : null}
@@ -487,12 +510,15 @@ function Embedding() {
           {/* The form for creating a new embedding */}
           <form onSubmit={handleNewEmbedding}>
             <div className={styles.step}>
-              <textarea
-                name="prefix"
-                className={styles.prefix}
-                placeholder={`Optional prefix to prepend to each ${textColumn}`}
-                disabled={!!embeddingsJob}
-              ></textarea>
+              {/* prefix doesn't apply to image columns */}
+              {!imageColumn && (
+                <textarea
+                  name="prefix"
+                  className={styles.prefix}
+                  placeholder={`Optional prefix to prepend to each ${textColumn}`}
+                  disabled={!!embeddingsJob}
+                ></textarea>
+              )}
 
               <span className={styles['options']}>
                 <label>
@@ -560,10 +586,16 @@ function Embedding() {
               />
             )}
 
+            {imageModelMismatch && (
+              <div className={styles['model-mismatch']}>
+                {selectedModel?.name || modelId} can&apos;t embed images. Select an image-capable
+                model (CLIP, SigLIP, ViT, DINOv2) for column {textColumn}.
+              </div>
+            )}
             <Button
               type="submit"
               color={embedding ? 'secondary' : 'primary'}
-              disabled={!!embeddingsJob || !modelId}
+              disabled={!!embeddingsJob || !modelId || imageModelMismatch}
               text="New Embedding"
             />
             {/* 
@@ -623,7 +655,12 @@ function Embedding() {
                         </span>
                       ) : null}
                     </span>
-                    <span>{emb.model_id?.replace('___', '/')}</span>
+                    <span>
+                      {emb.model_id?.replace('___', '/')}
+                      {emb.input_type === 'image' && (
+                        <span className={styles['format-badge-image']}>image</span>
+                      )}
+                    </span>
                     <span>
                       {emb.dimensions} dimensions
                       {embeddingFormats[emb.id] === 'hdf5' && (
