@@ -61,11 +61,8 @@ jobs:
         run: npm test
 
   web-lint:
-    name: Web lint (advisory)
+    name: Web lint
     runs-on: ubuntu-latest
-    # Existing lint debt (~190 errors) is being burned down in the frontend
-    # health pass; this job flips to required once that lands.
-    continue-on-error: true
     defaults:
       run:
         working-directory: web
