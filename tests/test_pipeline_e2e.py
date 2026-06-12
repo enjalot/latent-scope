@@ -138,10 +138,57 @@ def test_full_pipeline_small_dataset(pipeline_env):
     scope_df = pd.read_parquet(
         os.path.join(data_dir, dataset_id, "scopes", "scopes-001.parquet"))
     assert len(scope_df) == n_total
+    # the label column must match the cluster-labels parquet mapping
+    labels_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "clusters",
+                     "cluster-001-labels-default.parquet"))
+    expected_labels = scope_df["cluster"].map(labels_df["label"])
+    assert scope_df["label"].equals(expected_labels)
     with open(os.path.join(data_dir, dataset_id, "scopes", "scopes-001.json")) as f:
         scope_meta = json.load(f)
     assert scope_meta["embedding_id"] == "embedding-001"
     assert scope_meta["cluster_id"] == "cluster-001"
+
+
+def test_scope_rerun_skips_unchanged_input_parquet(pipeline_env, capsys):
+    """Re-running a scope must not rewrite {scope}-input.parquet (a full copy
+    of the input data) when the source input.parquet is unchanged, and must
+    rewrite it when the source changes."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-test"
+    run_ingest_and_embed(data_dir, dataset_id)
+
+    from latentscope.scripts.cluster import clusterer
+    from latentscope.scripts.scope import scope
+    from latentscope.scripts.umapper import umapper
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "E2E test scope", "test description")
+    scope_input_path = os.path.join(
+        data_dir, dataset_id, "scopes", "scopes-001-input.parquet")
+    assert os.path.exists(scope_input_path)
+    # backdate the output so any rewrite is detectable regardless of mtime
+    # resolution
+    os.utime(scope_input_path, (1000000000, 1000000000))
+    mtime_before = os.path.getmtime(scope_input_path)
+
+    # re-run the same scope: input.parquet is unchanged -> rewrite is skipped
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "E2E test scope", "test description",
+          scope_id="scopes-001")
+    assert os.path.getmtime(scope_input_path) == mtime_before
+    assert "skipping scopes-001-input.parquet rewrite" in capsys.readouterr().out
+
+    # touch the source input.parquet -> next run must rewrite
+    input_path = os.path.join(data_dir, dataset_id, "input.parquet")
+    os.utime(input_path, None)
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "E2E test scope", "test description",
+          scope_id="scopes-001")
+    assert os.path.getmtime(scope_input_path) != mtime_before
 
 
 def test_cluster_evoc_reads_lancedb_embeddings(pipeline_env):
