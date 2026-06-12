@@ -259,20 +259,9 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     scope["size"] = os.path.getsize(os.path.join(directory, id + ".parquet"))
     scope["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Record the source input.parquet mtime+size so a re-run of this scope can
-    # skip rewriting the (full-copy) {scope}-input.parquet when unchanged.
     input_parquet_path = os.path.join(DATA_DIR, dataset_id, "input.parquet")
-    input_stat = os.stat(input_parquet_path)
-    scope["input_source"] = {"mtime": input_stat.st_mtime, "size": input_stat.st_size}
 
     file_path = os.path.join(directory, id + ".json")
-    prev_input_source = None
-    if os.path.exists(file_path):
-        try:
-            with open(file_path) as f:
-                prev_input_source = json.load(f).get("input_source")
-        except (OSError, json.JSONDecodeError):
-            prev_input_source = None
     with open(file_path, 'w') as f:
         json.dump(scope, f, indent=2)
 
@@ -281,20 +270,17 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
         with open(transactions_file_path, 'w') as f:
             json.dump([], f)
 
+    # {scope}-input.parquet is input JOINED with the scope columns (x, y,
+    # cluster, label, ...), and export_lance reads from it — it must be
+    # rewritten on every scope save. (A skip keyed on input.parquet alone
+    # served stale labels/coordinates when the scope itself changed.)
     scope_input_path = os.path.join(directory, id + "-input.parquet")
-    if (os.path.exists(scope_input_path)
-            and prev_input_source is not None
-            and prev_input_source.get("mtime") == input_stat.st_mtime
-            and prev_input_source.get("size") == input_stat.st_size):
-        print(f"skipping {id}-input.parquet rewrite: input.parquet unchanged "
-              f"(mtime={input_stat.st_mtime}, size={input_stat.st_size})")
-    else:
-        print("creating combined scope-input parquet")
-        input_df = pd.read_parquet(input_parquet_path)
-        input_df.reset_index(inplace=True)
-        input_df = input_df[input_df['index'].isin(scope_parquet['ls_index'])]
-        combined_df = input_df.join(scope_parquet.set_index('ls_index'), on='index', rsuffix='_ls')
-        combined_df.to_parquet(scope_input_path)
+    print("creating combined scope-input parquet")
+    input_df = pd.read_parquet(input_parquet_path)
+    input_df.reset_index(inplace=True)
+    input_df = input_df[input_df['index'].isin(scope_parquet['ls_index'])]
+    combined_df = input_df.join(scope_parquet.set_index('ls_index'), on='index', rsuffix='_ls')
+    combined_df.to_parquet(scope_input_path)
 
     print("exporting to lancedb")
     export_lance(DATA_DIR, dataset_id, id)
