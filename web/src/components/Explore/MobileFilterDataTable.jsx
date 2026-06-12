@@ -1,11 +1,11 @@
-import { useState, useCallback, memo, useRef } from 'react';
+import { useState, useCallback, memo } from 'react';
 import PropTypes from 'prop-types';
 import styles from './MobileFilterDataTable.module.scss';
 import { useFilter } from '@/contexts/FilterContext';
 import { useScope } from '@/contexts/ScopeContext';
 import ClusterIcon from './Search/ClusterIcon';
 
-const DataRow = memo(({ dataset, row, onHover, clusterMap, index }) => {
+const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const expand = useCallback(() => setIsExpanded(!isExpanded), [isExpanded]);
 

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import styles from './Compare.module.css';
 
 const METRIC_INFO = {

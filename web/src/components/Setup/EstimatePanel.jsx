@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Button } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
 import styles from './EstimatePanel.module.scss';
@@ -14,7 +14,7 @@ import styles from './EstimatePanel.module.scss';
  *   loading: boolean - whether an estimate/benchmark is in progress
  *   step: string - which pipeline step this is for ("embed", "umap", "cluster")
  */
-function EstimatePanel({ estimate, onEstimate, onBenchmark, benchmarkResult, loading, step }) {
+function EstimatePanel({ estimate, onEstimate, onBenchmark, benchmarkResult, loading }) {
   const [showDetails, setShowDetails] = useState(false);
 
   if (!onEstimate) return null;

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { range } from 'd3-array';
-import { interpolatePurples, interpolateSpectral } from 'd3-scale-chromatic';
+import { interpolateSpectral } from 'd3-scale-chromatic';
 
 import { Input, Button } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
@@ -40,7 +40,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [drawPoints, setDrawPoints] = useState([]);
 
-  const [deletedIndices, setDeletedIndices] = useState([]);
+  const [deletedIndices] = useState([]);
 
   const searchQuery = useCallback(() => {
     if (searchText) {
@@ -56,7 +56,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
           let dp = drawPoints.map((d) => {
             return [d[0], d[1], mapSelectionKey.notSelected];
           });
-          data.indices.slice(0, 10).forEach((index, i) => {
+          data.indices.slice(0, 10).forEach((index) => {
             dp[index][2] = mapSelectionKey.selected;
             console.log('dp', dp[index]);
           });
@@ -142,24 +142,9 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
     console.log('SCOPE', scope);
   }, [scope]);
 
-  // Title for the preview based on the current step
-  // ------------------------------------------------------------
-  const stepTitle = useMemo(() => {
-    if (currentStep == 1) {
-      return embedding?.id;
-    }
-    if (currentStep == 2) {
-      return umap?.id;
-    }
-    if (currentStep == 3) {
-      return cluster?.id;
-    }
-    return stepIds[currentStep - 1];
-  }, [currentStep, stepIds, embedding, umap, cluster]);
-
   // Scatter plot related state
   // ------------------------------------------------------------
-  const [scatter, setScatter] = useState(null);
+  const [, setScatter] = useState(null);
   // We keep track of the x and y domain from the scatter plot so we can overlay stuff on top of it
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -269,9 +254,9 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
 
   // Cluster related state
   // ------------------------------------------------------------
-  const [clusterLabelData, setClusterLabelData] = useState([]);
+  const [, setClusterLabelData] = useState([]);
   const [clusterLabels, setClusterLabels] = useState([]);
-  const [clusterIndices, setClusterIndices] = useState([]);
+  const [, setClusterIndices] = useState([]);
   const [hulls, setHulls] = useState([]);
   const [hasHulls, setHasHulls] = useState(false);
   useEffect(() => {

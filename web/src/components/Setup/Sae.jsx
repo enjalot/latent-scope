@@ -1,8 +1,5 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback } from 'react';
-import { Tooltip } from 'react-tooltip';
-import Select from 'react-select';
-import { groups } from 'd3-array';
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 
@@ -30,7 +27,7 @@ import styles from './Sae.module.scss';
 // We only have one SAE model currently available really
 // When we have more we can allow for multiple SAEs per embedding
 function Sae({ embedding, model, onSAE = () => {} }) {
-  const { dataset, scope, updateScope } = useSetup();
+  const { dataset } = useSetup();
 
   const [sae, setSae] = useState(null);
   const [saes, setSaes] = useState([]);

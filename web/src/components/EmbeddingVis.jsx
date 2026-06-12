@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { scaleDiverging, scaleSequential } from 'd3-scale';
 import { interpolateRdBu, interpolateCool } from 'd3-scale-chromatic';
 

@@ -6,13 +6,12 @@ import { useStartJobPolling } from '../Job/Run';
 import { apiService, apiUrl } from '../../lib/apiService';
 import { debounce } from '../../utils';
 import { useSetup } from '../../contexts/SetupContext';
-import { Button, Modal } from 'react-element-forge';
+import { Button } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
 
 import ModelSelect from '../ModelSelect';
 import JobProgress from '../Job/Progress';
 import DataTable from '../DataTable';
-import Settings from '../../pages/Settings';
 import SettingsModal from '../SettingsModal';
 import styles from './ClusterLabels.module.scss';
 
@@ -137,7 +136,7 @@ function ClusterLabels() {
   }, [fetchRecentModels, searchHFModels, fetchOllamaModels]);
 
   // Build up the list of options for the Dropdown
-  const [allModels, setAllModels] = useState([]);
+  const [, setAllModels] = useState([]);
   const [allOptionsGrouped, setAllOptionsGrouped] = useState([]);
   const [defaultModel, setDefaultModel] = useState(null);
   useEffect(() => {
@@ -210,17 +209,7 @@ function ClusterLabels() {
         .then((data) => {
           // console.log("cluster changed, labels available", cluster.id, data)
           const labelsAvailable = data.filter((d) => d.cluster_id == cluster.id);
-          let lbl;
           const defaultLabel = { id: 'default', model_id: 'N/A', cluster_id: cluster.id };
-          if (selected) {
-            // console.log("selected", selected)
-            lbl = labelsAvailable.find((d) => d.id == selected) || defaultLabel;
-            // console.log("found?", lbl, labelsAvailable)
-          } else if (labelsAvailable[0]) {
-            lbl = labelsAvailable[0];
-          } else {
-            lbl = defaultLabel;
-          }
           setClusterLabelSets([...labelsAvailable, defaultLabel]);
           // setSelected(lbl?.id)
         })

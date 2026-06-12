@@ -21,3 +21,6 @@ dist
 *.njsproj
 *.sln
 *.sw?
+
+# Test coverage output
+coverage

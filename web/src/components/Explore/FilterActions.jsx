@@ -1,4 +1,3 @@
-import React from 'react';
 import Container from './Search/Container';
 import styles from './FilterActions.module.scss';
 

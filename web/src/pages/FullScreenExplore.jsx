@@ -64,8 +64,6 @@ function ExploreContent() {
 
   // Get filter-related state from FilterContext
   const {
-    loading: filterLoading,
-    shownIndices,
     setFilterQuery,
     featureFilter,
     searchFilter,
@@ -80,8 +78,10 @@ function ExploreContent() {
   const [hovered, setHovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  const [dataTableRows, setDataTableRows] = useState([]);
-  const [selectedAnnotations, setSelectedAnnotations] = useState([]);
+  // Note: these currently have no setters wired up; they exist to satisfy
+  // VisualizationPane's props with stable empty values.
+  const [dataTableRows] = useState([]);
+  const [selectedAnnotations] = useState([]);
 
   // Add a ref to track the latest requested index
   const latestHoverIndexRef = useRef(null);
@@ -130,7 +130,7 @@ function ExploreContent() {
   const [showClusters, setShowClusters] = useState(false);
 
   // Handlers for responding to individual data points
-  const handleClicked = useCallback((_index) => {}, []);
+  const handleClicked = useCallback(() => {}, []);
 
   const handleHover = useCallback(
     (index) => {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { extent, max } from 'd3-array';
+import { max } from 'd3-array';
 import { scalePow } from 'd3-scale';
 import FeatureModal from './FeatureModal';
 

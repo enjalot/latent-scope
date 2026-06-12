@@ -14,7 +14,7 @@ import EstimatePanel from './EstimatePanel';
 
 import styles from './Umap.module.scss';
 
-function Umap({}) {
+function Umap() {
   const { dataset, scope, savedScope, updateScope, goToNextStep, setPreviewLabel } = useSetup();
 
   const [umapJob, setUmapJob] = useState(null);
@@ -25,7 +25,7 @@ function Umap({}) {
     `${apiUrl}/jobs/delete/umap`
   );
 
-  const [init, setInit] = useState('');
+  const [init] = useState('');
 
   const [umap, setUmap] = useState(null);
   const [embedding, setEmbedding] = useState(null);
@@ -80,13 +80,6 @@ function Umap({}) {
       });
     }
   }, [umapJob, dataset, setUmaps]);
-
-  const handleChangeInit = useCallback(
-    (e) => {
-      setInit(e.target.value);
-    },
-    [setInit]
-  );
 
   const [save, setSave] = useState(false);
 
