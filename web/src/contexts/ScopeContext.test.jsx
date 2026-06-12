@@ -66,6 +66,14 @@ function ScopeConsumer() {
   );
 }
 
+// Consumer that surfaces the context error state
+function ErrorConsumer() {
+  const { error, scopeLoaded } = useScope();
+  if (error) return <div data-testid="scope-error">{error.message}</div>;
+  if (!scopeLoaded) return <div>loading</div>;
+  return <div data-testid="loaded">loaded</div>;
+}
+
 function renderWithRouter(component, { datasetId = 'ds1', scopeId = 'scope-0' } = {}) {
   return render(
     <MemoryRouter initialEntries={[`/datasets/${datasetId}/explore/${scopeId}`]}>
@@ -150,6 +158,32 @@ describe('ScopeContext', () => {
       expect(screen.getByTestId('cluster-a-count').textContent).toBe('2');
     });
     expect(screen.getByTestId('cluster-b-count').textContent).toBe('1');
+  });
+
+  it('exposes an error when the scope fetch fails instead of loading forever', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    apiService.fetchScope.mockRejectedValue(
+      Object.assign(new Error('HTTP 500 for /scopes/scope-0: <html>boom</html>'), { status: 500 })
+    );
+
+    renderWithRouter(<ErrorConsumer />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('scope-error').textContent).toContain('HTTP 500');
+    });
+    consoleError.mockRestore();
+  });
+
+  it('exposes an error when fetching scope rows fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    apiService.fetchScopeRows.mockRejectedValue(new Error('HTTP 503 for parquet'));
+
+    renderWithRouter(<ErrorConsumer />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('scope-error').textContent).toContain('HTTP 503');
+    });
+    consoleError.mockRestore();
   });
 
   it('produces the same counts regardless of how many times the component mounts', async () => {

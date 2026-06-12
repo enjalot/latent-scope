@@ -42,9 +42,11 @@ function ExploreContent() {
   const {
     userId,
     datasetId,
+    scopeId,
     dataset,
     scope,
     scopeLoaded,
+    error: scopeError,
     scopeRows,
     deletedIndices,
     clusterMap,
@@ -267,6 +269,20 @@ function ExploreContent() {
     },
     [featureFilter.setFeature, setFilterQuery, setFilterConfig, setFilterActive, setUrlParams]
   );
+
+  if (scopeError)
+    return (
+      <>
+        <SubNav user={userId} dataset={dataset} scope={scope} scopes={scopes} />
+        <div style={{ padding: '1rem' }}>
+          <p>
+            Failed to load scope {scopeId} for dataset {datasetId}.
+          </p>
+          <p>{scopeError.message}</p>
+          <a href="/">Back to home</a>
+        </div>
+      </>
+    );
 
   if (!dataset)
     return (

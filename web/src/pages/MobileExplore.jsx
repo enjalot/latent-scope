@@ -7,7 +7,15 @@ import { useFilter } from '../contexts/FilterContext';
 import styles from './MobileExplore.module.css';
 
 function MobileExplore() {
-  const { dataset, scope, scopeRows, deletedIndices, clusterLabels } = useScope();
+  const {
+    dataset,
+    scope,
+    scopeRows,
+    deletedIndices,
+    clusterLabels,
+    scopeId,
+    error: scopeError,
+  } = useScope();
   const { loading: filterLoading } = useFilter();
 
   const [scatter, setScatter] = useState({});
@@ -43,6 +51,16 @@ function MobileExplore() {
   );
 
   const [width, height] = size;
+
+  if (scopeError) {
+    return (
+      <div>
+        <p>Failed to load scope {scopeId}.</p>
+        <p>{scopeError.message}</p>
+        <a href="/">Back to home</a>
+      </div>
+    );
+  }
 
   if (!dataset) return <div>Loading...</div>;
 
