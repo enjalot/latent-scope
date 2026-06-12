@@ -137,16 +137,16 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print("Warning: This model does not support setting max_seq_length. Continuing with default length.")
 
     print("Checking for empty inputs")
-    sentences = df[text_column].tolist()
-    prefixed = []
+    # Build the prefixed list directly from the column in a single pass so
+    # only one full copy of the text exists (the column itself stays in df).
     if prefix is None:
         prefix = ""
-    for i,s in enumerate(sentences):
+    sentences = []
+    for i, s in enumerate(df[text_column]):
         if s is None or s == "":
-            print(i,s, "text is empty, adding a [space]")
+            print(i, s, "text is empty, adding a [space]")
             s = " "
-        prefixed.append(prefix + s)
-    sentences = prefixed
+        sentences.append(prefix + s)
 
     total_batches = (len(sentences) + batch_size - 1) // batch_size
 

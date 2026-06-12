@@ -138,10 +138,52 @@ def test_full_pipeline_small_dataset(pipeline_env):
     scope_df = pd.read_parquet(
         os.path.join(data_dir, dataset_id, "scopes", "scopes-001.parquet"))
     assert len(scope_df) == n_total
+    # the label column must match the cluster-labels parquet mapping
+    labels_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "clusters",
+                     "cluster-001-labels-default.parquet"))
+    expected_labels = scope_df["cluster"].map(labels_df["label"])
+    assert scope_df["label"].equals(expected_labels)
     with open(os.path.join(data_dir, dataset_id, "scopes", "scopes-001.json")) as f:
         scope_meta = json.load(f)
     assert scope_meta["embedding_id"] == "embedding-001"
     assert scope_meta["cluster_id"] == "cluster-001"
+
+
+def test_scope_rerun_refreshes_combined_input_parquet(pipeline_env):
+    """Regression (Codex review on #121): {scope}-input.parquet is input data
+    JOINED with the scope columns, so re-saving a scope with a different
+    clustering must rewrite it — a skip keyed on input.parquet alone served
+    stale labels/coordinates to published scopes and export_lance."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-test"
+    run_ingest_and_embed(data_dir, dataset_id)
+
+    from latentscope.scripts.cluster import clusterer
+    from latentscope.scripts.scope import scope
+    from latentscope.scripts.umapper import umapper
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "E2E test scope", "test description")
+    scope_input_path = os.path.join(
+        data_dir, dataset_id, "scopes", "scopes-001-input.parquet")
+    first = pd.read_parquet(scope_input_path)
+    assert "cluster" in first.columns  # combined file carries scope columns
+
+    # second clustering with different params -> different cluster column
+    clusterer(dataset_id, "umap-001", samples=10, min_samples=5,
+              cluster_selection_epsilon=0.5, column=None, method="hdbscan")
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-002",
+          "default", "E2E test scope", "test description",
+          scope_id="scopes-001")
+    refreshed = pd.read_parquet(scope_input_path)
+    cluster_labels_df = pd.read_parquet(os.path.join(
+        data_dir, dataset_id, "clusters", "cluster-002.parquet"))
+    # the combined file must reflect the NEW clustering, not the stale one
+    assert refreshed["cluster"].tolist() == cluster_labels_df["cluster"].tolist()
 
 
 def test_cluster_evoc_reads_lancedb_embeddings(pipeline_env):

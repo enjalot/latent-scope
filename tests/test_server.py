@@ -168,3 +168,43 @@ class TestModels:
         assert response.status_code == 200
         data = json.loads(response.data)
         assert data == []
+
+
+# ---------------------------------------------------------------------------
+# DataFrame cache (bounded LRU)
+# ---------------------------------------------------------------------------
+
+class TestDataframeCache:
+    def _make_dataset(self, data_dir, name):
+        import pandas as pd
+        ds_dir = os.path.join(data_dir, name)
+        os.makedirs(ds_dir)
+        df = pd.DataFrame({"text": [f"{name} row {i}" for i in range(3)],
+                           "value": [1, 2, 3]})
+        df.to_parquet(os.path.join(ds_dir, "input.parquet"))
+
+    def test_dataframes_cache_evicts_beyond_maxsize(self, app, client, tmp_data_dir):
+        cache = app.config['DATAFRAMES']
+        n_datasets = cache.maxsize + 2
+        names = [f"ds-{i}" for i in range(n_datasets)]
+        for name in names:
+            self._make_dataset(tmp_data_dir, name)
+            response = client.post('/api/column-filter',
+                                   json={"dataset": name, "filters": []})
+            assert response.status_code == 200
+
+        assert len(cache) == cache.maxsize
+        # oldest datasets were evicted, newest are retained
+        for name in names[:2]:
+            assert name not in cache
+        for name in names[2:]:
+            assert name in cache
+
+    def test_dataframes_cache_hit_returns_same_data(self, app, client, tmp_data_dir):
+        self._make_dataset(tmp_data_dir, "ds-hit")
+        r1 = client.post('/api/column-filter', json={"dataset": "ds-hit", "filters": []})
+        assert len(app.config['DATAFRAMES']) == 1
+        # second request served from cache, same result
+        r2 = client.post('/api/column-filter', json={"dataset": "ds-hit", "filters": []})
+        assert json.loads(r1.data) == json.loads(r2.data)
+        assert len(app.config['DATAFRAMES']) == 1

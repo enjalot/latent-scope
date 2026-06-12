@@ -62,7 +62,9 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     else:
         device = torch.device("cpu")
 
-    all_embeddings = torch.from_numpy(embeddings).float().to(device)
+    # Keep the full matrix on CPU; only the active batch is moved to the
+    # device inside the loop (moving everything up front defeats batching).
+    all_embeddings = torch.from_numpy(embeddings).float()
     model = Sae.load_from_hub(model_id, k_expansion, device)
 
     print("Encoding embeddings with SAE")
@@ -74,7 +76,7 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     from tqdm import tqdm  # Make sure to import tqdm at the top of your file
 
     for i in tqdm(range(0, len(all_embeddings), batch_size), desc="Encoding batches"):
-        batch = all_embeddings[i:i + batch_size]
+        batch = all_embeddings[i:i + batch_size].to(device)
         features = model.encode(batch)
         all_acts.append(features.top_acts)
         all_indices.append(features.top_indices)
