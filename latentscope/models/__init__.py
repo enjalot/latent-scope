@@ -1,6 +1,7 @@
 import json
 
 from .providers.cohereai import CohereAIEmbedProvider
+from .providers.image_embedding import CLIPEmbedProvider, VisionEncoderEmbedProvider
 from .providers.late_interaction import ColBERTEmbedProvider, ColPaliEmbedProvider
 from .providers.mistralai import MistralAIChatProvider, MistralAIEmbedProvider
 from .providers.nltk import NLTKChatProvider
@@ -112,6 +113,10 @@ def get_embedding_model(model_id):
         return ColBERTEmbedProvider(model['name'], model['params'])
     if provider == "colpali":
         return ColPaliEmbedProvider(model['name'], model['params'])
+    if provider == "clip":
+        return CLIPEmbedProvider(model['name'], model['params'])
+    if provider == "vision":
+        return VisionEncoderEmbedProvider(model['name'], model['params'])
     raise ValueError(f"Unknown embedding provider '{provider}' for model '{model_id}'")
 
 

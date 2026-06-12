@@ -62,6 +62,49 @@ def ingest_file(dataset_id, file_path, text_column=None):
     ingest(dataset_id, df, text_column)
 
 
+def _binary_image_bytes(value):
+    """Extract raw image bytes from a value, or None if it has none.
+
+    Supports HuggingFace-style image dicts ({"bytes": ..., "path": ...}, the
+    way HF `Image` features land in parquet) and raw bytes values.
+    """
+    if isinstance(value, dict):
+        value = value.get("bytes")
+    if isinstance(value, (bytes, bytearray)) and len(value) > 0:
+        return bytes(value)
+    return None
+
+
+def _decodes_as_image(raw):
+    """True if PIL can decode the bytes as an image."""
+    import io
+
+    from PIL import Image
+
+    try:
+        with Image.open(io.BytesIO(raw)) as img:
+            img.verify()
+        return True
+    except Exception:
+        return False
+
+
+def _looks_like_binary_image_column(non_null_series, sample_size=10):
+    """True if a sample of the column looks like binary images.
+
+    Every sampled value must be binary-shaped (HF-style dict or raw bytes)
+    and at least one must actually decode — so a stray corrupt image doesn't
+    demote the whole column to string (embed substitutes a placeholder for
+    bad rows), while random non-image bytes columns stay unflagged.
+    """
+    if len(non_null_series) == 0:
+        return False
+    raws = [_binary_image_bytes(v) for v in non_null_series.head(sample_size)]
+    if any(raw is None for raw in raws):
+        return False
+    return any(_decodes_as_image(raw) for raw in raws)
+
+
 def ingest(dataset_id, df, text_column=None):
 
     DATA_DIR = get_data_dir()
@@ -104,6 +147,10 @@ def ingest(dataset_id, df, text_column=None):
         elif isinstance(non_null_series.iloc[0], np.ndarray):
             print("np array", column)
             column_type = "array"
+        elif _looks_like_binary_image_column(non_null_series):
+            # HF-style {"bytes": ..., "path": ...} dicts or raw image bytes
+            print("binary image column", column)
+            column_type = "image"
         else:
             column_type = "unknown"
 
@@ -149,6 +196,10 @@ def ingest(dataset_id, df, text_column=None):
                     .all()
                 ):
                     column_metadata[column]["image"] = True
+                    column_metadata[column]["image_kind"] = "url"
+        if column_type == "image":
+            column_metadata[column]["image"] = True
+            column_metadata[column]["image_kind"] = "binary"
         if column_type == "number":
             extent = df[column].agg(["min", "max"])
             # Replace infinity values with None before converting to list

@@ -56,6 +56,8 @@ dependencies = [
     "python-dotenv>=1.0,<2",
     "tqdm>=4.66,<5",
     "pylate>=1.6.0",
+    # Images (ingest sniffing + image embedding providers import PIL directly)
+    "pillow>=10,<14",
 ]
 
 [project.urls]

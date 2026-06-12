@@ -5,7 +5,15 @@
     "id": "openai-text-embedding-3-small",
     "params": {
       "max_tokens": 8192,
-      "dimensions": [1536, 768, 512, 256, 128, 64, 16]
+      "dimensions": [
+        1536,
+        768,
+        512,
+        256,
+        128,
+        64,
+        16
+      ]
     }
   },
   {
@@ -14,7 +22,16 @@
     "id": "openai-text-embedding-3-large",
     "params": {
       "max_tokens": 8192,
-      "dimensions": [3072, 1536, 768, 512, 256, 128, 64, 16]
+      "dimensions": [
+        3072,
+        1536,
+        768,
+        512,
+        256,
+        128,
+        64,
+        16
+      ]
     }
   },
   {
@@ -85,6 +102,79 @@
     "params": {
       "late_interaction": true,
       "max_tokens": 8192
+    }
+  },
+  {
+    "provider": "clip",
+    "name": "openai/clip-vit-base-patch32",
+    "id": "clip-openai___clip-vit-base-patch32",
+    "group": "image",
+    "params": {
+      "dimensions": [
+        512
+      ],
+      "input_types": [
+        "image",
+        "text"
+      ]
+    }
+  },
+  {
+    "provider": "clip",
+    "name": "openai/clip-vit-large-patch14",
+    "id": "clip-openai___clip-vit-large-patch14",
+    "group": "image",
+    "params": {
+      "dimensions": [
+        768
+      ],
+      "input_types": [
+        "image",
+        "text"
+      ]
+    }
+  },
+  {
+    "provider": "clip",
+    "name": "google/siglip-so400m-patch14-384",
+    "id": "clip-google___siglip-so400m-patch14-384",
+    "group": "image",
+    "params": {
+      "dimensions": [
+        1152
+      ],
+      "input_types": [
+        "image",
+        "text"
+      ]
+    }
+  },
+  {
+    "provider": "vision",
+    "name": "google/vit-base-patch16-224-in21k",
+    "id": "vision-google___vit-base-patch16-224-in21k",
+    "group": "image",
+    "params": {
+      "dimensions": [
+        768
+      ],
+      "input_types": [
+        "image"
+      ]
+    }
+  },
+  {
+    "provider": "vision",
+    "name": "facebook/dinov2-base",
+    "id": "vision-facebook___dinov2-base",
+    "group": "image",
+    "params": {
+      "dimensions": [
+        768
+      ],
+      "input_types": [
+        "image"
+      ]
     }
   }
 ]

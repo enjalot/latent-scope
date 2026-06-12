@@ -9,12 +9,14 @@ including LanceDB storage.
 """
 
 import hashlib
+import io
 import json
 import os
 
 import numpy as np
 import pandas as pd
 import pytest
+from PIL import Image
 
 DIM = 32
 N_PER_TOPIC = 40
@@ -406,6 +408,209 @@ def test_late_interaction_pipeline_and_maxsim_search(pipeline_env, monkeypatch):
         data_dir, dataset_id, "embedding-001", query_tokens, final_limit=5)
     assert indices[0] == rare_idx, (
         f"expected rare-token doc {rare_idx} first, got {indices[:5]}")
+
+
+# --------------------------------------------------------------------------
+# Image embedding pipeline (issue #87)
+# --------------------------------------------------------------------------
+
+COLORS = {"red": (200, 30, 30), "green": (30, 200, 30), "blue": (30, 30, 200)}
+N_PER_COLOR = 30
+
+
+class FakeImageEmbedProvider:
+    """Deterministic stand-in for an image embedding model.
+
+    The vector is derived from the image's mean RGB (tiled across the
+    dimensions) plus small noise seeded by the exact pixel content, so the
+    three planted color groups give clustering real structure to find.
+    """
+
+    name = "fake-image-model"
+    late_interaction = False
+    supports_images = True
+    input_types = ["image"]
+
+    def __init__(self, dim=DIM):
+        self.dim = dim
+
+    def load_model(self):
+        pass
+
+    def _vector(self, img):
+        arr = np.asarray(img.convert("RGB"), dtype=np.float64) / 255.0
+        stats = arr.mean(axis=(0, 1))  # mean R, G, B
+        seed = int(arr.sum() * 1e6) % (2**32)
+        noise = np.random.default_rng(seed).normal(scale=0.02, size=self.dim)
+        vec = np.tile(stats, self.dim // 3 + 1)[: self.dim] + noise
+        return (vec / np.linalg.norm(vec)).astype(np.float32)
+
+    def embed(self, batch, dimensions=None):
+        return [self._vector(img) for img in batch]
+
+
+def make_image_df(n_per_color=N_PER_COLOR):
+    rng = np.random.default_rng(11)
+    rows = []
+    for color, rgb in COLORS.items():
+        for i in range(n_per_color):
+            arr = np.clip(
+                np.array(rgb) + rng.normal(scale=12, size=(8, 8, 3)), 0, 255
+            ).astype(np.uint8)
+            buf = io.BytesIO()
+            Image.fromarray(arr).save(buf, format="PNG")
+            rows.append({
+                "image": {"bytes": buf.getvalue(), "path": f"{color}_{i}.png"},
+                "color": color,
+            })
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def image_pipeline_env(tmp_data_dir, monkeypatch):
+    monkeypatch.setenv("LATENT_SCOPE_DATA", tmp_data_dir)
+    monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
+
+    import latentscope.scripts.embed as embed_mod
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeImageEmbedProvider())
+    return tmp_data_dir
+
+
+def test_full_pipeline_image_column(image_pipeline_env):
+    """ingest(binary image column) -> embed(image model) -> umap ->
+    cluster(hdbscan) -> scope, mirroring the text e2e."""
+    data_dir = image_pipeline_env
+    dataset_id = "e2e-images"
+    n_total = N_PER_COLOR * len(COLORS)
+
+    from latentscope.scripts.embed import decode_image_value, embed
+    from latentscope.scripts.ingest import ingest
+
+    df = make_image_df()
+    ingest(dataset_id, df, text_column="color")
+    with open(os.path.join(data_dir, dataset_id, "meta.json")) as f:
+        assert json.load(f)["column_metadata"]["image"]["type"] == "image"
+
+    embed(dataset_id, "image", "fake-image-model", prefix=None, rerun=None,
+          dimensions=None, batch_size=40)
+
+    # --- embed wrote a LanceDB table aligned with the input ---
+    from latentscope.util.embedding_store import get_embedding_count, load_embeddings
+    assert get_embedding_count(data_dir, dataset_id, "embedding-001") == n_total
+    vectors = load_embeddings(data_dir, dataset_id, "embedding-001")
+    assert vectors.shape == (n_total, DIM)
+    # row alignment: stored vector i must equal the provider's output for image i
+    provider = FakeImageEmbedProvider()
+    for idx in (7, n_total - 1):
+        img = decode_image_value(df["image"].iloc[idx])
+        np.testing.assert_allclose(vectors[idx], provider._vector(img), atol=1e-6)
+    with open(os.path.join(data_dir, dataset_id, "embeddings",
+                           "embedding-001.json")) as f:
+        emb_meta = json.load(f)
+    assert emb_meta["input_type"] == "image"
+    assert emb_meta["text_column"] == "image"
+
+    # --- umap ---
+    from latentscope.scripts.umapper import umapper
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1)
+    umap_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "umaps", "umap-001.parquet"))
+    assert len(umap_df) == n_total
+    assert {"x", "y"} <= set(umap_df.columns)
+
+    # --- cluster (hdbscan on the 2D projection) ---
+    from latentscope.scripts.cluster import clusterer
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+    cluster_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "clusters", "cluster-001.parquet"))
+    assert len(cluster_df) == n_total
+    assert cluster_df["cluster"].nunique() >= 2, (
+        "expected the 3 planted color groups to form >=2 clusters")
+    assert (cluster_df["cluster"] >= 0).all()
+
+    # --- scope ---
+    from latentscope.scripts.scope import scope
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "E2E image scope", "test description")
+    scope_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "scopes", "scopes-001.parquet"))
+    assert len(scope_df) == n_total
+
+
+def test_image_embed_null_row_gets_black_placeholder(image_pipeline_env, capsys):
+    """Null/undecodable image rows are replaced with a 1x1 black image (with a
+    warning), so the row count and alignment are preserved."""
+    data_dir = image_pipeline_env
+    dataset_id = "e2e-images-null"
+
+    from latentscope.scripts.embed import embed
+    from latentscope.scripts.ingest import ingest
+
+    df = make_image_df(n_per_color=4)
+    null_idx, broken_idx = 3, 5
+    df.at[null_idx, "image"] = None
+    df.at[broken_idx, "image"] = {"bytes": b"corrupt not-an-image", "path": "x.png"}
+    ingest(dataset_id, df, text_column="color")
+    embed(dataset_id, "image", "fake-image-model", prefix=None, rerun=None,
+          dimensions=None, batch_size=5)
+
+    out = capsys.readouterr().out
+    assert f"{null_idx} image is missing or undecodable" in out
+    assert f"{broken_idx} image is missing or undecodable" in out
+
+    from latentscope.util.embedding_store import get_embedding_count, load_embeddings
+    n_total = len(df)
+    assert get_embedding_count(data_dir, dataset_id, "embedding-001") == n_total
+    vectors = load_embeddings(data_dir, dataset_id, "embedding-001")
+    provider = FakeImageEmbedProvider()
+    placeholder_vec = provider._vector(Image.new("RGB", (1, 1), (0, 0, 0)))
+    np.testing.assert_allclose(vectors[null_idx], placeholder_vec, atol=1e-6)
+    np.testing.assert_allclose(vectors[broken_idx], placeholder_vec, atol=1e-6)
+
+
+def test_image_column_with_text_only_model_errors(image_pipeline_env, monkeypatch):
+    """Embedding an image column with a model that lacks image support must
+    exit with an error instead of feeding raw dicts into the model."""
+    dataset_id = "e2e-images-textmodel"
+
+    import latentscope.scripts.embed as embed_mod
+    from latentscope.scripts.ingest import ingest
+
+    ingest(dataset_id, make_image_df(n_per_color=2), text_column="color")
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeEmbedProvider())
+    with pytest.raises(SystemExit):
+        embed_mod.embed(dataset_id, "image", "fake-test-model", prefix=None,
+                        rerun=None, dimensions=None, batch_size=5)
+
+
+@pytest.mark.skipif(not os.environ.get("LS_TEST_REAL_MODELS"),
+                    reason="set LS_TEST_REAL_MODELS=1 to run model-download tests")
+def test_clip_provider_real_model():
+    """CLIP must put images and captions in one space: 512-dim normalized
+    vectors where the red image is closer to 'a red square' than to
+    'a blue square' (and vice versa)."""
+    from latentscope.models.providers.image_embedding import CLIPEmbedProvider
+
+    provider = CLIPEmbedProvider("openai/clip-vit-base-patch32", {})
+    provider.device = "cpu"
+    provider.load_model()
+
+    red = Image.new("RGB", (64, 64), (255, 0, 0))
+    blue = Image.new("RGB", (64, 64), (0, 0, 255))
+    image_vecs = np.array(provider.embed([red, blue]))
+    text_vecs = np.array(provider.embed(["a red square", "a blue square"]))
+
+    assert image_vecs.shape == (2, 512)
+    assert text_vecs.shape == (2, 512)
+    np.testing.assert_allclose(np.linalg.norm(image_vecs, axis=1), 1.0, atol=1e-4)
+    np.testing.assert_allclose(np.linalg.norm(text_vecs, axis=1), 1.0, atol=1e-4)
+
+    sims = image_vecs @ text_vecs.T
+    assert sims[0, 0] > sims[0, 1], f"red image should match red caption: {sims}"
+    assert sims[1, 1] > sims[1, 0], f"blue image should match blue caption: {sims}"
 
 
 @pytest.mark.skipif(not os.environ.get("LS_TEST_REAL_MODELS"),

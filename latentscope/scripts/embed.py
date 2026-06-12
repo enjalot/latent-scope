@@ -26,6 +26,41 @@ def chunked_iterable(iterable, size):
     for i in range(0, len(iterable), size):
         yield iterable[i:i + size]
 
+
+def decode_image_value(value):
+    """Decode one stored image value (HF-style {"bytes": ...} dict or raw
+    bytes) into a PIL RGB image, or None if missing/undecodable."""
+    from io import BytesIO
+
+    from PIL import Image
+    if isinstance(value, dict):
+        value = value.get("bytes")
+    if not isinstance(value, (bytes, bytearray)) or len(value) == 0:
+        return None
+    try:
+        img = Image.open(BytesIO(value))
+        return img.convert("RGB")
+    except Exception:
+        return None
+
+
+def decode_image_batch(values, start_index=0):
+    """Decode a batch of stored image values to PIL images.
+
+    Null or undecodable rows get a 1x1 black placeholder (mirrors the
+    "[space]" substitution for empty text) so row alignment is preserved.
+    """
+    from PIL import Image
+    images = []
+    for offset, value in enumerate(values):
+        img = decode_image_value(value)
+        if img is None:
+            print(start_index + offset,
+                  "image is missing or undecodable, substituting a 1x1 black image")
+            img = Image.new("RGB", (1, 1), (0, 0, 0))
+        images.append(img)
+    return images
+
 # Legacy HDF5 functions kept for backward compatibility
 def append_to_hdf5(file_path, new_data):
     import h5py
@@ -77,6 +112,18 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     )
     DATA_DIR = get_data_dir()
     df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
+
+    # Determine whether the selected column holds binary images (flagged by
+    # ingest in the dataset meta). Image columns are embedded as PIL images
+    # through image-capable models; everything else is treated as text.
+    input_type = "text"
+    dataset_meta_path = os.path.join(DATA_DIR, dataset_id, "meta.json")
+    if os.path.exists(dataset_meta_path):
+        with open(dataset_meta_path) as f:
+            dataset_meta = json.load(f)
+        column_meta = dataset_meta.get("column_metadata", {}).get(text_column, {})
+        if column_meta.get("type") == "image":
+            input_type = "image"
 
     embedding_dir = os.path.join(DATA_DIR, dataset_id, "embeddings")
     if not os.path.exists(embedding_dir):
@@ -136,21 +183,32 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         except AttributeError:
             print("Warning: This model does not support setting max_seq_length. Continuing with default length.")
 
-    print("Checking for empty inputs")
-    # Build the prefixed list directly from the column in a single pass so
-    # only one full copy of the text exists (the column itself stays in df).
     if prefix is None:
         prefix = ""
-    sentences = []
-    for i, s in enumerate(df[text_column]):
-        if s is None or s == "":
-            print(i, s, "text is empty, adding a [space]")
-            s = " "
-        sentences.append(prefix + s)
+    if input_type == "image":
+        if not getattr(model, "supports_images", False):
+            print(f"Error: column '{text_column}' is an image column but model "
+                  f"'{model_id}' does not support image inputs. Choose an "
+                  "image-capable model (CLIP, SigLIP, ViT, DINOv2).")
+            sys.exit(1)
+        # Keep the raw stored values; decode to PIL per batch (not all
+        # upfront) so memory stays bounded.
+        print("embedding image column", text_column)
+        sentences = df[text_column].tolist()
+    else:
+        print("Checking for empty inputs")
+        # Build the prefixed list directly from the column in a single pass so
+        # only one full copy of the text exists (the column itself stays in df).
+        sentences = []
+        for i, s in enumerate(df[text_column]):
+            if s is None or s == "":
+                print(i, s, "text is empty, adding a [space]")
+                s = " "
+            sentences.append(prefix + s)
 
     total_batches = (len(sentences) + batch_size - 1) // batch_size
 
-    print("embedding", len(sentences), "sentences", "in", total_batches, "batches")
+    print("embedding", len(sentences), input_type, "inputs", "in", total_batches, "batches")
     if existing_count > 0:
         print(f"Resuming: {existing_count} rows already embedded")
 
@@ -166,16 +224,21 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             # changed batch_size): embed only the rows not yet stored
             batch = batch[existing_count - start_index:]
             start_index = existing_count
+        if input_type == "image":
+            # decode this batch only; rows that fail get a 1x1 black placeholder
+            batch_inputs = decode_image_batch(batch, start_index=start_index)
+        else:
+            batch_inputs = batch
         try:
             if is_late_interaction:
-                mean_vectors, token_vectors_list = model.embed_multi(batch, dimensions=dimensions)
+                mean_vectors, token_vectors_list = model.embed_multi(batch_inputs, dimensions=dimensions)
                 append_embeddings(
                     DATA_DIR, dataset_id, embedding_id,
                     mean_vectors, start_index=start_index,
                     token_vectors_list=token_vectors_list,
                 )
             else:
-                embeddings = np.array(model.embed(batch, dimensions=dimensions))
+                embeddings = np.array(model.embed(batch_inputs, dimensions=dimensions))
                 append_embeddings(
                     DATA_DIR, dataset_id, embedding_id,
                     embeddings, start_index=start_index,
@@ -232,6 +295,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         "model_id": model_id,
         "dataset_id": dataset_id,
         "text_column": text_column,
+        "input_type": input_type,
         "dimensions": stats["dimensions"],
         "max_seq_length": max_seq_length,
         "prefix": prefix,

@@ -76,6 +76,15 @@
   padding: 6px;
 }
 
+.model-mismatch {
+  font-size: 0.85em;
+  padding: 6px 8px;
+  margin: 4px 0;
+  border-radius: 3px;
+  background: #f8d7da;
+  color: #721c24;
+}
+
 .pe-buttons {
   display: flex;
   flex-direction: row;
@@ -88,6 +97,14 @@
   border-radius: 3px;
   background: #fff3cd;
   color: #856404;
+  margin-left: 6px;
+}
+.format-badge-image {
+  font-size: 0.65em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #d1ecf1;
+  color: #0c5460;
   margin-left: 6px;
 }
 .format-badge-lance {
