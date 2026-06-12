@@ -372,16 +372,22 @@ function ScatterGL({
 
     // if ignoreNotSelected is true, we only want to add points that are selected as a result of the
     // filter to the quadtree. if it is false, we want to add all points to the quadtree.
-    const filteredPoints = points.filter(
-      (d) =>
+    // Each quadtree datum is [x, y, originalIndex] so lookups can return the
+    // point's index directly instead of scanning the full points array.
+    const indexedPoints = [];
+    points.forEach((d, i) => {
+      if (
         d[2] !== mapSelectionKey.hidden &&
         (ignoreNotSelected ? d[2] === mapSelectionKey.selected : true)
-    );
+      ) {
+        indexedPoints.push([d[0], d[1], i]);
+      }
+    });
 
     quadtreeRef.current = quadtree()
       .x((d) => d[0])
       .y((d) => d[1])
-      .addAll(filteredPoints);
+      .addAll(indexedPoints);
   }, [points, ignoreNotSelected]);
 
   // Replace the existing handleMouseMove with this updated version
@@ -431,7 +437,8 @@ function ScatterGL({
       });
 
       if (nearest && Math.sqrt(minDistance) <= radius) {
-        return points.findIndex((p) => p[0] === nearest[0] && p[1] === nearest[1]);
+        // The quadtree datum carries the original point index at position 2.
+        return nearest[2];
       }
       return -1;
     },
@@ -479,10 +486,9 @@ function ScatterGL({
     // debugger;
     // console.log('closestPoints', closestPoints);
 
-    return closestPoints.map(({ point }) =>
-      points.findIndex((p) => p[0] === point[0] && p[1] === point[1])
-    );
-  }, [points]);
+    // The quadtree datum carries the original point index at position 2.
+    return closestPoints.map(({ point }) => point[2]);
+  }, []);
 
   const handleMouseMove = useCallback(
     (event) => {

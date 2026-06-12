@@ -40,10 +40,14 @@ export function FilterProvider({ children }) {
     clusterLabels,
   } = useScope();
 
+  // Set view of deletedIndices for O(1) membership checks in hot paths;
+  // the array remains the source of truth / API shape.
+  const deletedIndicesSet = useMemo(() => new Set(deletedIndices), [deletedIndices]);
+
   // Base set of non-deleted indices from the dataset.
   const baseIndices = useMemo(() => {
-    return scopeRows.map((row) => row.ls_index).filter((index) => !deletedIndices.includes(index));
-  }, [scopeRows, deletedIndices]);
+    return scopeRows.map((row) => row.ls_index).filter((index) => !deletedIndicesSet.has(index));
+  }, [scopeRows, deletedIndicesSet]);
 
   // Column filter
   const columnFilter = useColumnFilter(datasetId, scope);
@@ -127,7 +131,7 @@ export function FilterProvider({ children }) {
         // If no filter is active, use centeredIndices (via ref) if available, otherwise use baseIndices
         if (!filterConfig && !hasFilterInUrl) {
           if (centeredIndicesRef.current.length > 0) {
-            indices = centeredIndicesRef.current.filter((index) => !deletedIndices.includes(index));
+            indices = centeredIndicesRef.current.filter((index) => !deletedIndicesSet.has(index));
           } else {
             indices = baseIndices;
           }
@@ -181,16 +185,16 @@ export function FilterProvider({ children }) {
     if (scopeLoaded) {
       applyFilter();
     }
-  }, [filterConfig, baseIndices, scopeRows, deletedIndices, datasetId, scope, scopeLoaded]);
+  }, [filterConfig, baseIndices, scopeRows, deletedIndicesSet, datasetId, scope, scopeLoaded]);
 
   // When centeredIndices change on mobile, update filteredIndices only if no filter is active.
   // Separate from the main filter effect to avoid re-running async filters or resetting pagination.
   useEffect(() => {
     if (filterConfig || hasFilterInUrl) return;
     if (centeredIndices.length === 0) return;
-    const indices = centeredIndices.filter((index) => !deletedIndices.includes(index));
+    const indices = centeredIndices.filter((index) => !deletedIndicesSet.has(index));
     setFilteredIndices(indices);
-  }, [centeredIndices, filterConfig, hasFilterInUrl, deletedIndices]);
+  }, [centeredIndices, filterConfig, hasFilterInUrl, deletedIndicesSet]);
 
   // === Fetch Data Table Rows Logic
 
@@ -204,9 +208,9 @@ export function FilterProvider({ children }) {
   );
   const shownIndices = useMemo(() => {
     const start = page * ROWS_PER_PAGE;
-    const nonDeletedIndices = filteredIndices.filter((index) => !deletedIndices.includes(index));
+    const nonDeletedIndices = filteredIndices.filter((index) => !deletedIndicesSet.has(index));
     return nonDeletedIndices.slice(start, start + ROWS_PER_PAGE);
-  }, [filteredIndices, page, deletedIndices]);
+  }, [filteredIndices, page, deletedIndicesSet]);
 
   // Monotonic counter identifying the latest table-rows request.
   // (A timestamp is not unique enough: two requests within the same
@@ -218,7 +222,7 @@ export function FilterProvider({ children }) {
 
   useEffect(() => {
     if (shownIndices.length) {
-      const nonDeletedIndices = shownIndices.filter((index) => !deletedIndices.includes(index));
+      const nonDeletedIndices = shownIndices.filter((index) => !deletedIndicesSet.has(index));
 
       const requestId = ++rowsRequestIdRef.current;
 
@@ -260,7 +264,7 @@ export function FilterProvider({ children }) {
     } else {
       setDataTableRows([]);
     }
-  }, [shownIndices, deletedIndices, datasetId, scope, filterConfig, page]);
+  }, [shownIndices, deletedIndicesSet, datasetId, scope, filterConfig, page]);
 
   // The context exposes only the state and setters that consumer components need.
   const value = {
