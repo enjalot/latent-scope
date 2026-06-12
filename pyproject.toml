@@ -20,6 +20,8 @@ dependencies = [
     "pandas>=2.0,<3",
     "h5py>=3.10,<4",
     "lancedb>=0.30,<1",
+    # lancedb >=0.31 lazily imports pylance for table reads
+    "pylance>=0.20,<1",
     # ML
     "torch>=2.1,<3",
     "transformers>=4.40,<6",
