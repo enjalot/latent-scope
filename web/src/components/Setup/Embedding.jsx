@@ -622,10 +622,10 @@ function Embedding() {
             let umps = umaps.filter((d) => d.embedding_id == emb.id);
             let cls = clusters.filter((d) => umps.map((d) => d.id).indexOf(d.umap_id) >= 0);
             let m = allModels.find((d) => d.id == emb.model_id);
-            let dims = m
-              ? m.params?.dimensions
-                ? m.params?.dimensions.filter((d) => +d < +emb.dimensions)
-                : []
+            // dimensions may be absent or (for custom models) a scalar;
+            // only arrays carry Matryoshka truncate options
+            let dims = Array.isArray(m?.params?.dimensions)
+              ? m.params.dimensions.filter((d) => +d < +emb.dimensions)
               : [];
             if (emb?.model_id.indexOf('nomic-embed-text-v1.5') >= 0) {
               dims = [512, 256, 128, 64, 16].filter((d) => d < emb.dimensions);
