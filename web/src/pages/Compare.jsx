@@ -224,7 +224,12 @@ function Compare() {
     (query) => {
       if (!searchModel) return;
       fetch(
-        `${apiUrl}/search/nn?dataset=${datasetId}&query=${query}&embedding_id=${searchModel.id}&dimensions=${searchModel.dimensions}`
+        `${apiUrl}/search/nn?${new URLSearchParams({
+          dataset: datasetId,
+          query,
+          embedding_id: searchModel.id,
+          dimensions: searchModel.dimensions,
+        })}`
       )
         .then((r) => r.json())
         .then((data) => {

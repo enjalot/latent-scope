@@ -26,9 +26,10 @@ function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick 
     console.log("index", index)
     console.log("tagset", tagset)
     console.log("tagset[tag]", tagset[tag])
+    const params = new URLSearchParams({ dataset: dataset?.id, tag, index });
     if(tagset[tag].includes(index)) {
       console.log("removing")
-      fetch(`${apiUrl}/tags/remove?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
+      fetch(`${apiUrl}/tags/remove?${params}`)
         .then(response => response.json())
         .then(data => {
           console.log("removed", data)
@@ -36,7 +37,7 @@ function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick 
         });
     } else {
       console.log("adding")
-      fetch(`${apiUrl}/tags/add?dataset=${dataset?.id}&tag=${tag}&index=${index}`)
+      fetch(`${apiUrl}/tags/add?${params}`)
         .then(response => response.json())
         .then(data => {
           console.log("added", data)
