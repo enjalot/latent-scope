@@ -19,7 +19,13 @@ function Job({ datasetId, jobId }) {
 
   const jobCB = useCallback(
     (job) => {
-      if (job) navigate(`/datasets/${datasetId}/jobs/${job.id}`);
+      if (job?.id) {
+        navigate(`/datasets/${datasetId}/jobs/${job.id}`);
+      } else if (job) {
+        // error-shaped object from a failed start/rerun (no id):
+        // show it on this page instead of navigating to /jobs/undefined
+        setJob(job);
+      }
     },
     [datasetId, navigate]
   );

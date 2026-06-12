@@ -267,3 +267,29 @@ class TestPostCompat:
         response = client.post('/api/jobs/kill', data={"dataset": DATASET, "job_id": JOB_ID})
         assert response.status_code == 200
         assert response.get_json()["status"] == "dead"
+
+
+def test_readonly_app_does_not_reconcile_jobs(tmp_data_dir):
+    """Codex review on #119: read-only deployments must not mutate the data
+    dir — starting the app in read_only mode must leave stale 'running' job
+    files untouched."""
+    import json
+    import os
+
+    from latentscope.server.app import create_app
+
+    jobs_dir = os.path.join(tmp_data_dir, "some-dataset", "jobs")
+    os.makedirs(jobs_dir)
+    job = {"id": "stale-job", "status": "running", "pid": 99999999,
+           "progress": [], "times": [], "last_update": ""}
+    job_path = os.path.join(jobs_dir, "stale-job.json")
+    with open(job_path, "w") as f:
+        json.dump(job, f)
+
+    create_app(data_dir=tmp_data_dir, read_only=True)
+    with open(job_path) as f:
+        assert json.load(f)["status"] == "running"
+
+    create_app(data_dir=tmp_data_dir, read_only=False)
+    with open(job_path) as f:
+        assert json.load(f)["status"] == "error"

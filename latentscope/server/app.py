@@ -85,11 +85,13 @@ def create_app(data_dir=None, read_only=None):
         app.register_blueprint(jobs_write_bp, url_prefix='/api/jobs')
 
     # Mark jobs left "running" by a previous server process as dead.  A bad
-    # job file must never prevent the server from starting.
-    try:
-        reconcile_stale_jobs(data_dir)
-    except Exception:
-        app.logger.exception("Failed to reconcile stale jobs on startup")
+    # job file must never prevent the server from starting.  Read-only
+    # deployments must not mutate the data directory at all.
+    if not read_only:
+        try:
+            reconcile_stale_jobs(data_dir)
+        except Exception:
+            app.logger.exception("Failed to reconcile stale jobs on startup")
 
     from .search import search_bp
     app.register_blueprint(search_bp, url_prefix='/api/search')
