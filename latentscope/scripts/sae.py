@@ -50,11 +50,10 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     import torch
     from latentsae.sae import Sae
 
+    from latentscope.util.embedding_store import load_embeddings
+
     print("loading embeddings")
-    embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
-    with h5py.File(embedding_path, 'r') as f:
-        dataset = f["embeddings"]
-        embeddings = np.array(dataset)
+    embeddings = load_embeddings(DATA_DIR, dataset_id, embedding_id)
 
     if device == "mps" or torch.backends.mps.is_available():
         device = torch.device("mps")

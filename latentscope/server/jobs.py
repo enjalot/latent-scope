@@ -6,7 +6,7 @@ import subprocess
 import threading
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, current_app, jsonify, request
 
@@ -60,7 +60,7 @@ def run_job(data_dir, dataset, job_id, command):
         "job_name": job_name,
         "command": command,
         "status": "running",
-        "last_update": str(datetime.now()),
+        "last_update": datetime.now(timezone.utc).isoformat(),
         "progress": [],
         "times": [],
     }
@@ -101,8 +101,8 @@ def run_job(data_dir, dataset, job_id, command):
                 run_id = output.strip().split("RUNNING: ")[1]
                 job["run_id"] = run_id
             job["progress"].append(output.strip())
-            job["times"].append(str(datetime.now()))
-            job["last_update"] = str(datetime.now())
+            job["times"].append(datetime.now(timezone.utc).isoformat())
+            job["last_update"] = datetime.now(timezone.utc).isoformat()
             with open(progress_file, 'w') as f:
                 json.dump(job, f)
             last_output_time = current_time
@@ -653,7 +653,7 @@ def _write_completed_job(data_dir, dataset, job_id, description):
         "job_name": description,
         "command": description,
         "status": "completed",
-        "last_update": str(datetime.now()),
+        "last_update": datetime.now(timezone.utc).isoformat(),
         "progress": [],
         "times": [],
     }

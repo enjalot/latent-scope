@@ -11,6 +11,7 @@ import styles from './Jobs.module.scss';
 function Jobs() {
   const [dataset, setDataset] = useState(null);
   const { dataset: datasetId, scope: scopeId } = useParams();
+  const navigate = useNavigate();
   const [scopes, setScopes] = useState([]);
 
   useEffect(() => {

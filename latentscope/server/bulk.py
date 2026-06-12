@@ -110,7 +110,7 @@ def change_cluster_name():
 
     clusters = scope_meta["cluster_labels_lookup"]
     clusters[cluster]["label"] = new_label
-    df[df['cluster'] == cluster]['label'] = new_label
+    df.loc[df['cluster'] == cluster, 'label'] = new_label
     df.to_parquet(scope_file)
     update_combined(DATA_DIR, df, dataset_id, scope_id)
 

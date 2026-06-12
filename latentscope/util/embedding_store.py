@@ -89,6 +89,23 @@ def append_embeddings(data_dir, dataset_id, embedding_id, vectors, start_index=0
         db.create_table(table_name, rows)
 
 
+def list_embedding_ids(data_dir, dataset_id):
+    """Return embedding ids that have a LanceDB table (e.g. ["embedding-001"]).
+
+    Includes tables from crashed runs that never wrote their .json metadata,
+    so callers allocating the next embedding id don't reuse a taken one.
+    """
+    db_path = _lance_db_path(data_dir, dataset_id)
+    if not os.path.isdir(db_path):
+        return []
+    db = _connect(data_dir, dataset_id)
+    return [
+        name[len("emb-"):]
+        for name in _get_table_names(db)
+        if name.startswith("emb-")
+    ]
+
+
 def get_embedding_count(data_dir, dataset_id, embedding_id):
     """Return the number of embeddings stored, or 0 if none."""
     db = _connect(data_dir, dataset_id)
@@ -338,44 +355,64 @@ def migrate_hdf5_to_lancedb(data_dir, dataset_id, embedding_id, batch_size=1000,
     if not os.path.exists(emb_path):
         raise FileNotFoundError(f"No HDF5 file at {emb_path}")
 
-    # Check if already migrated
     db = _connect(data_dir, dataset_id)
     table_name = _embedding_table_name(embedding_id)
-    if table_name in _get_table_names(db):
-        tbl = db.open_table(table_name)
-        return {"status": "already_migrated", "rows": tbl.count_rows()}
 
-    # Load from HDF5
     with h5py.File(emb_path, "r") as f:
         total_rows = f["embeddings"].shape[0]
         dimensions = f["embeddings"].shape[1]
 
-        # Write in batches to avoid memory issues
-        for start in range(0, total_rows, batch_size):
-            end = min(start + batch_size, total_rows)
-            vectors = np.array(f["embeddings"][start:end])
-            append_embeddings(data_dir, dataset_id, embedding_id,
-                            vectors, start_index=start)
-            if on_progress:
-                on_progress(end, total_rows)
+    # Check if already migrated. A table can also be left behind by an
+    # interrupted migration (killed process) — in that case it is shorter
+    # than the HDF5 source and must be dropped and re-migrated, otherwise it
+    # shadows the intact HDF5 in load_embeddings and silently truncates data.
+    if table_name in _get_table_names(db):
+        tbl = db.open_table(table_name)
+        existing = tbl.count_rows()
+        if existing == total_rows:
+            return {"status": "already_migrated", "rows": existing}
+        print(f"Found partial migration ({existing}/{total_rows} rows) — "
+              "dropping and re-migrating")
+        db.drop_table(table_name)
 
-    # Verify migration: check row count and spot-check a few vectors
-    lance_count = get_embedding_count(data_dir, dataset_id, embedding_id)
-    if lance_count != total_rows:
-        raise RuntimeError(
-            f"Migration verification failed: expected {total_rows} rows, "
-            f"got {lance_count} in LanceDB"
-        )
+    try:
+        # Copy from HDF5 in batches to avoid memory issues
+        with h5py.File(emb_path, "r") as f:
+            for start in range(0, total_rows, batch_size):
+                end = min(start + batch_size, total_rows)
+                vectors = np.array(f["embeddings"][start:end])
+                append_embeddings(data_dir, dataset_id, embedding_id,
+                                vectors, start_index=start)
+                if on_progress:
+                    on_progress(end, total_rows)
 
-    # Spot-check first and last vectors match
-    lance_vectors = load_embeddings(data_dir, dataset_id, embedding_id)
-    with h5py.File(emb_path, "r") as f:
-        h5_first = np.array(f["embeddings"][0])
-        h5_last = np.array(f["embeddings"][-1])
-    if not np.allclose(lance_vectors[0], h5_first, atol=1e-6):
-        raise RuntimeError("Migration verification failed: first vector mismatch")
-    if not np.allclose(lance_vectors[-1], h5_last, atol=1e-6):
-        raise RuntimeError("Migration verification failed: last vector mismatch")
+        # Verify migration: row count plus a random sample of vectors.
+        lance_count = get_embedding_count(data_dir, dataset_id, embedding_id)
+        if lance_count != total_rows:
+            raise RuntimeError(
+                f"Migration verification failed: expected {total_rows} rows, "
+                f"got {lance_count} in LanceDB"
+            )
+
+        lance_vectors = load_embeddings(data_dir, dataset_id, embedding_id)
+        rng = np.random.default_rng(0)
+        sample_size = min(16, total_rows)
+        sample = rng.choice(total_rows, size=sample_size, replace=False)
+        # Always include the endpoints
+        check_indices = sorted(set(sample.tolist()) | {0, total_rows - 1})
+        with h5py.File(emb_path, "r") as f:
+            for idx in check_indices:
+                h5_vec = np.array(f["embeddings"][idx])
+                if not np.allclose(lance_vectors[idx], h5_vec, atol=1e-6):
+                    raise RuntimeError(
+                        f"Migration verification failed: vector mismatch at row {idx}"
+                    )
+    except BaseException:
+        # Never leave a partial table behind: it would shadow the intact
+        # HDF5 file in load_embeddings.
+        if table_name in _get_table_names(db):
+            db.drop_table(table_name)
+        raise
 
     # Verification passed — remove the HDF5 file
     h5_size = os.path.getsize(emb_path)

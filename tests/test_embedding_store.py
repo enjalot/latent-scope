@@ -167,3 +167,102 @@ def test_get_embedding_stats(data_dir):
     assert stats["count"] == 2
     assert stats["min_values"] == [-1.0, 0.0, 3.0]
     assert stats["max_values"] == [1.0, 2.0, 5.0]
+
+
+def _write_h5(data_dir, embedding_id, vectors):
+    import h5py
+
+    h5_path = os.path.join(data_dir, "test-dataset", "embeddings", f"{embedding_id}.h5")
+    with h5py.File(h5_path, "w") as f:
+        f.create_dataset("embeddings", data=vectors)
+    return h5_path
+
+
+def test_migration_deletes_hdf5_after_verification(data_dir):
+    from latentscope.util.embedding_store import load_embeddings, migrate_hdf5_to_lancedb
+
+    vectors = np.random.rand(57, 16).astype(np.float32)
+    h5_path = _write_h5(data_dir, "embedding-001", vectors)
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                     batch_size=10)
+    assert result["status"] == "migrated"
+    assert result["rows"] == 57
+    assert not os.path.exists(h5_path)
+    np.testing.assert_allclose(
+        load_embeddings(data_dir, "test-dataset", "embedding-001"), vectors, atol=1e-6)
+
+
+def test_migration_redoes_partial_table(data_dir):
+    """An interrupted migration leaves a short LanceDB table that shadows the
+    intact HDF5. Re-running the migration must detect the count mismatch,
+    drop the partial table, and migrate fully (not report already_migrated)."""
+    from latentscope.util.embedding_store import (
+        append_embeddings,
+        load_embeddings,
+        migrate_hdf5_to_lancedb,
+    )
+
+    vectors = np.random.rand(40, 16).astype(np.float32)
+    _write_h5(data_dir, "embedding-001", vectors)
+    # simulate the partial table from a killed migration
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors[:15])
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                     batch_size=10)
+    assert result["status"] == "migrated"
+    loaded = load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (40, 16)
+    np.testing.assert_allclose(loaded, vectors, atol=1e-6)
+
+
+def test_migration_complete_table_reports_already_migrated(data_dir):
+    from latentscope.util.embedding_store import append_embeddings, migrate_hdf5_to_lancedb
+
+    vectors = np.random.rand(20, 16).astype(np.float32)
+    _write_h5(data_dir, "embedding-001", vectors)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors)
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001")
+    assert result["status"] == "already_migrated"
+    assert result["rows"] == 20
+
+
+def test_failed_migration_leaves_no_partial_table(data_dir, monkeypatch):
+    """If the copy fails mid-way the partial table must be dropped so it never
+    shadows the intact HDF5 file, and the HDF5 source must survive."""
+    import latentscope.util.embedding_store as store
+
+    vectors = np.random.rand(40, 16).astype(np.float32)
+    h5_path = _write_h5(data_dir, "embedding-001", vectors)
+
+    real_append = store.append_embeddings
+    calls = {"n": 0}
+
+    def flaky_append(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] > 2:
+            raise RuntimeError("simulated write failure")
+        return real_append(*args, **kwargs)
+
+    monkeypatch.setattr(store, "append_embeddings", flaky_append)
+    with pytest.raises(RuntimeError, match="simulated write failure"):
+        store.migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                      batch_size=10)
+
+    assert os.path.exists(h5_path)
+    assert store.get_storage_format(data_dir, "test-dataset", "embedding-001") == "hdf5"
+    # and load_embeddings reads the intact HDF5, not a truncated table
+    loaded = store.load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (40, 16)
+
+
+def test_list_embedding_ids(data_dir):
+    from latentscope.util.embedding_store import append_embeddings, list_embedding_ids
+
+    assert list_embedding_ids(data_dir, "test-dataset") == []
+    vectors = np.random.rand(5, 8).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", vectors)
+    append_embeddings(data_dir, "test-dataset", "embedding-003", vectors)
+    assert sorted(list_embedding_ids(data_dir, "test-dataset")) == [
+        "embedding-001", "embedding-003"]

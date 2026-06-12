@@ -1,5 +1,5 @@
 // NewEmbedding.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tooltip } from 'react-tooltip';
 import { Select, Button } from 'react-element-forge';
 
@@ -108,14 +108,15 @@ function Embedding() {
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
 
   const [HFModels, setHFModels] = useState([]);
-  const searchHFModels = useCallback((query) => {
-    debounce(
-      apiService.searchHFSTModels(query).then((hfm) => {
-        setHFModels(hfm);
-      }),
-      300
-    );
-  }, []);
+  const searchHFModels = useMemo(
+    () =>
+      debounce((query) => {
+        apiService.searchHFSTModels(query).then((hfm) => {
+          setHFModels(hfm);
+        });
+      }, 300),
+    []
+  );
 
   const [presetModels, setPresetModels] = useState([]);
   useEffect(() => {

@@ -43,9 +43,11 @@ This file documents breaking changes to data formats and how to migrate between 
 - **CLI resume:** If you resume an interrupted HDF5 embedding via `ls-embed --rerun`, it automatically migrates the existing HDF5 data to LanceDB before continuing.
 
 **After migration:**
-- The HDF5 file is NOT deleted (safe to remove manually after verifying)
+- The migrated data is verified (row count + a random sample of vectors
+  compared against the source), then the HDF5 file is deleted to free space
+- If a migration is interrupted, re-running it detects the partial LanceDB
+  table, drops it, and migrates again from the intact HDF5 file
 - All downstream pipeline steps (UMAP, cluster, scope) work identically
-- Search uses LanceDB's native ANN index for faster queries
 
 **Agent instructions:**
 To check if a dataset needs migration, call `GET /datasets/{dataset}/embeddings/{embedding}/format`. The response includes `{"format": "hdf5"|"lancedb"|"none"}`. If `"hdf5"`, call `POST .../migrate` to convert. The metadata JSON file does not change — only the vector storage location moves.
