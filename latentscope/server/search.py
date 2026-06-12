@@ -4,6 +4,7 @@ import os
 from flask import Blueprint, current_app, jsonify, request
 
 from latentscope.models import get_embedding_model
+from latentscope.server.job_utils import _safe_dataset
 
 # Create a Blueprint
 search_bp = Blueprint('search_bp', __name__)
@@ -26,7 +27,7 @@ def nn():
     import numpy as np
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     scope_id = request.args.get('scope_id')
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
@@ -155,7 +156,7 @@ def feature():
     import numpy as np
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     sae_id = request.args.get('sae_id')
     feature_id = request.args.get('feature_id')
     threshold = request.args.get('threshold')
@@ -199,7 +200,7 @@ def features():
     from latentscope.util.embedding_store import load_embeddings as lance_load
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     embedding_id = request.args.get('embedding_id')
     dimensions = request.args.get('dimensions')
     dimensions = int(dimensions) if dimensions else None
@@ -241,7 +242,7 @@ def compare():
     import pandas as pd
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
     metric = request.args.get('metric', 'displacement')
@@ -298,7 +299,7 @@ def compare_neighbors():
     from sklearn.neighbors import NearestNeighbors
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
     point_index = int(request.args.get('point_index'))
@@ -331,7 +332,7 @@ def compare_clusters():
     import pandas as pd
 
     DATA_DIR = _data_dir()
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     cluster_left = request.args.get('cluster_left')
     cluster_right = request.args.get('cluster_right')
 

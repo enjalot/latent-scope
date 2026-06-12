@@ -8,6 +8,7 @@ from importlib.resources import files
 from dotenv import dotenv_values, set_key
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 
 from latentscope.__version__ import __version__
 from latentscope.util import get_data_dir, get_supported_api_keys
@@ -59,12 +60,36 @@ def create_app(data_dir=None, read_only=None):
     app.config['DATAFRAMES'] = {}
 
     # ------------------------------------------------------------------
+    # JSON error handlers
+    # ------------------------------------------------------------------
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        return jsonify({"error": e.description, "code": e.code}), e.code
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_exception(e):
+        # Preserve normal exception propagation while testing/debugging so
+        # failures surface directly in test output and the debugger.
+        if app.testing or app.debug:
+            raise e
+        app.logger.exception("Unhandled exception")
+        return jsonify({"error": str(e), "code": 500}), 500
+
+    # ------------------------------------------------------------------
     # Blueprint registration
     # ------------------------------------------------------------------
-    from .jobs import jobs_bp, jobs_write_bp
+    from .jobs import jobs_bp, jobs_write_bp, reconcile_stale_jobs
     app.register_blueprint(jobs_bp, url_prefix='/api/jobs')
     if not read_only:
         app.register_blueprint(jobs_write_bp, url_prefix='/api/jobs')
+
+    # Mark jobs left "running" by a previous server process as dead.  A bad
+    # job file must never prevent the server from starting.
+    try:
+        reconcile_stale_jobs(data_dir)
+    except Exception:
+        app.logger.exception("Failed to reconcile stale jobs on startup")
 
     from .search import search_bp
     app.register_blueprint(search_bp, url_prefix='/api/search')
@@ -291,7 +316,27 @@ def create_app(data_dir=None, read_only=None):
     return app
 
 
-def serve(host="0.0.0.0", port=5001, debug=True, data_dir=None, read_only=None):
-    """Create the app and start the development server."""
+def serve(host="0.0.0.0", port=5001, debug=False, data_dir=None, read_only=None):
+    """Create the app and start a server.
+
+    Uses waitress (production WSGI server) when it is installed and debug mode
+    is off; otherwise falls back to the Flask development server.  Set
+    ``LATENT_SCOPE_DEBUG=1`` to force the development server.
+    """
     application = create_app(data_dir=data_dir, read_only=read_only)
+    if _parse_bool_env(os.getenv("LATENT_SCOPE_DEBUG")):
+        debug = True
+    if not debug:
+        try:
+            from waitress import serve as waitress_serve
+        except ImportError:
+            waitress_serve = None
+        if waitress_serve is not None:
+            application.logger.info("Serving with waitress on %s:%s", host, port)
+            waitress_serve(application, listen=f"{host}:{port}", threads=8)
+            return
+        application.logger.warning(
+            "waitress not installed (pip install waitress); "
+            "falling back to the Flask development server"
+        )
     application.run(host=host, port=port, debug=debug)

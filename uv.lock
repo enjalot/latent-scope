@@ -2463,6 +2463,9 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+serve = [
+    { name = "waitress" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -2506,6 +2509,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=5.0" },
     { name = "ruff", specifier = ">=0.4" },
 ]
+serve = [{ name = "waitress", specifier = ">=3" }]
 
 [[package]]
 name = "lazy-loader"
@@ -6457,6 +6461,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/94/16/1b46b3cd401e1717a68197c1fe336d7bb4e0a1833f8105e1738f5b1add05/voyageai-0.3.7.tar.gz", hash = "sha256:826cd97f97223f42b5babc5c459c9c80f3a8215ce5c0e007b0b276550f790d24", size = 26485, upload-time = "2025-12-16T18:43:05.26Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/60/64/89f6325666d6836979f94ac88b96fefc7527e02e61abc81359843585e088/voyageai-0.3.7-py3-none-any.whl", hash = "sha256:909f6c033001e5a3b3caf970525bf3614a1bfef9003cf3c3b68207dfdb53e86d", size = 34691, upload-time = "2025-12-16T18:43:04.073Z" },
+]
+
+[[package]]
+name = "waitress"
+version = "3.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/cb/04ddb054f45faa306a230769e868c28b8065ea196891f09004ebace5b184/waitress-3.0.2.tar.gz", hash = "sha256:682aaaf2af0c44ada4abfb70ded36393f0e307f4ab9456a215ce0020baefc31f", size = 179901, upload-time = "2024-11-16T20:02:35.195Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/57/a27182528c90ef38d82b636a11f606b0cbb0e17588ed205435f8affe3368/waitress-3.0.2-py3-none-any.whl", hash = "sha256:c56d67fd6e87c2ee598b76abdd4e96cfad1f24cacdea5078d382b1f9d7b5ed2e", size = 56232, upload-time = "2024-11-16T20:02:33.858Z" },
 ]
 
 [[package]]

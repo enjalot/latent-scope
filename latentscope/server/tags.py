@@ -3,6 +3,8 @@ import os
 import numpy as np
 from flask import Blueprint, current_app, jsonify, request
 
+from latentscope.server.job_utils import _safe_dataset
+
 # Create a Blueprint
 tags_bp = Blueprint('tags_bp', __name__)
 tags_write_bp = Blueprint('tags_write_bp', __name__)
@@ -22,7 +24,7 @@ tagsets = {}
 
 @tags_bp.route("/", methods=['GET'])
 def tags():
-    dataset = request.args.get('dataset')
+    dataset = _safe_dataset(request.args.get('dataset'))
     DATA_DIR = _data_dir()
     tagdir = os.path.join(DATA_DIR, dataset, "tags")
     if not os.path.exists(tagdir):
@@ -39,10 +41,10 @@ def tags():
     return jsonify(tagsets[dataset])
 
 
-@tags_write_bp.route("/new", methods=['GET'])
+@tags_write_bp.route("/new", methods=['GET', 'POST'])
 def new_tag():
-    dataset = request.args.get('dataset')
-    tag = request.args.get('tag')
+    dataset = _safe_dataset(request.values.get('dataset'))
+    tag = _safe_dataset(request.values.get('tag'), param='tag')
     DATA_DIR = _data_dir()
     if dataset not in tagsets:
         tagsets[dataset] = {}
@@ -65,8 +67,8 @@ def new_tag():
 
 @tags_write_bp.route("/add", methods=['GET'])
 def add_tag():
-    dataset = request.args.get('dataset')
-    tag = request.args.get('tag')
+    dataset = _safe_dataset(request.args.get('dataset'))
+    tag = _safe_dataset(request.args.get('tag'), param='tag')
     index = request.args.get('index')
     DATA_DIR = _data_dir()
     if dataset not in tagsets:
@@ -93,8 +95,8 @@ def add_tag():
 @tags_write_bp.route("/add", methods=['POST'])
 def add_tags():
     data = request.get_json()
-    dataset = data.get('dataset')
-    tag = data.get('tag')
+    dataset = _safe_dataset(data.get('dataset'))
+    tag = _safe_dataset(data.get('tag'), param='tag')
     new_indices = data.get('indices')
     DATA_DIR = _data_dir()
 
@@ -124,8 +126,8 @@ def add_tags():
 
 @tags_write_bp.route("/remove", methods=['GET'])
 def remove_tag():
-    dataset = request.args.get('dataset')
-    tag = request.args.get('tag')
+    dataset = _safe_dataset(request.args.get('dataset'))
+    tag = _safe_dataset(request.args.get('tag'), param='tag')
     index = int(request.args.get('index'))
     DATA_DIR = _data_dir()
     if dataset not in tagsets:
@@ -149,8 +151,8 @@ def remove_tag():
 @tags_write_bp.route("/remove", methods=['POST'])
 def remove_tags():
     data = request.get_json()
-    dataset = data.get('dataset')
-    tag = data.get('tag')
+    dataset = _safe_dataset(data.get('dataset'))
+    tag = _safe_dataset(data.get('tag'), param='tag')
     remove_indices = data.get('indices')
     DATA_DIR = _data_dir()
 
@@ -178,10 +180,10 @@ def remove_tags():
     return jsonify(tagsets[dataset])
 
 
-@tags_write_bp.route("/delete", methods=['GET'])
+@tags_write_bp.route("/delete", methods=['GET', 'POST'])
 def delete_tag():
-    dataset = request.args.get('dataset')
-    tag = request.args.get('tag')
+    dataset = _safe_dataset(request.values.get('dataset'))
+    tag = _safe_dataset(request.values.get('tag'), param='tag')
     DATA_DIR = _data_dir()
     if dataset not in tagsets:
         ts = tagsets[dataset] = {}
