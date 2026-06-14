@@ -685,6 +685,23 @@ def run_scope():
     return jsonify({"job_id": job_id})
 
 
+@jobs_write_bp.route('/sprites', methods=['GET', 'POST'])
+def run_sprites():
+    data_dir = _data_dir()
+    dataset = _safe_dataset(request.values.get('dataset'))
+    image_column = request.values.get('image_column')
+    size = request.values.get('size') or '64'
+
+    err = _require_params(dataset=dataset, image_column=image_column)
+    if err:
+        return err
+
+    job_id = str(uuid.uuid4())
+    command = ['ls-sprites', dataset, image_column, '--size', str(size)]
+    threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
 @jobs_write_bp.route('/delete/scope', methods=['GET', 'POST'])
 def delete_scope():
     data_dir = _data_dir()
