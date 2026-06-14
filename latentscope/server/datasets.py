@@ -176,6 +176,95 @@ def get_dataset_image(dataset):
     return Response(value, mimetype=mimetype, headers=headers)
 
 
+def _sprite_size_param():
+    """Parse the optional ?size= param, default 64. Returns (size, error).
+
+    error is a (response, status) tuple when invalid, else None.
+    """
+    size = request.args.get('size', '64')
+    try:
+        size = int(size)
+    except (TypeError, ValueError):
+        return None, (jsonify({"error": "size must be an integer"}), 400)
+    if size < 1 or size > 1024:
+        return None, (jsonify({"error": "size must be between 1 and 1024"}), 400)
+    return size, None
+
+
+@datasets_bp.route('/<dataset>/sprites/status', methods=['GET'])
+def get_dataset_sprites_status(dataset):
+    """Report whether sprites have been generated for a column.
+
+    Query params: column (image column name), size (default 64).
+    Reads the sprite manifest if present. Never 500s.
+    """
+    column = request.args.get('column')
+    size, err = _sprite_size_param()
+    if err:
+        return err
+
+    manifest_path = os.path.join(
+        _data_dir(), dataset, "sprites", f"{column}-{size}.json"
+    )
+    try:
+        with open(manifest_path, encoding='utf-8') as f:
+            manifest = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return jsonify({"generated": False})
+
+    return jsonify({
+        "generated": bool(manifest.get("complete")),
+        "count": manifest.get("count"),
+        "total": manifest.get("total"),
+        "size": manifest.get("size"),
+        "missing_count": len(manifest.get("missing") or []),
+    })
+
+
+@datasets_bp.route('/<dataset>/sprite', methods=['GET'])
+def get_dataset_sprite(dataset):
+    """Serve a single pre-generated WebP sprite thumbnail.
+
+    Query params: column (image column), index (row index), size (default 64).
+    Resolves the sharded path and 404s when the file is absent (e.g. a missing
+    or undecodable source image).
+    """
+    from flask import send_file
+
+    column = request.args.get('column')
+    meta_path = os.path.join(_data_dir(), dataset, "meta.json")
+    try:
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    except OSError:
+        return jsonify({"error": f"dataset {dataset} not found"}), 404
+    column_meta = (meta.get("column_metadata") or {}).get(column)
+    if not isinstance(column_meta, dict) or column_meta.get("type") != "image":
+        return jsonify({"error": f"column {column!r} is not an image column"}), 400
+
+    size, err = _sprite_size_param()
+    if err:
+        return err
+
+    try:
+        index = int(request.args.get('index'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "index must be an integer"}), 404
+    if index < 0 or index >= meta.get("length", 0):
+        return jsonify({"error": "index out of range"}), 404
+
+    shard = f"{index // 1000:03d}"
+    sprite_path = os.path.join(
+        _data_dir(), dataset, "sprites", f"{column}-{size}", shard, f"{index}.webp"
+    )
+    if not os.path.exists(sprite_path):
+        return jsonify({"error": "no sprite at this index"}), 404
+
+    response = send_file(sprite_path, mimetype="image/webp")
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     return scan_for_json_files(os.path.join(_data_dir(), dataset, "embeddings"))
