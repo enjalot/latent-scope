@@ -104,9 +104,19 @@ function ExploreContent() {
 
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndicesSet.has(hoveredIndex)) {
+      // Update the tooltip immediately with the new index + cluster so the
+      // image (keyed on the index) swaps right away; the text arrives after
+      // the hydration fetch, marked loading until then.
+      setHovered({
+        text: null,
+        loading: true,
+        index: hoveredIndex,
+        cluster: clusterMap[hoveredIndex],
+      });
       debouncedHydrateHoverText(hoveredIndex, (text) => {
         setHovered({
           text: text,
+          loading: false,
           index: hoveredIndex,
           cluster: clusterMap[hoveredIndex],
         });

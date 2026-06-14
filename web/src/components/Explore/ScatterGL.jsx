@@ -317,7 +317,11 @@ function ScatterGL({
       },
       depth: { enable: false },
     });
-  }, [points, featureIsSelected]);
+    // width/height are in the deps because the regl context is destroyed and
+    // recreated on resize; without rebuilding here the buffers + draw command
+    // would reference the dead context ("no buffer is bound to enabled
+    // attribute" and nothing renders).
+  }, [points, featureIsSelected, width, height]);
 
   const dynamicSize = useMemo(() => {
     let size = calculateDynamicPointScale(points.length, width, height);

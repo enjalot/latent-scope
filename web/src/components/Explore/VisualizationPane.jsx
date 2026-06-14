@@ -20,6 +20,7 @@ import { useFilter } from '../../contexts/FilterContext';
 
 import { mapSelectionKey } from '../../lib/colors';
 import { imageUrlFor } from '../../lib/imageUrl';
+import HoverThumbnail from './HoverThumbnail';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Button } from 'react-element-forge';
@@ -443,20 +444,16 @@ function VisualizationPane({
             <br></br>
             <span>Index: {hovered.index}</span>
             {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
-              <img
-                loading="lazy"
+              <HoverThumbnail
+                key={hovered.index}
                 src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
                 alt={`${hoverImageColumn} ${hovered.index}`}
-                style={{
-                  display: 'block',
-                  maxWidth: '150px',
-                  maxHeight: '150px',
-                  objectFit: 'contain',
-                  marginTop: '4px',
-                }}
+                size={150}
               />
             )}
-            <p className="tooltip-text">{hovered.text}</p>
+            <p className="tooltip-text">
+              {hovered.loading && !hovered.text ? <em>loading…</em> : hovered.text}
+            </p>
           </div>
         </Tooltip>
       )}
