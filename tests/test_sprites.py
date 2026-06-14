@@ -175,3 +175,22 @@ def test_sprite_endpoint_serves_and_404s(client, sprite_dataset):
     # non-image column -> 400
     bad = client.get(f"/api/datasets/{sprite_dataset}/sprite?column=text&index=0&size=64")
     assert bad.status_code == 400
+
+
+def test_sprite_slug_contains_path_traversal():
+    """Column names with path separators must not escape the sprites dir."""
+    from latentscope.scripts.sprites import (
+        sprite_dir_name,
+        sprite_manifest_name,
+        sprite_slug,
+    )
+
+    for bad in ["../../etc", "a/b", "a\\b", "..", "x/../y"]:
+        slug = sprite_slug(bad)
+        assert "/" not in slug and "\\" not in slug
+        assert ".." not in slug
+        assert "/" not in sprite_dir_name(bad, 64)
+        assert "/" not in sprite_manifest_name(bad, 64)
+    # ordinary names stay readable
+    assert sprite_slug("image") == "image"
+    assert sprite_dir_name("image", 64) == "image-64"
