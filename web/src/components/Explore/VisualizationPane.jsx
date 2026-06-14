@@ -20,10 +20,16 @@ import { useFilter } from '../../contexts/FilterContext';
 
 import { mapSelectionKey } from '../../lib/colors';
 import { imageUrlFor } from '../../lib/imageUrl';
+import { fetchSpriteStatus } from '../../lib/spriteUrl';
 import HoverThumbnail from './HoverThumbnail';
+import SpriteOverlay from './SpriteOverlay';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Button } from 'react-element-forge';
+import { useStartJobPolling } from '../Job/Run';
+
+const apiUrl = import.meta.env.VITE_API_URL;
+const SPRITE_SIZE = 64;
 
 // VisualizationPane.propTypes = {
 //   hoverAnnotations: PropTypes.array.isRequired,
@@ -58,6 +64,67 @@ function VisualizationPane({
     const columnMetadata = dataset?.column_metadata || {};
     return Object.keys(columnMetadata).find((col) => columnMetadata[col]?.type === 'image');
   }, [dataset]);
+
+  // ====================================================================================================
+  // Image sprite overlay (optional generated thumbnails shown when zoomed in)
+  // ====================================================================================================
+  const [showSprites, setShowSprites] = useState(false);
+  const [spriteStatus, setSpriteStatus] = useState({ generated: false });
+  const [spriteJob, setSpriteJob] = useState(null);
+  const { startJob: startSpriteJob } = useStartJobPolling(
+    dataset,
+    setSpriteJob,
+    `${apiUrl}/jobs/sprites`
+  );
+
+  // fetch sprite status whenever the dataset / image column changes
+  useEffect(() => {
+    let cancelled = false;
+    if (!dataset?.id || !hoverImageColumn) {
+      setSpriteStatus({ generated: false });
+      return;
+    }
+    fetchSpriteStatus(dataset.id, hoverImageColumn, SPRITE_SIZE)
+      .then((status) => {
+        if (!cancelled) setSpriteStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setSpriteStatus({ generated: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataset?.id, hoverImageColumn]);
+
+  // when a generation job completes, re-fetch status and enable the toggle
+  useEffect(() => {
+    if (spriteJob?.status === 'completed' && dataset?.id && hoverImageColumn) {
+      fetchSpriteStatus(dataset.id, hoverImageColumn, SPRITE_SIZE).then((status) => {
+        setSpriteStatus(status);
+        if (status.generated) setShowSprites(true);
+      });
+    }
+  }, [spriteJob?.status, dataset?.id, hoverImageColumn]);
+
+  const spriteManifest = useMemo(
+    () => ({
+      generated: !!spriteStatus.generated,
+      size: spriteStatus.size || SPRITE_SIZE,
+      // status endpoint only returns a count; the overlay also hides 404s via
+      // onError, so an empty set here is safe.
+      missing: new Set(),
+    }),
+    [spriteStatus]
+  );
+
+  const handleGenerateSprites = useCallback(() => {
+    if (!hoverImageColumn) return;
+    startSpriteJob({ image_column: hoverImageColumn, size: SPRITE_SIZE });
+  }, [hoverImageColumn, startSpriteJob]);
+
+  const toggleShowSprites = useCallback(() => {
+    setShowSprites((prev) => !prev);
+  }, []);
 
   const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
     useFilter();
@@ -271,6 +338,12 @@ function VisualizationPane({
           toggleShowClusterOutlines={toggleShowClusterOutlines}
           updatePointSize={updatePointSize}
           updatePointOpacity={updatePointOpacity}
+          hasImageColumn={!!hoverImageColumn}
+          spriteStatus={spriteStatus}
+          spriteJob={spriteJob}
+          showSprites={showSprites}
+          toggleShowSprites={toggleShowSprites}
+          onGenerateSprites={handleGenerateSprites}
         />
       </div>
 
@@ -357,6 +430,21 @@ function VisualizationPane({
               label={scope.cluster_labels_lookup[clusterFilter.cluster.cluster]}
             />
           )}
+        {/* Viewport-culled DOM image overlay (renders only when zoomed in) */}
+        {hoverImageColumn && (
+          <SpriteOverlay
+            dataset={dataset}
+            imageColumn={hoverImageColumn}
+            scopeRows={scopeRows}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+            transform={transform}
+            enabled={showSprites}
+            manifest={spriteManifest}
+          />
+        )}
         <AnnotationPlot
           points={hoverAnnotations}
           stroke="black"

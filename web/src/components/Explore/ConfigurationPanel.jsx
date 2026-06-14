@@ -10,8 +10,15 @@ const ConfigurationPanel = ({
   toggleShowClusterOutlines,
   updatePointSize,
   updatePointOpacity,
+  hasImageColumn = false,
+  spriteStatus = { generated: false },
+  spriteJob = null,
+  showSprites = false,
+  toggleShowSprites,
+  onGenerateSprites,
 }) => {
   const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } = vizConfig;
+  const spriteJobRunning = spriteJob && !['completed', 'error', 'dead'].includes(spriteJob.status);
 
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
@@ -75,6 +82,31 @@ const ConfigurationPanel = ({
           color="secondary"
           label="Show Heat Map"
         />
+
+        {hasImageColumn &&
+          (spriteStatus.generated ? (
+            <Switch
+              value={showSprites}
+              onChange={toggleShowSprites}
+              defaultState={showSprites}
+              color="secondary"
+              label="Show Images (zoom in)"
+            />
+          ) : (
+            <div className={styles.configSection}>
+              <Button
+                onClick={onGenerateSprites}
+                disabled={spriteJobRunning}
+                variant="outline"
+                text={spriteJobRunning ? 'Generating image sprites…' : 'Generate image sprites'}
+              />
+              {spriteJobRunning && spriteJob?.progress?.length > 0 && (
+                <div className={styles.spriteProgress}>
+                  {spriteJob.progress[spriteJob.progress.length - 1]}
+                </div>
+              )}
+            </div>
+          ))}
 
         <div className={styles.configSection}></div>
       </div>
