@@ -74,3 +74,37 @@ def test_nn_defaults_to_maxsim_for_late_interaction(client, li_dataset, monkeypa
                      f"&late_interaction=false")
     assert res.status_code == 200
     assert not any(c["is_query"] for c in provider.embed_multi_calls)
+
+
+def test_scoped_request_stays_in_scope_for_late_interaction(
+    client, li_dataset, tmp_data_dir, monkeypatch
+):
+    """Codex review on #123 (P1): a scoped search against a ColBERT embedding
+    must use the scope table, not fall into global MaxSim (which would return
+    indices outside the scope)."""
+    import lancedb
+
+    import latentscope.server.search as search_mod
+
+    provider = FakeLIProvider()
+    monkeypatch.setattr(search_mod, "get_embedding_model", lambda mid: provider)
+    search_mod.EMBEDDINGS.clear() if hasattr(search_mod.EMBEDDINGS, "clear") else None
+
+    # Build a minimal scope-level LanceDB table (rows 0..4 only).
+    scope_id = "scopes-001"
+    rng = np.random.default_rng(2)
+    rows = [
+        {"index": i, "vector": rng.normal(size=8).astype(np.float32).tolist()}
+        for i in range(5)
+    ]
+    db = lancedb.connect(os.path.join(tmp_data_dir, li_dataset, "lancedb"))
+    db.create_table(scope_id, data=rows)
+
+    res = client.get(f"/api/search/nn?dataset={li_dataset}"
+                     f"&embedding_id=embedding-001&query=hello&scope_id={scope_id}")
+    assert res.status_code == 200
+    data = res.get_json()
+    # Every returned index must belong to the scope (rows 0..4)...
+    assert data["indices"] and all(0 <= i < 5 for i in data["indices"])
+    # ...and the global MaxSim path must NOT have run (it encodes is_query=True).
+    assert not any(c["is_query"] for c in provider.embed_multi_calls)

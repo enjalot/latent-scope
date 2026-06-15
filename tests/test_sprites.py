@@ -194,3 +194,21 @@ def test_sprite_slug_contains_path_traversal():
     # ordinary names stay readable
     assert sprite_slug("image") == "image"
     assert sprite_dir_name("image", 64) == "image-64"
+
+
+def test_sprite_slug_distinct_columns_do_not_collide():
+    """Codex review on #128 (P2): lossy substitution must not map distinct
+    columns onto the same slug, or one column's sprites would clobber the
+    other's."""
+    from latentscope.scripts.sprites import sprite_dir_name, sprite_slug
+
+    # These all normalize to "a_b" under the raw substitution.
+    colliding = ["a/b", "a.b", "a b", "a\\b"]
+    slugs = {sprite_slug(c) for c in colliding}
+    assert len(slugs) == len(colliding)
+    dirs = {sprite_dir_name(c, 64) for c in colliding}
+    assert len(dirs) == len(colliding)
+    # A genuinely path-safe column that equals another's pre-hash base must
+    # also stay distinct from the sanitized ones.
+    assert sprite_slug("a_b") == "a_b"
+    assert sprite_slug("a_b") not in slugs
