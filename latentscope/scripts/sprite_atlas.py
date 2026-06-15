@@ -1,23 +1,25 @@
 # Usage: ls-sprite-atlas <dataset_id> <scope_id> <image_column>
-#            [--cell-size 32] [--samples 1] [--resolutions 64,128] [--quality 80]
+#            [--cell-size 32] [--samples 1] [--resolutions 64,128,256] [--quality 80]
 #
-# Generate "sprite-sheet atlases" for an image dataset, keyed to the heatmap
-# grid that the scope step already computes (tile_index_64 / tile_index_128).
+# Generate "sprite-sheet atlases" for an image dataset, keyed to the same grid
+# the heatmap uses (the scope step's make_tiles). Cell membership is recomputed
+# here from each point's x/y, so any resolution works — including 256 — on
+# scopes whose parquet only stored the 64/128 tile columns.
 #
 # For each resolution R (an R x R grid over the normalized [-1, 1] coordinate
 # space) we paint ONE WebP image — the sheet — that *is* the heatmap: the cell
 # at grid position (col, row) is filled with a representative image sampled
 # from the points that fall in that cell. Empty cells stay transparent. Because
 # the sheet maps 1:1 onto the coordinate grid, the frontend can stretch the
-# whole image across the map and let it pan/zoom for free, replacing the dots
-# when you zoom in.
+# whole image across the map and let it pan/zoom for free, taking over from the
+# heatmap as you zoom in.
 #
 # --samples N produces N sheets per resolution: sheet 0 takes the first image
 # in each cell, sheet 1 the second, and so on (cells with fewer points leave
 # the later sheets transparent there).
 #
 # This is an OPTIONAL pipeline step that runs AFTER scope (it reads the
-# {scope}-input.parquet that joins the image column with the tile indices).
+# {scope}-input.parquet that joins the image column with x/y).
 import argparse
 import json
 import os
@@ -34,8 +36,24 @@ except ImportError:
 from latentscope.scripts.sprites import _image_bytes, sprite_slug
 from latentscope.util import get_data_dir
 
-DEFAULT_RESOLUTIONS = (64, 128)
+DEFAULT_RESOLUTIONS = (64, 128, 256)
 DEFAULT_CELL_SIZE = 32
+
+
+def tile_index(x, y, num_tiles):
+    """Map a normalized [-1, 1] coordinate to a flat grid-cell index.
+
+    Mirrors ``make_tiles`` in scope.py so the atlas grid lines up exactly with
+    the heatmap, but is computed here from x/y directly — that way any
+    resolution (incl. 256) works on scopes whose parquet only stored the 64/128
+    tile columns.
+    """
+    tile_size = 2.0 / num_tiles
+    col = int((x + 1) / tile_size)
+    row = int((y + 1) / tile_size)
+    col = min(max(col, 0), num_tiles - 1)
+    row = min(max(row, 0), num_tiles - 1)
+    return row * num_tiles + col
 
 
 def atlas_root(data_dir, dataset_id, scope_id, image_column):
@@ -56,10 +74,6 @@ def atlas_sheet_name(sheet_index):
 
 def atlas_manifest_name():
     return "manifest.json"
-
-
-def _tile_column(num_tiles):
-    return f"tile_index_{num_tiles}"
 
 
 def generate_sprite_atlas(dataset_id, scope_id, image_column,
@@ -116,19 +130,15 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
         raise ValueError(
             f"image column {image_column!r} missing from {scope_input_path}"
         )
-
-    # Only keep resolutions whose tile membership the scope step actually wrote.
-    resolutions = [
-        r for r in sorted(set(resolutions)) if _tile_column(r) in available
-    ]
-    if not resolutions:
+    if "x" not in available or "y" not in available:
         raise ValueError(
-            "no tile_index_* columns found in scope-input parquet; "
-            "re-run the scope step (it computes tile_index_64 / tile_index_128)"
+            f"scope-input parquet {scope_input_path} is missing x/y columns; "
+            "re-run the scope step"
         )
 
+    resolutions = sorted(set(resolutions))
     has_deleted = "deleted" in available
-    read_columns = [image_column] + [_tile_column(r) for r in resolutions]
+    read_columns = [image_column, "x", "y"]
     if has_deleted:
         read_columns.append("deleted")
 
@@ -173,9 +183,11 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
                     continue
 
                 # Which (resolution, sheet) slots still want this point's image?
+                x = batch["x"][i]
+                y = batch["y"][i]
                 wants = []
                 for r in resolutions:
-                    cell = int(batch[_tile_column(r)][i])
+                    cell = tile_index(x, y, r)
                     count = filled[r].get(cell, 0)
                     if count < samples:
                         wants.append((r, cell, count))

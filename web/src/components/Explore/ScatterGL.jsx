@@ -102,6 +102,10 @@ function ScatterGL({
   featureIsSelected,
   ignoreNotSelected = false,
   isSmallScreen = false,
+  // When true the canvas still clears + keeps its hover quadtree, but draws no
+  // dots. Used by the image map, where the visible points come from the
+  // PointsOverlay (on top of the atlas) instead of the GPU layer underneath.
+  hidePoints = false,
 }) {
   const { isDark: isDarkMode } = useColorMode();
   const { setCenteredIndices } = useFilter();
@@ -338,6 +342,10 @@ function ScatterGL({
       depth: 1,
     });
 
+    // Hover still works (quadtree is built from `points` separately), the dots
+    // just aren't drawn.
+    if (hidePoints) return;
+
     const pointsToRender = points;
 
     const blendParams = isDarkMode
@@ -367,7 +375,7 @@ function ScatterGL({
       height,
       blendParams,
     });
-  }, [points, transform, pointScale, featureIsSelected, width, height, isDarkMode, dynamicSize]);
+  }, [points, transform, pointScale, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
 
   // Update useEffect to rebuild quadtree when points change
   useEffect(() => {

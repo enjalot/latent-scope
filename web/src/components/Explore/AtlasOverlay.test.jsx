@@ -13,6 +13,7 @@ const manifest = {
   resolutions: [
     { num_tiles: 64, atlas_px: 2048, filled_cells: 800, sheets: ['r64-c32/sheet_000.webp'] },
     { num_tiles: 128, atlas_px: 4096, filled_cells: 2000, sheets: ['r128-c32/sheet_000.webp'] },
+    { num_tiles: 256, atlas_px: 8192, filled_cells: 4000, sheets: ['r256-c32/sheet_000.webp'] },
   ],
 };
 
@@ -56,6 +57,13 @@ describe('AtlasOverlay', () => {
     const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 3 }} />);
     const img = container.querySelector('img');
     expect(img.getAttribute('src')).toContain('res=128');
+  });
+
+  it('reaches the deepest (256) sheet when zoomed in far', () => {
+    // k=6: 256-cell=18.75px (ok)
+    const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 6 }} />);
+    const img = container.querySelector('img');
+    expect(img.getAttribute('src')).toContain('res=256');
   });
 
   it('stretches the sheet across the full [-1,1] domain box', () => {

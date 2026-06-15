@@ -28,6 +28,15 @@ def cell_index(col, row, num_tiles=NUM_TILES):
     return row * num_tiles + col
 
 
+def cell_to_xy(col, row, num_tiles=NUM_TILES):
+    """A normalized (x, y) at the center of grid cell (col, row) — the inverse
+    of the generator's tile_index() mapping."""
+    tile_size = 2.0 / num_tiles
+    x = -1 + (col + 0.5) * tile_size
+    y = -1 + (row + 0.5) * tile_size
+    return x, y
+
+
 def cell_center_px(col, row, num_tiles=NUM_TILES, cell=CELL):
     """Pixel at the center of grid cell (col,row) in the saved sheet, accounting
     for the vertical flip the generator bakes in."""
@@ -63,16 +72,17 @@ def atlas_dataset(tmp_data_dir, monkeypatch):
         json.dump(meta, f)
 
     rows = [
-        {"image": make_png_bytes((255, 0, 0)), "c64": cell_index(2, 3), "deleted": False},
-        {"image": make_png_bytes((0, 255, 0)), "c64": cell_index(2, 3), "deleted": False},
-        {"image": make_png_bytes((0, 0, 255)), "c64": cell_index(5, 5), "deleted": False},
-        {"image": make_png_bytes((255, 0, 0)), "c64": cell_index(10, 10), "deleted": True},
-        {"image": None, "c64": cell_index(20, 20), "deleted": False},
+        {"image": make_png_bytes((255, 0, 0)), "cell": (2, 3), "deleted": False},
+        {"image": make_png_bytes((0, 255, 0)), "cell": (2, 3), "deleted": False},
+        {"image": make_png_bytes((0, 0, 255)), "cell": (5, 5), "deleted": False},
+        {"image": make_png_bytes((255, 0, 0)), "cell": (10, 10), "deleted": True},
+        {"image": None, "cell": (20, 20), "deleted": False},
     ]
+    xy = [cell_to_xy(*r["cell"]) for r in rows]
     df = pd.DataFrame({
         "image": [r["image"] for r in rows],
-        "tile_index_64": [r["c64"] for r in rows],
-        "tile_index_128": [r["c64"] for r in rows],  # value unused by these tests
+        "x": [p[0] for p in xy],
+        "y": [p[1] for p in xy],
         "deleted": [r["deleted"] for r in rows],
     })
     df.to_parquet(os.path.join(ds_dir, "scopes", f"{SCOPE_ID}-input.parquet"))
@@ -152,8 +162,10 @@ def test_atlas_cell_placement_and_sampling(tmp_data_dir, atlas_dataset):
     assert sheet0.getpixel(px_del)[3] == 0
 
 
-def test_atlas_skips_unavailable_resolution(tmp_data_dir, atlas_dataset):
-    """Requesting a resolution with no tile_index column just drops it."""
+def test_atlas_256_grid_from_xy(tmp_data_dir, atlas_dataset):
+    """256 has no stored tile column; cells are computed from x/y, so it works.
+    The cell that holds an image at 64-grid (2,3) maps to (8,12) at 256-grid
+    (each 64-cell splits into 4x4)."""
     from latentscope.scripts.sprite_atlas import generate_sprite_atlas
 
     generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image",
@@ -164,7 +176,15 @@ def test_atlas_skips_unavailable_resolution(tmp_data_dir, atlas_dataset):
         atlas_manifest_name(),
     )) as f:
         manifest = json.load(f)
-    assert [e["num_tiles"] for e in manifest["resolutions"]] == [64]
+    assert [e["num_tiles"] for e in manifest["resolutions"]] == [64, 256]
+
+    sheet = load_sheet(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 256, CELL, 0)
+    assert sheet.size == (256 * CELL, 256 * CELL)
+    # (2,3) at 64-grid -> (2*4+1, 3*4+1)=(9,13) area at 256-grid; just assert the
+    # cell the red point lands in is filled.
+    col256, row256 = 2 * 4 + 2, 3 * 4 + 2  # center subcell from cell_to_xy(2,3)
+    px = (col256 * CELL + CELL // 2, (256 - 1 - row256) * CELL + CELL // 2)
+    assert sheet.getpixel(px)[3] != 0
 
 
 def test_atlas_non_image_column_raises(atlas_dataset):

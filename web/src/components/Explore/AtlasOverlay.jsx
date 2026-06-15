@@ -1,13 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { scaleLinear } from 'd3-scale';
 import { atlasSheetUrl } from '../../lib/atlasUrl';
-
-// Minimum on-screen size (px) a single atlas cell must reach before we show
-// that resolution. On-screen cell px = width * k / num_tiles, so a finer grid
-// (more cells) only kicks in once you've zoomed far enough that its cells are
-// still legible. Below the coarsest grid's threshold we render nothing and let
-// the dots show — this is what "replace the dots when you zoom in a bit" means.
-const MIN_CELL_PX = 14;
+import { atlasLod } from '../../lib/atlasLod';
 
 /**
  * Renders a representative-image sprite-sheet atlas as a SINGLE <img> stretched
@@ -19,7 +13,7 @@ const MIN_CELL_PX = 14;
  * <img> is mounted at a time (keyed on resolution) so at most one atlas texture
  * is decoded, bounding browser memory regardless of grid size.
  *
- * Projection matches AnnotationPlot / SpriteOverlay:
+ * Projection matches AnnotationPlot / PointsOverlay:
  *   xScale = scaleLinear().domain(xDomain).range([0, width])
  *   yScale = scaleLinear().domain(yDomain).range([height, 0])
  */
@@ -38,23 +32,17 @@ function AtlasOverlay({
 }) {
   const k = transform?.k || 1;
 
-  // Available resolutions, ascending (coarsest first).
+  // Available resolutions.
   const resolutions = useMemo(() => {
     if (!manifest?.generated) return [];
-    return (manifest.resolutions || [])
-      .map((r) => r.num_tiles)
-      .sort((a, b) => a - b);
+    return (manifest.resolutions || []).map((r) => r.num_tiles);
   }, [manifest]);
 
-  // Pick the finest resolution whose on-screen cell size is still >= MIN_CELL_PX.
-  // None qualifying (zoomed out) -> render nothing.
+  // Finest resolution legible at this zoom; null (zoomed out) -> render nothing
+  // (the heatmap shows instead).
   const resolution = useMemo(() => {
-    if (!enabled || !resolutions.length || !width) return null;
-    let chosen = null;
-    for (const r of resolutions) {
-      if ((width * k) / r >= MIN_CELL_PX) chosen = r; // ascending -> keep finest that fits
-    }
-    return chosen;
+    if (!enabled) return null;
+    return atlasLod(k, width, resolutions).resolution;
   }, [enabled, resolutions, width, k]);
 
   // Reset the loaded flag whenever the source sheet changes so we don't flash a
