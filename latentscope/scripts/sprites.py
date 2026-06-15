@@ -7,6 +7,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 
 try:
@@ -20,6 +21,27 @@ except ImportError:
 from latentscope.util import get_data_dir
 
 SHARD_SIZE = 1000
+
+
+def sprite_slug(column):
+    """Path-safe directory component for an image column name.
+
+    The writer (this script) and the server endpoints must produce the same
+    slug so generated files can be served back. Stripping path separators and
+    dots keeps thumbnails contained under ``<dataset>/sprites/`` even when a
+    column name contains ``/``, ``\\`` or ``..``.
+    """
+    return re.sub(r"[^A-Za-z0-9_-]", "_", str(column)) or "_"
+
+
+def sprite_dir_name(column, size):
+    """Directory name for a column's sprites of a given size."""
+    return f"{sprite_slug(column)}-{size}"
+
+
+def sprite_manifest_name(column, size):
+    """Manifest filename for a column's sprites of a given size."""
+    return f"{sprite_slug(column)}-{size}.json"
 
 
 def shard_for(index):
@@ -73,7 +95,7 @@ def generate_sprites(dataset_id, image_column, size=64, quality=80):
     print("RUNNING:", run_id)
 
     sprites_root = os.path.join(dataset_dir, "sprites")
-    out_dir = os.path.join(sprites_root, f"{image_column}-{size}")
+    out_dir = os.path.join(sprites_root, sprite_dir_name(image_column, size))
     os.makedirs(out_dir, exist_ok=True)
 
     input_path = os.path.join(dataset_dir, "input.parquet")
@@ -89,7 +111,7 @@ def generate_sprites(dataset_id, image_column, size=64, quality=80):
     )
     print(f"{existing_start} of {total} sprites already exist; resuming")
 
-    manifest_path = os.path.join(sprites_root, f"{image_column}-{size}.json")
+    manifest_path = os.path.join(sprites_root, sprite_manifest_name(image_column, size))
 
     def write_manifest(missing, count, complete):
         os.makedirs(sprites_root, exist_ok=True)

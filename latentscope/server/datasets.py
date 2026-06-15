@@ -203,8 +203,10 @@ def get_dataset_sprites_status(dataset):
     if err:
         return err
 
+    from latentscope.scripts.sprites import sprite_manifest_name
+
     manifest_path = os.path.join(
-        _data_dir(), dataset, "sprites", f"{column}-{size}.json"
+        _data_dir(), dataset, "sprites", sprite_manifest_name(column, size)
     )
     try:
         with open(manifest_path, encoding='utf-8') as f:
@@ -253,9 +255,11 @@ def get_dataset_sprite(dataset):
     if index < 0 or index >= meta.get("length", 0):
         return jsonify({"error": "index out of range"}), 404
 
+    from latentscope.scripts.sprites import sprite_dir_name
+
     shard = f"{index // 1000:03d}"
     sprite_path = os.path.join(
-        _data_dir(), dataset, "sprites", f"{column}-{size}", shard, f"{index}.webp"
+        _data_dir(), dataset, "sprites", sprite_dir_name(column, size), shard, f"{index}.webp"
     )
     if not os.path.exists(sprite_path):
         return jsonify({"error": "no sprite at this index"}), 404
