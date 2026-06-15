@@ -12,6 +12,7 @@ const ConfigurationPanel = ({
   updatePointOpacity,
   hasImageColumn = false,
   spriteStatus = { generated: false },
+  atlasGenerated = false,
   spriteJob = null,
   showSprites = false,
   toggleShowSprites,
@@ -84,7 +85,7 @@ const ConfigurationPanel = ({
         />
 
         {hasImageColumn &&
-          (spriteStatus.generated ? (
+          (spriteStatus.generated || atlasGenerated ? (
             <Switch
               value={showSprites}
               onChange={toggleShowSprites}

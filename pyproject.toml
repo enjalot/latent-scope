@@ -81,6 +81,7 @@ ls-export-plot = "latentscope.scripts.export_plot:main"
 ls-update-embedding-stats = "latentscope.scripts.embed:update_embedding_stats"
 ls-sae = "latentscope.scripts.sae:main"
 ls-sprites = "latentscope.scripts.sprites:main"
+ls-sprite-atlas = "latentscope.scripts.sprite_atlas:main"
 ls-download-dataset = "latentscope.scripts.download_dataset:main"
 ls-upload-dataset = "latentscope.scripts.upload_dataset:main"
 

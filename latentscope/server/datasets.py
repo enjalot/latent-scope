@@ -269,6 +269,100 @@ def get_dataset_sprite(dataset):
     return response
 
 
+def _atlas_manifest(dataset, scope, column):
+    """Load an atlas manifest, or None if it is absent/unreadable."""
+    from latentscope.scripts.sprite_atlas import atlas_manifest_name, atlas_root
+
+    manifest_path = os.path.join(
+        atlas_root(_data_dir(), dataset, scope, column), atlas_manifest_name()
+    )
+    try:
+        with open(manifest_path, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+@datasets_bp.route('/<dataset>/scopes/<scope>/atlas/status', methods=['GET'])
+def get_dataset_atlas_status(dataset, scope):
+    """Report whether sprite-sheet atlases exist for a scope/column.
+
+    Query params: column (image column name). Returns the manifest (resolutions,
+    cell_size, sheet paths) so the frontend can pick which sheet to render.
+    Never 500s.
+    """
+    _safe_dataset(scope, param="scope")
+    column = request.args.get('column')
+    manifest = _atlas_manifest(dataset, scope, column)
+    if not manifest or not manifest.get("complete"):
+        return jsonify({"generated": False})
+    return jsonify({
+        "generated": True,
+        "column": manifest.get("column"),
+        "cell_size": manifest.get("cell_size"),
+        "samples": manifest.get("samples"),
+        "domain": manifest.get("domain"),
+        "resolutions": manifest.get("resolutions"),
+    })
+
+
+@datasets_bp.route('/<dataset>/scopes/<scope>/atlas/sheet', methods=['GET'])
+def get_dataset_atlas_sheet(dataset, scope):
+    """Serve a single atlas sheet (a WebP covering the whole heatmap grid).
+
+    Query params: column (image column), res (grid resolution, e.g. 64),
+    sheet (sample index, default 0). Resolves the sheet via the manifest and
+    404s when absent.
+    """
+    from flask import send_file
+
+    from latentscope.scripts.sprite_atlas import atlas_root
+
+    _safe_dataset(scope, param="scope")
+    column = request.args.get('column')
+
+    meta_path = os.path.join(_data_dir(), dataset, "meta.json")
+    try:
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    except OSError:
+        return jsonify({"error": f"dataset {dataset} not found"}), 404
+    column_meta = (meta.get("column_metadata") or {}).get(column)
+    if not isinstance(column_meta, dict) or column_meta.get("type") != "image":
+        return jsonify({"error": f"column {column!r} is not an image column"}), 400
+
+    try:
+        res = int(request.args.get('res'))
+    except (TypeError, ValueError):
+        return jsonify({"error": "res must be an integer"}), 404
+    try:
+        sheet = int(request.args.get('sheet', 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "sheet must be an integer"}), 404
+
+    manifest = _atlas_manifest(dataset, scope, column)
+    if not manifest:
+        return jsonify({"error": "no atlas for this scope/column"}), 404
+
+    entry = next(
+        (r for r in manifest.get("resolutions", []) if r.get("num_tiles") == res),
+        None,
+    )
+    if entry is None or sheet < 0 or sheet >= len(entry.get("sheets", [])):
+        return jsonify({"error": "no atlas sheet at this resolution/index"}), 404
+
+    # sheet paths in the manifest are relative to atlas_root and written by us;
+    # join under the root and confirm containment before serving.
+    root = atlas_root(_data_dir(), dataset, scope, column)
+    sheet_path = os.path.normpath(os.path.join(root, entry["sheets"][sheet]))
+    if os.path.commonpath([root, sheet_path]) != root or not os.path.exists(sheet_path):
+        return jsonify({"error": "atlas sheet not found"}), 404
+
+    response = send_file(sheet_path, mimetype="image/webp")
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     return scan_for_json_files(os.path.join(_data_dir(), dataset, "embeddings"))

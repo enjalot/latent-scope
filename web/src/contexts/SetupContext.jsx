@@ -1,9 +1,14 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../lib/apiService';
 
-const steps = ['Embed', 'UMAP', 'Cluster', 'Label Clusters', 'Scope'];
-const stepIds = ['embedding_id', 'umap_id', 'cluster_id', 'cluster_labels_id', 'id'];
+const BASE_STEPS = ['Embed', 'UMAP', 'Cluster', 'Label Clusters', 'Scope'];
+const BASE_STEP_IDS = ['embedding_id', 'umap_id', 'cluster_id', 'cluster_labels_id', 'id'];
+
+function datasetHasImageColumn(dataset) {
+  const cm = dataset?.column_metadata || {};
+  return Object.values(cm).some((m) => m?.type === 'image');
+}
 
 const SetupContext = createContext();
 
@@ -18,6 +23,17 @@ export const SetupProvider = ({ children }) => {
   const [previewLabel, setPreviewLabel] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
+
+  // Append an optional "Images" step (sprite atlases) for image datasets only.
+  // It uses stepId 'id' so it counts as available once a scope is saved.
+  const steps = useMemo(
+    () => (datasetHasImageColumn(dataset) ? [...BASE_STEPS, 'Images'] : BASE_STEPS),
+    [dataset]
+  );
+  const stepIds = useMemo(
+    () => (datasetHasImageColumn(dataset) ? [...BASE_STEP_IDS, 'id'] : BASE_STEP_IDS),
+    [dataset]
+  );
 
   useEffect(() => {
     apiService.fetchDataset(datasetId).then((data) => {

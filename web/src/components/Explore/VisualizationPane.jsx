@@ -21,8 +21,10 @@ import { useFilter } from '../../contexts/FilterContext';
 import { mapSelectionKey } from '../../lib/colors';
 import { imageUrlFor } from '../../lib/imageUrl';
 import { fetchSpriteStatus } from '../../lib/spriteUrl';
+import { fetchAtlasStatus } from '../../lib/atlasUrl';
 import HoverThumbnail from './HoverThumbnail';
 import SpriteOverlay from './SpriteOverlay';
+import AtlasOverlay from './AtlasOverlay';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Button } from 'react-element-forge';
@@ -125,6 +127,29 @@ function VisualizationPane({
   const toggleShowSprites = useCallback(() => {
     setShowSprites((prev) => !prev);
   }, []);
+
+  // Representative-image atlas (sprite sheets keyed to the heatmap grid). This
+  // is the medium-zoom image layer: one image per heatmap cell, generated as a
+  // post-scope step. Shares the "Show Images" toggle with the per-row sprite
+  // overlay (which takes over at deep zoom).
+  const [atlasStatus, setAtlasStatus] = useState({ generated: false });
+  useEffect(() => {
+    let cancelled = false;
+    if (!dataset?.id || !scope?.id || !hoverImageColumn) {
+      setAtlasStatus({ generated: false });
+      return;
+    }
+    fetchAtlasStatus(dataset.id, scope.id, hoverImageColumn)
+      .then((status) => {
+        if (!cancelled) setAtlasStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setAtlasStatus({ generated: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataset?.id, scope?.id, hoverImageColumn]);
 
   const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
     useFilter();
@@ -340,6 +365,7 @@ function VisualizationPane({
           updatePointOpacity={updatePointOpacity}
           hasImageColumn={!!hoverImageColumn}
           spriteStatus={spriteStatus}
+          atlasGenerated={!!atlasStatus.generated}
           spriteJob={spriteJob}
           showSprites={showSprites}
           toggleShowSprites={toggleShowSprites}
@@ -430,7 +456,22 @@ function VisualizationPane({
               label={scope.cluster_labels_lookup[clusterFilter.cluster.cluster]}
             />
           )}
-        {/* Viewport-culled DOM image overlay (renders only when zoomed in) */}
+        {/* Medium-zoom: one representative image per heatmap cell (atlas). */}
+        {hoverImageColumn && scope?.id && atlasStatus.generated && (
+          <AtlasOverlay
+            dataset={dataset}
+            scopeId={scope.id}
+            imageColumn={hoverImageColumn}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+            transform={transform}
+            enabled={showSprites}
+            manifest={atlasStatus}
+          />
+        )}
+        {/* Deep-zoom: per-row sprite thumbnails (viewport-culled, drawn on top). */}
         {hoverImageColumn && (
           <SpriteOverlay
             dataset={dataset}

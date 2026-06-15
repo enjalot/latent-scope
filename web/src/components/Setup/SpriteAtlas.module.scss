@@ -1,0 +1,84 @@
+.atlas {
+  padding: 16px;
+  max-width: 640px;
+
+  h3 {
+    margin: 0 0 8px;
+  }
+
+  .help {
+    color: var(--text-color-secondary, #666);
+    font-size: 14px;
+    line-height: 1.4;
+
+    code {
+      background: rgba(127, 127, 127, 0.15);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+  }
+
+  .controls {
+    display: flex;
+    gap: 24px;
+    margin: 16px 0;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+
+      select,
+      input {
+        padding: 4px 6px;
+      }
+    }
+  }
+
+  .sizes {
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 8px;
+
+    th,
+    td {
+      text-align: left;
+      padding: 3px 14px 3px 0;
+    }
+
+    .warn td {
+      color: #b9770e;
+    }
+  }
+
+  .warnText {
+    color: #b9770e;
+    font-size: 12px;
+    max-width: 480px;
+  }
+
+  .actions {
+    margin: 12px 0;
+  }
+
+  .summary {
+    margin-top: 16px;
+    border-top: 1px solid rgba(127, 127, 127, 0.2);
+    padding-top: 12px;
+
+    h4 {
+      margin: 0 0 6px;
+    }
+
+    ul {
+      margin: 0 0 10px;
+      padding-left: 18px;
+      font-size: 13px;
+    }
+
+    .exploreLink {
+      font-weight: 600;
+    }
+  }
+}
