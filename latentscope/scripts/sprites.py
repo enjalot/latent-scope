@@ -5,6 +5,7 @@
 # This is an OPTIONAL pipeline step (like embed / umap) that powers the
 # viewport-culled DOM image overlay in the scatter map.
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -30,8 +31,19 @@ def sprite_slug(column):
     slug so generated files can be served back. Stripping path separators and
     dots keeps thumbnails contained under ``<dataset>/sprites/`` even when a
     column name contains ``/``, ``\\`` or ``..``.
+
+    The substitution is lossy, so distinct columns ("a/b", "a.b", "a b") could
+    collapse to the same string and clobber each other's manifest/thumbnails.
+    When a name needs sanitizing we append a short stable hash of the original
+    to keep slugs collision-free. Names that are already path-safe (e.g.
+    "image") pass through unchanged so previously generated sprites stay valid.
     """
-    return re.sub(r"[^A-Za-z0-9_-]", "_", str(column)) or "_"
+    col = str(column)
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", col)
+    if safe == col and safe:
+        return safe
+    digest = hashlib.sha1(col.encode("utf-8")).hexdigest()[:8]
+    return f"{safe or '_'}-{digest}"
 
 
 def sprite_dir_name(column, size):

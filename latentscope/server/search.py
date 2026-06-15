@@ -56,14 +56,21 @@ def nn():
         emb_meta = json.load(f)
     has_token_vecs = emb_meta.get('late_interaction', False)
 
-    if use_late_interaction and is_late_interaction and has_token_vecs:
-        return nn_late_interaction(DATA_DIR, dataset, embedding_id, model, query, dimensions)
-
-    # If lancedb is available, use it for search (scope-level table)
+    # A scoped request must stay within its scope. The scope-level LanceDB
+    # table holds only the rows in that scope, so it has to take precedence
+    # over the MaxSim default below — otherwise a ColBERT embedding would fall
+    # into nn_late_interaction(), which searches the full token table and
+    # returns global indices outside the current scope (the UI has no way to
+    # pass late_interaction=false for that path). Scoped late-interaction
+    # therefore degrades to mean-vector ANN within the scope, which is correct
+    # if less precise than global MaxSim.
     if scope_id is not None:
         lance_path = os.path.join(DATA_DIR, dataset, "lancedb", scope_id + ".lance")
         if os.path.exists(lance_path):
             return nn_lance(DATA_DIR, dataset, scope_id, model, query, dimensions)
+
+    if use_late_interaction and is_late_interaction and has_token_vecs:
+        return nn_late_interaction(DATA_DIR, dataset, embedding_id, model, query, dimensions)
 
     # Try embedding-level LanceDB table. Only the existence check is guarded:
     # once a table exists this path is always taken, so an embed/search error

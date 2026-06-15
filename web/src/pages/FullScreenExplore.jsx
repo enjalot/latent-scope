@@ -104,6 +104,11 @@ function ExploreContent() {
 
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndicesSet.has(hoveredIndex)) {
+      // Invalidate any in-flight hydration for the previous point before we
+      // render this one. The hydration fetch is debounced 5ms, so without this
+      // the ref would still point at the old index during that window and a
+      // late response for the old point could overwrite the new tooltip/image.
+      latestHoverIndexRef.current = hoveredIndex;
       // Update the tooltip immediately with the new index + cluster so the
       // image (keyed on the index) swaps right away; the text arrives after
       // the hydration fetch, marked loading until then.
