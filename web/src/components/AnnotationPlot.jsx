@@ -3,19 +3,22 @@ import { scaleLinear } from 'd3-scale';
 
 import "./AnnotationPlot.css"
 
-const AnnotationPlot = ({ 
-  points, 
+const AnnotationPlot = ({
+  points,
   fill,
   stroke,
   size,
   symbol,
-  xDomain, 
-  yDomain, 
-  width, 
-  height
+  xDomain,
+  yDomain,
+  width,
+  height,
+  // When true the marker stays a constant screen-pixel size instead of scaling
+  // with zoom (a hover/selection highlight should not grow as you zoom in).
+  fixedSize = false
 }) => {
   const container = useRef();
-  
+
   useEffect(() => {
     if(xDomain && yDomain) {
       const xScale = scaleLinear()
@@ -25,11 +28,11 @@ const AnnotationPlot = ({
         .domain(yDomain)
         .range([height, 0])
 
-      const zScale = (t) => t/(.1 + xDomain[1] - xDomain[0])
+      const zScale = (t) => fixedSize ? +t : t/(.1 + xDomain[1] - xDomain[0])
       const canvas = container.current
       const ctx = canvas.getContext('2d')
       ctx.clearRect(0, 0, width, height)
-      ctx.fillStyle = fill 
+      ctx.fillStyle = fill
       ctx.strokeStyle = stroke
       ctx.font = `${zScale(size)}px monospace`
       ctx.globalAlpha = 0.75

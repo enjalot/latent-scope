@@ -453,6 +453,7 @@ function VisualizationPane({
           stroke="black"
           fill="#8bcf66"
           size="16"
+          fixedSize
           xDomain={xDomain}
           yDomain={yDomain}
           width={width}
@@ -463,6 +464,7 @@ function VisualizationPane({
           stroke="black"
           fill="purple"
           size="16"
+          fixedSize
           xDomain={xDomain}
           yDomain={yDomain}
           width={width}
