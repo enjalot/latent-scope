@@ -5,16 +5,20 @@ vi.stubEnv('VITE_API_URL', 'http://localhost:5001/api');
 
 const { default: AtlasOverlay } = await import('./AtlasOverlay.jsx');
 
+// Single-tile-per-resolution manifest (tile_cells == num_tiles) keeps culling
+// trivial so the tests focus on LOD selection + transform.
+function resEntry(num_tiles) {
+  return {
+    num_tiles,
+    tile_cells: num_tiles,
+    tiles_per_axis: 1,
+    tiles: [{ tx: 0, ty: 0, filled_cells: 10 }],
+  };
+}
 const manifest = {
   generated: true,
   cell_size: 32,
-  samples: 1,
-  domain: [-1, 1],
-  resolutions: [
-    { num_tiles: 64, atlas_px: 2048, filled_cells: 800, sheets: ['r64-c32/sheet_000.webp'] },
-    { num_tiles: 128, atlas_px: 4096, filled_cells: 2000, sheets: ['r128-c32/sheet_000.webp'] },
-    { num_tiles: 256, atlas_px: 8192, filled_cells: 4000, sheets: ['r256-c32/sheet_000.webp'] },
-  ],
+  resolutions: [resEntry(64), resEntry(128), resEntry(256)],
 };
 
 const base = {
@@ -30,54 +34,43 @@ const base = {
 
 afterEach(cleanup);
 
-describe('AtlasOverlay', () => {
+const imgSrc = (c) => c.querySelector('img')?.getAttribute('src') || '';
+
+describe('AtlasOverlay (tiled)', () => {
   it('renders nothing when disabled', () => {
-    const { container } = render(
-      <AtlasOverlay {...base} enabled={false} transform={{ k: 10 }} />
-    );
+    const { container } = render(<AtlasOverlay {...base} enabled={false} transform={{ k: 10 }} />);
     expect(container.querySelector('img')).toBeNull();
   });
 
-  it('renders nothing when zoomed out (cells too small)', () => {
-    // k=1: 64-grid cell = 800*1/64 = 12.5px < MIN_CELL_PX(14) -> nothing
+  it('renders nothing when zoomed out', () => {
     const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 1 }} />);
     expect(container.querySelector('img')).toBeNull();
   });
 
-  it('shows the coarse (64) sheet at medium zoom', () => {
-    // k=1.5: 64-cell=18.75px (ok), 128-cell=9.4px (<14) -> pick 64
+  it('shows the coarse (64) tile at medium zoom', () => {
     const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 1.5 }} />);
-    const img = container.querySelector('img');
-    expect(img).not.toBeNull();
-    expect(img.getAttribute('src')).toContain('res=64');
+    expect(imgSrc(container)).toContain('res=64');
+    expect(imgSrc(container)).toContain('tx=0');
   });
 
-  it('switches to the fine (128) sheet at higher zoom', () => {
-    // k=3: 128-cell=18.75px (ok) -> prefer the finest that fits
-    const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 3 }} />);
-    const img = container.querySelector('img');
-    expect(img.getAttribute('src')).toContain('res=128');
+  it('advances to finer levels as you zoom', () => {
+    const a = render(<AtlasOverlay {...base} enabled transform={{ k: 3 }} />);
+    expect(imgSrc(a.container)).toContain('res=128');
+    cleanup();
+    const b = render(<AtlasOverlay {...base} enabled transform={{ k: 6 }} />);
+    expect(imgSrc(b.container)).toContain('res=256');
   });
 
-  it('reaches the deepest (256) sheet when zoomed in far', () => {
-    // k=6: 256-cell=18.75px (ok)
-    const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 6 }} />);
-    const img = container.querySelector('img');
-    expect(img.getAttribute('src')).toContain('res=256');
-  });
-
-  it('covers the [0,width] box and applies the zoom as a CSS transform', () => {
-    // The sheet is positioned at the identity box and pan/zoom is a CSS
-    // transform mirroring the d3 transform (translate + scale).
+  it('positions tiles in a transformed inner layer', () => {
     const { container } = render(
       <AtlasOverlay {...base} enabled transform={{ k: 1.5, x: 20, y: 10 }} />
     );
     const img = container.querySelector('img');
+    const inner = img.parentElement; // the transformed layer holding the tiles
+    expect(inner.style.transform).toBe('translate(20px, 10px) scale(1.5)');
+    expect(inner.style.transformOrigin).toBe('0 0');
+    // single tile spans the full box
     expect(img.style.left).toBe('0px');
-    expect(img.style.top).toBe('0px');
     expect(img.style.width).toBe('800px');
-    expect(img.style.height).toBe('800px');
-    expect(img.style.transform).toBe('translate(20px, 10px) scale(1.5)');
-    expect(img.style.transformOrigin).toBe('0 0');
   });
 });

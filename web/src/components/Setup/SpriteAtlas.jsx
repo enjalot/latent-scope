@@ -1,30 +1,29 @@
 // SpriteAtlas.jsx — optional post-scope step (image datasets only).
-// Generates representative-image "sprite sheet" atlases keyed to the heatmap
-// grid: one image sampled per cell, per resolution. The Explore view stretches
-// these over the map to replace the dots when you zoom in.
+// Generates a tiled representative-image atlas pyramid keyed to the heatmap
+// grid. The page plans the pyramid first: it renders the scope's heatmap and
+// overlays the tile grid for each resolution, showing how many cells/tiles would
+// be populated so you can choose how high the resolution goes.
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from 'react-element-forge';
 import { useStartJobPolling } from '../Job/Run';
 import JobProgress from '../Job/Progress';
 import { apiUrl } from '../../lib/apiService';
-import { fetchAtlasStatus } from '../../lib/atlasUrl';
+import { fetchAtlasStatus, fetchAtlasPlan } from '../../lib/atlasUrl';
 import { useSetup } from '../../contexts/SetupContext';
+import AtlasPlanPreview from './AtlasPlanPreview';
 
 import styles from './SpriteAtlas.module.scss';
 
-const RESOLUTIONS = [64, 128, 256];
+const ALL_RESOLUTIONS = [64, 128, 256, 512, 1024];
 const CELL_SIZES = [32, 64];
-// Mirrors latentscope/scripts/sprite_atlas.py: a finer grid uses a smaller cell
-// so no single sheet exceeds this (keeps the deepest level light to decode).
-const MAX_ATLAS_PX = 4096;
 
-function effectiveCell(numTiles, cellSize) {
-  return Math.max(8, Math.min(cellSize, Math.floor(MAX_ATLAS_PX / numTiles)));
+function resolutionsUpTo(maxRes) {
+  return ALL_RESOLUTIONS.filter((r) => r <= maxRes);
 }
 
-function decodedMB(px) {
-  return (px * px * 4) / (1024 * 1024);
+function pct(n, d) {
+  return d ? Math.round((100 * n) / d) : 0;
 }
 
 function SpriteAtlas() {
@@ -36,9 +35,15 @@ function SpriteAtlas() {
   }, [dataset]);
 
   const [cellSize, setCellSize] = useState(32);
+  const [maxRes, setMaxRes] = useState(256);
   const [samples, setSamples] = useState(1);
+  const [selectedRes, setSelectedRes] = useState(256);
+  const [plan, setPlan] = useState(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const [status, setStatus] = useState({ generated: false });
   const [atlasJob, setAtlasJob] = useState(null);
+
+  const resolutions = useMemo(() => resolutionsUpTo(maxRes), [maxRes]);
 
   const { startJob: startAtlasJob } = useStartJobPolling(
     dataset,
@@ -61,13 +66,30 @@ function SpriteAtlas() {
     refreshStatus();
   }, [refreshStatus]);
 
-  // Pre-fill the controls from an existing atlas so "Regenerate" is honest.
+  // Plan the pyramid (no generation) whenever the inputs change.
   useEffect(() => {
-    if (status.generated) {
-      if (status.cell_size) setCellSize(status.cell_size);
-      if (status.samples) setSamples(status.samples);
-    }
-  }, [status.generated]);
+    if (!dataset?.id || !scope?.id || !imageColumn) return;
+    let cancelled = false;
+    setPlanLoading(true);
+    fetchAtlasPlan(dataset.id, scope.id, imageColumn, resolutions, cellSize)
+      .then((p) => {
+        if (!cancelled) setPlan(p);
+      })
+      .catch(() => {
+        if (!cancelled) setPlan(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPlanLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataset?.id, scope?.id, imageColumn, resolutions, cellSize]);
+
+  // Keep the previewed resolution within the chosen set.
+  useEffect(() => {
+    if (!resolutions.includes(selectedRes)) setSelectedRes(maxRes);
+  }, [resolutions, selectedRes, maxRes]);
 
   useEffect(() => {
     if (atlasJob?.status === 'completed') refreshStatus();
@@ -80,9 +102,9 @@ function SpriteAtlas() {
       image_column: imageColumn,
       cell_size: cellSize,
       samples,
-      resolutions: RESOLUTIONS.join(','),
+      resolutions: resolutions.join(','),
     });
-  }, [scope?.id, imageColumn, cellSize, samples, startAtlasJob]);
+  }, [scope?.id, imageColumn, cellSize, samples, resolutions, startAtlasJob]);
 
   if (!imageColumn) {
     return (
@@ -91,7 +113,6 @@ function SpriteAtlas() {
       </div>
     );
   }
-
   if (!scope?.id) {
     return (
       <div className={styles.atlas}>
@@ -107,12 +128,22 @@ function SpriteAtlas() {
     <div className={styles.atlas}>
       <h3>Image sprites for {scope.id}</h3>
       <p className={styles.help}>
-        Generates one WebP “sprite sheet” per heatmap resolution, sampling a representative image
-        from column <code>{imageColumn}</code> into each grid cell. In Explore, turn on{' '}
-        <em>Show Images</em> and zoom in to see them replace the dots.
+        Builds a tiled image pyramid from column <code>{imageColumn}</code>: one representative image
+        per heatmap cell. Higher resolutions split into 2048px tiles (empty tiles are skipped). In
+        Explore, turn on <em>Show Images</em> and zoom in.
       </p>
 
       <div className={styles.controls}>
+        <label>
+          <span>Max resolution</span>
+          <select value={maxRes} onChange={(e) => setMaxRes(+e.target.value)}>
+            {ALL_RESOLUTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}×{r}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           <span>Cell size</span>
           <select value={cellSize} onChange={(e) => setCellSize(+e.target.value)}>
@@ -123,9 +154,8 @@ function SpriteAtlas() {
             ))}
           </select>
         </label>
-
         <label>
-          <span>Sheets (images per cell)</span>
+          <span>Sheets / cell</span>
           <input
             type="number"
             min="1"
@@ -136,40 +166,53 @@ function SpriteAtlas() {
         </label>
       </div>
 
-      <table className={styles.sizes}>
-        <thead>
-          <tr>
-            <th>Resolution</th>
-            <th>Sheet size</th>
-            <th>Cell</th>
-            <th>Sheet</th>
-            <th>Decoded</th>
-            <th>× sheets</th>
-          </tr>
-        </thead>
-        <tbody>
-          {RESOLUTIONS.map((r) => {
-            const cell = effectiveCell(r, cellSize);
-            const px = r * cell;
-            return (
-              <tr key={r} className={cell < cellSize ? styles.warn : ''}>
+      <div className={styles.planRow}>
+        <div className={styles.previewCol}>
+          <AtlasPlanPreview plan={plan} selectedRes={selectedRes} size={320} />
+          <div className={styles.previewCaption}>
+            Heatmap density · blue grid = {selectedRes}×{selectedRes} tiles
+            {planLoading ? ' · updating…' : ''}
+          </div>
+        </div>
+
+        <table className={styles.stats}>
+          <thead>
+            <tr>
+              <th>Grid</th>
+              <th>Tiles</th>
+              <th>Populated cells</th>
+              <th>Populated tiles</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(plan?.resolutions || []).map((e) => (
+              <tr
+                key={e.num_tiles}
+                className={e.num_tiles === selectedRes ? styles.selected : ''}
+                onClick={() => setSelectedRes(e.num_tiles)}
+              >
                 <td>
-                  {r}×{r}
+                  {e.num_tiles}×{e.num_tiles}
                 </td>
-                <td>{cell}px{cell < cellSize ? '*' : ''}</td>
                 <td>
-                  {px}×{px}px
+                  {e.tiles_per_axis}×{e.tiles_per_axis}
                 </td>
-                <td>~{decodedMB(px).toFixed(0)} MB</td>
-                <td>×{samples}</td>
+                <td>
+                  {e.populated_cells.toLocaleString()}{' '}
+                  <span className={styles.muted}>({pct(e.populated_cells, e.total_cells)}%)</span>
+                </td>
+                <td>
+                  {e.populated_tiles} / {e.total_tiles}{' '}
+                  <span className={styles.muted}>({pct(e.populated_tiles, e.total_tiles)}%)</span>
+                </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {RESOLUTIONS.some((r) => effectiveCell(r, cellSize) < cellSize) && (
-        <p className={styles.warnText}>
-          *Finer grids use a smaller cell so no sheet exceeds {MAX_ATLAS_PX}px (keeps decoding fast).
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {plan && (
+        <p className={styles.totals}>
+          {plan.total_points.toLocaleString()} points · click a row to preview its tiling.
         </p>
       )}
 
@@ -195,8 +238,8 @@ function SpriteAtlas() {
           <ul>
             {(status.resolutions || []).map((entry) => (
               <li key={entry.num_tiles}>
-                {entry.num_tiles}×{entry.num_tiles}: {entry.filled_cells} cells filled (
-                {entry.atlas_px}px, {status.samples} sheet{status.samples > 1 ? 's' : ''})
+                {entry.num_tiles}×{entry.num_tiles}: {entry.filled_cells.toLocaleString()} cells in{' '}
+                {(entry.tiles || []).length} tile{(entry.tiles || []).length === 1 ? '' : 's'}
               </li>
             ))}
           </ul>

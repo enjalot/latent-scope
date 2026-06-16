@@ -1,13 +1,15 @@
-"""Tests for the representative-image sprite-atlas step + serving endpoints.
+"""Tests for the tiled representative-image atlas pyramid + serving endpoints.
 
-generate_sprite_atlas() paints one WebP sheet per heatmap resolution, sampling
-a representative image into each grid cell; the /atlas endpoints serve them.
+generate_sprite_atlas() paints a representative image per heatmap cell into
+per-resolution tiles (skipping empty tiles); the /atlas endpoints serve tiles
+and plan the pyramid.
 """
 
 import io
 import json
 import os
 
+import numpy as np
 import pandas as pd
 import pytest
 from PIL import Image
@@ -15,7 +17,7 @@ from PIL import Image
 DATASET_ID = "atlas-ds"
 SCOPE_ID = "scopes-001"
 NUM_TILES = 64
-CELL = 8  # small cells keep the test sheet tiny (64*8 = 512px)
+CELL = 8  # small cells keep test sheets tiny
 
 
 def make_png_bytes(color, size=(40, 30)):
@@ -24,242 +26,259 @@ def make_png_bytes(color, size=(40, 30)):
     return buf.getvalue()
 
 
-def cell_index(col, row, num_tiles=NUM_TILES):
-    return row * num_tiles + col
-
-
 def cell_to_xy(col, row, num_tiles=NUM_TILES):
-    """A normalized (x, y) at the center of grid cell (col, row) — the inverse
-    of the generator's tile_index() mapping."""
+    """A normalized (x, y) at the center of grid cell (col, row)."""
     tile_size = 2.0 / num_tiles
-    x = -1 + (col + 0.5) * tile_size
-    y = -1 + (row + 0.5) * tile_size
-    return x, y
+    return -1 + (col + 0.5) * tile_size, -1 + (row + 0.5) * tile_size
 
 
-def cell_center_px(col, row, num_tiles=NUM_TILES, cell=CELL):
-    """Pixel at the center of grid cell (col,row) in the saved sheet, accounting
-    for the vertical flip the generator bakes in."""
-    x = col * cell + cell // 2
-    y = (num_tiles - 1 - row) * cell + cell // 2
-    return x, y
+def cell_center_px_in_tile(col, row, tile_px, num_tiles=NUM_TILES, cell=CELL):
+    """Pixel at the center of cell (col,row) within its tile (vertical flip)."""
+    tc = tile_px // cell
+    row_img = num_tiles - 1 - row
+    lx = (col % tc) * cell + cell // 2
+    ly = (row_img % tc) * cell + cell // 2
+    return lx, ly
 
 
 def approx_color(pixel, expected, tol=12):
-    """WebP is lossy, so compare RGB channels within a tolerance."""
     return all(abs(a - b) <= tol for a, b in zip(pixel[:3], expected))
 
 
 @pytest.fixture
 def atlas_dataset(tmp_data_dir, monkeypatch):
-    """A dataset + scope-input parquet with images placed in known cells.
-
-    - cell (2,3): RED then GREEN  -> exercises samples depth
-    - cell (5,5): BLUE (single)   -> sheet 1 stays transparent here
-    - a deleted RED in cell (10,10) -> must be skipped
-    - a null image                -> recorded as no-op
-    """
+    """A dataset + scope parquets (both {scope}.parquet and {scope}-input.parquet)
+    with images in known cells."""
     monkeypatch.setenv("LATENT_SCOPE_DATA", tmp_data_dir)
     monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
     ds_dir = os.path.join(tmp_data_dir, DATASET_ID)
     os.makedirs(os.path.join(ds_dir, "scopes"))
-    meta = {
-        "id": DATASET_ID,
-        "length": 5,
-        "column_metadata": {"image": {"type": "image", "image": True}},
-    }
+    meta = {"id": DATASET_ID, "length": 5,
+            "column_metadata": {"image": {"type": "image", "image": True}}}
     with open(os.path.join(ds_dir, "meta.json"), "w") as f:
         json.dump(meta, f)
 
     rows = [
         {"image": make_png_bytes((255, 0, 0)), "cell": (2, 3), "deleted": False},
         {"image": make_png_bytes((0, 255, 0)), "cell": (2, 3), "deleted": False},
-        {"image": make_png_bytes((0, 0, 255)), "cell": (5, 5), "deleted": False},
+        {"image": make_png_bytes((0, 0, 255)), "cell": (40, 40), "deleted": False},
         {"image": make_png_bytes((255, 0, 0)), "cell": (10, 10), "deleted": True},
         {"image": None, "cell": (20, 20), "deleted": False},
     ]
     xy = [cell_to_xy(*r["cell"]) for r in rows]
-    df = pd.DataFrame({
-        "image": [r["image"] for r in rows],
-        "x": [p[0] for p in xy],
-        "y": [p[1] for p in xy],
+    base = pd.DataFrame({
+        "x": [p[0] for p in xy], "y": [p[1] for p in xy],
         "deleted": [r["deleted"] for r in rows],
     })
-    df.to_parquet(os.path.join(ds_dir, "scopes", f"{SCOPE_ID}-input.parquet"))
+    base.to_parquet(os.path.join(ds_dir, "scopes", f"{SCOPE_ID}.parquet"))
+    inp = base.copy()
+    inp["image"] = [r["image"] for r in rows]
+    inp.to_parquet(os.path.join(ds_dir, "scopes", f"{SCOPE_ID}-input.parquet"))
     return DATASET_ID
 
 
-def load_sheet(tmp_data_dir, dataset, scope, column, res, cell, sheet):
+def load_tile(tmp_data_dir, dataset, scope, column, res, tx, ty, sheet=0):
     from latentscope.scripts.sprite_atlas import (
         atlas_root,
         atlas_sheet_name,
-        atlas_subdir,
+        atlas_tile_dir,
     )
-
-    path = os.path.join(
-        atlas_root(tmp_data_dir, dataset, scope, column),
-        atlas_subdir(res, cell),
-        atlas_sheet_name(sheet),
-    )
+    path = os.path.join(atlas_root(tmp_data_dir, dataset, scope, column),
+                        atlas_tile_dir(res, tx, ty), atlas_sheet_name(sheet))
     return Image.open(path).convert("RGBA")
 
 
+def read_manifest(tmp_data_dir, dataset, scope, column):
+    from latentscope.scripts.sprite_atlas import atlas_manifest_name, atlas_root
+    with open(os.path.join(atlas_root(tmp_data_dir, dataset, scope, column),
+                           atlas_manifest_name())) as f:
+        return json.load(f)
+
+
 # ---------------------------------------------------------------------------
-# generator
+# tiling helpers
 # ---------------------------------------------------------------------------
 
-def test_atlas_sheet_dimensions_and_manifest(tmp_data_dir, atlas_dataset):
+def test_tiling_math():
+    from latentscope.scripts.sprite_atlas import tile_cells, tiles_per_axis
+    assert tile_cells(32, 2048) == 64
+    assert tiles_per_axis(64, 32, 2048) == 1
+    assert tiles_per_axis(128, 32, 2048) == 2
+    assert tiles_per_axis(256, 32, 2048) == 4
+    assert tiles_per_axis(512, 32, 2048) == 8
+
+
+# ---------------------------------------------------------------------------
+# generation (single tile, default tile_px)
+# ---------------------------------------------------------------------------
+
+def test_single_tile_manifest_and_placement(tmp_data_dir, atlas_dataset):
     from latentscope.scripts.sprite_atlas import generate_sprite_atlas
 
     generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image",
                           resolutions=(64,), cell_size=CELL, samples=2)
-
-    from latentscope.scripts.sprite_atlas import atlas_manifest_name, atlas_root
-    manifest_path = os.path.join(
-        atlas_root(tmp_data_dir, atlas_dataset, SCOPE_ID, "image"),
-        atlas_manifest_name(),
-    )
-    with open(manifest_path) as f:
-        manifest = json.load(f)
-
-    assert manifest["complete"] is True
-    assert manifest["cell_size"] == CELL
-    assert manifest["samples"] == 2
-    assert manifest["domain"] == [-1, 1]
-    assert len(manifest["resolutions"]) == 1
-    entry = manifest["resolutions"][0]
+    m = read_manifest(tmp_data_dir, atlas_dataset, SCOPE_ID, "image")
+    assert m["complete"] and m["tile_px"] == 2048
+    entry = m["resolutions"][0]
     assert entry["num_tiles"] == 64
-    assert entry["atlas_px"] == 64 * CELL
-    # two cells have at least one (non-deleted, decodable) image
-    assert entry["filled_cells"] == 2
-    assert len(entry["sheets"]) == 2
+    assert entry["tiles_per_axis"] == 1  # 64*8=512 < 2048
+    assert entry["filled_cells"] == 2     # (2,3) and (40,40); deleted/null skipped
+    # both populated cells live in the single tile (0,0)
+    assert {(t["tx"], t["ty"]) for t in entry["tiles"]} == {(0, 0)}
 
-    sheet0 = load_sheet(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 64, CELL, 0)
-    assert sheet0.size == (64 * CELL, 64 * CELL)
+    sheet0 = load_tile(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 64, 0, 0, 0)
+    sheet1 = load_tile(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 64, 0, 0, 1)
+    assert sheet0.size == (512, 512)
+    px = cell_center_px_in_tile(2, 3, 2048)
+    assert approx_color(sheet0.getpixel(px), (255, 0, 0))   # first image
+    assert approx_color(sheet1.getpixel(px), (0, 255, 0))   # second image
+    # deleted point's cell stays empty
+    pdel = cell_center_px_in_tile(10, 10, 2048)
+    assert sheet0.getpixel(pdel)[3] == 0
 
 
-def test_atlas_cell_placement_and_sampling(tmp_data_dir, atlas_dataset):
+def test_256_from_xy(tmp_data_dir, atlas_dataset):
     from latentscope.scripts.sprite_atlas import generate_sprite_atlas
 
     generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image",
-                          resolutions=(64,), cell_size=CELL, samples=2)
-
-    sheet0 = load_sheet(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 64, CELL, 0)
-    sheet1 = load_sheet(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 64, CELL, 1)
-
-    # cell (2,3): sheet 0 = first image (RED), sheet 1 = second image (GREEN)
-    px = cell_center_px(2, 3)
-    assert approx_color(sheet0.getpixel(px), (255, 0, 0))
-    assert approx_color(sheet1.getpixel(px), (0, 255, 0))
-
-    # cell (5,5): single image (BLUE) -> sheet 0 filled, sheet 1 transparent
-    px55 = cell_center_px(5, 5)
-    assert approx_color(sheet0.getpixel(px55), (0, 0, 255))
-    assert sheet1.getpixel(px55)[3] == 0  # alpha 0 = empty
-
-    # deleted row's cell (10,10) must be empty in every sheet
-    px_del = cell_center_px(10, 10)
-    assert sheet0.getpixel(px_del)[3] == 0
+                          resolutions=(256,), cell_size=CELL)
+    m = read_manifest(tmp_data_dir, atlas_dataset, SCOPE_ID, "image")
+    entry = m["resolutions"][0]
+    assert entry["num_tiles"] == 256
+    assert entry["tiles_per_axis"] == 1  # 256*8=2048 == tile_px
+    assert entry["full_px"] == 2048
 
 
-def test_atlas_256_grid_from_xy(tmp_data_dir, atlas_dataset):
-    """256 has no stored tile column; cells are computed from x/y, so it works.
-    The cell that holds an image at 64-grid (2,3) maps to (8,12) at 256-grid
-    (each 64-cell splits into 4x4)."""
-    from latentscope.scripts.sprite_atlas import generate_sprite_atlas
+# ---------------------------------------------------------------------------
+# generation (multiple tiles via small tile_px) + empty-tile skip
+# ---------------------------------------------------------------------------
 
+def test_pyramid_splits_into_tiles_and_skips_empty(tmp_data_dir, atlas_dataset):
+    from latentscope.scripts.sprite_atlas import (
+        atlas_root,
+        atlas_tile_dir,
+        cell_to_tile,
+        generate_sprite_atlas,
+        tiles_per_axis,
+    )
+
+    # tile_px=64, cell=8 -> tile_cells=8 -> res 64 splits into 8x8 tiles
     generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image",
-                          resolutions=(64, 256), cell_size=CELL, samples=1)
-    from latentscope.scripts.sprite_atlas import atlas_manifest_name, atlas_root
-    with open(os.path.join(
-        atlas_root(tmp_data_dir, atlas_dataset, SCOPE_ID, "image"),
-        atlas_manifest_name(),
-    )) as f:
-        manifest = json.load(f)
-    assert [e["num_tiles"] for e in manifest["resolutions"]] == [64, 256]
+                          resolutions=(64,), cell_size=CELL, tile_px=64)
+    m = read_manifest(tmp_data_dir, atlas_dataset, SCOPE_ID, "image")
+    entry = m["resolutions"][0]
+    assert entry["tiles_per_axis"] == tiles_per_axis(64, CELL, 64) == 8
 
-    sheet = load_sheet(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 256, CELL, 0)
-    assert sheet.size == (256 * CELL, 256 * CELL)
-    # (2,3) at 64-grid -> (2*4+1, 3*4+1)=(9,13) area at 256-grid; just assert the
-    # cell the red point lands in is filled.
-    col256, row256 = 2 * 4 + 2, 3 * 4 + 2  # center subcell from cell_to_xy(2,3)
-    px = (col256 * CELL + CELL // 2, (256 - 1 - row256) * CELL + CELL // 2)
-    assert sheet.getpixel(px)[3] != 0
+    # the two populated cells (2,3) and (40,40) -> their image-space tiles
+    def img_tile(col, row):
+        return cell_to_tile(col, 64 - 1 - row, CELL, 64)
+    expected = {img_tile(2, 3), img_tile(40, 40)}
+    got = {(t["tx"], t["ty"]) for t in entry["tiles"]}
+    assert got == expected
+    assert len(expected) == 2  # they fall in different tiles
+
+    # populated tile files exist; an unpopulated tile dir does not
+    root = atlas_root(tmp_data_dir, atlas_dataset, SCOPE_ID, "image")
+    for (tx, ty) in expected:
+        assert os.path.exists(os.path.join(root, atlas_tile_dir(64, tx, ty), "sheet_000.webp"))
+    empty = (7, 0)
+    assert empty not in expected
+    assert not os.path.exists(os.path.join(root, atlas_tile_dir(64, *empty)))
+
+    # the blue image lands in its own tile, correctly colored
+    tx, ty = img_tile(40, 40)
+    tile = load_tile(tmp_data_dir, atlas_dataset, SCOPE_ID, "image", 64, tx, ty)
+    px = cell_center_px_in_tile(40, 40, 64)
+    assert approx_color(tile.getpixel(px), (0, 0, 255))
 
 
-def test_atlas_non_image_column_raises(atlas_dataset):
+def test_non_image_and_missing_scope_raise(atlas_dataset):
     from latentscope.scripts.sprite_atlas import generate_sprite_atlas
-
     with pytest.raises(ValueError):
-        generate_sprite_atlas(atlas_dataset, SCOPE_ID, "tile_index_64",
-                              resolutions=(64,), cell_size=CELL)
-
-
-def test_atlas_missing_scope_raises(atlas_dataset):
-    from latentscope.scripts.sprite_atlas import generate_sprite_atlas
-
+        generate_sprite_atlas(atlas_dataset, SCOPE_ID, "x", resolutions=(64,), cell_size=CELL)
     with pytest.raises(FileNotFoundError):
-        generate_sprite_atlas(atlas_dataset, "scopes-999", "image",
-                              resolutions=(64,), cell_size=CELL)
+        generate_sprite_atlas(atlas_dataset, "scopes-999", "image", resolutions=(64,))
+
+
+# ---------------------------------------------------------------------------
+# plan_atlas
+# ---------------------------------------------------------------------------
+
+def test_plan_atlas_counts_and_density():
+    from latentscope.scripts.sprite_atlas import plan_atlas
+
+    # 3 distinct cells at 64-grid: (2,3),(2,3 dup),(40,40)
+    xs, ys = [], []
+    for (c, r) in [(2, 3), (2, 3), (40, 40)]:
+        x, y = cell_to_xy(c, r)
+        xs.append(x)
+        ys.append(y)
+    plan = plan_atlas(np.array(xs), np.array(ys), [64, 128], cell_size=CELL, tile_px=64)
+    assert plan["total_points"] == 3
+    e64 = next(e for e in plan["resolutions"] if e["num_tiles"] == 64)
+    assert e64["populated_cells"] == 2          # two distinct cells
+    assert e64["tiles_per_axis"] == 8
+    assert e64["populated_tiles"] == 2          # in two different tiles
+    assert e64["total_tiles"] == 64
+    assert e64["tile_coords"] is not None and len(e64["tile_coords"]) == 2
+    # density grid is res x res with the right total count
+    d = plan["density"]
+    assert d["res"] == 64
+    assert sum(sum(row) for row in d["counts"]) == 3
 
 
 # ---------------------------------------------------------------------------
 # endpoints
 # ---------------------------------------------------------------------------
 
-def test_atlas_status_endpoint(client, atlas_dataset):
+def test_atlas_status_and_sheet_endpoints(client, atlas_dataset):
     from latentscope.scripts.sprite_atlas import generate_sprite_atlas
 
-    before = client.get(
-        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/status?column=image"
-    )
-    assert before.status_code == 200
+    before = client.get(f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/status?column=image")
     assert before.get_json()["generated"] is False
 
-    generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image",
-                          resolutions=(64,), cell_size=CELL, samples=2)
+    generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image", resolutions=(64,), cell_size=CELL)
 
-    after = client.get(
-        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/status?column=image"
-    )
-    assert after.status_code == 200
-    data = after.get_json()
+    status = client.get(f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/status?column=image")
+    data = status.get_json()
     assert data["generated"] is True
-    assert data["cell_size"] == CELL
-    assert data["samples"] == 2
-    assert data["domain"] == [-1, 1]
-    assert data["resolutions"][0]["num_tiles"] == 64
-
-
-def test_atlas_sheet_endpoint_serves_and_errors(client, atlas_dataset):
-    from latentscope.scripts.sprite_atlas import generate_sprite_atlas
-
-    generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image",
-                          resolutions=(64,), cell_size=CELL, samples=2)
+    assert data["resolutions"][0]["tiles_per_axis"] == 1
 
     ok = client.get(
-        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=image&res=64&sheet=0"
+        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=image&res=64&tx=0&ty=0"
     )
-    assert ok.status_code == 200
-    assert ok.content_type == "image/webp"
+    assert ok.status_code == 200 and ok.content_type == "image/webp"
     assert ok.headers["Cache-Control"] == "public, max-age=86400"
-    img = Image.open(io.BytesIO(ok.data))
-    assert img.size == (64 * CELL, 64 * CELL)
 
-    # resolution that was not generated -> 404
-    missing_res = client.get(
-        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=image&res=128&sheet=0"
+    # missing tile -> 404
+    missing = client.get(
+        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=image&res=64&tx=3&ty=3"
     )
-    assert missing_res.status_code == 404
-
-    # sheet index past --samples -> 404
-    oob = client.get(
-        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=image&res=64&sheet=9"
-    )
-    assert oob.status_code == 404
-
+    assert missing.status_code == 404
     # non-image column -> 400
     bad = client.get(
-        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=tile_index_64&res=64&sheet=0"
+        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/sheet?column=x&res=64&tx=0&ty=0"
+    )
+    assert bad.status_code == 400
+
+
+def test_atlas_plan_endpoint(client, atlas_dataset):
+    res = client.get(
+        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/plan"
+        f"?column=image&resolutions=64,128&cell_size=8&tile_px=64"
+    )
+    assert res.status_code == 200
+    plan = res.get_json()
+    # The plan bins x/y only (it can't know which images decode), so the
+    # null-image point still counts. Non-deleted distinct 64-grid cells:
+    # (2,3), (40,40), (20,20) = 3.
+    e64 = next(e for e in plan["resolutions"] if e["num_tiles"] == 64)
+    assert e64["populated_cells"] == 3
+    assert plan["total_points"] == 4  # 5 rows - 1 deleted
+    assert plan["density"]["res"] == 64
+
+    # non-image column rejected
+    bad = client.get(
+        f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/plan?column=x"
     )
     assert bad.status_code == 400

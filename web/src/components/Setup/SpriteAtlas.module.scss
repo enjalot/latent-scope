@@ -1,6 +1,6 @@
 .atlas {
   padding: 16px;
-  max-width: 640px;
+  max-width: 760px;
 
   h3 {
     margin: 0 0 8px;
@@ -36,26 +36,62 @@
     }
   }
 
-  .sizes {
+  .planRow {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .previewCol {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .previewCaption {
+    font-size: 11px;
+    color: var(--text-color-secondary, #888);
+  }
+
+  .stats {
     border-collapse: collapse;
     font-size: 13px;
-    margin-bottom: 8px;
+    flex: 1;
+    min-width: 320px;
 
     th,
     td {
       text-align: left;
-      padding: 3px 14px 3px 0;
+      padding: 4px 12px 4px 0;
     }
 
-    .warn td {
-      color: #b9770e;
+    thead th {
+      border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+      font-weight: 600;
+    }
+
+    tbody tr {
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background: rgba(40, 90, 200, 0.06);
+    }
+
+    tr.selected {
+      background: rgba(40, 90, 200, 0.12);
+    }
+
+    .muted {
+      color: var(--text-color-secondary, #999);
     }
   }
 
-  .warnText {
-    color: #b9770e;
+  .totals {
     font-size: 12px;
-    max-width: 480px;
+    color: var(--text-color-secondary, #888);
+    margin: 8px 0 0;
   }
 
   .actions {

@@ -1,27 +1,25 @@
-import { useMemo, useState, useEffect } from 'react';
-import { atlasSheetUrl } from '../../lib/atlasUrl';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { atlasTileUrl } from '../../lib/atlasUrl';
 import { atlasLod } from '../../lib/atlasLod';
 
 /**
- * Renders a representative-image sprite-sheet atlas as a SINGLE <img> covering
- * the map's [-1, 1] box. Pan/zoom is applied as a CSS transform that mirrors the
- * d3 zoom (translate + scale), so the browser compositor handles it — no
- * per-frame layout/repaint. The generator bakes in the vertical flip, so the
- * sheet maps directly onto the box.
+ * Renders a tiled representative-image atlas pyramid over the map's [-1,1] box.
  *
- * At the identity transform the box spans screen [0,width]x[0,height] (data -1->0,
- * +1->width for x; +1->0, -1->height for y). The d3 transform {k,x,y} then maps a
- * base screen position s to s*k + offset — exactly `translate(x,y) scale(k)` with
- * a top-left origin, matching the ScatterGL shader and the heatmap projection.
+ * Each resolution is split into tiles; only the tiles that are populated AND in
+ * view are mounted. All tiles for a resolution live in one inner <div> whose CSS
+ * transform mirrors the d3 zoom (translate + scale) — so pan/zoom is a single
+ * compositor transform, no per-frame layout. The generator bakes in the vertical
+ * flip, so a tile maps directly onto its sub-rectangle of the box.
  *
- * As you zoom we swap resolution (64 -> 128 -> 256). The previous sheet stays
- * mounted until the new one has decoded (decoding="async"), so crossing a level
- * never flashes a gap.
+ * On a resolution change the previous level stays mounted until the new level's
+ * visible tiles have decoded, so crossing a level never flashes a gap.
  */
 function AtlasOverlay({
   dataset,
   scopeId,
   imageColumn,
+  xDomain,
+  yDomain,
   width,
   height,
   transform,
@@ -33,34 +31,129 @@ function AtlasOverlay({
   const tx = transform?.x || 0;
   const ty = transform?.y || 0;
 
-  const resolutions = useMemo(() => {
-    if (!manifest?.generated) return [];
-    return (manifest.resolutions || []).map((r) => r.num_tiles);
+  const resByNum = useMemo(() => {
+    const m = new Map();
+    if (manifest?.generated) (manifest.resolutions || []).forEach((e) => m.set(e.num_tiles, e));
+    return m;
   }, [manifest]);
+  const resolutions = useMemo(() => [...resByNum.keys()], [resByNum]);
 
-  // Target resolution at this zoom; null (zoomed out / disabled) -> nothing.
   const target = useMemo(() => {
     if (!enabled) return null;
     return atlasLod(k, width, resolutions).resolution;
   }, [enabled, resolutions, width, k]);
 
-  // The resolution currently displayed (last one that finished decoding). Kept
-  // mounted under the target so a swap never leaves a gap.
+  // Visible, populated tiles for a resolution entry, with base (identity) screen
+  // rects. Partial last tiles (when the grid isn't a multiple of tile_cells) are
+  // handled via per-tile cell ranges.
+  const visibleTilesFor = useCallback(
+    (entry) => {
+      if (!entry || !xDomain || !yDomain) return [];
+      const R = entry.num_tiles;
+      const tc = entry.tile_cells;
+      const xlo = Math.min(xDomain[0], xDomain[1]);
+      const xhi = Math.max(xDomain[0], xDomain[1]);
+      const ylo = Math.min(yDomain[0], yDomain[1]);
+      const yhi = Math.max(yDomain[0], yDomain[1]);
+      const out = [];
+      for (const t of entry.tiles || []) {
+        const cx0 = t.tx * tc;
+        const cx1 = Math.min((t.tx + 1) * tc, R);
+        const cy0 = t.ty * tc; // image rows (0 = top = y max)
+        const cy1 = Math.min((t.ty + 1) * tc, R);
+        const fx0 = cx0 / R;
+        const fx1 = cx1 / R;
+        const fy0 = cy0 / R;
+        const fy1 = cy1 / R;
+        const dX0 = -1 + 2 * fx0;
+        const dX1 = -1 + 2 * fx1;
+        const dYtop = 1 - 2 * fy0;
+        const dYbot = 1 - 2 * fy1;
+        if (dX1 < xlo || dX0 > xhi || dYtop < ylo || dYbot > yhi) continue;
+        out.push({
+          key: `${R}:${t.tx}:${t.ty}`,
+          res: R,
+          tx: t.tx,
+          ty: t.ty,
+          left: fx0 * width,
+          top: fy0 * height,
+          w: (fx1 - fx0) * width,
+          h: (fy1 - fy0) * height,
+        });
+      }
+      return out;
+    },
+    [xDomain, yDomain, width, height]
+  );
+
+  // Track which tiles have decoded so we can promote target -> shown without a gap.
   const [shown, setShown] = useState(null);
+  const loadedRef = useRef(new Set());
   useEffect(() => {
     if (target == null) setShown(null);
   }, [target]);
-  // Reset when the underlying sheets change.
   useEffect(() => {
     setShown(null);
+    loadedRef.current = new Set();
   }, [scopeId, imageColumn, sheet]);
+
+  const targetTiles = useMemo(
+    () => visibleTilesFor(resByNum.get(target)),
+    [visibleTilesFor, resByNum, target]
+  );
+  const shownTiles = useMemo(
+    () => (shown != null && shown !== target ? visibleTilesFor(resByNum.get(shown)) : []),
+    [visibleTilesFor, resByNum, shown, target]
+  );
+
+  // Promote when every visible target tile has loaded (cached loads fire onLoad
+  // synchronously, so check after render too).
+  const promoteIfReady = useCallback(() => {
+    if (target != null && targetTiles.length > 0) {
+      const allLoaded = targetTiles.every((t) => loadedRef.current.has(t.key));
+      if (allLoaded) setShown(target);
+    }
+  }, [target, targetTiles]);
+  useEffect(() => {
+    promoteIfReady();
+  }, [promoteIfReady]);
 
   if (target == null && shown == null) return null;
 
-  const css = `translate(${tx}px, ${ty}px) scale(${k})`;
-  const layers = [];
-  if (shown != null) layers.push(shown);
-  if (target != null && target !== shown) layers.push(target);
+  const innerStyle = {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width,
+    height,
+    transform: `translate(${tx}px, ${ty}px) scale(${k})`,
+    transformOrigin: '0 0',
+    willChange: 'transform',
+  };
+
+  const renderTile = (t, isTarget) => (
+    <img
+      key={t.key}
+      src={atlasTileUrl(dataset.id, scopeId, imageColumn, t.res, t.tx, t.ty, sheet)}
+      alt=""
+      decoding="async"
+      onLoad={() => {
+        loadedRef.current.add(t.key);
+        if (isTarget) promoteIfReady();
+      }}
+      onError={(e) => {
+        e.currentTarget.style.visibility = 'hidden';
+      }}
+      style={{
+        position: 'absolute',
+        left: t.left,
+        top: t.top,
+        width: t.w,
+        height: t.h,
+        pointerEvents: 'none',
+      }}
+    />
+  );
 
   return (
     <div
@@ -74,32 +167,8 @@ function AtlasOverlay({
         overflow: 'hidden',
       }}
     >
-      {layers.map((res) => (
-        <img
-          key={res}
-          src={atlasSheetUrl(dataset.id, scopeId, imageColumn, res, sheet)}
-          alt=""
-          decoding="async"
-          onLoad={() => setShown(res)}
-          onError={(e) => {
-            e.currentTarget.style.visibility = 'hidden';
-          }}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            width,
-            height,
-            transform: css,
-            transformOrigin: '0 0',
-            willChange: 'transform',
-            pointerEvents: 'none',
-            // The incoming target stays invisible until it has decoded; the old
-            // sheet underneath remains visible until then.
-            opacity: res === shown ? 1 : 0,
-          }}
-        />
-      ))}
+      {shownTiles.length > 0 && <div style={innerStyle}>{shownTiles.map((t) => renderTile(t, false))}</div>}
+      {target != null && <div style={innerStyle}>{targetTiles.map((t) => renderTile(t, true))}</div>}
     </div>
   );
 }

@@ -1,46 +1,46 @@
 const apiUrl = import.meta.env.VITE_API_URL;
 
-/**
- * Build the URL for a single atlas sheet — one WebP image covering the whole
- * heatmap grid at a given resolution, with a representative image painted into
- * each cell. Served by the optional sprite-atlas step.
- *
- * GET /api/datasets/<dataset>/scopes/<scope>/atlas/sheet?column=&res=&sheet=
- *
- * @param {string} datasetId
- * @param {string} scopeId
- * @param {string} column - image-typed column name
- * @param {number} res - grid resolution (e.g. 64 or 128)
- * @param {number} [sheet=0] - sample sheet index
- * @returns {string} fully-qualified sheet URL
- */
-export function atlasSheetUrl(datasetId, scopeId, column, res, sheet = 0) {
-  const params = new URLSearchParams({ column, res, sheet });
+function scopeBase(datasetId, scopeId) {
   return (
     `${apiUrl}/datasets/${encodeURIComponent(datasetId)}` +
-    `/scopes/${encodeURIComponent(scopeId)}/atlas/sheet?${params.toString()}`
+    `/scopes/${encodeURIComponent(scopeId)}`
   );
 }
 
 /**
- * Fetch the atlas manifest/status for a scope + image column.
+ * URL for a single atlas tile (tile (tx,ty) of a resolution's pyramid).
  *
- * @param {string} datasetId
- * @param {string} scopeId
- * @param {string} column
- * @returns {Promise<{generated: boolean, cell_size?: number, samples?: number,
- *   domain?: [number, number],
- *   resolutions?: Array<{num_tiles: number, atlas_px: number,
- *     filled_cells: number, sheets: string[]}>}>}
+ * GET /api/datasets/<ds>/scopes/<scope>/atlas/sheet?column=&res=&tx=&ty=&sheet=
+ */
+export function atlasTileUrl(datasetId, scopeId, column, res, tx, ty, sheet = 0) {
+  const params = new URLSearchParams({ column, res, tx, ty, sheet });
+  return `${scopeBase(datasetId, scopeId)}/atlas/sheet?${params.toString()}`;
+}
+
+/**
+ * Fetch the atlas manifest/status for a scope + image column. The resolutions
+ * each carry their populated tiles + tiles_per_axis.
  */
 export async function fetchAtlasStatus(datasetId, scopeId, column) {
   const params = new URLSearchParams({ column });
-  const url =
-    `${apiUrl}/datasets/${encodeURIComponent(datasetId)}` +
-    `/scopes/${encodeURIComponent(scopeId)}/atlas/status?${params.toString()}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    return { generated: false };
-  }
-  return response.json();
+  const res = await fetch(`${scopeBase(datasetId, scopeId)}/atlas/status?${params.toString()}`);
+  if (!res.ok) return { generated: false };
+  return res.json();
+}
+
+/**
+ * Plan an atlas without generating it: per-resolution populated cell/tile counts
+ * + a density grid for the heatmap.
+ *
+ * @param {number[]} resolutions
+ */
+export async function fetchAtlasPlan(datasetId, scopeId, column, resolutions, cellSize = 32) {
+  const params = new URLSearchParams({
+    column,
+    resolutions: resolutions.join(','),
+    cell_size: cellSize,
+  });
+  const res = await fetch(`${scopeBase(datasetId, scopeId)}/atlas/plan?${params.toString()}`);
+  if (!res.ok) return null;
+  return res.json();
 }
