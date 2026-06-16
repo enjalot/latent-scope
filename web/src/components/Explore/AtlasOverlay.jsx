@@ -1,28 +1,27 @@
 import { useMemo, useState, useEffect } from 'react';
-import { scaleLinear } from 'd3-scale';
 import { atlasSheetUrl } from '../../lib/atlasUrl';
 import { atlasLod } from '../../lib/atlasLod';
 
 /**
- * Renders a representative-image sprite-sheet atlas as a SINGLE <img> stretched
- * across the map's [-1, 1] coordinate box, so it pans/zooms with the scatter for
- * free. The generator bakes in the vertical flip, so the sheet maps directly
- * onto the domain box with no per-cell math here.
+ * Renders a representative-image sprite-sheet atlas as a SINGLE <img> covering
+ * the map's [-1, 1] box. Pan/zoom is applied as a CSS transform that mirrors the
+ * d3 zoom (translate + scale), so the browser compositor handles it — no
+ * per-frame layout/repaint. The generator bakes in the vertical flip, so the
+ * sheet maps directly onto the box.
  *
- * As you zoom in we swap to a finer resolution (e.g. 64 -> 128); only one sheet
- * <img> is mounted at a time (keyed on resolution) so at most one atlas texture
- * is decoded, bounding browser memory regardless of grid size.
+ * At the identity transform the box spans screen [0,width]x[0,height] (data -1->0,
+ * +1->width for x; +1->0, -1->height for y). The d3 transform {k,x,y} then maps a
+ * base screen position s to s*k + offset — exactly `translate(x,y) scale(k)` with
+ * a top-left origin, matching the ScatterGL shader and the heatmap projection.
  *
- * Projection matches AnnotationPlot / PointsOverlay:
- *   xScale = scaleLinear().domain(xDomain).range([0, width])
- *   yScale = scaleLinear().domain(yDomain).range([height, 0])
+ * As you zoom we swap resolution (64 -> 128 -> 256). The previous sheet stays
+ * mounted until the new one has decoded (decoding="async"), so crossing a level
+ * never flashes a gap.
  */
 function AtlasOverlay({
   dataset,
   scopeId,
   imageColumn,
-  xDomain,
-  yDomain,
   width,
   height,
   transform,
@@ -31,43 +30,37 @@ function AtlasOverlay({
   sheet = 0,
 }) {
   const k = transform?.k || 1;
+  const tx = transform?.x || 0;
+  const ty = transform?.y || 0;
 
-  // Available resolutions.
   const resolutions = useMemo(() => {
     if (!manifest?.generated) return [];
     return (manifest.resolutions || []).map((r) => r.num_tiles);
   }, [manifest]);
 
-  // Finest resolution legible at this zoom; null (zoomed out) -> render nothing
-  // (the heatmap shows instead).
-  const resolution = useMemo(() => {
+  // Target resolution at this zoom; null (zoomed out / disabled) -> nothing.
+  const target = useMemo(() => {
     if (!enabled) return null;
     return atlasLod(k, width, resolutions).resolution;
   }, [enabled, resolutions, width, k]);
 
-  // Reset the loaded flag whenever the source sheet changes so we don't flash a
-  // stale image during a resolution swap.
-  const [loaded, setLoaded] = useState(false);
+  // The resolution currently displayed (last one that finished decoding). Kept
+  // mounted under the target so a swap never leaves a gap.
+  const [shown, setShown] = useState(null);
   useEffect(() => {
-    setLoaded(false);
-  }, [resolution, sheet, scopeId, imageColumn]);
+    if (target == null) setShown(null);
+  }, [target]);
+  // Reset when the underlying sheets change.
+  useEffect(() => {
+    setShown(null);
+  }, [scopeId, imageColumn, sheet]);
 
-  const box = useMemo(() => {
-    if (resolution == null || !xDomain || !yDomain) return null;
-    const xScale = scaleLinear().domain(xDomain).range([0, width]);
-    const yScale = scaleLinear().domain(yDomain).range([height, 0]);
-    // Atlas covers the full normalized [-1, 1]^2 space. Image top corresponds
-    // to data-y = +1 (the flip is baked into the sheet).
-    const left = xScale(-1);
-    const right = xScale(1);
-    const top = yScale(1);
-    const bottom = yScale(-1);
-    return { left, top, w: right - left, h: bottom - top };
-  }, [resolution, xDomain, yDomain, width, height]);
+  if (target == null && shown == null) return null;
 
-  if (resolution == null || !box) return null;
-
-  const src = atlasSheetUrl(dataset.id, scopeId, imageColumn, resolution, sheet);
+  const css = `translate(${tx}px, ${ty}px) scale(${k})`;
+  const layers = [];
+  if (shown != null) layers.push(shown);
+  if (target != null && target !== shown) layers.push(target);
 
   return (
     <div
@@ -81,26 +74,32 @@ function AtlasOverlay({
         overflow: 'hidden',
       }}
     >
-      <img
-        key={`${resolution}-${sheet}`}
-        src={src}
-        alt=""
-        onLoad={() => setLoaded(true)}
-        onError={(e) => {
-          e.currentTarget.style.visibility = 'hidden';
-        }}
-        style={{
-          position: 'absolute',
-          left: box.left,
-          top: box.top,
-          width: box.w,
-          height: box.h,
-          pointerEvents: 'none',
-          // Avoid a flash of the wrong-sized previous sheet mid-swap.
-          opacity: loaded ? 1 : 0,
-          transition: 'opacity 120ms ease',
-        }}
-      />
+      {layers.map((res) => (
+        <img
+          key={res}
+          src={atlasSheetUrl(dataset.id, scopeId, imageColumn, res, sheet)}
+          alt=""
+          decoding="async"
+          onLoad={() => setShown(res)}
+          onError={(e) => {
+            e.currentTarget.style.visibility = 'hidden';
+          }}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width,
+            height,
+            transform: css,
+            transformOrigin: '0 0',
+            willChange: 'transform',
+            pointerEvents: 'none',
+            // The incoming target stays invisible until it has decoded; the old
+            // sheet underneath remains visible until then.
+            opacity: res === shown ? 1 : 0,
+          }}
+        />
+      ))}
     </div>
   );
 }

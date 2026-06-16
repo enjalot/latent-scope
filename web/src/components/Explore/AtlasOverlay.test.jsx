@@ -66,14 +66,18 @@ describe('AtlasOverlay', () => {
     expect(img.getAttribute('src')).toContain('res=256');
   });
 
-  it('stretches the sheet across the full [-1,1] domain box', () => {
-    // At k where it renders, the box should span the whole width (domain [-1,1]
-    // maps to [0,width]).
-    const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 1.5 }} />);
+  it('covers the [0,width] box and applies the zoom as a CSS transform', () => {
+    // The sheet is positioned at the identity box and pan/zoom is a CSS
+    // transform mirroring the d3 transform (translate + scale).
+    const { container } = render(
+      <AtlasOverlay {...base} enabled transform={{ k: 1.5, x: 20, y: 10 }} />
+    );
     const img = container.querySelector('img');
     expect(img.style.left).toBe('0px');
     expect(img.style.top).toBe('0px');
     expect(img.style.width).toBe('800px');
     expect(img.style.height).toBe('800px');
+    expect(img.style.transform).toBe('translate(20px, 10px) scale(1.5)');
+    expect(img.style.transformOrigin).toBe('0 0');
   });
 });

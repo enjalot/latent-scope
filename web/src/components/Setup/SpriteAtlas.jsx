@@ -13,8 +13,15 @@ import { useSetup } from '../../contexts/SetupContext';
 
 import styles from './SpriteAtlas.module.scss';
 
-const RESOLUTIONS = [64, 128]; // grids the scope step computes (tile_index_64/128)
+const RESOLUTIONS = [64, 128, 256];
 const CELL_SIZES = [32, 64];
+// Mirrors latentscope/scripts/sprite_atlas.py: a finer grid uses a smaller cell
+// so no single sheet exceeds this (keeps the deepest level light to decode).
+const MAX_ATLAS_PX = 4096;
+
+function effectiveCell(numTiles, cellSize) {
+  return Math.max(8, Math.min(cellSize, Math.floor(MAX_ATLAS_PX / numTiles)));
+}
 
 function decodedMB(px) {
   return (px * px * 4) / (1024 * 1024);
@@ -134,18 +141,22 @@ function SpriteAtlas() {
           <tr>
             <th>Resolution</th>
             <th>Sheet size</th>
+            <th>Cell</th>
+            <th>Sheet</th>
             <th>Decoded</th>
             <th>× sheets</th>
           </tr>
         </thead>
         <tbody>
           {RESOLUTIONS.map((r) => {
-            const px = r * cellSize;
+            const cell = effectiveCell(r, cellSize);
+            const px = r * cell;
             return (
-              <tr key={r} className={px > 4096 ? styles.warn : ''}>
+              <tr key={r} className={cell < cellSize ? styles.warn : ''}>
                 <td>
                   {r}×{r}
                 </td>
+                <td>{cell}px{cell < cellSize ? '*' : ''}</td>
                 <td>
                   {px}×{px}px
                 </td>
@@ -156,10 +167,9 @@ function SpriteAtlas() {
           })}
         </tbody>
       </table>
-      {RESOLUTIONS.some((r) => r * cellSize > 4096) && (
+      {RESOLUTIONS.some((r) => effectiveCell(r, cellSize) < cellSize) && (
         <p className={styles.warnText}>
-          64px cells make the 128×128 sheet 8192px (~256 MB decoded) — heavy for some browsers. 32px
-          is recommended.
+          *Finer grids use a smaller cell so no sheet exceeds {MAX_ATLAS_PX}px (keeps decoding fast).
         </p>
       )}
 

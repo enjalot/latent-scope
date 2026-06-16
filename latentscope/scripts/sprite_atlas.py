@@ -39,6 +39,19 @@ from latentscope.util import get_data_dir
 DEFAULT_RESOLUTIONS = (64, 128, 256)
 DEFAULT_CELL_SIZE = 32
 
+# A single sheet is one decoded texture in the browser (atlas_px^2 * 4 bytes),
+# so cap the dimension: a finer grid uses smaller cells to stay under this. This
+# keeps the deepest level (256) at 4096px / ~64 MB instead of 8192px / ~256 MB,
+# which is what makes crossing into it smooth.
+MAX_ATLAS_PX = 4096
+MIN_CELL_SIZE = 8
+
+
+def effective_cell_size(num_tiles, cell_size):
+    """The per-resolution cell size, shrunk so the sheet stays <= MAX_ATLAS_PX."""
+    capped = min(cell_size, MAX_ATLAS_PX // num_tiles)
+    return max(MIN_CELL_SIZE, capped)
+
 
 def tile_index(x, y, num_tiles):
     """Map a normalized [-1, 1] coordinate to a flat grid-cell index.
@@ -145,28 +158,32 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
     run_id = f"sprite-atlas-{scope_id}-{image_column}-c{cell_size}"
     print("RUNNING:", run_id)
 
-    # One set of RGBA sheets per resolution. atlas_px = num_tiles * cell_size.
+    # One set of RGBA sheets per resolution. A finer grid uses a smaller cell so
+    # no single sheet exceeds MAX_ATLAS_PX (atlas_px = num_tiles * cell[r]).
     sheets = {}
     atlas_px = {}
+    cell = {}
     # filled[res][cell_index] -> how many sheets we've already painted there.
     filled = {}
     for r in resolutions:
-        px = r * cell_size
+        cell[r] = effective_cell_size(r, cell_size)
+        px = r * cell[r]
         atlas_px[r] = px
         sheets[r] = [
             Image.new("RGBA", (px, px), (0, 0, 0, 0)) for _ in range(samples)
         ]
         filled[r] = {}
-        print(f"  resolution {r}x{r}: {samples} sheet(s) of {px}x{px}px")
+        print(f"  resolution {r}x{r}: {samples} sheet(s) of {px}x{px}px (cell {cell[r]}px)")
 
     def paste(res, cell_index, sheet_index, thumb):
         num_tiles = res
+        cpx = cell[res]
         col = cell_index % num_tiles
         row = cell_index // num_tiles
-        x = col * cell_size
+        x = col * cpx
         # Flip vertically: tile row 0 is at data-y = -1 (bottom of the map), but
         # image pixel-row 0 is the top. So the highest row index goes to y=0.
-        y = (num_tiles - 1 - row) * cell_size
+        y = (num_tiles - 1 - row) * cpx
         sheets[res][sheet_index].paste(thumb, (x, y), thumb)
 
     total = parquet_file.metadata.num_rows
@@ -187,10 +204,10 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
                 y = batch["y"][i]
                 wants = []
                 for r in resolutions:
-                    cell = tile_index(x, y, r)
-                    count = filled[r].get(cell, 0)
+                    cell_idx = tile_index(x, y, r)
+                    count = filled[r].get(cell_idx, 0)
                     if count < samples:
-                        wants.append((r, cell, count))
+                        wants.append((r, cell_idx, count))
                 if not wants:
                     continue
 
@@ -199,21 +216,30 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
                     continue
                 try:
                     img = Image.open(io.BytesIO(raw)).convert("RGBA")
-                    # Crop-to-fill so every cell is a uniform square.
-                    thumb = ImageOps.fit(img, (cell_size, cell_size))
                 except Exception:
                     continue
 
-                for r, cell, count in wants:
-                    paste(r, cell, count, thumb)
-                    filled[r][cell] = count + 1
+                # Crop-to-fill to a uniform square per distinct cell size (the
+                # same source image may serve resolutions with different cells).
+                thumbs = {}
+                for r, cell_idx, count in wants:
+                    cpx = cell[r]
+                    thumb = thumbs.get(cpx)
+                    if thumb is None:
+                        try:
+                            thumb = ImageOps.fit(img, (cpx, cpx))
+                        except Exception:
+                            continue
+                        thumbs[cpx] = thumb
+                    paste(r, cell_idx, count, thumb)
+                    filled[r][cell_idx] = count + 1
 
     out_root = atlas_root(DATA_DIR, dataset_id, scope_id, image_column)
     os.makedirs(out_root, exist_ok=True)
 
     resolution_entries = []
     for r in resolutions:
-        sub = atlas_subdir(r, cell_size)
+        sub = atlas_subdir(r, cell[r])
         sub_dir = os.path.join(out_root, sub)
         os.makedirs(sub_dir, exist_ok=True)
         sheet_paths = []
@@ -226,6 +252,7 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
             sheet_paths.append(os.path.join(sub, name))
         resolution_entries.append({
             "num_tiles": r,
+            "cell_size": cell[r],
             "atlas_px": atlas_px[r],
             "filled_cells": len(filled[r]),
             "sheets": sheet_paths,
