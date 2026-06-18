@@ -34,7 +34,10 @@ const base = {
 
 afterEach(cleanup);
 
-const imgSrc = (c) => c.querySelector('img')?.getAttribute('src') || '';
+// All rendered resolutions (across backdrop + target layers).
+const renderedRes = (c) =>
+  [...c.querySelectorAll('img')].map((i) => +(i.getAttribute('src').match(/res=(\d+)/) || [])[1]);
+const finestRes = (c) => Math.max(0, ...renderedRes(c));
 
 describe('AtlasOverlay (tiled)', () => {
   it('renders nothing when disabled', () => {
@@ -47,18 +50,19 @@ describe('AtlasOverlay (tiled)', () => {
     expect(container.querySelector('img')).toBeNull();
   });
 
-  it('shows the coarse (64) tile at medium zoom', () => {
+  it('shows only the coarse (64) tile at medium zoom (no coarser backdrop)', () => {
     const { container } = render(<AtlasOverlay {...base} enabled transform={{ k: 1.5 }} />);
-    expect(imgSrc(container)).toContain('res=64');
-    expect(imgSrc(container)).toContain('tx=0');
+    expect(renderedRes(container)).toEqual([64]);
   });
 
-  it('advances to finer levels as you zoom', () => {
+  it('targets finer levels as you zoom, with the coarser one as backdrop', () => {
     const a = render(<AtlasOverlay {...base} enabled transform={{ k: 3 }} />);
-    expect(imgSrc(a.container)).toContain('res=128');
+    expect(finestRes(a.container)).toBe(128);
+    expect(renderedRes(a.container)).toContain(64); // backdrop
     cleanup();
     const b = render(<AtlasOverlay {...base} enabled transform={{ k: 6 }} />);
-    expect(imgSrc(b.container)).toContain('res=256');
+    expect(finestRes(b.container)).toBe(256);
+    expect(renderedRes(b.container)).toContain(128); // backdrop
   });
 
   it('positions tiles in a transformed inner layer', () => {
@@ -69,7 +73,6 @@ describe('AtlasOverlay (tiled)', () => {
     const inner = img.parentElement; // the transformed layer holding the tiles
     expect(inner.style.transform).toBe('translate(20px, 10px) scale(1.5)');
     expect(inner.style.transformOrigin).toBe('0 0');
-    // single tile spans the full box
     expect(img.style.left).toBe('0px');
     expect(img.style.width).toBe('800px');
   });

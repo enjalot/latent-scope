@@ -1,18 +1,19 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { atlasTileUrl } from '../../lib/atlasUrl';
 import { atlasLod } from '../../lib/atlasLod';
 
 /**
  * Renders a tiled representative-image atlas pyramid over the map's [-1,1] box.
  *
- * Each resolution is split into tiles; only the tiles that are populated AND in
- * view are mounted. All tiles for a resolution live in one inner <div> whose CSS
- * transform mirrors the d3 zoom (translate + scale) — so pan/zoom is a single
- * compositor transform, no per-frame layout. The generator bakes in the vertical
- * flip, so a tile maps directly onto its sub-rectangle of the box.
+ * Two adjacent levels are drawn at once: the level immediately COARSER than the
+ * target acts as a continuity backdrop (so a tile is at most ~2x upscaled while
+ * the finer one loads — never stretched several levels like a single held
+ * layer), and the target level fades in sharply on top as its tiles decode.
  *
- * On a resolution change the previous level stays mounted until the new level's
- * visible tiles have decoded, so crossing a level never flashes a gap.
+ * Each level's visible, populated tiles live in one inner <div> whose CSS
+ * transform mirrors the d3 zoom (translate + scale) — pan/zoom is a single
+ * compositor transform, no per-frame layout. The generator bakes in the
+ * vertical flip, so a tile maps directly onto its sub-rectangle of the box.
  */
 function AtlasOverlay({
   dataset,
@@ -37,16 +38,23 @@ function AtlasOverlay({
     if (manifest?.generated) (manifest.resolutions || []).forEach((e) => m.set(e.num_tiles, e));
     return m;
   }, [manifest]);
-  const resolutions = useMemo(() => [...resByNum.keys()], [resByNum]);
+  const resolutions = useMemo(() => [...resByNum.keys()].sort((a, b) => a - b), [resByNum]);
 
   const target = useMemo(() => {
     if (!enabled) return null;
     return atlasLod(k, width, resolutions, minCellPx).resolution;
   }, [enabled, resolutions, width, k, minCellPx]);
 
+  // The level immediately coarser than the target — a <=2x backdrop while the
+  // target's tiles load.
+  const backdrop = useMemo(() => {
+    if (target == null) return null;
+    const coarser = resolutions.filter((r) => r < target);
+    return coarser.length ? coarser[coarser.length - 1] : null;
+  }, [resolutions, target]);
+
   // Visible, populated tiles for a resolution entry, with base (identity) screen
-  // rects. Partial last tiles (when the grid isn't a multiple of tile_cells) are
-  // handled via per-tile cell ranges.
+  // rects. Partial last tiles are handled via per-tile cell ranges.
   const visibleTilesFor = useCallback(
     (entry) => {
       if (!entry || !xDomain || !yDomain) return [];
@@ -58,14 +66,10 @@ function AtlasOverlay({
       const yhi = Math.max(yDomain[0], yDomain[1]);
       const out = [];
       for (const t of entry.tiles || []) {
-        const cx0 = t.tx * tc;
-        const cx1 = Math.min((t.tx + 1) * tc, R);
-        const cy0 = t.ty * tc; // image rows (0 = top = y max)
-        const cy1 = Math.min((t.ty + 1) * tc, R);
-        const fx0 = cx0 / R;
-        const fx1 = cx1 / R;
-        const fy0 = cy0 / R;
-        const fy1 = cy1 / R;
+        const fx0 = (t.tx * tc) / R;
+        const fx1 = Math.min((t.tx + 1) * tc, R) / R;
+        const fy0 = (t.ty * tc) / R;
+        const fy1 = Math.min((t.ty + 1) * tc, R) / R;
         const dX0 = -1 + 2 * fx0;
         const dX1 = -1 + 2 * fx1;
         const dYtop = 1 - 2 * fy0;
@@ -87,39 +91,16 @@ function AtlasOverlay({
     [xDomain, yDomain, width, height]
   );
 
-  // Track which tiles have decoded so we can promote target -> shown without a gap.
-  const [shown, setShown] = useState(null);
-  const loadedRef = useRef(new Set());
-  useEffect(() => {
-    if (target == null) setShown(null);
-  }, [target]);
-  useEffect(() => {
-    setShown(null);
-    loadedRef.current = new Set();
-  }, [scopeId, imageColumn, sheet]);
-
+  const backdropTiles = useMemo(
+    () => visibleTilesFor(resByNum.get(backdrop)),
+    [visibleTilesFor, resByNum, backdrop]
+  );
   const targetTiles = useMemo(
     () => visibleTilesFor(resByNum.get(target)),
     [visibleTilesFor, resByNum, target]
   );
-  const shownTiles = useMemo(
-    () => (shown != null && shown !== target ? visibleTilesFor(resByNum.get(shown)) : []),
-    [visibleTilesFor, resByNum, shown, target]
-  );
 
-  // Promote when every visible target tile has loaded (cached loads fire onLoad
-  // synchronously, so check after render too).
-  const promoteIfReady = useCallback(() => {
-    if (target != null && targetTiles.length > 0) {
-      const allLoaded = targetTiles.every((t) => loadedRef.current.has(t.key));
-      if (allLoaded) setShown(target);
-    }
-  }, [target, targetTiles]);
-  useEffect(() => {
-    promoteIfReady();
-  }, [promoteIfReady]);
-
-  if (target == null && shown == null) return null;
+  if (target == null) return null;
 
   const innerStyle = {
     position: 'absolute',
@@ -132,19 +113,14 @@ function AtlasOverlay({
     willChange: 'transform',
   };
 
-  const renderTile = (t, isTarget) => (
+  const renderTile = (t, fade) => (
     <img
       key={t.key}
       src={atlasTileUrl(dataset.id, scopeId, imageColumn, t.res, t.tx, t.ty, sheet)}
       alt=""
       decoding="async"
-      onLoad={() => {
-        loadedRef.current.add(t.key);
-        if (isTarget) promoteIfReady();
-      }}
-      onError={(e) => {
-        e.currentTarget.style.visibility = 'hidden';
-      }}
+      onLoad={fade ? (e) => (e.currentTarget.style.opacity = 1) : undefined}
+      onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
       style={{
         position: 'absolute',
         left: t.left,
@@ -152,6 +128,9 @@ function AtlasOverlay({
         width: t.w,
         height: t.h,
         pointerEvents: 'none',
+        // Target tiles fade in over the backdrop as they decode (smooths the
+        // content change between levels); the backdrop shows immediately.
+        ...(fade ? { opacity: 0, transition: 'opacity 150ms ease' } : null),
       }}
     />
   );
@@ -168,8 +147,10 @@ function AtlasOverlay({
         overflow: 'hidden',
       }}
     >
-      {shownTiles.length > 0 && <div style={innerStyle}>{shownTiles.map((t) => renderTile(t, false))}</div>}
-      {target != null && <div style={innerStyle}>{targetTiles.map((t) => renderTile(t, true))}</div>}
+      {backdrop != null && backdropTiles.length > 0 && (
+        <div style={innerStyle}>{backdropTiles.map((t) => renderTile(t, false))}</div>
+      )}
+      <div style={innerStyle}>{targetTiles.map((t) => renderTile(t, true))}</div>
     </div>
   );
 }
