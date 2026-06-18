@@ -15,8 +15,11 @@ const ConfigurationPanel = ({
   toggleImageMode,
   alwaysShowPoints = false,
   toggleAlwaysShowPoints,
+  updateAtlasSwitchPx,
+  updateAtlasPointsPx,
 }) => {
-  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } = vizConfig;
+  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity, atlasSwitchPx, atlasPointsPx } =
+    vizConfig;
 
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
@@ -102,6 +105,34 @@ const ConfigurationPanel = ({
                 color="secondary"
                 label="Always show points"
               />
+            )}
+            {imageMode && (
+              <>
+                <div className={styles.configSection}>
+                  <label>Image size before switching: {atlasSwitchPx}px</label>
+                  <input
+                    type="range"
+                    min="8"
+                    max="48"
+                    step="1"
+                    value={atlasSwitchPx}
+                    onChange={(e) => updateAtlasSwitchPx(+e.target.value)}
+                    className={styles.slider}
+                  />
+                </div>
+                <div className={styles.configSection}>
+                  <label>Zoom into images before points: {atlasPointsPx}px</label>
+                  <input
+                    type="range"
+                    min="32"
+                    max="200"
+                    step="4"
+                    value={atlasPointsPx}
+                    onChange={(e) => updateAtlasPointsPx(+e.target.value)}
+                    className={styles.slider}
+                  />
+                </div>
+              </>
             )}
           </>
         )}

@@ -26,6 +26,7 @@ function AtlasOverlay({
   enabled,
   manifest,
   sheet = 0,
+  minCellPx,
 }) {
   const k = transform?.k || 1;
   const tx = transform?.x || 0;
@@ -40,8 +41,8 @@ function AtlasOverlay({
 
   const target = useMemo(() => {
     if (!enabled) return null;
-    return atlasLod(k, width, resolutions).resolution;
-  }, [enabled, resolutions, width, k]);
+    return atlasLod(k, width, resolutions, minCellPx).resolution;
+  }, [enabled, resolutions, width, k, minCellPx]);
 
   // Visible, populated tiles for a resolution entry, with base (identity) screen
   // rects. Partial last tiles (when the grid isn't a multiple of tile_cells) are

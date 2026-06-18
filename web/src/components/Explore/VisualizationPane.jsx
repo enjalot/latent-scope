@@ -21,7 +21,7 @@ import { useFilter } from '../../contexts/FilterContext';
 import { mapSelectionKey } from '../../lib/colors';
 import { imageUrlFor } from '../../lib/imageUrl';
 import { fetchAtlasStatus } from '../../lib/atlasUrl';
-import { atlasLod } from '../../lib/atlasLod';
+import { atlasLod, MIN_CELL_PX, POINTS_HANDOFF_CELL_PX } from '../../lib/atlasLod';
 import HoverThumbnail from './HoverThumbnail';
 import AtlasOverlay from './AtlasOverlay';
 import PointsOverlay from './PointsOverlay';
@@ -110,7 +110,7 @@ function VisualizationPane({
   // only show the hull if we are filtering by cluster
   const showHull = filterConfig?.type === filterConstants.CLUSTER;
 
-  const maxZoom = 40;
+  const maxZoom = 64;
 
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -127,14 +127,6 @@ function VisualizationPane({
   // const [isFullScreen, setIsFullScreen] = useState(false);
   const [isFullScreen] = useState(true);
   const umapRef = useRef(null);
-
-  // Level of detail for the image map at the current zoom.
-  const lod = useMemo(
-    () => atlasLod(transform?.k || 1, width, atlasResolutions),
-    [transform, width, atlasResolutions]
-  );
-  // Points drawn on top of the atlas: past the deepest grid, or always-on.
-  const pointsVisible = imageMode && (lod.deepest || alwaysShowPoints);
 
   const featureIsSelected = featureFilter.feature !== -1;
 
@@ -249,6 +241,10 @@ function VisualizationPane({
     showClusterOutlines: true,
     pointSize: 1,
     pointOpacity: 1,
+    // Image-map LOD tuning: on-screen px at which a finer level kicks in, and
+    // how big the finest cells may grow before points take over.
+    atlasSwitchPx: MIN_CELL_PX,
+    atlasPointsPx: POINTS_HANDOFF_CELL_PX,
   });
 
   useEffect(() => {
@@ -278,6 +274,21 @@ function VisualizationPane({
   const updatePointOpacity = useCallback((value) => {
     setVizConfig((prev) => ({ ...prev, pointOpacity: value }));
   }, []);
+
+  const updateAtlasSwitchPx = useCallback((value) => {
+    setVizConfig((prev) => ({ ...prev, atlasSwitchPx: value }));
+  }, []);
+  const updateAtlasPointsPx = useCallback((value) => {
+    setVizConfig((prev) => ({ ...prev, atlasPointsPx: value }));
+  }, []);
+
+  // Level of detail for the image map at the current zoom (tunable thresholds).
+  const lod = useMemo(
+    () => atlasLod(transform?.k || 1, width, atlasResolutions, vizConfig.atlasSwitchPx, vizConfig.atlasPointsPx),
+    [transform, width, atlasResolutions, vizConfig.atlasSwitchPx, vizConfig.atlasPointsPx]
+  );
+  // Points drawn on top of the atlas: past the deepest grid, or always-on.
+  const pointsVisible = imageMode && (lod.deepest || alwaysShowPoints);
 
   // ensure the order of selectedPoints
   // exactly matches the ordering of indexes in shownIndices.
@@ -329,6 +340,8 @@ function VisualizationPane({
           toggleImageMode={toggleImageMode}
           alwaysShowPoints={alwaysShowPoints}
           toggleAlwaysShowPoints={toggleAlwaysShowPoints}
+          updateAtlasSwitchPx={updateAtlasSwitchPx}
+          updateAtlasPointsPx={updateAtlasPointsPx}
         />
       </div>
 
@@ -432,6 +445,7 @@ function VisualizationPane({
             transform={transform}
             enabled={imageMode}
             manifest={atlasStatus}
+            minCellPx={vizConfig.atlasSwitchPx}
           />
         )}
         {/* Points drawn on top of the image grid (past the deepest grid, or
