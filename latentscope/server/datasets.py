@@ -368,7 +368,7 @@ def get_dataset_atlas_plan(dataset, scope):
     """
     import pandas as pd
 
-    from latentscope.scripts.sprite_atlas import plan_atlas
+    from latentscope.scripts.sprite_atlas import plan_atlas, sample_bytes_per_cell
 
     _safe_dataset(scope, param="scope")
     column = request.args.get('column')
@@ -395,6 +395,17 @@ def get_dataset_atlas_plan(dataset, scope):
         df = df[~df["deleted"].astype(bool)]
     plan = plan_atlas(df["x"].to_numpy(), df["y"].to_numpy(), resolutions,
                       cell_size=cell_size, tile_px=tile_px)
+
+    # Estimate encoded bytes per populated cell by sampling real images, so the
+    # UI can show per-resolution + total size before generating.
+    scope_input = os.path.join(_data_dir(), dataset, "scopes", scope + "-input.parquet")
+    bytes_per_cell = None
+    if os.path.exists(scope_input):
+        try:
+            bytes_per_cell = sample_bytes_per_cell(scope_input, column, cell_size)
+        except Exception:
+            bytes_per_cell = None
+    plan["bytes_per_cell"] = bytes_per_cell
     return jsonify(plan)
 
 

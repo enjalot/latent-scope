@@ -86,6 +86,12 @@
     .muted {
       color: var(--text-color-secondary, #999);
     }
+
+    tfoot .totalRow td {
+      border-top: 1px solid rgba(127, 127, 127, 0.25);
+      font-weight: 600;
+      padding-top: 6px;
+    }
   }
 
   .totals {

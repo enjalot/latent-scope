@@ -227,6 +227,17 @@ def test_plan_atlas_counts_and_density():
     assert sum(sum(row) for row in d["counts"]) == 3
 
 
+def test_sample_bytes_per_cell(tmp_data_dir, atlas_dataset):
+    from latentscope.scripts.sprite_atlas import sample_bytes_per_cell
+
+    path = os.path.join(tmp_data_dir, atlas_dataset, "scopes", f"{SCOPE_ID}-input.parquet")
+    bpc = sample_bytes_per_cell(path, "image", 32)
+    assert bpc is not None and bpc > 0
+    # bigger cells encode to more bytes per cell
+    bpc64 = sample_bytes_per_cell(path, "image", 64)
+    assert bpc64 > bpc
+
+
 # ---------------------------------------------------------------------------
 # endpoints
 # ---------------------------------------------------------------------------
@@ -276,6 +287,7 @@ def test_atlas_plan_endpoint(client, atlas_dataset):
     assert e64["populated_cells"] == 3
     assert plan["total_points"] == 4  # 5 rows - 1 deleted
     assert plan["density"]["res"] == 64
+    assert plan["bytes_per_cell"] > 0  # sampled from the real images
 
     # non-image column rejected
     bad = client.get(

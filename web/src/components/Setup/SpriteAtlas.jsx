@@ -26,6 +26,13 @@ function pct(n, d) {
   return d ? Math.round((100 * n) / d) : 0;
 }
 
+function formatBytes(b) {
+  if (!b || b <= 0) return '—';
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+  if (b < 1024 * 1024 * 1024) return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(b / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 function SpriteAtlas() {
   const { dataset, scope, setPreviewLabel } = useSetup();
 
@@ -182,6 +189,7 @@ function SpriteAtlas() {
               <th>Tiles</th>
               <th>Populated cells</th>
               <th>Populated tiles</th>
+              <th>Est. size</th>
             </tr>
           </thead>
           <tbody>
@@ -205,14 +213,30 @@ function SpriteAtlas() {
                   {e.populated_tiles} / {e.total_tiles}{' '}
                   <span className={styles.muted}>({pct(e.populated_tiles, e.total_tiles)}%)</span>
                 </td>
+                <td>{formatBytes(e.populated_cells * (plan.bytes_per_cell || 0) * samples)}</td>
               </tr>
             ))}
           </tbody>
+          {plan?.bytes_per_cell ? (
+            <tfoot>
+              <tr className={styles.totalRow}>
+                <td colSpan={4}>Total{samples > 1 ? ` (×${samples} sheets)` : ''}</td>
+                <td>
+                  {formatBytes(
+                    (plan.resolutions || []).reduce((s, e) => s + e.populated_cells, 0) *
+                      plan.bytes_per_cell *
+                      samples
+                  )}
+                </td>
+              </tr>
+            </tfoot>
+          ) : null}
         </table>
       </div>
       {plan && (
         <p className={styles.totals}>
-          {plan.total_points.toLocaleString()} points · click a row to preview its tiling.
+          {plan.total_points.toLocaleString()} points · click a row to preview its tiling. Sizes are
+          estimated from a sample of your images.
         </p>
       )}
 

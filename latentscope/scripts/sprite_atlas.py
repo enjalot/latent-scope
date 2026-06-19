@@ -155,6 +155,46 @@ def plan_atlas(xs, ys, resolutions, cell_size=DEFAULT_CELL_SIZE,
     }
 
 
+def sample_bytes_per_cell(scope_input_path, image_column, cell_size,
+                          quality=80, sample=48):
+    """Estimate the encoded WebP bytes per populated cell by packing a sample of
+    real images at *cell_size* and measuring. Accounts for content, cell size,
+    quality and packing. Returns None if no images can be sampled."""
+    import io
+    import math
+
+    import pyarrow.parquet as pq
+    from PIL import Image, ImageOps
+
+    pf = pq.ParquetFile(scope_input_path)
+    thumbs = []
+    for batch in pf.iter_batches(batch_size=128, columns=[image_column]):
+        for v in batch.column(0).to_pylist():
+            raw = _image_bytes(v)
+            if raw is None:
+                continue
+            try:
+                img = Image.open(io.BytesIO(raw)).convert("RGBA")
+                thumbs.append(ImageOps.fit(img, (cell_size, cell_size)))
+            except Exception:
+                continue
+            if len(thumbs) >= sample:
+                break
+        if len(thumbs) >= sample:
+            break
+    if not thumbs:
+        return None
+
+    n = len(thumbs)
+    side = math.ceil(math.sqrt(n))
+    mosaic = Image.new("RGBA", (side * cell_size, side * cell_size), (0, 0, 0, 0))
+    for i, t in enumerate(thumbs):
+        mosaic.paste(t, ((i % side) * cell_size, (i // side) * cell_size), t)
+    buf = io.BytesIO()
+    mosaic.save(buf, format="WEBP", quality=quality)
+    return buf.getbuffer().nbytes / n
+
+
 def generate_sprite_atlas(dataset_id, scope_id, image_column,
                           resolutions=DEFAULT_RESOLUTIONS, cell_size=DEFAULT_CELL_SIZE,
                           samples=1, quality=80, tile_px=DEFAULT_TILE_PX):
