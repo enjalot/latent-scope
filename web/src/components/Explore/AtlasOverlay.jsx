@@ -118,10 +118,12 @@ function AtlasOverlay({
 
   if (target == null) return null;
 
-  // Backdrop is only a placeholder while the target's visible tiles load.
+  // Backdrop is only a placeholder while the target's visible tiles load. Once
+  // the target is ready it fades out (rather than vanishing) so layer changes
+  // aren't an abrupt switch.
   const targetReady =
     targetTiles.length > 0 && targetTiles.every((t) => loadedRef.current.has(t.key));
-  const showBackdrop = backdrop != null && !targetReady && backdropTiles.length > 0;
+  const hasBackdrop = backdrop != null && backdropTiles.length > 0;
 
   const innerStyle = {
     position: 'absolute',
@@ -174,8 +176,18 @@ function AtlasOverlay({
         overflow: 'hidden',
       }}
     >
-      {showBackdrop && (
-        <div style={innerStyle}>{backdropTiles.map((t) => renderTile(t, false))}</div>
+      {hasBackdrop && (
+        <div
+          style={{
+            ...innerStyle,
+            // Visible while loading; fades out once the target is ready. No
+            // transition on the way in so it provides continuity immediately.
+            opacity: targetReady ? 0 : 1,
+            transition: targetReady ? 'opacity 250ms ease' : 'none',
+          }}
+        >
+          {backdropTiles.map((t) => renderTile(t, false))}
+        </div>
       )}
       <div style={innerStyle}>{targetTiles.map((t) => renderTile(t, true))}</div>
     </div>
