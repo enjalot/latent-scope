@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef, useReducer, useEffect } from 'react';
 import { atlasTileUrl } from '../../lib/atlasUrl';
 import { atlasLod } from '../../lib/atlasLod';
 
@@ -100,7 +100,28 @@ function AtlasOverlay({
     [visibleTilesFor, resByNum, target]
   );
 
+  // Track which tiles have decoded so the backdrop can drop out once the target
+  // is fully shown — otherwise the coarser level keeps showing through the
+  // target's empty cells (two levels at once, worst at the finest zoom).
+  const loadedRef = useRef(new Set());
+  const [, bumpLoaded] = useReducer((x) => x + 1, 0);
+  useEffect(() => {
+    loadedRef.current = new Set();
+    bumpLoaded();
+  }, [scopeId, imageColumn, sheet]);
+  const markLoaded = useCallback((key) => {
+    if (!loadedRef.current.has(key)) {
+      loadedRef.current.add(key);
+      bumpLoaded();
+    }
+  }, []);
+
   if (target == null) return null;
+
+  // Backdrop is only a placeholder while the target's visible tiles load.
+  const targetReady =
+    targetTiles.length > 0 && targetTiles.every((t) => loadedRef.current.has(t.key));
+  const showBackdrop = backdrop != null && !targetReady && backdropTiles.length > 0;
 
   const innerStyle = {
     position: 'absolute',
@@ -119,8 +140,14 @@ function AtlasOverlay({
       src={atlasTileUrl(dataset.id, scopeId, imageColumn, t.res, t.tx, t.ty, sheet)}
       alt=""
       decoding="async"
-      onLoad={fade ? (e) => (e.currentTarget.style.opacity = 1) : undefined}
-      onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+      onLoad={(e) => {
+        if (fade) e.currentTarget.style.opacity = 1;
+        if (fade) markLoaded(t.key);
+      }}
+      onError={(e) => {
+        e.currentTarget.style.visibility = 'hidden';
+        if (fade) markLoaded(t.key); // don't wedge the backdrop on a missing tile
+      }}
       style={{
         position: 'absolute',
         left: t.left,
@@ -147,7 +174,7 @@ function AtlasOverlay({
         overflow: 'hidden',
       }}
     >
-      {backdrop != null && backdropTiles.length > 0 && (
+      {showBackdrop && (
         <div style={innerStyle}>{backdropTiles.map((t) => renderTile(t, false))}</div>
       )}
       <div style={innerStyle}>{targetTiles.map((t) => renderTile(t, true))}</div>
