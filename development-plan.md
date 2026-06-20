@@ -1,5 +1,9 @@
 # Latent Scope Development Plan — v1.0 Resurrection
 
+> **Superseded by [`PATH_TO_1.0.md`](PATH_TO_1.0.md) (2026-06-20).** Kept for
+> history; most of its work streams are now complete. See the new plan for the
+> current path to a 1.0 release.
+
 ## Context
 
 Latent-scope has been relatively dormant since v0.6.0 (Feb 2025). There are 34 open issues, 4 open PRs, accumulated tech debt, and no automated tests. The project works — it has a functional pipeline, a usable web UI, and a library API — but it needs modernization to support the next phase of development. This plan targets a **v1.0 major version bump**.
