@@ -294,3 +294,72 @@ def test_atlas_plan_endpoint(client, atlas_dataset):
         f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/plan?column=x"
     )
     assert bad.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# stale-atlas detection after a scope overwrite (Codex review on #130)
+# ---------------------------------------------------------------------------
+
+def test_scope_fingerprint_tracks_points(atlas_dataset, tmp_data_dir):
+    from latentscope.scripts.sprite_atlas import (
+        scope_fingerprint,
+        scope_input_parquet_path,
+    )
+
+    path = scope_input_parquet_path(tmp_data_dir, atlas_dataset, SCOPE_ID)
+    fp1 = scope_fingerprint(path)
+    assert fp1 and isinstance(fp1, str)
+    # stable across repeated reads
+    assert scope_fingerprint(path) == fp1
+    # changing a (non-deleted) coordinate changes the fingerprint
+    df = pd.read_parquet(path)
+    df.loc[0, "x"] = float(df.loc[0, "x"]) + 0.5
+    df.to_parquet(path)
+    assert scope_fingerprint(path) != fp1
+    # missing file cannot be verified
+    assert scope_fingerprint(path + ".nope") is None
+
+
+def test_atlas_status_detects_stale_after_scope_overwrite(client, atlas_dataset, tmp_data_dir):
+    from latentscope.scripts.sprite_atlas import (
+        generate_sprite_atlas,
+        scope_input_parquet_path,
+    )
+
+    generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image", resolutions=(64,), cell_size=CELL)
+    manifest = read_manifest(tmp_data_dir, atlas_dataset, SCOPE_ID, "image")
+    assert manifest["input_fingerprint"]
+
+    url = f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/status?column=image"
+    assert client.get(url).get_json()["generated"] is True
+
+    # simulate a scope overwrite: {scope}-input.parquet rewritten with new coords
+    path = scope_input_parquet_path(tmp_data_dir, atlas_dataset, SCOPE_ID)
+    df = pd.read_parquet(path)
+    df["x"] = -df["x"]
+    df.to_parquet(path)
+
+    stale = client.get(url).get_json()
+    assert stale["generated"] is False
+    assert stale["stale"] is True
+
+
+def test_atlas_status_trusts_pre_fingerprint_manifests(client, atlas_dataset, tmp_data_dir):
+    """Atlases generated before fingerprinting (no stored fp) stay trusted."""
+    from latentscope.scripts.sprite_atlas import (
+        atlas_manifest_name,
+        atlas_root,
+        generate_sprite_atlas,
+    )
+
+    generate_sprite_atlas(atlas_dataset, SCOPE_ID, "image", resolutions=(64,), cell_size=CELL)
+    mpath = os.path.join(atlas_root(tmp_data_dir, atlas_dataset, SCOPE_ID, "image"),
+                         atlas_manifest_name())
+    with open(mpath) as f:
+        manifest = json.load(f)
+    manifest.pop("input_fingerprint", None)
+    with open(mpath, "w") as f:
+        json.dump(manifest, f)
+
+    url = f"/api/datasets/{atlas_dataset}/scopes/{SCOPE_ID}/atlas/status?column=image"
+    assert client.get(url).get_json()["generated"] is True

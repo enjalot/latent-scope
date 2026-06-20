@@ -296,6 +296,24 @@ def get_dataset_atlas_status(dataset, scope):
     manifest = _atlas_manifest(dataset, scope, column)
     if not manifest or not manifest.get("complete"):
         return jsonify({"generated": False})
+
+    # Revalidate the cached atlas against the current scope input. If the scope
+    # was overwritten with a different UMAP or deleted-row set, the sampled
+    # cell images no longer match the points, so report it as stale (not
+    # generated) and let Explore fall back to the heatmap until regenerated.
+    # Atlases written before fingerprinting (no stored fp) are trusted as-is.
+    stored_fp = manifest.get("input_fingerprint")
+    if stored_fp:
+        from latentscope.scripts.sprite_atlas import (
+            scope_fingerprint,
+            scope_input_parquet_path,
+        )
+        current_fp = scope_fingerprint(
+            scope_input_parquet_path(_data_dir(), dataset, scope)
+        )
+        if current_fp is not None and current_fp != stored_fp:
+            return jsonify({"generated": False, "stale": True})
+
     return jsonify({
         "generated": True,
         "column": manifest.get("column"),

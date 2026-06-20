@@ -94,6 +94,47 @@ def atlas_manifest_name():
     return "manifest.json"
 
 
+def scope_input_parquet_path(data_dir, dataset_id, scope_id):
+    """Path to the {scope}-input.parquet the atlas is sampled from."""
+    return os.path.join(data_dir, dataset_id, "scopes", scope_id + "-input.parquet")
+
+
+def scope_fingerprint(scope_input_parquet):
+    """A cheap, content-derived fingerprint of the points an atlas is sampled
+    from (the non-deleted x/y of {scope}-input.parquet).
+
+    The atlas caches one representative image per heatmap cell. If the scope is
+    later overwritten with a different UMAP or deleted-row set, {scope}-input.
+    parquet is rewritten but the atlas tiles are not — so the manifest must be
+    revalidated against this fingerprint before the cached atlas is trusted.
+    Returns None if the parquet is missing/unreadable.
+    """
+    import hashlib
+
+    import numpy as np
+    import pyarrow.parquet as pq
+
+    try:
+        pf = pq.ParquetFile(scope_input_parquet)
+    except (OSError, FileNotFoundError):
+        return None
+    names = set(pf.schema_arrow.names)
+    if "x" not in names or "y" not in names:
+        return None
+    cols = ["x", "y"] + (["deleted"] if "deleted" in names else [])
+    table = pf.read(columns=cols)
+    x = np.asarray(table.column("x").to_numpy(zero_copy_only=False), dtype="<f4")
+    y = np.asarray(table.column("y").to_numpy(zero_copy_only=False), dtype="<f4")
+    if "deleted" in names:
+        keep = ~table.column("deleted").to_numpy(zero_copy_only=False).astype(bool)
+        x, y = x[keep], y[keep]
+    h = hashlib.sha1()
+    h.update(str(x.size).encode())
+    h.update(np.ascontiguousarray(x).tobytes())
+    h.update(np.ascontiguousarray(y).tobytes())
+    return h.hexdigest()[:16]
+
+
 def plan_atlas(xs, ys, resolutions, cell_size=DEFAULT_CELL_SIZE,
                tile_px=DEFAULT_TILE_PX, density_res=64, max_tile_coords=8192):
     """Compute, without generating anything, how an atlas would tile.
@@ -386,6 +427,9 @@ def generate_sprite_atlas(dataset_id, scope_id, image_column,
         "tile_px": tile_px,
         "domain": [-1, 1],
         "resolutions": resolution_entries,
+        # Fingerprint of the scope points this atlas was sampled from, so the
+        # status endpoint can detect a stale atlas after a scope overwrite.
+        "input_fingerprint": scope_fingerprint(scope_input_path),
         "complete": True,
     }
     manifest_path = os.path.join(out_root, atlas_manifest_name())
