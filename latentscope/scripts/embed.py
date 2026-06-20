@@ -99,6 +99,28 @@ def main():
     args = parser.parse_args()
     embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length)
 
+def _make_token_counter(model):
+    """Best-effort per-text token counter using a tokenizer the embedding
+    provider already loaded (sentence-transformers `.tokenizer`, OpenAI/tiktoken
+    `.encoder`, ...). Returns a callable mapping a list of texts to a list of
+    token counts, or None when no local tokenizer is available (e.g. an API
+    provider that tokenizes server-side). Powers the token stats for issue #77.
+    """
+    tokenizer = getattr(model, "tokenizer", None) or getattr(model, "encoder", None)
+    if tokenizer is None or not hasattr(tokenizer, "encode"):
+        return None
+
+    def count(texts):
+        counts = []
+        for t in texts:
+            enc = tokenizer.encode(t)
+            # HF tokenizers return an Encoding (with .ids); tiktoken returns a list
+            counts.append(len(getattr(enc, "ids", enc)))
+        return counts
+
+    return count
+
+
 def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None):
     import numpy as np
     import pandas as pd
@@ -201,9 +223,16 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         # only one full copy of the text exists (the column itself stays in df).
         sentences = []
         for i, s in enumerate(df[text_column]):
-            if s is None or s == "":
+            # pd.isna catches None, NaN and pd.NA (a plain `s is None` check
+            # misses the float NaN / pd.NA that pandas produces from null
+            # parquet/CSV cells, which would crash on `prefix + s` below).
+            if pd.isna(s) or s == "":
                 print(i, s, "text is empty, adding a [space]")
                 s = " "
+            elif not isinstance(s, str):
+                # Non-string cells (e.g. a numeric column) would also break
+                # concatenation; coerce so row alignment is preserved.
+                s = str(s)
             sentences.append(prefix + s)
 
     total_batches = (len(sentences) + batch_size - 1) // batch_size
@@ -211,6 +240,14 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     print("embedding", len(sentences), input_type, "inputs", "in", total_batches, "batches")
     if existing_count > 0:
         print(f"Resuming: {existing_count} rows already embedded")
+
+    # Token accounting (#77): count tokens per row as we go. Late-interaction
+    # models give exact counts from their per-token vectors; for dense models we
+    # use a local tokenizer when the provider exposes one. Only collected on a
+    # fresh run — a resume skips already-embedded batches, which would undercount.
+    token_counter = None if input_type == "image" else _make_token_counter(model)
+    collect_tokens = existing_count == 0
+    token_counts = []
 
     for i, batch in enumerate(tqdm(chunked_iterable(sentences, batch_size), total=total_batches)):
         start_index = i * batch_size
@@ -237,12 +274,20 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
                     mean_vectors, start_index=start_index,
                     token_vectors_list=token_vectors_list,
                 )
+                if collect_tokens:
+                    token_counts.extend(len(tv) for tv in token_vectors_list)
             else:
                 embeddings = np.array(model.embed(batch_inputs, dimensions=dimensions))
                 append_embeddings(
                     DATA_DIR, dataset_id, embedding_id,
                     embeddings, start_index=start_index,
                 )
+                if collect_tokens and token_counter is not None:
+                    try:
+                        token_counts.extend(token_counter(batch_inputs))
+                    except Exception as te:
+                        print("token counting disabled:", te)
+                        token_counter = None
         except Exception as e:
             print(batch)
             print("error embedding batch", i, e)
@@ -290,6 +335,19 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     # Get stats from the stored embeddings
     stats = get_embedding_stats(DATA_DIR, dataset_id, embedding_id)
 
+    # Summarize token counts (#77) so the UI can surface tokens per doc + total.
+    token_stats = None
+    if collect_tokens and token_counts:
+        arr = np.asarray(token_counts)
+        token_stats = {
+            "total": int(arr.sum()),
+            "mean": round(float(arr.mean()), 2),
+            "min": int(arr.min()),
+            "max": int(arr.max()),
+            "count": int(arr.size),
+        }
+        print(f"tokens: {token_stats['total']} total, {token_stats['mean']} avg/doc")
+
     meta = {
         "id": embedding_id,
         "model_id": model_id,
@@ -302,6 +360,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         "late_interaction": is_late_interaction,
         "min_values": stats["min_values"],
         "max_values": stats["max_values"],
+        "token_stats": token_stats,
     }
 
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:

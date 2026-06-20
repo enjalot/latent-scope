@@ -115,6 +115,10 @@
   color: #155724;
   margin-left: 6px;
 }
+.token-info {
+  font-size: 0.75em;
+  color: var(--text-color-secondary, #666);
+}
 .migrate-button {
   font-size: 0.7em;
   padding: 1px 6px;

@@ -357,6 +357,8 @@ function VisualizationPane({
             featureIsSelected={featureIsSelected}
             maxZoom={maxZoom}
             isSmallScreen={isSmallScreen}
+            pointScale={vizConfig.pointSize}
+            pointOpacity={vizConfig.pointOpacity}
             // In image mode the visible points come from the PointsOverlay (on
             // top of the atlas); the GPU layer stays for zoom/hover/select only.
             hidePoints={imageMode}

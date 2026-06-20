@@ -643,3 +643,82 @@ def test_colbert_provider_real_model():
         return float((q @ d.T).max(axis=1).sum())
     assert maxsim(query_tokens[0], token_vectors[0]) > maxsim(query_tokens[0],
                                                               token_vectors[1])
+
+
+# ---------------------------------------------------------------------------
+# null / non-string text handling (#94)
+# ---------------------------------------------------------------------------
+
+def test_embed_handles_null_and_empty_text(pipeline_env):
+    """#94: None / NaN / empty cells in the text column must not crash embed
+    (a plain `s is None` check missed float NaN / pd.NA from null parquet
+    cells, which then blew up on `prefix + s`). Row alignment is preserved."""
+    data_dir = pipeline_env
+    dataset_id = "nulls"
+    from latentscope.scripts.embed import embed
+    from latentscope.scripts.ingest import ingest
+    from latentscope.util.embedding_store import get_embedding_count
+
+    df = pd.DataFrame({"text": [
+        "a normal sentence about science",
+        None,
+        "",
+        float("nan"),
+        "another sentence about cooking",
+    ]})
+    ingest(dataset_id, df, text_column="text")
+    embed(dataset_id, "text", "fake-test-model", prefix=None, rerun=None,
+          dimensions=None, batch_size=2)
+    # every input row produced exactly one stored vector
+    assert get_embedding_count(data_dir, dataset_id, "embedding-001") == len(df)
+
+
+# ---------------------------------------------------------------------------
+# token counting (#77)
+# ---------------------------------------------------------------------------
+
+class FakeTokenizingProvider(FakeEmbedProvider):
+    """FakeEmbedProvider that also exposes a tokenizer, so the embed step can
+    collect token stats (word-count stands in for real tokenization)."""
+
+    class _WordTokenizer:
+        def encode(self, text):
+            return text.split()
+
+    def __init__(self, dim=DIM):
+        super().__init__(dim)
+        self.tokenizer = self._WordTokenizer()
+
+
+def test_make_token_counter_uses_provider_tokenizer():
+    from latentscope.scripts.embed import _make_token_counter
+
+    counter = _make_token_counter(FakeTokenizingProvider())
+    assert counter(["one two three", "solo"]) == [3, 1]
+    # provider without a tokenizer -> no counter (API providers tokenize remotely)
+    assert _make_token_counter(FakeEmbedProvider()) is None
+
+
+def test_embed_records_token_stats(pipeline_env, monkeypatch):
+    """#77: a fresh embed run records per-doc token stats in the metadata."""
+    data_dir = pipeline_env
+    dataset_id = "toks"
+    import latentscope.scripts.embed as embed_mod
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeTokenizingProvider())
+    from latentscope.scripts.embed import embed
+    from latentscope.scripts.ingest import ingest
+
+    df = make_input_df()
+    ingest(dataset_id, df, text_column="text")
+    embed(dataset_id, "text", "fake-tokenizing", prefix=None, rerun=None,
+          dimensions=None, batch_size=50)
+
+    with open(os.path.join(data_dir, dataset_id, "embeddings",
+                           "embedding-001.json")) as f:
+        meta = json.load(f)
+    ts = meta["token_stats"]
+    assert ts is not None
+    assert ts["count"] == len(df)
+    assert ts["total"] == sum(len(t.split()) for t in df["text"])
+    assert ts["max"] >= ts["mean"] >= ts["min"] >= 1
