@@ -22,6 +22,7 @@ ScatterGL.propTypes = {
   width: PropTypes.number.isRequired,
   maxZoom: PropTypes.number,
   pointScale: PropTypes.number,
+  pointOpacity: PropTypes.number,
   quadtreeRadius: PropTypes.number,
   ignoreNotSelected: PropTypes.bool,
   height: PropTypes.number.isRequired,
@@ -93,6 +94,7 @@ function ScatterGL({
   width,
   height,
   pointScale = 1,
+  pointOpacity = 1,
   quadtreeRadius = 10,
   minZoom = 0.75,
   maxZoom = 40,
@@ -102,6 +104,10 @@ function ScatterGL({
   featureIsSelected,
   ignoreNotSelected = false,
   isSmallScreen = false,
+  // When true the canvas still clears + keeps its hover quadtree, but draws no
+  // dots. Used by the image map, where the visible points come from the
+  // PointsOverlay (on top of the atlas) instead of the GPU layer underneath.
+  hidePoints = false,
 }) {
   const { isDark: isDarkMode } = useColorMode();
   const { setCenteredIndices } = useFilter();
@@ -275,6 +281,7 @@ function ScatterGL({
         uniform float uScale;
         uniform bool isDarkMode;
         uniform float dotScaleFactor;
+        uniform float opacityScale;
         void main() {
           float dist = length(gl_PointCoord.xy - 0.5) * 2.0;
           if (dist > 1.0) discard;
@@ -284,6 +291,7 @@ function ScatterGL({
           } else {
             alpha = v_opacity * (1.0 - pow(dist, uScale * dotScaleFactor * 2.0));
           }
+          alpha = clamp(alpha * opacityScale, 0.0, 1.0);
           vec3 color = v_color * 0.95;
 
           gl_FragColor = vec4(color * alpha*1.25, alpha);
@@ -298,6 +306,7 @@ function ScatterGL({
       },
       uniforms: {
         pointScale: (context, props) => props.pointScale,
+        opacityScale: (context, props) => props.opacityScale,
         uTranslate: (context, props) => [props.transform.x, props.transform.y],
         uScale: (context, props) => props.transform.k,
         uScreenSize: (context, props) => [props.width, props.height],
@@ -338,6 +347,10 @@ function ScatterGL({
       depth: 1,
     });
 
+    // Hover still works (quadtree is built from `points` separately), the dots
+    // just aren't drawn.
+    if (hidePoints) return;
+
     const pointsToRender = points;
 
     const blendParams = isDarkMode
@@ -361,13 +374,14 @@ function ScatterGL({
     drawPointsRef.current({
       points: pointsToRender,
       pointScale: dynamicSize * pointScale,
+      opacityScale: pointOpacity,
       featureIsSelected,
       transform,
       width,
       height,
       blendParams,
     });
-  }, [points, transform, pointScale, featureIsSelected, width, height, isDarkMode, dynamicSize]);
+  }, [points, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
 
   // Update useEffect to rebuild quadtree when points change
   useEffect(() => {

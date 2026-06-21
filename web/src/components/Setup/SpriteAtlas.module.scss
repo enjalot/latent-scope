@@ -1,0 +1,126 @@
+.atlas {
+  padding: 16px;
+  max-width: 760px;
+
+  h3 {
+    margin: 0 0 8px;
+  }
+
+  .help {
+    color: var(--text-color-secondary, #666);
+    font-size: 14px;
+    line-height: 1.4;
+
+    code {
+      background: rgba(127, 127, 127, 0.15);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+  }
+
+  .controls {
+    display: flex;
+    gap: 24px;
+    margin: 16px 0;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+
+      select,
+      input {
+        padding: 4px 6px;
+      }
+    }
+  }
+
+  .planRow {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .previewCol {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .previewCaption {
+    font-size: 11px;
+    color: var(--text-color-secondary, #888);
+  }
+
+  .stats {
+    border-collapse: collapse;
+    font-size: 13px;
+    flex: 1;
+    min-width: 320px;
+
+    th,
+    td {
+      text-align: left;
+      padding: 4px 12px 4px 0;
+    }
+
+    thead th {
+      border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+      font-weight: 600;
+    }
+
+    tbody tr {
+      cursor: pointer;
+    }
+
+    tbody tr:hover {
+      background: rgba(40, 90, 200, 0.06);
+    }
+
+    tr.selected {
+      background: rgba(40, 90, 200, 0.12);
+    }
+
+    .muted {
+      color: var(--text-color-secondary, #999);
+    }
+
+    tfoot .totalRow td {
+      border-top: 1px solid rgba(127, 127, 127, 0.25);
+      font-weight: 600;
+      padding-top: 6px;
+    }
+  }
+
+  .totals {
+    font-size: 12px;
+    color: var(--text-color-secondary, #888);
+    margin: 8px 0 0;
+  }
+
+  .actions {
+    margin: 12px 0;
+  }
+
+  .summary {
+    margin-top: 16px;
+    border-top: 1px solid rgba(127, 127, 127, 0.2);
+    padding-top: 12px;
+
+    h4 {
+      margin: 0 0 6px;
+    }
+
+    ul {
+      margin: 0 0 10px;
+      padding-left: 18px;
+      font-size: 13px;
+    }
+
+    .exploreLink {
+      font-weight: 600;
+    }
+  }
+}

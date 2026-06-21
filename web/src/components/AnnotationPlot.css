@@ -2,5 +2,11 @@
 
 .annotation-plot {
   position: absolute;
+  /* Pin to the container origin. Without an explicit offset an absolutely
+     positioned canvas falls back to its "static position", which a preceding
+     in-flow sibling (e.g. the cluster-outline plot) can shift by several px —
+     making the hover/selection marker land offset from the actual points. */
+  top: 0;
+  left: 0;
   pointer-events: none;
 }

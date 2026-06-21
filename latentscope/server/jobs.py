@@ -702,6 +702,29 @@ def run_sprites():
     return jsonify({"job_id": job_id})
 
 
+@jobs_write_bp.route('/sprite-atlas', methods=['GET', 'POST'])
+def run_sprite_atlas():
+    data_dir = _data_dir()
+    dataset = _safe_dataset(request.values.get('dataset'))
+    scope_id = _safe_dataset(request.values.get('scope_id'), param="scope_id")
+    image_column = request.values.get('image_column')
+    cell_size = request.values.get('cell_size') or '32'
+    samples = request.values.get('samples') or '1'
+    resolutions = request.values.get('resolutions')  # optional, e.g. "64,128"
+
+    err = _require_params(dataset=dataset, image_column=image_column)
+    if err:
+        return err
+
+    job_id = str(uuid.uuid4())
+    command = ['ls-sprite-atlas', dataset, scope_id, image_column,
+               '--cell-size', str(cell_size), '--samples', str(samples)]
+    if resolutions:
+        command += ['--resolutions', str(resolutions)]
+    threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
 @jobs_write_bp.route('/delete/scope', methods=['GET', 'POST'])
 def delete_scope():
     data_dir = _data_dir()

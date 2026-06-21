@@ -269,6 +269,164 @@ def get_dataset_sprite(dataset):
     return response
 
 
+def _atlas_manifest(dataset, scope, column):
+    """Load an atlas manifest, or None if it is absent/unreadable."""
+    from latentscope.scripts.sprite_atlas import atlas_manifest_name, atlas_root
+
+    manifest_path = os.path.join(
+        atlas_root(_data_dir(), dataset, scope, column), atlas_manifest_name()
+    )
+    try:
+        with open(manifest_path, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+@datasets_bp.route('/<dataset>/scopes/<scope>/atlas/status', methods=['GET'])
+def get_dataset_atlas_status(dataset, scope):
+    """Report whether sprite-sheet atlases exist for a scope/column.
+
+    Query params: column (image column name). Returns the manifest (resolutions,
+    cell_size, sheet paths) so the frontend can pick which sheet to render.
+    Never 500s.
+    """
+    _safe_dataset(scope, param="scope")
+    column = request.args.get('column')
+    manifest = _atlas_manifest(dataset, scope, column)
+    if not manifest or not manifest.get("complete"):
+        return jsonify({"generated": False})
+
+    # Revalidate the cached atlas against the current scope input. If the scope
+    # was overwritten with a different UMAP or deleted-row set, the sampled
+    # cell images no longer match the points, so report it as stale (not
+    # generated) and let Explore fall back to the heatmap until regenerated.
+    # Atlases written before fingerprinting (no stored fp) are trusted as-is.
+    stored_fp = manifest.get("input_fingerprint")
+    if stored_fp:
+        from latentscope.scripts.sprite_atlas import (
+            scope_fingerprint,
+            scope_input_parquet_path,
+        )
+        current_fp = scope_fingerprint(
+            scope_input_parquet_path(_data_dir(), dataset, scope)
+        )
+        if current_fp is not None and current_fp != stored_fp:
+            return jsonify({"generated": False, "stale": True})
+
+    return jsonify({
+        "generated": True,
+        "column": manifest.get("column"),
+        "cell_size": manifest.get("cell_size"),
+        "samples": manifest.get("samples"),
+        "domain": manifest.get("domain"),
+        "resolutions": manifest.get("resolutions"),
+    })
+
+
+def _atlas_column_is_image(dataset, column):
+    meta_path = os.path.join(_data_dir(), dataset, "meta.json")
+    try:
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    except OSError:
+        return None, (jsonify({"error": f"dataset {dataset} not found"}), 404)
+    column_meta = (meta.get("column_metadata") or {}).get(column)
+    if not isinstance(column_meta, dict) or column_meta.get("type") != "image":
+        return None, (jsonify({"error": f"column {column!r} is not an image column"}), 400)
+    return meta, None
+
+
+@datasets_bp.route('/<dataset>/scopes/<scope>/atlas/sheet', methods=['GET'])
+def get_dataset_atlas_sheet(dataset, scope):
+    """Serve one atlas tile (a WebP for tile (tx, ty) of a resolution's pyramid).
+
+    Query params: column (image column), res (grid resolution), tx, ty (tile
+    coords), sheet (sample index, default 0). 404s when the tile is absent.
+    """
+    from flask import send_file
+
+    from latentscope.scripts.sprite_atlas import atlas_root, atlas_sheet_name, atlas_tile_dir
+
+    _safe_dataset(scope, param="scope")
+    column = request.args.get('column')
+    _, err = _atlas_column_is_image(dataset, column)
+    if err:
+        return err
+
+    try:
+        res = int(request.args.get('res'))
+        tx = int(request.args.get('tx'))
+        ty = int(request.args.get('ty'))
+        sheet = int(request.args.get('sheet', 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "res, tx, ty, sheet must be integers"}), 404
+    if min(res, tx, ty, sheet) < 0:
+        return jsonify({"error": "invalid tile coordinates"}), 404
+
+    root = atlas_root(_data_dir(), dataset, scope, column)
+    sheet_path = os.path.normpath(
+        os.path.join(root, atlas_tile_dir(res, tx, ty), atlas_sheet_name(sheet))
+    )
+    if os.path.commonpath([root, sheet_path]) != root or not os.path.exists(sheet_path):
+        return jsonify({"error": "atlas tile not found"}), 404
+
+    response = send_file(sheet_path, mimetype="image/webp")
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
+@datasets_bp.route('/<dataset>/scopes/<scope>/atlas/plan', methods=['GET'])
+def get_dataset_atlas_plan(dataset, scope):
+    """Plan an atlas without generating it: per-resolution populated cell/tile
+    counts, populated tile coords, and a density grid for the heatmap.
+
+    Query params: column (image column), resolutions (csv, default 64,128,256),
+    cell_size (default 32), tile_px (default 2048).
+    """
+    import pandas as pd
+
+    from latentscope.scripts.sprite_atlas import plan_atlas, sample_bytes_per_cell
+
+    _safe_dataset(scope, param="scope")
+    column = request.args.get('column')
+    _, err = _atlas_column_is_image(dataset, column)
+    if err:
+        return err
+
+    try:
+        resolutions = [int(v) for v in request.args.get('resolutions', '64,128,256').split(',') if v.strip()]
+        cell_size = int(request.args.get('cell_size', 32))
+        tile_px = int(request.args.get('tile_px', 2048))
+    except (TypeError, ValueError):
+        return jsonify({"error": "invalid plan parameters"}), 400
+    resolutions = [r for r in resolutions if 1 <= r <= 2048][:12]
+    if (not resolutions or not (4 <= cell_size <= 256)
+            or not (cell_size <= tile_px <= 16384)):
+        return jsonify({"error": "invalid plan parameters"}), 400
+
+    scope_path = os.path.join(_data_dir(), dataset, "scopes", scope + ".parquet")
+    if not os.path.exists(scope_path):
+        return jsonify({"error": f"scope {scope} not found"}), 404
+    df = pd.read_parquet(scope_path, columns=["x", "y", "deleted"])
+    if "deleted" in df:
+        df = df[~df["deleted"].astype(bool)]
+    plan = plan_atlas(df["x"].to_numpy(), df["y"].to_numpy(), resolutions,
+                      cell_size=cell_size, tile_px=tile_px)
+
+    # Estimate encoded bytes per populated cell by sampling real images, so the
+    # UI can show per-resolution + total size before generating.
+    scope_input = os.path.join(_data_dir(), dataset, "scopes", scope + "-input.parquet")
+    bytes_per_cell = None
+    if os.path.exists(scope_input):
+        try:
+            bytes_per_cell = sample_bytes_per_cell(scope_input, column, cell_size)
+        except Exception:
+            bytes_per_cell = None
+    plan["bytes_per_cell"] = bytes_per_cell
+    return jsonify(plan)
+
+
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     return scan_for_json_files(os.path.join(_data_dir(), dataset, "embeddings"))

@@ -7,18 +7,21 @@ import Umap from '../components/Setup/Umap';
 import Cluster from '../components/Setup/Cluster';
 import ClusterLabels from '../components/Setup/ClusterLabels';
 import Scope from '../components/Setup/Scope';
+import SpriteAtlas from '../components/Setup/SpriteAtlas';
 
 import StepProgress from '../components/Setup/StepProgress';
 
 import styles from './Setup.module.scss';
 
- 
+
 const stepComponents = {
   1: Embedding,
   2: Umap,
   3: Cluster,
   4: ClusterLabels,
   5: Scope,
+  // Step 6 ("Images") is only present for image datasets — see SetupContext.
+  6: SpriteAtlas,
 };
 
 function StepRenderer() {

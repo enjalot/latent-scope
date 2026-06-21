@@ -1,48 +1,121 @@
 # CLAUDE.md — Latent Scope
 
-This file provides guidance for AI agents (Claude Code and others) working on this codebase.
+Guidance for AI agents (Claude Code and others) working on this codebase. If you
+are an agent asked to "run the pipeline" or "show me the results", jump to
+[Agent quickstart](#agent-quickstart-run-it-for-the-user).
 
 ---
 
-## Project Overview
+## What Latent Scope does
 
-Latent Scope is a Python + React tool for embedding, projecting, clustering, and exploring text datasets. The backend is a Flask server; the frontend is a React/Vite SPA. Pipeline steps (ingest → embed → umap → cluster → label → scope) are run as CLI subprocesses via the web UI.
+Latent Scope is a Python + React tool for embedding, projecting, clustering,
+labeling, and exploring datasets through the lens of their latent space. The
+backend is a Flask server; the frontend is a React/Vite SPA. Pipeline steps run
+as CLI subprocesses (`ls-embed`, `ls-umap`, …) that can be driven from the web
+UI or scripted directly.
 
-See `development-plan.md` for the current v1.0 roadmap and work stream status.
+```
+ingest → embed → umap → cluster → label → scope → (sprite atlas) → explore
+```
+
+### Capabilities (what an agent can offer a user)
+
+- **Text and image datasets.** Ingest CSV/Parquet/JSON/JSONL/XLSX or a pandas
+  DataFrame. Image columns (HF `{bytes,path}` dicts, raw bytes, or URLs) are
+  auto-detected and embeddable (issue #87).
+- **Dense embeddings** from many providers (sentence-transformers/HF,
+  OpenAI, Cohere, Voyage, Mistral, Together, and any OpenAI-compatible endpoint).
+- **ColBERT late-interaction (multi-vector) embeddings** via `pylate` — per-token
+  vectors stored fp16, searched with MaxSim (issue #64). See
+  `examples/colbert_quickstart/`.
+- **LanceDB vector storage** (replaced HDF5). Embeddings live in a per-dataset
+  LanceDB table; old HDF5 embeddings are migrated on demand.
+- **UMAP projection + HDBSCAN/EVoC clustering**, with LLM cluster labeling.
+- **Explore UI**: GPU scatterplot with hover/select, density heatmap, cluster
+  outlines, similarity + late-interaction search, filtering, tagging.
+- **Image map (sprite atlas)**: for image datasets the map is a continuous
+  level-of-detail — heatmap when zoomed out, a tiled representative-image
+  pyramid as you zoom in, then individual points on top for hovering. Built by
+  the optional post-scope `ls-sprite-atlas` step (issue #24).
+
+---
+
+## Agent quickstart: run it for the user
+
+The data directory is set by the `LATENT_SCOPE_DATA` environment variable. On a
+dev checkout, use `uv run` (it resolves `.venv` automatically).
+
+**Run the full pipeline on a CSV (text):**
+```bash
+export LATENT_SCOPE_DATA=~/latent-scope-data        # or wherever data should live
+uv run ls-ingest mydata --path /path/to/data.csv --text_column text
+uv run ls-embed   mydata text transformers-BAAI___bge-small-en-v1.5
+uv run ls-umap    mydata embedding-001 25 0.1
+uv run ls-cluster mydata umap-001 5 3 0.0 --method hdbscan
+uv run ls-scope   mydata embedding-001 umap-001 cluster-001 default "My scope" "description"
+```
+`cluster` auto-writes a `…-labels-default` parquet, so `ls-scope … default …`
+works **without** an LLM. For nicer labels run `ls-label` with a chat model first
+and pass that labels id instead of `default`.
+
+**Show the user the results (single command, recommended):**
+```bash
+uv run ls-serve $LATENT_SCOPE_DATA            # serves API + built web UI at http://localhost:5001
+```
+Open `http://localhost:5001`, pick the dataset, open the scope. This serves the
+**pre-built** web assets — no Node required. Use this when the user just wants to
+look at results.
+
+**Live frontend dev (two processes, only when changing React):**
+```bash
+uv run ls-serve $LATENT_SCOPE_DATA            # API on :5001
+cd web && npm install && npm run dev          # Vite dev server on :5173 -> proxies to :5001
+```
+
+**End-to-end example to copy from:** `examples/colbert_quickstart/run.sh` builds
+a tiny topical dataset, embeds it with a small ColBERT model on CPU, runs the
+whole pipeline, and verifies late-interaction search. Run it with
+`bash examples/colbert_quickstart/run.sh`.
+
+> CPU-only / shared-GPU machines: prefix commands with `CUDA_VISIBLE_DEVICES=`
+> to force CPU. Small HF models (e.g. `bge-small-en-v1.5`,
+> `answerai-colbert-small-v1`) embed fine on CPU.
+
+See [`docs/data-importing.md`](docs/data-importing.md) for the full set of input
+formats, column detection rules, and how to import precomputed embeddings.
 
 ---
 
 ## Repository Layout
 
 ```
-latentscope/           # Python package
-  __init__.py          # Public API (lazy imports for heavy deps)
-  __version__.py
-  models/              # Embedding + chat model providers
-    __init__.py        # get_embedding_model(), get_chat_model()
-    providers/         # openai, transformers, cohere, voyage, etc.
-    embedding_models.json
+latentscope/                 # Python package
+  __init__.py                # Public API (lazy imports for heavy deps)
+  models/
+    __init__.py              # get_embedding_model(), get_chat_model()
+    providers/               # transformers, openai, cohere, voyage, late_interaction (ColBERT), ...
+    embedding_models.json    # registry (dense + colbert-* late-interaction models)
     chat_models.json
-  scripts/             # Pipeline step implementations
-    ingest.py, embed.py, umapper.py, cluster.py,
-    label_clusters.py, scope.py, ...
-  server/              # Flask application
-    app.py             # create_app() factory
-    jobs.py            # Subprocess job runner + routes
-    datasets.py, search.py, tags.py, bulk.py, admin.py, models.py
+  scripts/                   # Pipeline step implementations (each has a CLI + a function)
+    ingest.py, embed.py, umapper.py, cluster.py, label_clusters.py, scope.py,
+    sprites.py,              # per-row image sprites (legacy serving)
+    sprite_atlas.py          # tiled representative-image atlas pyramid (image map)
+  server/                    # Flask application
+    app.py                   # create_app() factory; LRU caches
+    jobs.py                  # subprocess job runner + routes (list-based, never shell=True)
+    datasets.py              # dataset/scope/atlas routes
+    search.py                # nn search + nn_late_interaction (MaxSim)
+    tags.py, bulk.py, admin.py, models.py, estimate.py
   util/
-    configuration.py   # LATENT_SCOPE_DATA, API keys, dotenv helpers
-    __init__.py
-web/                   # React + Vite frontend
-tests/                 # pytest test suite
-  conftest.py          # Fixtures: tmp_data_dir, app, client, ...
-  test_configuration.py
-  test_models.py
-  test_server.py
-pyproject.toml         # pytest + ruff config
-setup.py               # Package build (migration to pyproject.toml pending)
-development-plan.md    # v1.0 work streams and status
-DEVELOPMENT.md         # Developer setup guide
+    configuration.py         # LATENT_SCOPE_DATA, API keys, dotenv helpers
+    embedding_store.py       # LanceDB read/write/migrate + MaxSim search
+web/                         # React + Vite frontend
+  src/components/Explore/     # scatter (ScatterGL), atlas overlay, points overlay, config panel
+  src/components/Setup/       # pipeline step UIs (Embedding, Umap, Cluster, Scope, SpriteAtlas)
+tests/                       # pytest suite (fake providers -> no downloads/GPU needed)
+examples/colbert_quickstart/ # runnable ColBERT late-interaction demo
+docs/data-importing.md       # data import tutorial (#60)
+PATH_TO_1.0.md               # the current roadmap (supersedes development-plan.md)
 ```
 
 ---
@@ -50,77 +123,79 @@ DEVELOPMENT.md         # Developer setup guide
 ## Key Design Decisions
 
 ### App Factory Pattern
-`latentscope/server/app.py` uses `create_app(data_dir, read_only)`. The data directory is stored in `app.config['DATA_DIR']` — **not** in module-level globals. All blueprints read it via `current_app.config['DATA_DIR']`. This makes the server testable and embeddable.
+`server/app.py` uses `create_app(data_dir, read_only)`. The data directory lives
+in `app.config['DATA_DIR']` (not module globals); blueprints read it via
+`current_app.config['DATA_DIR']`. Keeps the server testable and embeddable.
 
 ### Lazy Imports in `__init__.py`
-Heavy ML dependencies (torch, transformers, umap-learn, hdbscan) are only imported when their functions are actually called. This allows `import latentscope` (e.g. to start the server or use config utilities) without requiring the full ML stack.
+Heavy ML deps (torch, transformers, umap-learn, hdbscan, pylate) are imported
+only when their functions are called, so `import latentscope` (e.g. to start the
+server) does not require the full ML stack.
 
-### Job Runner Security
-`latentscope/server/jobs.py` runs CLI subprocesses. **Always use list-based commands, never `shell=True`.** Command arguments include user-supplied values (dataset names, file paths) that are vulnerable to shell injection when passed to a shell. Example:
+### Embedding storage: LanceDB (`util/embedding_store.py`)
+Each embedding set is a LanceDB table: `ls_index`, `vector` (fp32 mean), and for
+late-interaction models `token_vectors` (fp16 per-token) + `num_tokens`. Dense
+search uses ANN cosine; late-interaction uses `search_late_interaction()`
+(ANN prefilter → MaxSim re-rank). `migrate_hdf5_to_lancedb()` upgrades old data.
+
+### Job Runner Security (`server/jobs.py`)
+**Always use list-based commands, never `shell=True`.** Arguments include
+user-supplied values (dataset names, paths) that are injection vectors:
 ```python
-# CORRECT
-command = ['ls-embed', dataset, text_column, model_id]
+command = ['ls-embed', dataset, text_column, model_id]   # CORRECT
 subprocess.Popen(command, ...)
-
-# NEVER DO THIS
-command = f'ls-embed "{dataset}" "{text_column}" "{model_id}"'
-subprocess.Popen(command, shell=True)  # injection risk
+# NEVER: subprocess.Popen(f'ls-embed "{dataset}" ...', shell=True)
 ```
 
-### Configuration
-`LATENT_SCOPE_DATA` environment variable (or `.env` file) sets the data directory. `latentscope/util/configuration.py` owns all env/dotenv logic. Call `update_data_dir()` to set the data dir, `set_api_key()` to set provider API keys.
+### Sprite atlas (`scripts/sprite_atlas.py`)
+Optional post-scope step. Builds a per-resolution tiled image pyramid keyed to
+the heatmap grid (cell membership recomputed from each point's x/y, mirroring
+`scope.py`'s `make_tiles`). The manifest stores an `input_fingerprint` of the
+scope points; the `/atlas/status` endpoint revalidates against the current
+`{scope}-input.parquet` so a stale atlas (after a scope overwrite) is not served.
 
 ---
 
 ## Running Tests
 
 ```bash
-pip install pytest python-dotenv flask flask-cors
-python -m pytest tests/ -q
+uv run pytest tests/ -q          # ~150 tests, no model downloads (fake providers)
 ```
+Real-model tests are opt-in: `LS_TEST_REAL_MODELS=1 uv run pytest -q`.
+Fixtures (`tests/conftest.py`): `tmp_data_dir`, `app`/`client`,
+`readonly_app`/`readonly_client`.
 
-Fixtures in `tests/conftest.py`:
-- `tmp_data_dir` — temporary directory (auto-cleaned)
-- `app` / `client` — Flask test app and client pointing at `tmp_data_dir`
-- `readonly_app` / `readonly_client` — read-only variants
+Frontend:
+```bash
+cd web && npm run test           # vitest
+cd web && npm run lint           # eslint
+cd web && npm run production     # build
+```
 
 ---
 
 ## Linting & Formatting
 
 ```bash
-pip install ruff
-ruff check latentscope/          # lint
-ruff check --fix latentscope/    # auto-fix
-ruff format latentscope/         # format
+uv run ruff check latentscope/        # lint  (E/W/F/I/UP, line length 100)
+uv run ruff check --fix latentscope/  # auto-fix
+uv run ruff format latentscope/       # format
 ```
-
-Config is in `pyproject.toml`. Line length 100, rules: E/W/F/I/UP.
 
 ---
 
 ## Adding New Models
 
-- **Embedding models:** Add entry to `latentscope/models/embedding_models.json`, add provider class in `latentscope/models/providers/` if new provider.
-- **Chat models:** Add entry to `latentscope/models/chat_models.json`.
-- Model IDs must not contain emoji (use provider prefix strings like `huggingface`, `openai`, etc.). HuggingFace model IDs use `transformers-` prefix with `___` replacing `/`.
+- **Embedding models:** add an entry to `models/embedding_models.json`; add a
+  provider class in `models/providers/` if it's a new provider. Late-interaction
+  models use the `colbert-` prefix and the `late_interaction` provider.
+- **Chat models:** add an entry to `models/chat_models.json`.
+- Model IDs must not contain emoji. HuggingFace IDs use the `transformers-`
+  prefix with `___` replacing `/` (e.g. `transformers-BAAI___bge-small-en-v1.5`).
 
 ---
 
-## Work Stream Status
+## Roadmap
 
-See `development-plan.md` for the full plan. Current branch (`claude/modernize-backend-foundation-ZfNU2`) completed:
-
-- ✅ App factory pattern + blueprint dependency injection (Stream 2.6)
-- ✅ Shell injection fix in jobs.py — list-based commands, no shell=True (Stream 2.2)
-- ✅ HuggingFace emoji bug fix (#97) (Stream 2.7)
-- ✅ Lazy imports in `__init__.py` (Stream 2.1 partial)
-- ✅ Foundational test infrastructure: 40 tests passing (Stream 1.1, 1.4 partial)
-- ✅ ruff configuration in pyproject.toml (Stream 2.1)
-
-Still needed before v1.0:
-- Pipeline integration tests (Stream 1.2)
-- CI/CD GitHub Actions (Stream 1.6)
-- Full pyproject.toml migration from setup.py (Stream 2.1)
-- Frontend cleanup (Stream 3)
-- Agent-friendly pipeline API (Stream 4)
+See [`PATH_TO_1.0.md`](PATH_TO_1.0.md) for the current path to a 1.0 release
+(the older `development-plan.md` is kept for history but is superseded).

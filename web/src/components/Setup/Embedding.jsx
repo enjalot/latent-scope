@@ -686,6 +686,12 @@ function Embedding() {
                         <span className={styles['format-badge-lance']}>LanceDB</span>
                       )}
                     </span>
+                    {emb.token_stats?.total ? (
+                      <span className={styles['token-info']}>
+                        {emb.token_stats.total.toLocaleString()} tokens · ~
+                        {emb.token_stats.mean} per doc (max {emb.token_stats.max})
+                      </span>
+                    ) : null}
                     {umps.length || cls.length ? (
                       <div className={styles['item-deps']}>
                         {umps.length ? <span>{umps.length} umaps</span> : null}

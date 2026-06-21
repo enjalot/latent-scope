@@ -10,15 +10,16 @@ const ConfigurationPanel = ({
   toggleShowClusterOutlines,
   updatePointSize,
   updatePointOpacity,
-  hasImageColumn = false,
-  spriteStatus = { generated: false },
-  spriteJob = null,
-  showSprites = false,
-  toggleShowSprites,
-  onGenerateSprites,
+  isImageDataset = false,
+  imageMode = false,
+  toggleImageMode,
+  alwaysShowPoints = false,
+  toggleAlwaysShowPoints,
+  updateAtlasSwitchPx,
+  updateAtlasPointsPx,
 }) => {
-  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity } = vizConfig;
-  const spriteJobRunning = spriteJob && !['completed', 'error', 'dead'].includes(spriteJob.status);
+  const { showHeatMap, showClusterOutlines, pointSize, pointOpacity, atlasSwitchPx, atlasPointsPx } =
+    vizConfig;
 
   return (
     <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
@@ -76,37 +77,65 @@ const ConfigurationPanel = ({
           label="Show Cluster Outlines"
         />
 
-        <Switch
-          value={showHeatMap}
-          onChange={toggleShowHeatMap}
-          color="secondary"
-          label="Show Heat Map"
-        />
+        {/* For image datasets the heatmap is part of the automatic image LOD
+            (heatmap -> images -> points), so the manual toggle is hidden. */}
+        {!isImageDataset && (
+          <Switch
+            value={showHeatMap}
+            onChange={toggleShowHeatMap}
+            color="secondary"
+            label="Show Heat Map"
+          />
+        )}
 
-        {hasImageColumn &&
-          (spriteStatus.generated ? (
+        {isImageDataset && (
+          <>
             <Switch
-              value={showSprites}
-              onChange={toggleShowSprites}
-              defaultState={showSprites}
+              value={imageMode}
+              onChange={toggleImageMode}
+              defaultState={imageMode}
               color="secondary"
-              label="Show Images (zoom in)"
+              label="Image map (heatmap → images)"
             />
-          ) : (
-            <div className={styles.configSection}>
-              <Button
-                onClick={onGenerateSprites}
-                disabled={spriteJobRunning}
-                variant="outline"
-                text={spriteJobRunning ? 'Generating image sprites…' : 'Generate image sprites'}
+            {imageMode && (
+              <Switch
+                value={alwaysShowPoints}
+                onChange={toggleAlwaysShowPoints}
+                defaultState={alwaysShowPoints}
+                color="secondary"
+                label="Always show points"
               />
-              {spriteJobRunning && spriteJob?.progress?.length > 0 && (
-                <div className={styles.spriteProgress}>
-                  {spriteJob.progress[spriteJob.progress.length - 1]}
+            )}
+            {imageMode && (
+              <>
+                <div className={styles.configSection}>
+                  <label>Image size before switching: {atlasSwitchPx}px</label>
+                  <input
+                    type="range"
+                    min="8"
+                    max="48"
+                    step="1"
+                    value={atlasSwitchPx}
+                    onChange={(e) => updateAtlasSwitchPx(+e.target.value)}
+                    className={styles.slider}
+                  />
                 </div>
-              )}
-            </div>
-          ))}
+                <div className={styles.configSection}>
+                  <label>Zoom into images before points: {atlasPointsPx}px</label>
+                  <input
+                    type="range"
+                    min="32"
+                    max="200"
+                    step="4"
+                    value={atlasPointsPx}
+                    onChange={(e) => updateAtlasPointsPx(+e.target.value)}
+                    className={styles.slider}
+                  />
+                </div>
+              </>
+            )}
+          </>
+        )}
 
         <div className={styles.configSection}></div>
       </div>

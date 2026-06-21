@@ -20,17 +20,14 @@ import { useFilter } from '../../contexts/FilterContext';
 
 import { mapSelectionKey } from '../../lib/colors';
 import { imageUrlFor } from '../../lib/imageUrl';
-import { fetchSpriteStatus } from '../../lib/spriteUrl';
+import { fetchAtlasStatus } from '../../lib/atlasUrl';
+import { atlasLod, MIN_CELL_PX, POINTS_HANDOFF_CELL_PX } from '../../lib/atlasLod';
 import HoverThumbnail from './HoverThumbnail';
-import SpriteOverlay from './SpriteOverlay';
+import AtlasOverlay from './AtlasOverlay';
+import PointsOverlay from './PointsOverlay';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { Button } from 'react-element-forge';
-import { useStartJobPolling } from '../Job/Run';
-
-const apiUrl = import.meta.env.VITE_API_URL;
-const SPRITE_SIZE = 64;
-
 // VisualizationPane.propTypes = {
 //   hoverAnnotations: PropTypes.array.isRequired,
 //   hoveredCluster: PropTypes.object,
@@ -66,65 +63,46 @@ function VisualizationPane({
   }, [dataset]);
 
   // ====================================================================================================
-  // Image sprite overlay (optional generated thumbnails shown when zoomed in)
+  // Image map: heatmap -> representative-image atlas -> points, as one LOD.
+  // The atlas (sprite sheets keyed to the heatmap grid) is generated as a
+  // post-scope step; when present, an image dataset defaults to this view.
   // ====================================================================================================
-  const [showSprites, setShowSprites] = useState(false);
-  const [spriteStatus, setSpriteStatus] = useState({ generated: false });
-  const [spriteJob, setSpriteJob] = useState(null);
-  const { startJob: startSpriteJob } = useStartJobPolling(
-    dataset,
-    setSpriteJob,
-    `${apiUrl}/jobs/sprites`
-  );
-
-  // fetch sprite status whenever the dataset / image column changes
+  const [atlasStatus, setAtlasStatus] = useState({ generated: false });
   useEffect(() => {
     let cancelled = false;
-    if (!dataset?.id || !hoverImageColumn) {
-      setSpriteStatus({ generated: false });
+    if (!dataset?.id || !scope?.id || !hoverImageColumn) {
+      setAtlasStatus({ generated: false });
       return;
     }
-    fetchSpriteStatus(dataset.id, hoverImageColumn, SPRITE_SIZE)
+    fetchAtlasStatus(dataset.id, scope.id, hoverImageColumn)
       .then((status) => {
-        if (!cancelled) setSpriteStatus(status);
+        if (!cancelled) setAtlasStatus(status);
       })
       .catch(() => {
-        if (!cancelled) setSpriteStatus({ generated: false });
+        if (!cancelled) setAtlasStatus({ generated: false });
       });
     return () => {
       cancelled = true;
     };
-  }, [dataset?.id, hoverImageColumn]);
+  }, [dataset?.id, scope?.id, hoverImageColumn]);
 
-  // when a generation job completes, re-fetch status and enable the toggle
+  // An image dataset with a generated atlas defaults to the image map (heatmap
+  // -> images -> points). The master toggle lets the user fall back to a plain
+  // scatter; "always show points" keeps individual points drawn on top.
+  const isImageDataset = !!hoverImageColumn && !!atlasStatus.generated;
+  const [imageMode, setImageMode] = useState(false);
+  const [alwaysShowPoints, setAlwaysShowPoints] = useState(false);
   useEffect(() => {
-    if (spriteJob?.status === 'completed' && dataset?.id && hoverImageColumn) {
-      fetchSpriteStatus(dataset.id, hoverImageColumn, SPRITE_SIZE).then((status) => {
-        setSpriteStatus(status);
-        if (status.generated) setShowSprites(true);
-      });
-    }
-  }, [spriteJob?.status, dataset?.id, hoverImageColumn]);
+    setImageMode(isImageDataset);
+  }, [isImageDataset]);
 
-  const spriteManifest = useMemo(
-    () => ({
-      generated: !!spriteStatus.generated,
-      size: spriteStatus.size || SPRITE_SIZE,
-      // status endpoint only returns a count; the overlay also hides 404s via
-      // onError, so an empty set here is safe.
-      missing: new Set(),
-    }),
-    [spriteStatus]
+  const toggleImageMode = useCallback(() => setImageMode((p) => !p), []);
+  const toggleAlwaysShowPoints = useCallback(() => setAlwaysShowPoints((p) => !p), []);
+
+  const atlasResolutions = useMemo(
+    () => (atlasStatus.resolutions || []).map((r) => r.num_tiles),
+    [atlasStatus]
   );
-
-  const handleGenerateSprites = useCallback(() => {
-    if (!hoverImageColumn) return;
-    startSpriteJob({ image_column: hoverImageColumn, size: SPRITE_SIZE });
-  }, [hoverImageColumn, startSpriteJob]);
-
-  const toggleShowSprites = useCallback(() => {
-    setShowSprites((prev) => !prev);
-  }, []);
 
   const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
     useFilter();
@@ -132,7 +110,7 @@ function VisualizationPane({
   // only show the hull if we are filtering by cluster
   const showHull = filterConfig?.type === filterConstants.CLUSTER;
 
-  const maxZoom = 40;
+  const maxZoom = 64;
 
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
@@ -263,6 +241,10 @@ function VisualizationPane({
     showClusterOutlines: true,
     pointSize: 1,
     pointOpacity: 1,
+    // Image-map LOD tuning: on-screen px at which a finer level kicks in, and
+    // how big the finest cells may grow before points take over.
+    atlasSwitchPx: MIN_CELL_PX,
+    atlasPointsPx: POINTS_HANDOFF_CELL_PX,
   });
 
   useEffect(() => {
@@ -292,6 +274,21 @@ function VisualizationPane({
   const updatePointOpacity = useCallback((value) => {
     setVizConfig((prev) => ({ ...prev, pointOpacity: value }));
   }, []);
+
+  const updateAtlasSwitchPx = useCallback((value) => {
+    setVizConfig((prev) => ({ ...prev, atlasSwitchPx: value }));
+  }, []);
+  const updateAtlasPointsPx = useCallback((value) => {
+    setVizConfig((prev) => ({ ...prev, atlasPointsPx: value }));
+  }, []);
+
+  // Level of detail for the image map at the current zoom (tunable thresholds).
+  const lod = useMemo(
+    () => atlasLod(transform?.k || 1, width, atlasResolutions, vizConfig.atlasSwitchPx, vizConfig.atlasPointsPx),
+    [transform, width, atlasResolutions, vizConfig.atlasSwitchPx, vizConfig.atlasPointsPx]
+  );
+  // Points drawn on top of the atlas: past the deepest grid, or always-on.
+  const pointsVisible = imageMode && (lod.deepest || alwaysShowPoints);
 
   // ensure the order of selectedPoints
   // exactly matches the ordering of indexes in shownIndices.
@@ -338,12 +335,13 @@ function VisualizationPane({
           toggleShowClusterOutlines={toggleShowClusterOutlines}
           updatePointSize={updatePointSize}
           updatePointOpacity={updatePointOpacity}
-          hasImageColumn={!!hoverImageColumn}
-          spriteStatus={spriteStatus}
-          spriteJob={spriteJob}
-          showSprites={showSprites}
-          toggleShowSprites={toggleShowSprites}
-          onGenerateSprites={handleGenerateSprites}
+          isImageDataset={isImageDataset}
+          imageMode={imageMode}
+          toggleImageMode={toggleImageMode}
+          alwaysShowPoints={alwaysShowPoints}
+          toggleAlwaysShowPoints={toggleAlwaysShowPoints}
+          updateAtlasSwitchPx={updateAtlasSwitchPx}
+          updateAtlasPointsPx={updateAtlasPointsPx}
         />
       </div>
 
@@ -359,6 +357,11 @@ function VisualizationPane({
             featureIsSelected={featureIsSelected}
             maxZoom={maxZoom}
             isSmallScreen={isSmallScreen}
+            pointScale={vizConfig.pointSize}
+            pointOpacity={vizConfig.pointOpacity}
+            // In image mode the visible points come from the PointsOverlay (on
+            // top of the atlas); the GPU layer stays for zoom/hover/select only.
+            hidePoints={imageMode}
           />
         )}
         {/* green dots for all filtered points beyond the table page */}
@@ -430,19 +433,35 @@ function VisualizationPane({
               label={scope.cluster_labels_lookup[clusterFilter.cluster.cluster]}
             />
           )}
-        {/* Viewport-culled DOM image overlay (renders only when zoomed in) */}
-        {hoverImageColumn && (
-          <SpriteOverlay
+        {/* Image map: the atlas sheet (representative image per heatmap cell)
+            takes over from the heatmap as you zoom in. */}
+        {imageMode && scope?.id && atlasStatus.generated && (
+          <AtlasOverlay
             dataset={dataset}
+            scopeId={scope.id}
             imageColumn={hoverImageColumn}
-            scopeRows={scopeRows}
             xDomain={xDomain}
             yDomain={yDomain}
             width={width}
             height={height}
             transform={transform}
-            enabled={showSprites}
-            manifest={spriteManifest}
+            enabled={imageMode}
+            manifest={atlasStatus}
+            minCellPx={vizConfig.atlasSwitchPx}
+          />
+        )}
+        {/* Points drawn on top of the image grid (past the deepest grid, or
+            when "always show points" is on) so they can be hovered. */}
+        {pointsVisible && (
+          <PointsOverlay
+            scopeRows={scopeRows}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+            enabled={pointsVisible}
+            opacity={vizConfig.pointOpacity}
+            pointSize={vizConfig.pointSize}
           />
         )}
         <AnnotationPlot
@@ -450,6 +469,7 @@ function VisualizationPane({
           stroke="black"
           fill="#8bcf66"
           size="16"
+          fixedSize
           xDomain={xDomain}
           yDomain={yDomain}
           width={width}
@@ -460,12 +480,15 @@ function VisualizationPane({
           stroke="black"
           fill="purple"
           size="16"
+          fixedSize
           xDomain={xDomain}
           yDomain={yDomain}
           width={width}
           height={height}
         />
-        {vizConfig.showHeatMap && tiles?.length > 1 && (
+        {/* Heatmap: the zoomed-out base in image mode (the atlas takes over as
+            you zoom), or the manual toggle for non-image scopes. */}
+        {(imageMode ? !lod.active : vizConfig.showHeatMap) && tiles?.length > 1 && (
           <TilePlot
             tiles={tiles}
             tileMeta={tileMeta}

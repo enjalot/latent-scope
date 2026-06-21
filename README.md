@@ -19,6 +19,17 @@ In addition to making this process easier by providing a web interface for each 
 
 <img src="https://github.com/enjalot/latent-scope/blob/main/documentation/explore.png?raw=true" alt="Explore and your data">
 
+## Capabilities
+
+Latent Scope works with **text and image datasets** and supports:
+
+- **Dense embeddings** from sentence-transformers/HuggingFace, OpenAI, Cohere, Voyage, Mistral, Together, and any OpenAI-compatible endpoint.
+- **ColBERT late-interaction (multi-vector) embeddings** with MaxSim similarity search — see [`examples/colbert_quickstart/`](examples/colbert_quickstart/).
+- **Image embeddings** (CLIP-style) with an interactive **image map**: a zoomable representative-image sprite atlas that takes over from the heatmap as you zoom in.
+- **LanceDB** vector storage, UMAP projection, HDBSCAN/EVoC clustering, and LLM cluster labeling.
+
+See **[docs/data-importing.md](docs/data-importing.md)** for the full set of input formats and import options, and **[CLAUDE.md](CLAUDE.md)** for an agent-friendly quickstart.
+
 ## Getting started
 
 Follow the documentation guides to get started:
