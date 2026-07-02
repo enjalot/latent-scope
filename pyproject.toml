@@ -31,6 +31,9 @@ dependencies = [
     # Server
     "Flask>=3.0,<4",
     "Flask-Cors>=4.0,<7",
+    # Production WSGI server for `ls-serve` (falls back to the Flask dev server
+    # only if somehow absent). Core dep so a pip install serves cleanly.
+    "waitress>=3,<4",
     # API providers
     "openai>=1.12,<3",
     "tiktoken>=0.5,<1",
@@ -128,9 +131,6 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=5.0",
     "ruff>=0.4",
-]
-serve = [
-    "waitress>=3",
 ]
 
 [tool.pytest.ini_options]
