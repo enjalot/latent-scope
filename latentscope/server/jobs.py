@@ -468,6 +468,10 @@ def run_umap():
     align = request.values.get('align')
     save = request.values.get('save')
     seed = request.values.get('seed')
+    # Optional named-step metadata (issue: experiment gallery + named steps).
+    # Consumed by ls-umap (WP-A) and written into umap-NNN.json.
+    name = request.values.get('name')
+    description = request.values.get('description')
 
     err = _require_params(dataset=dataset, embedding_id=embedding_id,
                           neighbors=neighbors, min_dist=min_dist)
@@ -486,6 +490,10 @@ def run_umap():
         command.append(f'--sae_id={sae_id}')
     if seed:
         command.append(f'--seed={seed}')
+    if name:
+        command.append(f'--name={name}')
+    if description:
+        command.append(f'--description={description}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -581,10 +589,24 @@ def run_cluster():
     method = request.values.get('method', 'evoc')
     n_neighbors = request.values.get('n_neighbors')
     noise_level = request.values.get('noise_level')
+    # Input space to cluster on: 2D umap projection or high-dim embeddings.
+    # Consumed by ls-cluster (WP-B). Optional; the script defaults per method
+    # (evoc->embedding, hdbscan/kmeans/gmm->umap) when omitted here.
+    cluster_on = request.values.get('cluster_on')
+    # Optional named-step metadata (experiment gallery + named steps).
+    name = request.values.get('name')
+    description = request.values.get('description')
 
     err = _require_params(dataset=dataset, umap_id=umap_id, samples=samples)
     if err:
         return err
+
+    # Whitelist clustering methods; fall back to the historical default rather
+    # than passing an arbitrary user string to the CLI.
+    if method not in ('evoc', 'hdbscan', 'kmeans', 'gmm'):
+        method = 'evoc'
+    if cluster_on is not None and cluster_on not in ('umap', 'embedding'):
+        cluster_on = None
 
     # min_samples and cluster_selection_epsilon are positional in the CLI
     # Default them when not provided (EVoC doesn't use them)
@@ -601,6 +623,12 @@ def run_cluster():
             command.append(f'--n_neighbors={n_neighbors}')
         if noise_level is not None:
             command.append(f'--noise_level={noise_level}')
+    if cluster_on:
+        command.append(f'--cluster_on={cluster_on}')
+    if name:
+        command.append(f'--name={name}')
+    if description:
+        command.append(f'--description={description}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

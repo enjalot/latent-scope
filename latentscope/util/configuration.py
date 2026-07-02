@@ -13,6 +13,12 @@ _SUPPORTED_API_KEYS = [
     "HUGGINGFACE_TOKEN",
 ]
 
+# Compute-backend selection for GPU acceleration (issue #63).  Read by
+# latentscope.util.device.resolve_device.
+DEVICE_ENV_VAR = "LATENT_SCOPE_DEVICE"
+_VALID_DEVICE_PREFERENCES = ("cpu", "cuda", "auto")
+_DEFAULT_DEVICE_PREFERENCE = "auto"
+
 
 def _dotenv_disabled():
     """Return True when the user has opted out of dotenv loading.
@@ -63,6 +69,26 @@ def get_data_dir():
             "or call latentscope.init('/path/to/data') before using the library."
         )
     return data_dir
+
+
+def get_device_preference():
+    """Return the compute-backend preference for GPU acceleration.
+
+    Reads the ``LATENT_SCOPE_DEVICE`` environment variable (loading ``.env``
+    first, like the other config getters).  Valid values are ``"cpu"``,
+    ``"cuda"`` and ``"auto"``; anything unset or unrecognised falls back to
+    ``"auto"``.  The actual backend probing lives in
+    :func:`latentscope.util.device.resolve_device`; this helper only surfaces
+    the raw preference so both that resolver and the tests read it the same way.
+    """
+    _load_dotenv()
+    value = os.getenv(DEVICE_ENV_VAR)
+    if value is None:
+        return _DEFAULT_DEVICE_PREFERENCE
+    normalized = value.strip().lower()
+    if normalized not in _VALID_DEVICE_PREFERENCES:
+        return _DEFAULT_DEVICE_PREFERENCE
+    return normalized
 
 
 def update_data_dir(directory, env_file=".env"):

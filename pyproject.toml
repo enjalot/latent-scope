@@ -60,6 +60,23 @@ dependencies = [
     "pillow>=10,<14",
 ]
 
+[project.optional-dependencies]
+# GPU acceleration (issue #63). NOT a default dependency: latentscope.util.device
+# probes cuML with a guarded import and falls back to CPU when this extra is
+# absent. Install with `pip install "latentscope[gpu]"` on a CUDA 12.x box.
+#
+# cuml-cu12 / cuvs-cu12 are the RAPIDS wheels for the CUDA 12 line (compatible
+# with the CUDA 12.8 gsv box). Wheels are published on the NVIDIA PyPI index, so
+# installing this extra also needs:
+#   --extra-index-url=https://pypi.nvidia.com
+# NOTE: the exact pins below still need validation on the CUDA 12.8 box — RAPIDS
+# release cadence is fast; bump to the newest 25.x that resolves against the
+# installed driver rather than trusting this lower bound blindly.
+gpu = [
+    "cuml-cu12>=25.2",   # validate on CUDA 12.8 (gsv) before release
+    "cuvs-cu12>=25.2",   # validate on CUDA 12.8 (gsv) before release
+]
+
 [project.urls]
 Source = "https://github.com/enjalot/latent-scope"
 Tracker = "https://github.com/enjalot/latent-scope/issues"
