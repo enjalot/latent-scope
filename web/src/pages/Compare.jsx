@@ -360,8 +360,10 @@ function Compare() {
     .filter(([, m]) => m?.type === 'number')
     .map(([name]) => name);
 
-  // Resizable right-hand table column (horizontal drag)
-  const [tableWidth, setTableWidth] = useState(440);
+  // Resizable right-hand table column (horizontal drag). Defaults to null so the
+  // column starts at a 50/50 flex split; the first drag pins it to a pixel width.
+  const [tableWidth, setTableWidth] = useState(null);
+  const tableColRef = useRef(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
   const dragStartWidthRef = useRef(0);
@@ -370,13 +372,15 @@ function Compare() {
     e.preventDefault();
     isDraggingRef.current = true;
     dragStartXRef.current = e.clientX;
-    dragStartWidthRef.current = tableWidth;
+    // Start from the current rendered width (handles the initial 50/50 case).
+    dragStartWidthRef.current =
+      tableWidth ?? tableColRef.current?.getBoundingClientRect().width ?? 440;
 
     const handleDragMove = (e) => {
       if (!isDraggingRef.current) return;
       // Dragging left widens the table column.
       const delta = dragStartXRef.current - e.clientX;
-      const newWidth = Math.max(280, Math.min(900, dragStartWidthRef.current + delta));
+      const newWidth = Math.max(280, Math.min(1100, dragStartWidthRef.current + delta));
       setTableWidth(newWidth);
     };
 
@@ -494,7 +498,15 @@ function Compare() {
           <div className={styles['col-resize-grip']} />
         </div>
 
-        <div className={styles['table-column']} style={{ width: tableWidth }}>
+        <div
+          ref={tableColRef}
+          className={styles['table-column']}
+          style={
+            tableWidth != null
+              ? { width: tableWidth, flexGrow: 0, flexShrink: 0 }
+              : { flex: 1 }
+          }
+        >
           <CompareDataPanel
             dataset={dataset}
             datasetId={datasetId}
