@@ -33,6 +33,9 @@ function CompareControls({
   metricK,
   onMetricKChange,
   displacementLoading,
+  colorBy,
+  onColorByChange,
+  numericColumns = [],
 }) {
   const formatUmapOption = useCallback(
     (um) => {
@@ -86,6 +89,24 @@ function CompareControls({
             {METRIC_INFO[metric]?.description}
           </span>
         </div>
+        <div className={styles['metric-selector']}>
+          <label>Color by</label>
+          <select value={colorBy} onChange={(e) => onColorByChange(e.target.value)}>
+            <option value="__drift__">Drift metric</option>
+            {numericColumns.length > 0 && (
+              <optgroup label="Columns">
+                {numericColumns.map((col) => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+          <span className={styles['metric-description']}>
+            {colorBy === '__drift__'
+              ? 'Points are colored by the selected drift metric.'
+              : `Points are colored by the "${colorBy}" column value.`}
+          </span>
+        </div>
         {metric !== 'displacement' && (
           <div className={styles['metric-k']}>
             <label>k = {metricK}</label>
@@ -99,23 +120,25 @@ function CompareControls({
             />
           </div>
         )}
-        <div className={styles['threshold-control']}>
-          <label>
-            Threshold: {threshold.toFixed(2)}
-            {displacementLoading && <span className={styles['loading-indicator']}> computing...</span>}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={threshold}
-            onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
-          />
-          <span className={styles['threshold-count']}>
-            {aboveThresholdCount} points above threshold
-          </span>
-        </div>
+        {colorBy === '__drift__' && (
+          <div className={styles['threshold-control']}>
+            <label>
+              Threshold: {threshold.toFixed(2)}
+              {displacementLoading && <span className={styles['loading-indicator']}> computing...</span>}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={threshold}
+              onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
+            />
+            <span className={styles['threshold-count']}>
+              {aboveThresholdCount} points above threshold
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

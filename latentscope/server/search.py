@@ -22,6 +22,55 @@ def _data_dir():
 EMBEDDINGS = LRUCache(maxsize=2)  # loaded embedding models
 NN_CACHE = LRUCache(maxsize=2)  # fitted sklearn NearestNeighbors, keyed (dataset, embedding_id)
 
+# UMAP comparison caches. The Compare page hits /compare and /compare/neighbors
+# repeatedly (on every metric/k change and every point click); previously each
+# call re-read both umap parquets and refit a fresh NearestNeighbors index over
+# all N points. These caches make the coordinates and the fitted kNN a shared,
+# reusable resource so repeat clicks are effectively instant.
+UMAP_COORDS = LRUCache(maxsize=6)  # (N,2) float32 coords, keyed (dataset, umap_id)
+UMAP_KNN = LRUCache(maxsize=6)  # (NearestNeighbors, neighbor_idx matrix), keyed (dataset, umap_id, k)
+
+
+def _umap_coords(dataset, umap_id):
+    """Load a umap's (N, 2) float32 coordinate array, cached by (dataset, umap).
+
+    Reads only the ``x``/``y`` columns so extra columns (should they ever be
+    written alongside) can't change the array shape the metrics rely on.
+    """
+    import pandas as pd
+
+    key = (dataset, umap_id)
+    coords = UMAP_COORDS.get(key)
+    if coords is None:
+        DATA_DIR = _data_dir()
+        path = os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}.parquet")
+        df = pd.read_parquet(path, columns=["x", "y"])
+        coords = df.to_numpy(dtype="float32")
+        UMAP_COORDS[key] = coords
+    return coords
+
+
+def _umap_knn(dataset, umap_id, k):
+    """Fit (once) and cache a NearestNeighbors index + neighbor-index matrix.
+
+    Returns ``(nn, neighbor_idx)`` where ``neighbor_idx`` is an ``(N, k+1)``
+    array of each point's own index followed by its k nearest neighbors (the
+    self-match at column 0 is kept so callers can strip it or reuse it). Keyed
+    by ``(dataset, umap_id, k)`` so changing only k on the other side is cheap.
+    """
+    from sklearn.neighbors import NearestNeighbors
+
+    key = (dataset, umap_id, k)
+    cached = UMAP_KNN.get(key)
+    if cached is None:
+        coords = _umap_coords(dataset, umap_id)
+        n_neighbors = min(k + 1, len(coords))
+        nn = NearestNeighbors(n_neighbors=n_neighbors, algorithm="auto").fit(coords)
+        _, neighbor_idx = nn.kneighbors(coords)
+        cached = (nn, neighbor_idx)
+        UMAP_KNN[key] = cached
+    return cached
+
 
 @search_bp.route('/nn', methods=['GET'])
 def nn():
@@ -247,9 +296,7 @@ def features():
 @search_bp.route('/compare', methods=['GET'])
 def compare():
     import numpy as np
-    import pandas as pd
 
-    DATA_DIR = _data_dir()
     dataset = _safe_dataset(request.args.get('dataset'))
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
@@ -257,34 +304,32 @@ def compare():
     k = request.args.get('k')
     k = int(k) if k else 10
 
-    umap_dir = os.path.join(DATA_DIR, dataset, "umaps")
-    left = pd.read_parquet(os.path.join(umap_dir, f"{umap_left}.parquet")).to_numpy()
-    right = pd.read_parquet(os.path.join(umap_dir, f"{umap_right}.parquet")).to_numpy()
+    left = _umap_coords(dataset, umap_left)
+    right = _umap_coords(dataset, umap_right)
 
     if metric == 'neighborhood':
-        from sklearn.neighbors import NearestNeighbors
-        nn_left = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(left)
-        nn_right = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(right)
-        _, idx_left = nn_left.kneighbors(left)
-        _, idx_right = nn_right.kneighbors(right)
-        scores = np.zeros(len(left))
+        # Jaccard overlap of each point's k-NN set in the two projections.
+        # Both indices include the point itself at column 0; drop it so the
+        # score reflects the k true neighbors on each side.
+        _, idx_left = _umap_knn(dataset, umap_left, k)
+        _, idx_right = _umap_knn(dataset, umap_right, k)
+        idx_left = idx_left[:, 1:]
+        idx_right = idx_right[:, 1:]
+        scores = np.empty(len(left))
         for i in range(len(left)):
-            set_l = set(idx_left[i])
-            set_r = set(idx_right[i])
-            jaccard = len(set_l & set_r) / len(set_l | set_r)
-            scores[i] = 1 - jaccard  # 0 = same neighborhood, 1 = completely different
+            inter = np.intersect1d(idx_left[i], idx_right[i], assume_unique=True).size
+            union = idx_left.shape[1] + idx_right.shape[1] - inter
+            scores[i] = 1 - inter / union  # 0 = same neighborhood, 1 = completely different
         result = scores
     elif metric == 'relative':
-        from sklearn.neighbors import NearestNeighbors
+        # Per-point displacement minus the mean displacement of its left-map
+        # neighbors — highlights points that move differently than their local
+        # cohort. Vectorized over the cached neighbor-index matrix.
         displacement = np.linalg.norm(right - left, axis=1)
-        nn_left = NearestNeighbors(n_neighbors=k, algorithm='auto').fit(left)
-        _, idx_left = nn_left.kneighbors(left)
-        # For each point, subtract the mean displacement of its neighbors
-        relative = np.zeros(len(left))
-        for i in range(len(left)):
-            neighbor_mean = np.mean(displacement[idx_left[i]])
-            relative[i] = abs(displacement[i] - neighbor_mean)
-        result = relative
+        _, idx_left = _umap_knn(dataset, umap_left, k)
+        idx_left = idx_left[:, 1:]
+        neighbor_means = displacement[idx_left].mean(axis=1)
+        result = np.abs(displacement - neighbor_means)
     else:
         # Default: absolute displacement (L2)
         result = np.linalg.norm(right - left, axis=1)
@@ -302,11 +347,6 @@ def compare():
 
 @search_bp.route('/compare/neighbors', methods=['GET'])
 def compare_neighbors():
-    import numpy as np
-    import pandas as pd
-    from sklearn.neighbors import NearestNeighbors
-
-    DATA_DIR = _data_dir()
     dataset = _safe_dataset(request.args.get('dataset'))
     umap_left = request.args.get('umap_left')
     umap_right = request.args.get('umap_right')
@@ -314,23 +354,105 @@ def compare_neighbors():
     side = request.args.get('side', 'left')
     k = int(request.args.get('k', 10))
 
-    umap_dir = os.path.join(DATA_DIR, dataset, "umaps")
-    left = pd.read_parquet(os.path.join(umap_dir, f"{umap_left}.parquet")).to_numpy()
-    right = pd.read_parquet(os.path.join(umap_dir, f"{umap_right}.parquet")).to_numpy()
-
-    # Find k-NN based on which side was clicked
-    source = left if side == 'left' else right
-    # Clamp k to dataset size to avoid sklearn error
-    k = min(k, len(source) - 1)
-    nn = NearestNeighbors(n_neighbors=k + 1, algorithm='auto').fit(source)
-    _, indices = nn.kneighbors([source[point_index]])
-    # Remove the point itself from neighbors
-    neighbor_indices = [int(i) for i in indices[0] if i != point_index][:k]
+    # Reuse the cached kNN index for the clicked side rather than refitting a
+    # fresh NearestNeighbors over all N points on every click.
+    umap_id = umap_left if side == 'left' else umap_right
+    _, neighbor_idx = _umap_knn(dataset, umap_id, k)
+    # Row point_index holds [self, n1, n2, ...]; drop the point itself.
+    neighbor_indices = [int(i) for i in neighbor_idx[point_index] if int(i) != point_index][:k]
 
     return jsonify({
         "point_index": point_index,
         "side": side,
         "neighbor_indices": neighbor_indices,
+    })
+
+
+# Selections above this many points are subsampled for the O(n^2) mean-pairwise
+# distance so the spread stat stays responsive; the convex hull is cheap and is
+# always computed on the full selection.
+SPREAD_SAMPLE_CAP = 2000
+
+
+def _spread_stats(coords, indices):
+    """Cohesion stats for a selected point set within one projection.
+
+    Returns mean pairwise distance, convex-hull area, bounding-box area and
+    centroid. ``mean_pairwise`` is subsampled above ``SPREAD_SAMPLE_CAP`` points
+    (flagged via ``sampled``); the hull needs >= 3 non-collinear points and is
+    reported as 0 otherwise.
+    """
+    import numpy as np
+    from scipy.spatial import ConvexHull
+    from scipy.spatial.distance import pdist
+
+    pts = coords[indices]
+    n = len(pts)
+    stats = {
+        "n": int(n),
+        "mean_pairwise": None,
+        "hull_area": 0.0,
+        "bbox_area": 0.0,
+        "centroid": None,
+        "sampled": False,
+    }
+    if n == 0:
+        return stats
+
+    centroid = pts.mean(axis=0)
+    stats["centroid"] = [float(centroid[0]), float(centroid[1])]
+
+    mins = pts.min(axis=0)
+    maxs = pts.max(axis=0)
+    stats["bbox_area"] = float((maxs[0] - mins[0]) * (maxs[1] - mins[1]))
+
+    if n >= 2:
+        sample = pts
+        if n > SPREAD_SAMPLE_CAP:
+            # Deterministic evenly-spaced subsample (no RNG => stable readout).
+            step = n / SPREAD_SAMPLE_CAP
+            sel = (np.arange(SPREAD_SAMPLE_CAP) * step).astype(int)
+            sample = pts[sel]
+            stats["sampled"] = True
+        stats["mean_pairwise"] = float(pdist(sample).mean())
+
+    if n >= 3:
+        try:
+            stats["hull_area"] = float(ConvexHull(pts).volume)  # 2D volume == area
+        except Exception:
+            # Degenerate (collinear/coincident) points have no 2D hull.
+            stats["hull_area"] = 0.0
+
+    return stats
+
+
+@search_bp.route('/compare/spread', methods=['POST'])
+def compare_spread():
+    """Compare how coherent a selected set of points is in each projection.
+
+    Body: ``{ dataset, umap_left, umap_right, indices: [...] }``. Returns
+    per-side spread stats so the UI can say e.g. "this region is 2.3x more
+    spread out in the right map".
+    """
+    import numpy as np
+
+    req = request.get_json() or {}
+    dataset = _safe_dataset(req.get('dataset'))
+    umap_left = req.get('umap_left')
+    umap_right = req.get('umap_right')
+    indices = req.get('indices') or []
+
+    left = _umap_coords(dataset, umap_left)
+    right = _umap_coords(dataset, umap_right)
+
+    # Keep only in-range indices so a stale selection can't index out of bounds.
+    n_points = len(left)
+    idx = np.asarray([i for i in indices if 0 <= int(i) < n_points], dtype=int)
+
+    return jsonify({
+        "n_selected": int(len(idx)),
+        "left": _spread_stats(left, idx),
+        "right": _spread_stats(right, idx),
     })
 
 

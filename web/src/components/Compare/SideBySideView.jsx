@@ -5,6 +5,8 @@ import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
 import CrosshairPlot from './CrosshairPlot';
 import NeighborPlot from './NeighborPlot';
+import SelectionOverlay from './SelectionOverlay';
+import ColorLegend from './ColorLegend';
 import styles from './Compare.module.css';
 
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -25,10 +27,15 @@ function SideBySideView({
   onScatter,
   onHover,
   onNeighborSelect,
+  onRegionSelect,
+  selectedIndices,
   pointSizeRange,
   opacityRange,
   hoveredIndex,
   metricK,
+  colorInterpolator,
+  colorExtent,
+  colorLabel,
 }) {
   const leftScatterRef = useRef(null);
   const rightScatterRef = useRef(null);
@@ -169,6 +176,21 @@ function SideBySideView({
     onNeighborSelect && onNeighborSelect(null, []);
   }, [onNeighborSelect]);
 
+  // A lasso (shift+drag) in either pane. Region brushing supersedes the
+  // single-point neighbor mode, and the same row set lights up in both panes.
+  const handleRegionSelect = useCallback(
+    (indices) => {
+      if (indices?.length) {
+        setClickedIndex(null);
+        setClickedSide(null);
+        setNeighborIndices([]);
+        onNeighborSelect && onNeighborSelect(null, []);
+      }
+      onRegionSelect && onRegionSelect(indices || []);
+    },
+    [onRegionSelect, onNeighborSelect]
+  );
+
   // Handle click on a scatter — toggle neighbor mode
   const handleLeftClick = useCallback(
     (indices) => {
@@ -257,8 +279,29 @@ function SideBySideView({
             </button>
           </span>
         )}
-        <span className={styles['side-label']}>← Left</span>
-        <span className={styles['side-label']}>Right →</span>
+        {clickedIndex == null && selectedIndices?.length > 0 && (
+          <span className={styles['neighbor-info']}>
+            {selectedIndices.length} points selected
+            <button
+              className={styles['clear-neighbors']}
+              onClick={() => handleRegionSelect([])}
+            >
+              Clear
+            </button>
+          </span>
+        )}
+        {clickedIndex == null && !selectedIndices?.length && (
+          <span className={styles['selection-hint']}>⇧ + drag to select a region</span>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <ColorLegend
+            interpolator={colorInterpolator || interpolateReds}
+            extent={colorExtent}
+            label={colorLabel}
+          />
+          <span className={styles['side-label']}>← Left</span>
+          <span className={styles['side-label']}>Right →</span>
+        </div>
       </div>
       <div className={styles['side-by-side-container']}>
         {/* Left scatter */}
@@ -281,11 +324,12 @@ function SideBySideView({
                       width={halfWidth}
                       height={height}
                       colorScaleType="continuous"
-                      colorInterpolator={interpolateReds}
+                      colorInterpolator={colorInterpolator || interpolateReds}
                       opacityBy="valueA"
                       onScatter={handleLeftScatter}
                       onView={handleLeftView}
                       onSelect={handleLeftClick}
+                      onLassoSelect={handleRegionSelect}
                       onHover={onHover}
                     />
                   ) : (
@@ -300,6 +344,16 @@ function SideBySideView({
                     />
                   )}
                 </div>
+                {clickedIndex == null && selectedIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={leftPoints}
+                    selectedIndices={selectedIndices}
+                    xDomain={leftXDomain}
+                    yDomain={leftYDomain}
+                    width={halfWidth}
+                    height={height}
+                  />
+                )}
                 {clickedIndex != null ? (
                   <NeighborPlot
                     points={leftPoints}
@@ -344,11 +398,12 @@ function SideBySideView({
                       width={halfWidth}
                       height={height}
                       colorScaleType="continuous"
-                      colorInterpolator={interpolateReds}
+                      colorInterpolator={colorInterpolator || interpolateReds}
                       opacityBy="valueA"
                       onScatter={handleRightScatter}
                       onView={handleRightView}
                       onSelect={handleRightClick}
+                      onLassoSelect={handleRegionSelect}
                       onHover={onHover}
                     />
                   ) : (
@@ -363,6 +418,16 @@ function SideBySideView({
                     />
                   )}
                 </div>
+                {clickedIndex == null && selectedIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={rightPoints}
+                    selectedIndices={selectedIndices}
+                    xDomain={rightXDomain}
+                    yDomain={rightYDomain}
+                    width={halfWidth}
+                    height={height}
+                  />
+                )}
                 {clickedIndex != null ? (
                   <NeighborPlot
                     points={rightPoints}

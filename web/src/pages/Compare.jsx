@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { extent } from 'd3-array';
-import { scaleSymlog } from 'd3-scale';
+import { scaleSymlog, scaleLinear } from 'd3-scale';
+import { interpolateReds, interpolateViridis } from 'd3-scale-chromatic';
 
 import CompareControls from '../components/Compare/CompareControls';
 import TransitionView from '../components/Compare/TransitionView';
@@ -33,7 +34,6 @@ function Compare() {
 
   // Displacement data and display points
   const [drawPoints, setDrawPoints] = useState([]);
-  const drawPointsRef = useRef([]);
   const [displacementLoading, setDisplacementLoading] = useState(false);
   const [threshold, setThreshold] = useState(0.5);
   const [aboveThresholdCount, setAboveThresholdCount] = useState(0);
@@ -41,6 +41,10 @@ function Compare() {
   // Metric controls
   const [metric, setMetric] = useState('relative');
   const [metricK, setMetricK] = useState(10);
+
+  // Color-by: '__drift__' (the compare metric) or a numeric column name (#131)
+  const [colorBy, setColorBy] = useState('__drift__');
+  const [columnData, setColumnData] = useState(null); // { values, extent }
 
   // Raw displacement data (before threshold) for tooltip display
   const [rawDisplacementData, setRawDisplacementData] = useState([]);
@@ -137,6 +141,8 @@ function Compare() {
 
   const prevCompareKey = useRef('');
 
+  // Always compute the drift metric — it powers the tooltip readout and is the
+  // default color source. Color-by-column (#131) reuses the same [3] slot.
   useEffect(() => {
     if (!left || !right || !leftPoints.length || !rightPoints.length) return;
     const key = `${left.id}:${right.id}:${metric}:${metricK}`;
@@ -149,31 +155,58 @@ function Compare() {
       .then((r) => r.json())
       .then((displacementData) => {
         setRawDisplacementData(displacementData);
-        const log = scaleSymlog(extent(displacementData), [0, 1]);
-        const dpts = leftPoints.map((d, i) => {
-          const displacement = log(displacementData[i]);
-          return [d[0], d[1], displacement < threshold ? 1 : 0, displacement];
-        });
-        setDrawPoints(dpts);
-        drawPointsRef.current = dpts;
-        setAboveThresholdCount(dpts.filter((d) => d[2] !== 1).length);
         setDisplacementLoading(false);
         prevCompareKey.current = key;
       });
-  }, [datasetId, left, right, leftPoints, rightPoints, metric, metricK, threshold]);
+  }, [datasetId, left, right, leftPoints, rightPoints, metric, metricK]);
 
-  // Update threshold without re-fetching
+  // Fetch the selected numeric column's values when coloring by a column.
   useEffect(() => {
-    if (!drawPointsRef.current.length) return;
-    const newPoints = drawPointsRef.current.map((point) => [
-      point[0],
-      point[1],
-      point[3] < threshold ? 1 : 0,
-      point[3],
-    ]);
-    setDrawPoints(newPoints);
-    setAboveThresholdCount(newPoints.filter((d) => d[2] !== 1).length);
-  }, [threshold]);
+    if (colorBy === '__drift__') {
+      setColumnData(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${apiUrl}/datasets/${datasetId}/column/${encodeURIComponent(colorBy)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setColumnData({ values: data.values, extent: data.extent });
+      })
+      .catch(() => !cancelled && setColumnData(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetId, colorBy]);
+
+  // Derive the drawn points ([x, y, dimFlag, normalizedColorValue]) from either
+  // the drift metric (symlog + threshold dimming) or the chosen column (linear
+  // normalize, no dimming). Slot [3] is what Scatter maps to color via valueB.
+  useEffect(() => {
+    if (!leftPoints.length) return;
+
+    if (colorBy === '__drift__') {
+      if (!rawDisplacementData.length) return;
+      const norm = scaleSymlog(extent(rawDisplacementData), [0, 1]);
+      const dpts = leftPoints.map((d, i) => {
+        const v = norm(rawDisplacementData[i]);
+        return [d[0], d[1], v < threshold ? 1 : 0, v];
+      });
+      setDrawPoints(dpts);
+      setAboveThresholdCount(dpts.filter((d) => d[2] !== 1).length);
+    } else {
+      if (!columnData?.values?.length) return;
+      const [lo, hi] = columnData.extent || extent(columnData.values.filter((v) => v != null));
+      const norm = scaleLinear().domain([lo, hi]).range([0, 1]).clamp(true);
+      const dpts = leftPoints.map((d, i) => {
+        const raw = columnData.values[i];
+        // Nulls (NaN/missing) fall to 0 on the ramp and stay fully visible.
+        return [d[0], d[1], 0, raw == null ? 0 : norm(raw)];
+      });
+      setDrawPoints(dpts);
+      setAboveThresholdCount(0);
+    }
+  }, [colorBy, rawDisplacementData, columnData, threshold, leftPoints]);
 
   // ===== Interaction Handlers =====
 
@@ -184,6 +217,16 @@ function Compare() {
 
   const handleSelected = useCallback((indices) => {
     setSelectedIndices(indices);
+  }, []);
+
+  // A lasso brush in either Compare pane. Region selection supersedes the
+  // single-point neighbor mode; both panes highlight the same rows.
+  const handleRegionSelect = useCallback((indices) => {
+    setSelectedIndices(indices || []);
+    if (indices?.length) {
+      setNeighborSelectedIndex(null);
+      setNeighborIndices([]);
+    }
   }, []);
 
   const handleHover = useCallback((index) => {
@@ -276,6 +319,13 @@ function Compare() {
   const pointSizeRange = [5, 1];
   const opacityRange = [1, 0.2];
 
+  // Color-by derived values (#131)
+  const colorInterpolator = colorBy === '__drift__' ? interpolateReds : interpolateViridis;
+  const colorExtent = colorBy === '__drift__' ? [0, 1] : columnData?.extent || [0, 1];
+  const numericColumns = Object.entries(dataset?.column_metadata || {})
+    .filter(([, m]) => m?.type === 'number')
+    .map(([name]) => name);
+
   // Resizable bottom panel
   const [panelHeight, setPanelHeight] = useState(200);
   const isDraggingRef = useRef(false);
@@ -326,6 +376,9 @@ function Compare() {
         metricK={metricK}
         onMetricKChange={setMetricK}
         displacementLoading={displacementLoading}
+        colorBy={colorBy}
+        onColorByChange={setColorBy}
+        numericColumns={numericColumns}
       />
 
       <div className={styles['visualization']}>
@@ -382,10 +435,15 @@ function Compare() {
               onSelect={handleSelected}
               onHover={handleHover}
               onNeighborSelect={handleNeighborSelect}
+              onRegionSelect={handleRegionSelect}
+              selectedIndices={selectedIndices}
               pointSizeRange={pointSizeRange}
               opacityRange={opacityRange}
               hoveredIndex={hoveredIndex}
               metricK={metricK}
+              colorInterpolator={colorInterpolator}
+              colorExtent={colorExtent}
+              colorLabel={colorBy === '__drift__' ? 'Drift' : colorBy}
             />
           )}
         </div>
@@ -399,6 +457,8 @@ function Compare() {
           dataset={dataset}
           datasetId={datasetId}
           embeddings={embeddings}
+          left={left}
+          right={right}
           selectedIndices={selectedIndices}
           neighborSelectedIndex={neighborSelectedIndex}
           neighborIndices={neighborIndices}

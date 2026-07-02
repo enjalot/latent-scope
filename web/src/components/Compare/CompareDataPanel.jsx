@@ -17,6 +17,8 @@ function CompareDataPanel({
   dataset,
   datasetId,
   embeddings,
+  left,
+  right,
   selectedIndices,
   neighborSelectedIndex,
   neighborIndices,
@@ -111,6 +113,14 @@ function CompareDataPanel({
                   </button>
                 )}
               </span>
+              {selectedIndices?.length >= 3 && left && right && (
+                <SpreadSummary
+                  datasetId={datasetId}
+                  left={left}
+                  right={right}
+                  selectedIndices={selectedIndices}
+                />
+              )}
               {selectedIndices?.length > 0 && (
                 <IndexDataTable
                   indices={selectedIndices}
@@ -216,6 +226,97 @@ function NeighborRow({ index, rank, dataset, datasetId, onHover, onClick, isSele
       <span className={styles['neighbor-text']}>
         {text ? (text.length > 150 ? text.slice(0, 150) + '...' : text) : '...'}
       </span>
+    </div>
+  );
+}
+
+/**
+ * Compares how coherent the current selection is in each projection: mean
+ * pairwise distance and convex-hull area per side, with the right/left ratio so
+ * you can read "this region is 2.3x more spread out in the right map".
+ */
+function SpreadSummary({ datasetId, left, right, selectedIndices }) {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedIndices?.length || !left || !right) {
+      setStats(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    // Debounce so dragging a lasso doesn't fire a request per intermediate set.
+    const t = setTimeout(() => {
+      fetch(`${apiUrl}/search/compare/spread`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dataset: datasetId,
+          umap_left: left.id,
+          umap_right: right.id,
+          indices: selectedIndices,
+        }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) {
+            setStats(data);
+            setLoading(false);
+          }
+        })
+        .catch(() => !cancelled && setLoading(false));
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [datasetId, left, right, selectedIndices]);
+
+  if (!stats?.left || !stats?.right) {
+    return loading ? <div className={styles['spread-summary']}>Computing spread…</div> : null;
+  }
+
+  const fmt = (v) => (v == null ? '—' : v.toFixed(3));
+  const ratio = (r, l) => (l && l > 0 && r != null ? `${(r / l).toFixed(2)}×` : '—');
+
+  const rows = [
+    {
+      label: 'Mean pairwise dist',
+      l: stats.left.mean_pairwise,
+      r: stats.right.mean_pairwise,
+    },
+    { label: 'Convex hull area', l: stats.left.hull_area, r: stats.right.hull_area },
+  ];
+
+  return (
+    <div className={styles['spread-summary']}>
+      <div className={styles['spread-title']}>
+        Selection spread ({stats.n_selected} points)
+        {(stats.left.sampled || stats.right.sampled) && (
+          <span className={styles['spread-note']}> (sampled)</span>
+        )}
+      </div>
+      <table className={styles['spread-table']}>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Left</th>
+            <th>Right</th>
+            <th>R / L</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.label}>
+              <td>{row.label}</td>
+              <td>{fmt(row.l)}</td>
+              <td>{fmt(row.r)}</td>
+              <td>{ratio(row.r, row.l)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
