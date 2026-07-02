@@ -20,6 +20,9 @@ def main():
     parser.add_argument('--save', action='store_true', help='Save the UMAP model')
     parser.add_argument('--seed', type=int, help='Random seed', default=None)
     parser.add_argument('--sae_id', type=str, help='SAE to project instead of embedding', default=None)
+    parser.add_argument('--name', type=str, help='Human-friendly name for this umap', default=None)
+    parser.add_argument('--description', type=str, help='Free-text description for this umap',
+                        default=None)
 
     # Parse arguments
     args = parser.parse_args()
@@ -29,9 +32,13 @@ def main():
         seed = None
 
     if args.sae_id:
-        sparse_umapper(args.dataset_id, args.embedding_id, args.sae_id, args.neighbors, args.min_dist, save=args.save, init=args.init, seed=seed)
+        sparse_umapper(args.dataset_id, args.embedding_id, args.sae_id, args.neighbors, args.min_dist,
+                       save=args.save, init=args.init, seed=seed, name=args.name,
+                       description=args.description)
     else:
-        umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist, save=args.save, init=args.init, align=args.align, seed=seed)
+        umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist, save=args.save,
+                init=args.init, align=args.align, seed=seed, name=args.name,
+                description=args.description)
 
 
 # TODO move this into shared space
@@ -73,7 +80,89 @@ def load_embeddings(dataset_id, embedding_id):
         # Use LanceDB-backed store (with HDF5 fallback)
         return lance_load_embeddings(DATA_DIR, dataset_id, embedding_id)
 
-def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None, seed=None):
+def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
+    """Build a CPU umap-learn reducer with our canonical params."""
+    import umap
+
+    kwargs = dict(
+        n_neighbors=neighbors,
+        min_dist=min_dist,
+        metric='cosine',
+        random_state=seed,
+        n_components=2,
+        verbose=True,
+    )
+    if init_array is not None:
+        kwargs['init'] = init_array
+    return umap.UMAP(**kwargs)
+
+
+def _make_cuml_reducer(neighbors, min_dist, seed):
+    """Build a cuML (GPU) reducer, mapping umap-learn params faithfully.
+
+    Param mapping umap-learn -> cuml.manifold.UMAP:
+      n_neighbors  -> n_neighbors
+      min_dist     -> min_dist
+      metric       -> metric ('cosine'; supported by cuML/cuvs >= 25.x)
+      n_components -> n_components (2)
+      random_state -> random_state (int seed; None => non-deterministic)
+      verbose      -> verbose (accepts bool)
+    Array warm-start `init` has no cuML equivalent (cuML `init` only takes the
+    strings 'spectral'/'random'), so the warm-start path stays CPU-only.
+    """
+    import cuml
+
+    return cuml.manifold.UMAP(
+        n_neighbors=neighbors,
+        min_dist=min_dist,
+        metric='cosine',
+        random_state=seed,
+        n_components=2,
+        verbose=True,
+    )
+
+
+def _to_numpy(arr):
+    """Coerce a cuML/cupy/cudf output into a numpy array."""
+    import numpy as np
+
+    if hasattr(arr, "to_numpy"):   # cudf/pandas DataFrame
+        return arr.to_numpy()
+    if hasattr(arr, "get"):        # cupy ndarray
+        return arr.get()
+    return np.asarray(arr)
+
+
+def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=None):
+    """Fit-transform embeddings to 2D, preferring cuML when requested.
+
+    Returns (umap_embeddings, reducer). On the GPU path the fitted cuML reducer
+    is returned too (callers only pickle CPU reducers). If cuML construction or
+    fit raises, we log a clear message and fall back to CPU umap-learn so a run
+    never dies on the GPU path. Array warm-start (init_array) is CPU-only.
+    """
+    if use_cuml and init_array is None:
+        try:
+            reducer = _make_cuml_reducer(neighbors, min_dist, seed)
+            print("umapper: reducing with cuML GPU UMAP (metric=cosine)")
+            sys.stdout.flush()
+            umap_embeddings = _to_numpy(reducer.fit_transform(embeddings))
+            return umap_embeddings, reducer
+        except Exception as e:
+            print(f"umapper: cuML UMAP failed ({e!r}); falling back to CPU umap-learn")
+            sys.stdout.flush()
+    elif use_cuml and init_array is not None:
+        print("umapper: warm-start init has no cuML equivalent; using CPU umap-learn")
+
+    reducer = _make_cpu_reducer(neighbors, min_dist, seed, init_array)
+    print("umapper: reducing with CPU umap-learn UMAP (metric=cosine)")
+    sys.stdout.flush()
+    umap_embeddings = reducer.fit_transform(embeddings)
+    return umap_embeddings, reducer
+
+
+def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None,
+            seed=None, name=None, description=None):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -173,14 +262,25 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             if align is not None and align != "":
                 meta["align"] = f"{embedding_id},{align}"
                 meta["align_id"] = align_id
+            if name is not None:
+                meta["name"] = name
+            if description is not None:
+                meta["description"] = description
             json.dump(meta, f, indent=2)
         f.close()
 
     ### END OF process_umap_embeddings
 
 
+    # Resolve the compute backend once; only the plain 2D reduction below uses
+    # the cuML GPU path. AlignedUMAP, warm-start init, and save (pickle) stay
+    # CPU-only (see notes at each site).
+    from latentscope.util.device import resolve_device
+    res = resolve_device()
+
     if align is not None and align != "":
         print("aligned umap", align)
+        print("umapper: AlignedUMAP has no cuML equivalent; running CPU umap-learn")
         # split the align string into umap names
         embs = align.split(",")
         # load each embedding from its h5 file
@@ -217,34 +317,23 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         print("done with aligned umap")
         return
 
+    init_array = None
     if init is not None and init != "":
         print("loading umap", init)
         initial_df = pd.read_parquet(os.path.join(umap_dir, f"{init}.parquet"))
-        initial = initial_df.to_numpy()
-        print("initial shape", initial.shape)
-        reducer = umap.UMAP(
-            init=initial,
-            n_neighbors=neighbors,
-            min_dist=min_dist,
-            metric='cosine',
-            random_state=seed,
-            n_components=2,
-            verbose=True,
-        )
-    else:
-        reducer = umap.UMAP(
-            n_neighbors=neighbors,
-            min_dist=min_dist,
-            metric='cosine',
-            random_state=seed,
-            n_components=2,
-            verbose=True,
-        )
+        init_array = initial_df.to_numpy()
+        print("initial shape", init_array.shape)
+
+    # Save (pickle) requires a portable CPU umap-learn reducer, so force CPU when
+    # saving. Warm-start init is also CPU-only (handled inside _reduce_umap).
+    use_cuml = res.use_cuml and not save
+    if res.use_cuml and save:
+        print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
     print("reducing", embeddings.shape[1], "embeddings to 2 dimensions")
 
-    sys.stdout.flush()
-
-    umap_embeddings = reducer.fit_transform(embeddings)
+    umap_embeddings, reducer = _reduce_umap(
+        embeddings, neighbors, min_dist, seed, use_cuml, init_array=init_array
+    )
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id)
 
     if save:
@@ -254,7 +343,8 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
 
     print("done with", umap_id)
 
-def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False, init=None, seed=None):
+def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False,
+                   init=None, seed=None, name=None, description=None):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -343,39 +433,34 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
             }
             if init is not None and init != "":
                 meta["init"] = init,
+            if name is not None:
+                meta["name"] = name
+            if description is not None:
+                meta["description"] = description
             json.dump(meta, f, indent=2)
         f.close()
 
 
+    from latentscope.util.device import resolve_device
+    res = resolve_device()
+
+    init_array = None
     if init is not None and init != "":
         print("loading umap", init)
         initial_df = pd.read_parquet(os.path.join(umap_dir, f"{init}.parquet"))
-        initial = initial_df.to_numpy()
-        print("initial shape", initial.shape)
-        reducer = umap.UMAP(
-            init=initial,
-            n_neighbors=neighbors,
-            min_dist=min_dist,
-            metric='cosine',
-            random_state=seed,
-            n_components=2,
-            verbose=True,
-        )
-    else:
-        reducer = umap.UMAP(
-            n_neighbors=neighbors,
-            min_dist=min_dist,
-            metric='cosine',
-            random_state=seed,
-            n_components=2,
-            verbose=True,
-        )
+        init_array = initial_df.to_numpy()
+        print("initial shape", init_array.shape)
+
+    use_cuml = res.use_cuml and not save
+    if res.use_cuml and save:
+        print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
     print("reducing", matrix.shape[0], "sparse features to 2 dimensions")
-    sys.stdout.flush()
 
     import time
     time.sleep(1)  # Wait for a second before starting
-    umap_embeddings = reducer.fit_transform(matrix)
+    umap_embeddings, reducer = _reduce_umap(
+        matrix, neighbors, min_dist, seed, use_cuml, init_array=init_array
+    )
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id, sae_id)
 
     if save:

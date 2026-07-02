@@ -427,6 +427,100 @@ def get_dataset_atlas_plan(dataset, scope):
     return jsonify(plan)
 
 
+@datasets_bp.route('/<dataset>/column/<column>', methods=['GET'])
+def get_dataset_column(dataset, column):
+    """Return per-point values for a column, aligned to ls_index order (#131).
+
+    Query params:
+        scope: optional scope id. When given and its ``<scope>-input.parquet``
+            exists, values are read from (and subset to) that scope's rows,
+            in ls_index order. Otherwise the full dataset ``input.parquet`` is
+            used, also in ls_index order.
+
+    Response (numeric column):
+        {"column", "values": number[], "extent": [min, max], "type": "numeric"}
+    Response (categorical column):
+        {"column", "values": number[] (category indices), "type": "categorical",
+         "categorical": {"categories": [...], "counts": [...]}}
+
+    ``len(values)`` always equals the returned row count.
+    """
+    import numpy as np
+    import pandas as pd
+
+    DATA_DIR = _data_dir()
+    dataset_dir = os.path.join(DATA_DIR, dataset)
+    meta_path = os.path.join(dataset_dir, "meta.json")
+    try:
+        with open(meta_path, encoding='utf-8') as f:
+            meta = json.load(f)
+    except OSError:
+        return jsonify({"error": f"dataset {dataset} not found"}), 404
+
+    column_metadata = meta.get("column_metadata") or {}
+    col_meta = column_metadata.get(column) or {}
+
+    # Choose the source parquet. A scope's `<scope>-input.parquet` is the full
+    # input joined with the scope columns, subset to the scope's rows and stored
+    # in ls_index order (see scope.py). Fall back to the full dataset input.
+    scope = request.args.get('scope')
+    parquet_path = None
+    if scope:
+        _safe_dataset(scope, param="scope")
+        candidate = os.path.join(dataset_dir, "scopes", scope + "-input.parquet")
+        if os.path.exists(candidate):
+            parquet_path = candidate
+    if parquet_path is None:
+        parquet_path = os.path.join(dataset_dir, "input.parquet")
+    if not os.path.exists(parquet_path):
+        return jsonify({"error": "input data not found"}), 404
+
+    try:
+        df = pd.read_parquet(parquet_path, columns=[column])
+    except Exception:
+        return jsonify({"error": f"column {column!r} not found"}), 404
+    series = df[column]
+
+    ctype = col_meta.get("type")
+    if ctype in ("array", "image"):
+        return jsonify({"error": f"column {column!r} is not colorable"}), 400
+
+    categories = col_meta.get("categories")
+    # Categorical: known categories from ingest metadata, or computed on the fly
+    # for a string column whose cardinality exceeded ingest's category cap.
+    if categories is not None or ctype in ("string", "date", "unknown", None):
+        if categories is not None:
+            counts_dict = col_meta.get("counts") or {}
+            counts = [int(counts_dict.get(c, 0)) for c in categories]
+        else:
+            vc = series.astype(str).value_counts()
+            categories = vc.index.tolist()
+            counts = [int(c) for c in vc.tolist()]
+        cat_index = {str(c): i for i, c in enumerate(categories)}
+        values = [int(cat_index.get(v, -1)) for v in series.astype(str).tolist()]
+        return jsonify({
+            "column": column,
+            "values": values,
+            "type": "categorical",
+            "categorical": {"categories": categories, "counts": counts},
+        })
+
+    # Numeric (and anything else with a stored extent).
+    numeric = pd.to_numeric(series, errors="coerce")
+    extent = col_meta.get("extent")
+    if not extent or extent[0] is None or extent[1] is None:
+        arr = numeric.to_numpy(dtype=float)
+        finite = arr[np.isfinite(arr)]
+        extent = [float(finite.min()), float(finite.max())] if finite.size else [None, None]
+    values = [None if pd.isna(x) else float(x) for x in numeric.tolist()]
+    return jsonify({
+        "column": column,
+        "values": values,
+        "extent": extent,
+        "type": "numeric",
+    })
+
+
 @datasets_bp.route('/<dataset>/embeddings', methods=['GET'])
 def get_dataset_embeddings(dataset):
     return scan_for_json_files(os.path.join(_data_dir(), dataset, "embeddings"))
@@ -666,6 +760,38 @@ def overwrite_scope_description(dataset, scope):
         json.dump(json_contents, json_file)
 
     return jsonify({"success": True, "message": "Description updated successfully"})
+
+
+def _merge_name_description(dataset, subdir, name_id, param):
+    """Merge JSON {name, description} into <subdir>/<name_id>.json.
+
+    Only the provided keys are created/overwritten; other fields are left
+    intact. Mirrors overwrite_scope_description's file-write style but uses a
+    POST JSON body (free-text values avoid query-string encoding pitfalls).
+    """
+    _safe_dataset(name_id, param=param)
+    payload = request.get_json(silent=True) or {}
+    file_path = os.path.join(_data_dir(), dataset, subdir, name_id + ".json")
+    if not os.path.exists(file_path):
+        return jsonify({"error": f"{param} {name_id} not found"}), 404
+    with open(file_path, encoding='utf-8') as json_file:
+        json_contents = json.load(json_file)
+    for key in ("name", "description"):
+        if key in payload:
+            json_contents[key] = payload[key]
+    with open(file_path, 'w', encoding='utf-8') as json_file:
+        json.dump(json_contents, json_file, indent=2)
+    return jsonify({"success": True})
+
+
+@datasets_write_bp.route('/<dataset>/umaps/<umap>/meta', methods=['POST'])
+def update_umap_meta(dataset, umap):
+    return _merge_name_description(dataset, "umaps", umap, "umap")
+
+
+@datasets_write_bp.route('/<dataset>/clusters/<cluster>/meta', methods=['POST'])
+def update_cluster_meta(dataset, cluster):
+    return _merge_name_description(dataset, "clusters", cluster, "cluster")
 
 
 @datasets_write_bp.route('/<dataset>/scopes/<scope>/new-cluster', methods=['GET'])
