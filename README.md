@@ -26,9 +26,15 @@ Latent Scope works with **text and image datasets** and supports:
 - **Dense embeddings** from sentence-transformers/HuggingFace, OpenAI, Cohere, Voyage, Mistral, Together, and any OpenAI-compatible endpoint.
 - **ColBERT late-interaction (multi-vector) embeddings** with MaxSim similarity search — see [`examples/colbert_quickstart/`](examples/colbert_quickstart/).
 - **Image embeddings** (CLIP-style) with an interactive **image map**: a zoomable representative-image sprite atlas that takes over from the heatmap as you zoom in.
-- **LanceDB** vector storage, UMAP projection, HDBSCAN/EVoC clustering, and LLM cluster labeling.
+- **LanceDB** vector storage, UMAP projection, and LLM cluster labeling.
+- **Multiple clustering methods** — EVoC, HDBSCAN, KMeans, and Gaussian Mixture — with a choice of clustering on the 2D UMAP or the high-dimensional embedding (`ls-cluster --method`, see [docs/clustering.md](docs/clustering.md)).
+- **GPU acceleration** (optional): cuML-accelerated UMAP, HDBSCAN, and KMeans on NVIDIA GPUs, with automatic CPU fallback — controlled by `LATENT_SCOPE_DEVICE` (see [docs/gpu-acceleration.md](docs/gpu-acceleration.md)).
+- **Named experiments + gallery**: give UMAP and cluster runs human-friendly names/descriptions and browse them as a thumbnail gallery instead of a bare `umap-001` id list.
+- **Color-by + Compare**: color the Explore and Compare maps by any numeric or categorical column, and share a lasso/brush selection across both Compare panes (see [docs/exploring.md](docs/exploring.md)).
 
-See **[docs/data-importing.md](docs/data-importing.md)** for the full set of input formats and import options, and **[CLAUDE.md](CLAUDE.md)** for an agent-friendly quickstart.
+> **Curation** (deleting rows, tagging during Setup, reassigning clusters) is **not part of 1.0** — it is planned as a post-1.0 (1.1) initiative. See [docs/exploring.md](docs/exploring.md#curation-post-10).
+
+See **[docs/data-importing.md](docs/data-importing.md)** for the full set of input formats and import options (including images, ColBERT, and data-size guidance), and **[CLAUDE.md](CLAUDE.md)** for an agent-friendly quickstart.
 
 ## Getting started
 
@@ -98,20 +104,21 @@ pip install latent-scope
 wget "https://storage.googleapis.com/fun-data/latent-scope/examples/dvs-survey/datavis-misunderstood.csv" > ~/Downloads/datavis-misunderstood.csv
 
 ls-init "~/latent-scope-data"
-# ls-ingest dataset_id csv_path
-ls-ingest-csv "datavis-misunderstood" "~/Downloads/datavis-misunderstood.csv"
+# ls-ingest dataset_id --path <file> (csv/parquet/json/jsonl/xlsx)
+ls-ingest "datavis-misunderstood" --path "~/Downloads/datavis-misunderstood.csv"
 # get a list of model ids available (lists both embedding and chat models available)
 ls-list-models
-# ls-embed dataset_id text_column model_id prefix
-ls-embed datavis-misunderstood "answer" transformers-intfloat___e5-small-v2 ""
+# ls-embed dataset_id text_column model_id [--prefix ...]
+ls-embed datavis-misunderstood "answer" transformers-intfloat___e5-small-v2
 # ls-umap dataset_id embedding_id n_neighbors min_dist
 ls-umap datavis-misunderstood embedding-001 25 .1
-# ls-cluster dataset_id umap_id samples min_samples
-ls-cluster datavis-misunderstood umap-001 5 5
-# ls-label dataset_id text_column cluster_id model_id context
-ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta ""
+# ls-cluster dataset_id umap_id samples min_samples cluster_selection_epsilon [--method]
+# default --method is evoc (clusters the high-dim embedding); see docs/clustering.md
+ls-cluster datavis-misunderstood umap-001 5 5 0.0 --method hdbscan
+# ls-label dataset_id text_column cluster_id model_id samples context
+ls-label datavis-misunderstood "answer" cluster-001 transformers-HuggingFaceH4___zephyr-7b-beta 0 ""
 # ls-scope  dataset_id embedding_id umap_id cluster_id cluster_labels_id label description
-ls-scope datavis-misunderstood cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by Zephyr 7B"
+ls-scope datavis-misunderstood embedding-001 umap-001 cluster-001 cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by Zephyr 7B"
 # start the server to explore your scope
 ls-serve
 ```
@@ -176,12 +183,22 @@ ls-umap dadabase embedding-001 50 0.1
 
 ### 3. cluster
 
-Cluster the UMAP points using HDBSCAN. This will label each point with a cluster label
+Cluster the points and label each point with a cluster id. Choose a method with
+`--method {evoc,hdbscan,kmeans,gmm}` (default `evoc`) and, optionally, which
+space to cluster on with `--cluster_on {umap,embedding}` (default per method:
+`evoc`→`embedding`, the others→`umap`). For `kmeans`/`gmm` the `samples`
+positional is the **number of clusters**. See
+[docs/clustering.md](docs/clustering.md) for details and GPU notes.
 
 ```bash
-# ls-cluster <dataset_name> <umap_id> <samples> <min-samples>
-ls-cluster dadabase umap-001 5 3
+# ls-cluster <dataset_name> <umap_id> <samples> <min_samples> <cluster_selection_epsilon> [--method] [--cluster_on] [--name] [--description]
+ls-cluster dadabase umap-001 5 3 0.0 --method hdbscan
+# kmeans/gmm: `samples` is the number of clusters (min_samples/epsilon are ignored but still positional)
+ls-cluster dadabase umap-001 20 3 0.0 --method kmeans
 ```
+
+You can attach a human-friendly `--name` / `--description` to any umap or cluster
+run so it shows up titled in the Setup gallery (editable there later too).
 
 ### 4. label
 
@@ -189,8 +206,8 @@ We support auto-labeling clusters by summarizing them with an LLM. Supported mod
 You can pass context that will be injected into the system prompt for your dataset.
 
 ```bash
-# ls-label <dataset_id> <cluster_id> <chat_model_id> <context>
-ls-label dadabase "joke" cluster-001 openai-gpt-3.5-turbo ""
+# ls-label <dataset_id> <text_column> <cluster_id> <chat_model_id> <samples> <context>
+ls-label dadabase "joke" cluster-001 openai-gpt-3.5-turbo 0 ""
 ```
 
 ### 5. scope
@@ -199,7 +216,7 @@ The scope command ties together each step of the process to create an explorable
 
 ```bash
 # ls-scope  <dataset_id> <embedding_id> <umap_id> <cluster_id> <cluster_labels_id> <label> <description>
-ls-scope datavis-misunderstood cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by GPT3.5-Turbo"
+ls-scope datavis-misunderstood embedding-001 umap-001 cluster-001 cluster-001-labels-001 "E5 demo" "E5 embeddings summarized by GPT3.5-Turbo"
 ```
 
 ### 6. serve

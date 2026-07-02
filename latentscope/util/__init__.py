@@ -1,5 +1,6 @@
 from .configuration import (
     get_data_dir,
+    get_device_preference,
     get_key,
     get_supported_api_keys,
     set_api_key,

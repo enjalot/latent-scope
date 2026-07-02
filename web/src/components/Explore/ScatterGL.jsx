@@ -30,11 +30,19 @@ ScatterGL.propTypes = {
   onSelect: PropTypes.func,
   onHover: PropTypes.func,
   isSmallScreen: PropTypes.bool,
+  // Optional per-point [r,g,b] (0..1) triples to drive hue from data (color-by
+  // column, #131). Same length + order as `points`; a `null` entry means the
+  // point has no value (drawn in a neutral gray). When absent/null the scatter
+  // uses selection-state coloring exactly as before.
+  pointColors: PropTypes.array,
 };
 
 const calculatePointColor = (valueA) => {
   return mapSelectionColorsLight[valueA];
 };
+
+// Neutral gray for color-by points whose value is missing/out-of-range.
+const NO_VALUE_COLOR = [0.7, 0.7, 0.7];
 
 const calculatePointOpacity = (featureIsSelected, valueA, activation) => {
   // when a feature is selected, we want to use the activation value to set the opacity
@@ -42,6 +50,17 @@ const calculatePointOpacity = (featureIsSelected, valueA, activation) => {
     return activation + 0.5;
   }
   return mapSelectionOpacity[valueA];
+};
+
+// Opacity when a color-by column drives hue: keep the data color visible while
+// still expressing selection state. Hidden points vanish, non-selected points
+// dim (so a selection reads as "highlighted"), everything else stays full so
+// its data hue is vivid.
+const COLOR_BY_DIM_OPACITY = 0.12;
+const calculateColorByOpacity = (valueA) => {
+  if (valueA === mapSelectionKey.hidden) return 0;
+  if (valueA === mapSelectionKey.notSelected) return COLOR_BY_DIM_OPACITY;
+  return 1.0;
 };
 
 const calculatePointSize = (valueA) => {
@@ -104,6 +123,7 @@ function ScatterGL({
   featureIsSelected,
   ignoreNotSelected = false,
   isSmallScreen = false,
+  pointColors = null,
   // When true the canvas still clears + keeps its hover quadtree, but draws no
   // dots. Used by the image map, where the visible points come from the
   // PointsOverlay (on top of the atlas) instead of the GPU layer underneath.
@@ -218,18 +238,30 @@ function ScatterGL({
   useEffect(() => {
     if (!reglRef.current) return;
 
+    // Color-by is active only when we have a hue per point matching the point
+    // count; otherwise every path below is byte-for-byte the old selection
+    // coloring.
+    const hasColorBy = Array.isArray(pointColors) && pointColors.length === points.length;
+
     const positionBuffer = reglRef.current.buffer(points.map((p) => [p[0], p[1]]));
     const colorBuffer = reglRef.current.buffer(
-      points.map(([, , valueA]) => {
+      points.map(([, , valueA], i) => {
+        if (hasColorBy) {
+          return pointColors[i] || NO_VALUE_COLOR;
+        }
         const colorHex = calculatePointColor(valueA);
         const rgbColor = rgb(colorHex);
         return [rgbColor.r / 255, rgbColor.g / 255, rgbColor.b / 255];
       })
     );
     const opacityBuffer = reglRef.current.buffer(
-      points.map(([, , valueA, activation]) =>
-        calculatePointOpacity(featureIsSelected, valueA, activation)
-      )
+      points.map(([, , valueA, activation]) => {
+        if (hasColorBy) {
+          // Data hue stays; selection state composites via opacity dimming.
+          return calculateColorByOpacity(valueA);
+        }
+        return calculatePointOpacity(featureIsSelected, valueA, activation);
+      })
     );
     const sizeBuffer = reglRef.current.buffer(
       points.map(([, , valueA]) => calculatePointSize(valueA))
@@ -330,7 +362,7 @@ function ScatterGL({
     // recreated on resize; without rebuilding here the buffers + draw command
     // would reference the dead context ("no buffer is bound to enabled
     // attribute" and nothing renders).
-  }, [points, featureIsSelected, width, height]);
+  }, [points, featureIsSelected, width, height, pointColors]);
 
   const dynamicSize = useMemo(() => {
     let size = calculateDynamicPointScale(points.length, width, height);
@@ -381,7 +413,7 @@ function ScatterGL({
       height,
       blendParams,
     });
-  }, [points, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
+  }, [points, pointColors, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
 
   // Update useEffect to rebuild quadtree when points change
   useEffect(() => {

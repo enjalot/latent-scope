@@ -77,8 +77,18 @@ class TestSettings:
         assert response.status_code in (200, 500)
 
     def test_settings_not_available_in_read_only(self, readonly_client):
+        # In read-only mode the /api/settings routes are never registered, so
+        # the request falls through to the SPA catch-all (index.html) instead of
+        # returning the settings payload. Enforcement is confirmed by the
+        # settings JSON being absent, not by a 404 (see WP-H report note on the
+        # catch-all serving HTML for unmatched /api/* paths).
         response = readonly_client.get('/api/settings')
-        assert response.status_code == 404
+        assert 'text/html' in response.content_type
+        assert b'supported_api_keys' not in response.data
+        # a write attempt is equally unavailable: the POST route is unregistered
+        # (the GET-only catch-all yields 405) so the write never runs.
+        post = readonly_client.post('/api/settings', json={"FOO": "bar"})
+        assert post.status_code != 200
 
 
 # ---------------------------------------------------------------------------
@@ -133,9 +143,17 @@ class TestTags:
         data = json.loads(response.data)
         assert data == {}
 
-    def test_write_blocked_in_read_only(self, readonly_client):
+    def test_write_blocked_in_read_only(self, readonly_client, tmp_data_dir):
+        # tags_write_bp is not registered in read-only mode, so the write route
+        # is unreachable: the request lands on the SPA catch-all (HTML) and no
+        # tag file is created. (The catch-all returns 200 HTML rather than a
+        # JSON 404 for unmatched /api/* paths -- documented in the WP-H report.)
+        ds_dir = os.path.join(tmp_data_dir, "ds1")
+        os.makedirs(ds_dir, exist_ok=True)
         response = readonly_client.get('/api/tags/new?dataset=ds1&tag=mytag')
-        assert response.status_code == 404
+        assert 'text/html' in response.content_type
+        # the write genuinely did not happen
+        assert not os.path.exists(os.path.join(ds_dir, "tags", "mytag.indices"))
 
 
 # ---------------------------------------------------------------------------

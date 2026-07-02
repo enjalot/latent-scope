@@ -1,0 +1,77 @@
+.legend {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  max-width: 220px;
+  pointer-events: auto;
+}
+
+.title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ramp {
+  width: 180px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.extent {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.swatches {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.swatchRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.swatchLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.swatchCount {
+  color: #888;
+  flex-shrink: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .legend {
+    background-color: rgba(30, 30, 30, 0.9);
+    border-color: #555;
+    color: #e0e0e0;
+  }
+  .swatchCount {
+    color: #aaa;
+  }
+}
