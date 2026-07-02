@@ -30,13 +30,30 @@ ingest → embed → umap → cluster → label → scope → (sprite atlas) →
   `examples/colbert_quickstart/`.
 - **LanceDB vector storage** (replaced HDF5). Embeddings live in a per-dataset
   LanceDB table; old HDF5 embeddings are migrated on demand.
-- **UMAP projection + HDBSCAN/EVoC clustering**, with LLM cluster labeling.
+- **UMAP projection + clustering**, with LLM cluster labeling. Four clustering
+  methods: `ls-cluster --method {evoc,hdbscan,kmeans,gmm}` with a
+  `--cluster_on {umap,embedding}` input choice (issue #41). For `kmeans`/`gmm`
+  the `samples` positional is the number of clusters. See `docs/clustering.md`.
+- **GPU acceleration (optional)**: cuML-accelerated UMAP, HDBSCAN, and KMeans on
+  NVIDIA GPUs with graceful CPU fallback, controlled by the `LATENT_SCOPE_DEVICE`
+  env var (`cpu`|`cuda`|`auto`, default `auto`). Install `pip install
+  "latentscope[gpu]" --extra-index-url=https://pypi.nvidia.com`. EVoC and GMM
+  stay on CPU. See `docs/gpu-acceleration.md` (issue #63).
+- **Named experiments + gallery**: umap/cluster runs take optional
+  `--name`/`--description` (stored in their metadata JSON, editable in Setup); the
+  Setup UI shows a browsable thumbnail gallery instead of a bare id list.
 - **Explore UI**: GPU scatterplot with hover/select, density heatmap, cluster
-  outlines, similarity + late-interaction search, filtering, tagging.
+  outlines, similarity + late-interaction search, filtering, tagging, and
+  **color-by** any numeric/categorical column (issue #131). The **Compare** page
+  shows two scopes side by side with a shared lasso/brush selection (issue #132).
 - **Image map (sprite atlas)**: for image datasets the map is a continuous
   level-of-detail — heatmap when zoomed out, a tiled representative-image
   pyramid as you zoom in, then individual points on top for hovering. Built by
   the optional post-scope `ls-sprite-atlas` step (issue #24).
+
+> **Curation** (row deletion, tagging during Setup/ingestion, cluster
+> reassignment) is **post-1.0 / not in 1.0** (issues #92 / #79 / #80). Explore-view
+> tagging, filtering, and search remain available.
 
 ---
 
@@ -199,3 +216,10 @@ uv run ruff format latentscope/       # format
 
 See [`PATH_TO_1.0.md`](PATH_TO_1.0.md) for the current path to a 1.0 release
 (the older `development-plan.md` is kept for history but is superseded).
+
+The 1.0 feature set is documented for users under `docs/`:
+[`data-importing.md`](docs/data-importing.md) (formats, images, ColBERT,
+data-size guidance), [`clustering.md`](docs/clustering.md) (methods +
+`--cluster_on`), [`gpu-acceleration.md`](docs/gpu-acceleration.md)
+(`LATENT_SCOPE_DEVICE`, cuML), and [`exploring.md`](docs/exploring.md) (color-by,
+Compare, gallery, curation post-1.0). Curation (#92) is deferred to post-1.0.
