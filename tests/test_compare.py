@@ -29,20 +29,26 @@ def _make_compare_dataset(data_dir, name="cmp", n=60, seed=0):
         os.path.join(ds_dir, "umaps", "umap-002.parquet"))
 
     score = rng.uniform(0, 10, size=n)
+    # A pandas nullable (Int64) column with a missing value — exercises the
+    # na_value path in the color-by endpoint.
+    nullable = pd.array(rng.integers(0, 5, size=n), dtype="Int64")
+    nullable[0] = pd.NA
     df = pd.DataFrame({
         "text": [f"row {i}" for i in range(n)],
         "score": score,
+        "rating": nullable,
     })
     df.to_parquet(os.path.join(ds_dir, "input.parquet"))
 
     meta = {
         "id": name,
         "length": n,
-        "columns": ["text", "score"],
+        "columns": ["text", "score", "rating"],
         "text_column": "text",
         "column_metadata": {
             "text": {"type": "string"},
             "score": {"type": "number", "extent": [float(score.min()), float(score.max())]},
+            "rating": {"type": "number"},
         },
     }
     with open(os.path.join(ds_dir, "meta.json"), "w", encoding="utf-8") as f:
@@ -146,6 +152,16 @@ class TestColumnEndpoint:
         name, _ = _make_compare_dataset(tmp_data_dir)
         r = client.get(f"/api/datasets/{name}/column/nope")
         assert r.status_code == 404
+
+    def test_nullable_column_with_missing_values(self, app, client, tmp_data_dir):
+        # Regression: nullable/Arrow dtypes with NA must not 500 (na_value path).
+        name, n = _make_compare_dataset(tmp_data_dir)
+        r = client.get(f"/api/datasets/{name}/column/rating")
+        assert r.status_code == 200
+        data = json.loads(r.data)
+        assert len(data["values"]) == n
+        assert data["values"][0] is None  # the NA row serializes as null
+        assert data["extent"][0] is not None and data["extent"][1] is not None
 
 
 class TestSpread:

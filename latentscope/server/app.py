@@ -367,7 +367,9 @@ def create_app(data_dir=None, read_only=None):
                 extent = [None, None]
 
         # NaN/inf aren't valid JSON; null them so the client can skip them.
-        values = series.to_numpy(dtype="float64")
+        # na_value is required for pandas nullable/Arrow dtypes (Int64, Float64,
+        # …) — without it to_numpy(dtype="float64") raises on missing values.
+        values = series.to_numpy(dtype="float64", na_value=np.nan)
         values = np.where(np.isfinite(values), values, np.nan)
         values = [None if np.isnan(v) else float(v) for v in values]
 
