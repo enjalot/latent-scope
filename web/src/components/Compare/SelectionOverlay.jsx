@@ -9,12 +9,21 @@ const SELECTION_COLOR = '#5cb85c';
 const MAX_DRAWN = 20000;
 
 /**
- * Canvas overlay that paints a set of selected points green on top of a Compare
- * scatter pane, in the same visual language as Explore's selection. Driven by
- * shared `selectedIndices`, so brushing in one pane lights up the same rows in
- * both panes.
+ * Canvas overlay that paints a set of highlighted points on top of a Compare
+ * scatter pane, in the same visual language as Explore's selection. Used both
+ * for the shared brush selection (green) and for similarity-search hits (blue),
+ * so highlighting in one context lights up the same rows in both panes.
  */
-function SelectionOverlay({ points, selectedIndices, xDomain, yDomain, width, height }) {
+function SelectionOverlay({
+  points,
+  selectedIndices,
+  xDomain,
+  yDomain,
+  width,
+  height,
+  color = SELECTION_COLOR,
+  stroke = '#2d6a2d',
+}) {
   const canvasRef = useRef();
 
   useEffect(() => {
@@ -28,8 +37,8 @@ function SelectionOverlay({ points, selectedIndices, xDomain, yDomain, width, he
     const xScale = scaleLinear().domain(xDomain).range([0, width]);
     const yScale = scaleLinear().domain(yDomain).range([height, 0]);
 
-    ctx.fillStyle = SELECTION_COLOR;
-    ctx.strokeStyle = '#2d6a2d';
+    ctx.fillStyle = color;
+    ctx.strokeStyle = stroke;
     ctx.lineWidth = 0.75;
     ctx.globalAlpha = 0.9;
 
@@ -45,7 +54,7 @@ function SelectionOverlay({ points, selectedIndices, xDomain, yDomain, width, he
       ctx.fill();
       ctx.stroke();
     }
-  }, [points, selectedIndices, xDomain, yDomain, width, height]);
+  }, [points, selectedIndices, xDomain, yDomain, width, height, color, stroke]);
 
   return <canvas ref={canvasRef} className="annotation-plot" width={width} height={height} />;
 }

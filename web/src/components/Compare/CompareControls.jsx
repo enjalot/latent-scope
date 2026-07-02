@@ -85,9 +85,6 @@ function CompareControls({
               <option key={key} value={key}>{info.label}</option>
             ))}
           </select>
-          <span className={styles['metric-description']}>
-            {METRIC_INFO[metric]?.description}
-          </span>
         </div>
         <div className={styles['metric-selector']}>
           <label>Color by</label>
@@ -101,11 +98,6 @@ function CompareControls({
               </optgroup>
             )}
           </select>
-          <span className={styles['metric-description']}>
-            {colorBy === '__drift__'
-              ? 'Points are colored by the selected drift metric.'
-              : `Points are colored by the "${colorBy}" column value.`}
-          </span>
         </div>
         {metric !== 'displacement' && (
           <div className={styles['metric-k']}>
@@ -139,6 +131,11 @@ function CompareControls({
             </span>
           </div>
         )}
+      </div>
+      <div className={styles['metric-help']}>
+        {colorBy === '__drift__'
+          ? METRIC_INFO[metric]?.description
+          : `Points are colored by the "${colorBy}" column value.`}
       </div>
     </div>
   );

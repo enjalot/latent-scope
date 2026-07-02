@@ -29,6 +29,7 @@ function SideBySideView({
   onNeighborSelect,
   onRegionSelect,
   selectedIndices,
+  searchIndices,
   pointSizeRange,
   opacityRange,
   hoveredIndex,
@@ -39,14 +40,11 @@ function SideBySideView({
 }) {
   const leftScatterRef = useRef(null);
   const rightScatterRef = useRef(null);
-  const [linkZoom, setLinkZoom] = useState(true);
 
   const [leftXDomain, setLeftXDomain] = useState([-1, 1]);
   const [leftYDomain, setLeftYDomain] = useState([-1, 1]);
   const [rightXDomain, setRightXDomain] = useState([-1, 1]);
   const [rightYDomain, setRightYDomain] = useState([-1, 1]);
-
-  const zoomSourceRef = useRef(null);
 
   // Click/neighbor state
   const [clickedIndex, setClickedIndex] = useState(null);
@@ -94,53 +92,18 @@ function SideBySideView({
     rightScatterRef.current = s;
   }, []);
 
-  const handleLeftView = useCallback(
-    (xd, yd) => {
-      setLeftXDomain(xd);
-      setLeftYDomain(yd);
-      if (linkZoom && zoomSourceRef.current !== 'right') {
-        zoomSourceRef.current = 'left';
-        setRightXDomain(xd);
-        setRightYDomain(yd);
-        try {
-          rightScatterRef.current?.zoomToArea({
-            x: xd[0],
-            y: yd[0],
-            width: xd[1] - xd[0],
-            height: yd[1] - yd[0],
-          })?.catch?.(() => {});
-        } catch (e) { /* scatter not ready yet */ }
-        setTimeout(() => {
-          zoomSourceRef.current = null;
-        }, 50);
-      }
-    },
-    [linkZoom]
-  );
+  // Each pane zooms independently — the same viewport coordinates mean different
+  // things in two different projections, so linking them isn't meaningful. We
+  // only track each pane's domain to keep its overlays aligned.
+  const handleLeftView = useCallback((xd, yd) => {
+    setLeftXDomain(xd);
+    setLeftYDomain(yd);
+  }, []);
 
-  const handleRightView = useCallback(
-    (xd, yd) => {
-      setRightXDomain(xd);
-      setRightYDomain(yd);
-      if (linkZoom && zoomSourceRef.current !== 'left') {
-        zoomSourceRef.current = 'right';
-        setLeftXDomain(xd);
-        setLeftYDomain(yd);
-        try {
-          leftScatterRef.current?.zoomToArea({
-            x: xd[0],
-            y: yd[0],
-            width: xd[1] - xd[0],
-            height: yd[1] - yd[0],
-          })?.catch?.(() => {});
-        } catch (e) { /* scatter not ready yet */ }
-        setTimeout(() => {
-          zoomSourceRef.current = null;
-        }, 50);
-      }
-    },
-    [linkZoom]
-  );
+  const handleRightView = useCallback((xd, yd) => {
+    setRightXDomain(xd);
+    setRightYDomain(yd);
+  }, []);
 
   // Fetch hover text for tooltip
   useEffect(() => {
@@ -260,14 +223,6 @@ function SideBySideView({
   return (
     <div className={styles['side-by-side-view']}>
       <div className={styles['view-toolbar']}>
-        <label className={styles['link-zoom-toggle']}>
-          <input
-            type="checkbox"
-            checked={linkZoom}
-            onChange={(e) => setLinkZoom(e.target.checked)}
-          />
-          Link zoom
-        </label>
         {clickedIndex != null && (
           <span className={styles['neighbor-info']}>
             Showing k={metricK} neighbors from {clickedSide} map (point {clickedIndex})
@@ -344,6 +299,18 @@ function SideBySideView({
                     />
                   )}
                 </div>
+                {clickedIndex == null && searchIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={leftPoints}
+                    selectedIndices={searchIndices}
+                    xDomain={leftXDomain}
+                    yDomain={leftYDomain}
+                    width={halfWidth}
+                    height={height}
+                    color="#4488ff"
+                    stroke="#22508a"
+                  />
+                )}
                 {clickedIndex == null && selectedIndices?.length > 0 && (
                   <SelectionOverlay
                     points={leftPoints}
@@ -418,6 +385,18 @@ function SideBySideView({
                     />
                   )}
                 </div>
+                {clickedIndex == null && searchIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={rightPoints}
+                    selectedIndices={searchIndices}
+                    xDomain={rightXDomain}
+                    yDomain={rightYDomain}
+                    width={halfWidth}
+                    height={height}
+                    color="#4488ff"
+                    stroke="#22508a"
+                  />
+                )}
                 {clickedIndex == null && selectedIndices?.length > 0 && (
                   <SelectionOverlay
                     points={rightPoints}

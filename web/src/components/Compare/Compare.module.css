@@ -1,3 +1,77 @@
+/* Page layout: fill the routed .page height, controls on top, maps flexing to
+   fill, a drag handle, then the bottom data panel. */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 8px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.visualization {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.view-container {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* View mode tabs (Transition / Side by Side) */
+.view-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.view-tab-active,
+.view-tab-inactive {
+  padding: 6px 18px;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  background: #f1f1f1;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.view-tab-active {
+  background: #fff;
+  color: #222;
+  font-weight: 600;
+  border-top: 2px solid seagreen;
+}
+
+.view-tab-inactive:hover {
+  background: #e6e6e6;
+}
+
+/* Resize handle between the maps and the bottom data panel */
+.drag-handle {
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  flex-shrink: 0;
+}
+
+.drag-grip {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ccc;
+}
+
+.drag-handle:hover .drag-grip {
+  background: #999;
+}
+
 /* CompareControls */
 .controls {
   display: flex;
@@ -6,6 +80,7 @@
   padding: 8px 12px;
   border: 1px solid lightgray;
   border-radius: 5px;
+  flex-shrink: 0;
 }
 
 .controls-header {
@@ -39,64 +114,49 @@
   padding: 4px 6px;
 }
 
+/* A single row of equal-height control groups (label on top, control below),
+   all aligned to the top so nothing looks ragged. */
 .metric-controls {
   display: flex;
   flex-direction: row;
-  gap: 12px;
-  align-items: flex-end;
+  gap: 16px;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
-.metric-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-selector label {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: #666;
-}
-
-.metric-description {
-  font-size: 0.75em;
-  color: #888;
-  line-height: 1.3;
-  max-width: 300px;
-}
-
-.metric-k {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-k label {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: #666;
-}
-
-.metric-k input[type='range'] {
-  width: 120px;
-}
-
+.metric-selector,
+.metric-k,
 .threshold-control {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
+.metric-selector label,
+.metric-k label,
 .threshold-control label {
   font-size: 0.85em;
   font-weight: 600;
   color: #666;
+  white-space: nowrap;
 }
 
+.metric-selector select {
+  padding: 4px 6px;
+  min-width: 170px;
+}
+
+.metric-k input[type='range'],
 .threshold-control input[type='range'] {
-  width: 100%;
+  width: 150px;
+}
+
+/* One help/description line spanning the row, so per-control descriptions don't
+   make the control heights ragged. */
+.metric-help {
+  font-size: 0.78em;
+  color: #888;
+  line-height: 1.3;
 }
 
 .threshold-count {
@@ -235,7 +295,12 @@
   position: relative;
   border: 1px solid gray;
   border-radius: 5px;
-  padding: 6px;
+  /* No padding: the regl canvas and the absolutely-positioned overlay canvases
+     (.annotation-plot, top:0/left:0) must share the exact same box, or the
+     colored points render offset from the hover/selection markers. */
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .scatter canvas {

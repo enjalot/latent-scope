@@ -265,24 +265,39 @@ function Compare() {
   // Search
   const handleSearch = useCallback(
     (query) => {
-      if (!searchModel) return;
-      fetch(
-        `${apiUrl}/search/nn?${new URLSearchParams({
-          dataset: datasetId,
-          query,
-          embedding_id: searchModel.id,
-          dimensions: searchModel.dimensions,
-        })}`
-      )
+      if (!searchModel || !query) return;
+      const params = new URLSearchParams({
+        dataset: datasetId,
+        query,
+        embedding_id: searchModel.id,
+      });
+      // Only send dimensions when the embedding actually declares them —
+      // otherwise the string "undefined" reaches the server and int() 500s,
+      // making search appear completely broken (matches apiService's guard).
+      if (searchModel.dimensions != null) {
+        params.set('dimensions', searchModel.dimensions);
+      }
+      fetch(`${apiUrl}/search/nn?${params}`)
         .then((r) => r.json())
         .then((data) => {
-          setDistances(data.distances);
-          setSearchIndices(data.indices);
-          scatter?.zoomToPoints(data.indices, {
-            transition: true,
-            padding: 0.2,
-            transitionDuration: 1500,
-          });
+          const indices = data.indices || [];
+          setDistances(data.distances || []);
+          setSearchIndices(indices);
+          if (indices.length) {
+            try {
+              scatter?.zoomToPoints(indices, {
+                transition: true,
+                padding: 0.2,
+                transitionDuration: 1500,
+              });
+            } catch (e) {
+              /* scatter not ready — results still render in the panel */
+            }
+          }
+        })
+        .catch(() => {
+          setDistances([]);
+          setSearchIndices([]);
         });
     },
     [searchModel, datasetId, scatter]
@@ -437,6 +452,7 @@ function Compare() {
               onNeighborSelect={handleNeighborSelect}
               onRegionSelect={handleRegionSelect}
               selectedIndices={selectedIndices}
+              searchIndices={searchIndices}
               pointSizeRange={pointSizeRange}
               opacityRange={opacityRange}
               hoveredIndex={hoveredIndex}
