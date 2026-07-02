@@ -128,6 +128,7 @@ function SideBySideView({
         colorInterpolator: colorConfig.interpolator,
         colorRange: undefined,
         colorDomain: undefined,
+        missingColor: colorConfig.missingColor,
         opacityBy: undefined,
       };
     }
@@ -406,6 +407,7 @@ function SideBySideView({
                       colorInterpolator={scatterColorProps.colorInterpolator}
                       colorRange={scatterColorProps.colorRange}
                       colorDomain={scatterColorProps.colorDomain}
+                      missingColor={scatterColorProps.missingColor}
                       opacityBy={scatterColorProps.opacityBy}
                       enableLasso
                       selectedIndices={selectedIndices}
@@ -473,6 +475,7 @@ function SideBySideView({
                       colorInterpolator={scatterColorProps.colorInterpolator}
                       colorRange={scatterColorProps.colorRange}
                       colorDomain={scatterColorProps.colorDomain}
+                      missingColor={scatterColorProps.missingColor}
                       opacityBy={scatterColorProps.opacityBy}
                       enableLasso
                       selectedIndices={selectedIndices}

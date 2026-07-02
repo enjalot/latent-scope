@@ -17,6 +17,9 @@ ScatterPlot.propTypes = {
   colorDomain: PropTypes.array,
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
+  // Neutral color for missing values; when set on a continuous scale it is
+  // prepended to the ramp so callers can route missing rows to valueB≈0.
+  missingColor: PropTypes.string,
   opacityBy: PropTypes.string,
   opacityRange: PropTypes.array,
   pointSizeRange: PropTypes.array,
@@ -75,6 +78,7 @@ function ScatterPlot({
   colorInterpolator = interpolateOranges,
   colorDomain = null,
   colorRange = null,
+  missingColor = null,
   opacityBy,
   opacityRange = null,
   pointSizeRange = null,
@@ -194,6 +198,9 @@ function ScatterPlot({
         let r = range(0, 50);
         const colorScale = scaleSequential(colorInterpolator).domain([0, 50]);
         pointColor = r.map((i) => rgb(colorScale(i)).hex());
+        // Reserve index 0 for the neutral no-value color; callers map missing
+        // rows to valueB≈0 so they render neutral instead of the ramp minimum.
+        if (missingColor) pointColor = [missingColor, ...pointColor];
         scatterplot.set({ colorBy: 'valueB' });
       }
 
@@ -232,6 +239,7 @@ function ScatterPlot({
     colorScaleType,
     duration,
     colorInterpolator,
+    missingColor,
     pointScale,
     opacityRange,
     pointSizeRange,

@@ -78,15 +78,15 @@ class TestSettings:
 
     def test_settings_not_available_in_read_only(self, readonly_client):
         # In read-only mode the /api/settings routes are never registered, so
-        # the request falls through to the SPA catch-all (index.html) instead of
-        # returning the settings payload. Enforcement is confirmed by the
-        # settings JSON being absent, not by a 404 (see WP-H report note on the
-        # catch-all serving HTML for unmatched /api/* paths).
+        # the settings payload is never served. Assert that security property
+        # directly rather than the response shape: an unmatched /api GET may be
+        # a JSON 404 (no built frontend, e.g. CI) or the SPA index.html (built
+        # frontend) -- both are acceptable, neither exposes the settings JSON.
         response = readonly_client.get('/api/settings')
-        assert 'text/html' in response.content_type
         assert b'supported_api_keys' not in response.data
+        assert response.status_code != 200 or b'supported_api_keys' not in response.data
         # a write attempt is equally unavailable: the POST route is unregistered
-        # (the GET-only catch-all yields 405) so the write never runs.
+        # so the write never runs (405/404, never a 200 success).
         post = readonly_client.post('/api/settings', json={"FOO": "bar"})
         assert post.status_code != 200
 
@@ -145,14 +145,15 @@ class TestTags:
 
     def test_write_blocked_in_read_only(self, readonly_client, tmp_data_dir):
         # tags_write_bp is not registered in read-only mode, so the write route
-        # is unreachable: the request lands on the SPA catch-all (HTML) and no
-        # tag file is created. (The catch-all returns 200 HTML rather than a
-        # JSON 404 for unmatched /api/* paths -- documented in the WP-H report.)
+        # is unreachable. The observable security property is that the write
+        # never happens -- assert that (env-independent) rather than the response
+        # shape (unmatched /api GETs are a JSON 404 with no built frontend, e.g.
+        # CI, or the SPA index.html when the frontend is built).
         ds_dir = os.path.join(tmp_data_dir, "ds1")
         os.makedirs(ds_dir, exist_ok=True)
         response = readonly_client.get('/api/tags/new?dataset=ds1&tag=mytag')
-        assert 'text/html' in response.content_type
-        # the write genuinely did not happen
+        # never a successful create, and the tag file genuinely was not written
+        assert response.status_code != 200 or b'mytag' not in response.data
         assert not os.path.exists(os.path.join(ds_dir, "tags", "mytag.indices"))
 
 

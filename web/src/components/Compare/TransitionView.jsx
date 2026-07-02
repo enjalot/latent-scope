@@ -67,6 +67,7 @@ function TransitionView({
         colorInterpolator: colorConfig.interpolator,
         colorRange: undefined,
         colorDomain: undefined,
+        missingColor: colorConfig.missingColor,
         opacityBy: undefined,
       };
     }
@@ -108,6 +109,7 @@ function TransitionView({
                   colorInterpolator={scatterColorProps.colorInterpolator}
                   colorRange={scatterColorProps.colorRange}
                   colorDomain={scatterColorProps.colorDomain}
+                      missingColor={scatterColorProps.missingColor}
                   opacityBy={scatterColorProps.opacityBy}
                   enableLasso
                   selectedIndices={selectedIndices}
