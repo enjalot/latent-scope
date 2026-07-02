@@ -413,7 +413,7 @@ function ScatterGL({
       height,
       blendParams,
     });
-  }, [points, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
+  }, [points, pointColors, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
 
   // Update useEffect to rebuild quadtree when points change
   useEffect(() => {
