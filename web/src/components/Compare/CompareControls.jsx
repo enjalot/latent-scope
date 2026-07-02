@@ -1,5 +1,20 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import ColorLegend from './ColorLegend';
 import styles from './Compare.module.css';
+
+// A column is colorable if it's numeric, or a string column ingest tagged with
+// a bounded category set (<=100 uniques -> `categories` in column_metadata).
+function colorableColumns(dataset) {
+  const cols = dataset?.columns || [];
+  const meta = dataset?.column_metadata || {};
+  return cols.filter((col) => {
+    const m = meta[col];
+    if (!m || m.image) return false;
+    if (m.type === 'number') return true;
+    if (m.type === 'string' && Array.isArray(m.categories)) return true;
+    return false;
+  });
+}
 
 const METRIC_INFO = {
   displacement: {
@@ -33,7 +48,12 @@ function CompareControls({
   metricK,
   onMetricKChange,
   displacementLoading,
+  colorColumn,
+  onColorColumnChange,
+  colorLegend,
 }) {
+  const colorColumns = useMemo(() => colorableColumns(dataset), [dataset]);
+
   const formatUmapOption = useCallback(
     (um) => {
       const emb = embeddings.find((d) => um.embedding_id === d.id);
@@ -116,6 +136,34 @@ function CompareControls({
             {aboveThresholdCount} points above threshold
           </span>
         </div>
+        <div className={styles['metric-selector']}>
+          <label>Color by</label>
+          <select
+            value={colorColumn || ''}
+            onChange={(e) => onColorColumnChange(e.target.value)}
+          >
+            <option value="">Drift metric (default)</option>
+            {colorColumns.map((col) => (
+              <option key={col} value={col}>
+                {col}
+              </option>
+            ))}
+          </select>
+          {colorColumn ? (
+            <span className={styles['metric-description']}>
+              Coloring by column (drift coloring paused)
+            </span>
+          ) : (
+            colorColumns.length === 0 && (
+              <span className={styles['metric-description']}>No colorable columns</span>
+            )
+          )}
+        </div>
+        {colorLegend && (
+          <div className={styles['color-legend-wrap']}>
+            <ColorLegend legend={colorLegend} />
+          </div>
+        )}
       </div>
     </div>
   );

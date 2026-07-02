@@ -188,14 +188,33 @@ Depends on WP-C.
   (data importing) and #33 (data-size limitations). Document **curation as
   post-1.0**.
 
-### WP-H — Test depth
+### WP-H — Test depth (CPU) *(in Wave 4, runs now)*
 **Owns:** `tests/*`.
 - E2E for the **LanceDB migration** path and the **image pipeline** at slightly
   larger sizes. A couple of **MaxSim ranking-correctness** assertions beyond the
   smoke checks. New: GPU-fallback resolves to CPU cleanly when cuml absent;
   kmeans/GMM produce valid `cluster-NNN.json`; name/description round-trip; the
-  color-by column endpoint. Run the **GPU path on the 5090** (`LATENT_SCOPE_DEVICE=cuda`)
-  and record throughput.
+  color-by column endpoint. **All CPU — no GPU required.**
+- Also fix the 2 **pre-existing read-only failures** (`test_server.py`
+  `TestSettings::test_settings_not_available_in_read_only`,
+  `TestTags::test_write_blocked_in_read_only`) or file them if the enforcement
+  bug is real.
+
+### WP-H-GPU — cuML validation on the 5090 *(DEFERRED — gated on a GPU window)*
+**Blocked on GPU availability.** The gsv RTX 5090 is shared under the
+`latent-labs/coordination/` protocol (agents `sae` + `basemap`); it is booked
+through the day + overnight (basemap trainers → sae exclusive 20:00Z–01:00Z →
+sae moderate trainings). Do **not** run this until a window is obtained via that
+protocol (file a request, wait for `ack`).
+- Validate `LATENT_SCOPE_DEVICE=cuda` actually engages **cuML UMAP**, **cuML
+  HDBSCAN**, and **cuML KMeans** on a modest dataset; confirm output parity with
+  the CPU path (cluster counts / projection sanity) and record throughput.
+- Profile: short (~15–30 min), ~2–6 GB VRAM, util spiky (UMAP fit can hit
+  saturating briefly), **preemptible** (re-runnable smoke). Classify `moderate`.
+- This is the ONLY GPU-dependent task in the whole 1.0 build; everything else
+  (including the cuML code paths, which are correct-by-construction + guarded)
+  ships without it. Release (WP-I) can prepare 1.0 with WP-H-GPU still pending;
+  the GPU validation gates the *final* GPU-feature sign-off, not the code.
 
 ---
 

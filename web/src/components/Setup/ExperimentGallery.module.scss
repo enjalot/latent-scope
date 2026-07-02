@@ -1,0 +1,140 @@
+@import "./_shared";
+
+.gallery {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  min-height: 0;
+  gap: 8px;
+  padding: 4px;
+}
+
+.card {
+  background-color: var(--neutrals-color-neutral-1);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 220px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--borders-color-border-2, #999);
+  }
+}
+
+.selected {
+  background-color: var(--neutrals-color-neutral-2);
+  border-color: seagreen;
+  cursor: default;
+}
+
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.title {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.title-id {
+  font-weight: 400;
+  color: #888;
+  font-size: 0.85em;
+}
+
+.saved {
+  margin-left: 4px;
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9em;
+  padding: 2px;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.description {
+  font-size: 0.8em;
+  color: #666;
+  font-style: italic;
+  word-break: break-word;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8em;
+
+  span {
+    line-height: 1.3em;
+  }
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-name,
+.edit-description {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.85em;
+  padding: 3px 5px;
+}
+
+.edit-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  user-select: none;
+  background-color: var(--neutrals-color-neutral-0, #fff);
+  border-radius: 4px;
+}
+
+.card-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.proceed {
+  flex-grow: 1;
+}
+
+.delete {
+  margin-left: auto;
+}

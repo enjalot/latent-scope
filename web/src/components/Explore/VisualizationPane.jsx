@@ -25,8 +25,10 @@ import { atlasLod, MIN_CELL_PX, POINTS_HANDOFF_CELL_PX } from '../../lib/atlasLo
 import HoverThumbnail from './HoverThumbnail';
 import AtlasOverlay from './AtlasOverlay';
 import PointsOverlay from './PointsOverlay';
+import ColorLegend from './ColorLegend';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
+import { useColorBy } from '../../hooks/useColorBy';
 import { Button } from 'react-element-forge';
 // VisualizationPane.propTypes = {
 //   hoverAnnotations: PropTypes.array.isRequired,
@@ -176,6 +178,41 @@ function VisualizationPane({
       }
     });
   }, [scopeRows, shownIndices, featureActivationMap, featureIsSelected]);
+
+  // ====================================================================================================
+  // Color-by column (#131): drive point hue from a numeric/categorical column.
+  // Values come back aligned to the scope's ls_index order — the same order as
+  // scopeRows / drawingPoints — so they index-align 1:1 with the draw points.
+  // ====================================================================================================
+  const {
+    column: colorByColumn,
+    setColumn: setColorByColumn,
+    pointColors: colorByColors,
+    legend: colorByLegend,
+  } = useColorBy(dataset?.id, scope?.id);
+
+  // Columns offered in the picker: numeric columns, plus categorical string
+  // columns (those ingest tagged with a bounded set of `categories`). Image /
+  // url / array / high-cardinality string columns are not colorable.
+  const colorableColumns = useMemo(() => {
+    const cm = dataset?.column_metadata || {};
+    return Object.keys(cm).filter((col) => {
+      const m = cm[col];
+      if (!m) return false;
+      if (m.image || m.type === 'array' || m.type === 'image') return false;
+      if (m.type === 'number') return true;
+      if (m.categories) return true;
+      return false;
+    });
+  }, [dataset]);
+
+  // Only hand color hues to the scatter when the fetched values line up with the
+  // points we're drawing; otherwise fall back to selection coloring.
+  const scatterPointColors = useMemo(() => {
+    if (!colorByColumn || !colorByColors) return null;
+    if (colorByColors.length !== drawingPoints.length) return null;
+    return colorByColors;
+  }, [colorByColumn, colorByColors, drawingPoints.length]);
 
   // const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   // useEffect(() => {
@@ -345,6 +382,28 @@ function VisualizationPane({
         />
       </div>
 
+      {/* Color-by column picker + legend (#131). Only shown when the dataset
+          exposes colorable columns and we're not in the image map. */}
+      {colorableColumns.length > 0 && !imageMode && (
+        <div className={styles.colorByContainer}>
+          <label className={styles.colorByPicker}>
+            <span className={styles.colorByLabel}>Color by</span>
+            <select
+              value={colorByColumn || ''}
+              onChange={(e) => setColorByColumn(e.target.value || null)}
+            >
+              <option value="">None (selection)</option>
+              {colorableColumns.map((col) => (
+                <option key={col} value={col}>
+                  {col}
+                </option>
+              ))}
+            </select>
+          </label>
+          {colorByColumn && colorByLegend && <ColorLegend legend={colorByLegend} />}
+        </div>
+      )}
+
       <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
         {scope && (
           <Scatter
@@ -359,6 +418,7 @@ function VisualizationPane({
             isSmallScreen={isSmallScreen}
             pointScale={vizConfig.pointSize}
             pointOpacity={vizConfig.pointOpacity}
+            pointColors={scatterPointColors}
             // In image mode the visible points come from the PointsOverlay (on
             // top of the atlas); the GPU layer stays for zoom/hover/select only.
             hidePoints={imageMode}

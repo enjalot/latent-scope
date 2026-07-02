@@ -1,15 +1,18 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { extent } from 'd3-array';
 import { scaleSymlog } from 'd3-scale';
 
+import { apiService } from '../lib/apiService';
 import CompareControls from '../components/Compare/CompareControls';
 import TransitionView from '../components/Compare/TransitionView';
 import SideBySideView from '../components/Compare/SideBySideView';
 import CompareDataPanel from '../components/Compare/CompareDataPanel';
+import { buildColorByConfig } from '../components/Compare/colorBy';
 
 import styles from './Compare.module.css';
 
+// Still used for the /search/compare* endpoints that have no apiService method.
 const apiUrl = import.meta.env.VITE_API_URL;
 
 const viewModes = [
@@ -58,6 +61,14 @@ function Compare() {
   const [selectedIndices, setSelectedIndices] = useState([]);
   const [hoveredIndex, setHoveredIndex] = useState(null);
 
+  // Color-by-column state (#131). Empty column = drift coloring (default).
+  const [colorColumn, setColorColumn] = useState('');
+  const [colorData, setColorData] = useState(null);
+  const colorConfig = useMemo(
+    () => buildColorByConfig(colorColumn, colorData),
+    [colorColumn, colorData]
+  );
+
   // Neighbor selection state (from SideBySideView clicks)
   const [neighborSelectedIndex, setNeighborSelectedIndex] = useState(null);
   const [neighborIndices, setNeighborIndices] = useState([]);
@@ -88,20 +99,45 @@ function Compare() {
   // ===== Data Loading =====
 
   useEffect(() => {
-    fetch(`${apiUrl}/datasets/${datasetId}/meta`)
-      .then((r) => r.json())
-      .then(setDataset);
+    apiService.fetchDataset(datasetId).then(setDataset);
   }, [datasetId]);
 
   useEffect(() => {
     Promise.all([
-      fetch(`${apiUrl}/datasets/${datasetId}/embeddings`).then((r) => r.json()),
-      fetch(`${apiUrl}/datasets/${datasetId}/umaps`).then((r) => r.json()),
+      apiService.fetchEmbeddings(datasetId),
+      apiService.fetchUmaps(datasetId),
     ]).then(([embData, umapData]) => {
       setEmbeddings(embData);
       setUmaps(umapData);
     });
   }, [datasetId]);
+
+  // Reset color-by when switching datasets so a stale column doesn't linger.
+  useEffect(() => {
+    setColorColumn('');
+    setColorData(null);
+  }, [datasetId]);
+
+  // Fetch per-point column values for color-by (aligned to ls_index order).
+  useEffect(() => {
+    if (!colorColumn) {
+      setColorData(null);
+      return;
+    }
+    let cancelled = false;
+    apiService
+      .fetchColumnValues(datasetId, null, colorColumn)
+      .then((res) => {
+        if (!cancelled) setColorData(res);
+      })
+      .catch((err) => {
+        console.error(`Error fetching column values for ${colorColumn}`, err);
+        if (!cancelled) setColorData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetId, colorColumn]);
 
   // Auto-select first two UMAPs
   useEffect(() => {
@@ -125,8 +161,8 @@ function Compare() {
   useEffect(() => {
     if (!left || !right) return;
     Promise.all([
-      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${left.id}/points`).then((r) => r.json()),
-      fetch(`${apiUrl}/datasets/${datasetId}/umaps/${right.id}/points`).then((r) => r.json()),
+      apiService.fetchUmapPoints(datasetId, left.id),
+      apiService.fetchUmapPoints(datasetId, right.id),
     ]).then(([lp, rp]) => {
       setLeftPoints(lp.map((d) => [d.x, d.y]));
       setRightPoints(rp.map((d) => [d.x, d.y]));
@@ -182,8 +218,12 @@ function Compare() {
     setYDomain(yd);
   }, []);
 
+  // A lasso/brush in either pane sets the shared selection set and exits
+  // neighbor mode (the two are mutually exclusive views of the data panel).
   const handleSelected = useCallback((indices) => {
-    setSelectedIndices(indices);
+    setSelectedIndices(indices || []);
+    setNeighborSelectedIndex(null);
+    setNeighborIndices([]);
   }, []);
 
   const handleHover = useCallback((index) => {
@@ -223,19 +263,12 @@ function Compare() {
   const handleSearch = useCallback(
     (query) => {
       if (!searchModel) return;
-      fetch(
-        `${apiUrl}/search/nn?${new URLSearchParams({
-          dataset: datasetId,
-          query,
-          embedding_id: searchModel.id,
-          dimensions: searchModel.dimensions,
-        })}`
-      )
-        .then((r) => r.json())
-        .then((data) => {
-          setDistances(data.distances);
-          setSearchIndices(data.indices);
-          scatter?.zoomToPoints(data.indices, {
+      apiService
+        .searchNearestNeighbors(datasetId, searchModel, query)
+        .then(({ distances: dists, indices }) => {
+          setDistances(dists);
+          setSearchIndices(indices);
+          scatter?.zoomToPoints(indices, {
             transition: true,
             padding: 0.2,
             transitionDuration: 1500,
@@ -257,14 +290,13 @@ function Compare() {
     setDistances([]);
   }, []);
 
+  // A single-point click drives kNN neighbor mode. This is distinct from the
+  // brush set (handleSelected); entering neighbor mode clears the brush so the
+  // panes highlight via the NeighborPlot overlay rather than native selection.
   const handleNeighborSelect = useCallback((pointIndex, neighbors) => {
     setNeighborSelectedIndex(pointIndex);
     setNeighborIndices(neighbors || []);
-    if (pointIndex != null) {
-      setSelectedIndices([pointIndex, ...(neighbors || [])]);
-    } else {
-      setSelectedIndices([]);
-    }
+    setSelectedIndices([]);
   }, []);
 
   // Annotations
@@ -326,6 +358,9 @@ function Compare() {
         metricK={metricK}
         onMetricKChange={setMetricK}
         displacementLoading={displacementLoading}
+        colorColumn={colorColumn}
+        onColorColumnChange={setColorColumn}
+        colorLegend={colorConfig?.legend || null}
       />
 
       <div className={styles['visualization']}>
@@ -363,6 +398,8 @@ function Compare() {
               hoverAnnotations={hoverAnnotations}
               pointSizeRange={pointSizeRange}
               opacityRange={opacityRange}
+              selectedIndices={selectedIndices}
+              colorConfig={colorConfig}
             />
           )}
 
@@ -386,6 +423,8 @@ function Compare() {
               opacityRange={opacityRange}
               hoveredIndex={hoveredIndex}
               metricK={metricK}
+              selectedIndices={selectedIndices}
+              colorConfig={colorConfig}
             />
           )}
         </div>
