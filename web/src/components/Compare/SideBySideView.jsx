@@ -7,6 +7,7 @@ import CrosshairPlot from './CrosshairPlot';
 import NeighborPlot from './NeighborPlot';
 import SelectionOverlay from './SelectionOverlay';
 import ColorLegend from './ColorLegend';
+import UmapSelect from './UmapSelect';
 import styles from './Compare.module.css';
 
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -16,8 +17,12 @@ const apiUrl = import.meta.env.VITE_API_URL;
 function SideBySideView({
   datasetId,
   dataset,
+  umaps,
+  embeddings,
   left,
   right,
+  onSetLeft,
+  onSetRight,
   leftPoints,
   rightPoints,
   drawPoints,
@@ -218,7 +223,10 @@ function SideBySideView({
       ? displacementData[hoveredIndex].toFixed(3)
       : null;
 
-  const halfWidth = Math.floor((width - 12) / 2);
+  // Maps are stacked vertically: each is full column width, and shares the
+  // available height (minus the per-map dropdown rows + gaps).
+  const mapWidth = width;
+  const mapHeight = Math.max(120, Math.floor((height - 88) / 2));
 
   return (
     <div className={styles['side-by-side-view']}>
@@ -254,16 +262,21 @@ function SideBySideView({
             extent={colorExtent}
             label={colorLabel}
           />
-          <span className={styles['side-label']}>← Left</span>
-          <span className={styles['side-label']}>Right →</span>
         </div>
       </div>
       <div className={styles['side-by-side-container']}>
-        {/* Left scatter */}
+        {/* Left scatter (top) */}
         <div className={styles['scatter-panel']}>
+          <UmapSelect
+            label="Left"
+            value={left?.id}
+            umaps={umaps}
+            embeddings={embeddings}
+            onChange={onSetLeft}
+          />
           <div
             className={styles['scatter-container']}
-            style={{ width: halfWidth, height }}
+            style={{ width: mapWidth, height: mapHeight }}
             data-tooltip-id="compare-hover-tooltip"
           >
             {leftDisplayPoints.length > 0 && (
@@ -276,8 +289,8 @@ function SideBySideView({
                       pointScale={1}
                       pointSizeRange={pointSizeRange}
                       opacityRange={clickedIndex != null ? [0.15, 0.15] : opacityRange}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                       colorScaleType="continuous"
                       colorInterpolator={colorInterpolator || interpolateReds}
                       opacityBy="valueA"
@@ -294,8 +307,8 @@ function SideBySideView({
                       size="8"
                       xDomain={leftXDomain}
                       yDomain={leftYDomain}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                     />
                   )}
                 </div>
@@ -305,8 +318,8 @@ function SideBySideView({
                     selectedIndices={searchIndices}
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                     color="#4488ff"
                     stroke="#22508a"
                   />
@@ -317,8 +330,8 @@ function SideBySideView({
                     selectedIndices={selectedIndices}
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 )}
                 {clickedIndex != null ? (
@@ -328,16 +341,16 @@ function SideBySideView({
                     neighborIndices={neighborIndices}
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 ) : (
                   <CrosshairPlot
                     point={leftHoverPoint}
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 )}
               </>
@@ -345,11 +358,18 @@ function SideBySideView({
           </div>
         </div>
 
-        {/* Right scatter */}
+        {/* Right scatter (bottom) */}
         <div className={styles['scatter-panel']}>
+          <UmapSelect
+            label="Right"
+            value={right?.id}
+            umaps={umaps}
+            embeddings={embeddings}
+            onChange={onSetRight}
+          />
           <div
             className={styles['scatter-container']}
-            style={{ width: halfWidth, height }}
+            style={{ width: mapWidth, height: mapHeight }}
             data-tooltip-id="compare-hover-tooltip"
           >
             {rightDisplayPoints.length > 0 && (
@@ -362,8 +382,8 @@ function SideBySideView({
                       pointScale={1}
                       pointSizeRange={pointSizeRange}
                       opacityRange={clickedIndex != null ? [0.15, 0.15] : opacityRange}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                       colorScaleType="continuous"
                       colorInterpolator={colorInterpolator || interpolateReds}
                       opacityBy="valueA"
@@ -380,8 +400,8 @@ function SideBySideView({
                       size="8"
                       xDomain={rightXDomain}
                       yDomain={rightYDomain}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                     />
                   )}
                 </div>
@@ -391,8 +411,8 @@ function SideBySideView({
                     selectedIndices={searchIndices}
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                     color="#4488ff"
                     stroke="#22508a"
                   />
@@ -403,8 +423,8 @@ function SideBySideView({
                     selectedIndices={selectedIndices}
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 )}
                 {clickedIndex != null ? (
@@ -414,16 +434,16 @@ function SideBySideView({
                     neighborIndices={neighborIndices}
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 ) : (
                   <CrosshairPlot
                     point={rightHoverPoint}
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 )}
               </>

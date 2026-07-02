@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { scaleOrdinal } from 'd3-scale';
 import { schemeTableau10 } from 'd3-scale-chromatic';
+import { Tooltip } from 'react-tooltip';
 import IndexDataTable from '../IndexDataTable';
 import styles from './Compare.module.css';
+
+const ROW_TOOLTIP_ID = 'compare-row-tooltip';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
@@ -29,6 +32,7 @@ function CompareDataPanel({
   onSearch,
   searchModel,
   onSearchModelChange,
+  searchLoading,
   onHover,
   onClick,
 }) {
@@ -128,6 +132,7 @@ function CompareDataPanel({
                   maxRows={150}
                   onHover={onHover}
                   onClick={onClick}
+                  rowTooltipId={ROW_TOOLTIP_ID}
                 />
               )}
             </>
@@ -155,10 +160,15 @@ function CompareDataPanel({
             </form>
           </div>
           <span>
-            {searchIndices.length > 0 && (
+            {searchLoading && (
+              <span className={styles['search-loading']}>
+                <span className={styles['spinner']} /> Searching…
+              </span>
+            )}
+            {!searchLoading && searchIndices.length > 0 && (
               <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span>
             )}
-            {searchIndices.length > 0 && (
+            {!searchLoading && searchIndices.length > 0 && (
               <button
                 className={styles['deselect']}
                 onClick={() => {
@@ -178,10 +188,20 @@ function CompareDataPanel({
               dataset={dataset}
               onHover={onHover}
               onClick={onClick}
+              rowTooltipId={ROW_TOOLTIP_ID}
             />
           )}
         </div>
       )}
+
+      <Tooltip
+        id={ROW_TOOLTIP_ID}
+        className={styles['row-tooltip']}
+        float
+        offset={12}
+        place="left"
+        noArrow
+      />
     </div>
   );
 }

@@ -2,12 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
 import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
+import UmapSelect from './UmapSelect';
 import styles from './Compare.module.css';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 function TransitionView({
+  umaps,
+  embeddings,
+  left,
+  right,
+  onSetLeft,
+  onSetRight,
   leftPoints,
   rightPoints,
   drawPoints,
@@ -46,6 +53,9 @@ function TransitionView({
     onDirectionChange(direction === 'left' ? 'right' : 'left');
   }, [direction, onDirectionChange]);
 
+  // Leave room for the toolbar (swap button + dropdowns) above the map.
+  const mapHeight = Math.max(120, height - 44);
+
   return (
     <div className={styles['transition-view']}>
       <div className={styles['view-toolbar']}>
@@ -53,8 +63,24 @@ function TransitionView({
           {direction === 'left' ? '← Showing Left' : 'Showing Right →'}
           {' · Click to swap'}
         </button>
+        <UmapSelect
+          label="Left"
+          value={left?.id}
+          umaps={umaps}
+          embeddings={embeddings}
+          onChange={onSetLeft}
+          accent={direction === 'left' ? '#222' : '#aaa'}
+        />
+        <UmapSelect
+          label="Right"
+          value={right?.id}
+          umaps={umaps}
+          embeddings={embeddings}
+          onChange={onSetRight}
+          accent={direction === 'right' ? '#222' : '#aaa'}
+        />
       </div>
-      <div className={styles['scatter-container']} style={{ width, height }}>
+      <div className={styles['scatter-container']} style={{ width, height: mapHeight }}>
         {displayPoints.length > 0 && (
           <>
             <div className={styles['scatter']}>
@@ -66,7 +92,7 @@ function TransitionView({
                   pointSizeRange={pointSizeRange}
                   opacityRange={opacityRange}
                   width={width}
-                  height={height}
+                  height={mapHeight}
                   colorScaleType="continuous"
                   colorInterpolator={interpolateReds}
                   opacityBy="valueA"
@@ -83,7 +109,7 @@ function TransitionView({
                   xDomain={xDomain}
                   yDomain={yDomain}
                   width={width}
-                  height={height}
+                  height={mapHeight}
                 />
               )}
             </div>
@@ -95,7 +121,7 @@ function TransitionView({
               xDomain={xDomain}
               yDomain={yDomain}
               width={width}
-              height={height}
+              height={mapHeight}
             />
             <AnnotationPlot
               points={hoverAnnotations}
@@ -105,7 +131,7 @@ function TransitionView({
               xDomain={xDomain}
               yDomain={yDomain}
               width={width}
-              height={height}
+              height={mapHeight}
             />
           </>
         )}

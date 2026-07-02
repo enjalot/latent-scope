@@ -17,16 +17,17 @@ IndexDataTable.propTypes = {
 };
 
 function IndexDataTable({
-  dataset, 
-  indices, 
-  distances = [], 
-  clusterIndices = [], 
-  clusterLabels = [], 
-  maxRows, 
-  tagset, 
-  onHover, 
-  onClick, 
-  onTagset
+  dataset,
+  indices,
+  distances = [],
+  clusterIndices = [],
+  clusterLabels = [],
+  maxRows,
+  tagset,
+  onHover,
+  onClick,
+  onTagset,
+  rowTooltipId
 }) {
 
   const [rows, setRows] = useState([]);
@@ -71,14 +72,15 @@ function IndexDataTable({
 
   return (
     <div>
-      <DataTable 
-        data={rows} 
-        tagset={tagset} 
-        dataset={dataset} 
-        maxRows={maxRows} 
-        onTagset={onTagset} 
-        onHover={onHover} 
+      <DataTable
+        data={rows}
+        tagset={tagset}
+        dataset={dataset}
+        maxRows={maxRows}
+        onTagset={onTagset}
+        onHover={onHover}
         onClick={onClick}
+        rowTooltipId={rowTooltipId}
         />
     </div>
   )
