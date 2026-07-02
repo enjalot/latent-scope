@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import styles from './Compare.module.css';
 
 const METRIC_INFO = {
@@ -19,12 +18,6 @@ const METRIC_INFO = {
 function CompareControls({
   dataset,
   datasetId,
-  umaps,
-  embeddings,
-  left,
-  right,
-  onSetLeft,
-  onSetRight,
   threshold,
   onThresholdChange,
   aboveThresholdCount,
@@ -33,46 +26,15 @@ function CompareControls({
   metricK,
   onMetricKChange,
   displacementLoading,
+  colorBy,
+  onColorByChange,
+  numericColumns = [],
 }) {
-  const formatUmapOption = useCallback(
-    (um) => {
-      const emb = embeddings.find((d) => um.embedding_id === d.id);
-      const model = emb?.model_id || um.embedding_id;
-      const dims = emb?.dimensions ? `[${emb.dimensions}]` : '';
-      const sae = um.sae_id ? ` (SAE)` : '';
-      const aligned = um.align_id ? ` (aligned)` : '';
-      return `${um.id} - ${model} ${dims}${sae}${aligned}`;
-    },
-    [embeddings]
-  );
-
   return (
     <div className={styles['controls']}>
       <div className={styles['controls-header']}>
         <b>{datasetId}</b>
         <span>{dataset?.length} rows</span>
-      </div>
-      <div className={styles['umap-selectors']}>
-        <div className={styles['umap-selector']}>
-          <label>Left UMAP</label>
-          <select value={left?.id || ''} onChange={(e) => onSetLeft(e.target.value)}>
-            {umaps.map((um) => (
-              <option key={um.id} value={um.id}>
-                {formatUmapOption(um)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles['umap-selector']}>
-          <label>Right UMAP</label>
-          <select value={right?.id || ''} onChange={(e) => onSetRight(e.target.value)}>
-            {umaps.map((um) => (
-              <option key={um.id} value={um.id}>
-                {formatUmapOption(um)}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
       <div className={styles['metric-controls']}>
         <div className={styles['metric-selector']}>
@@ -82,9 +44,19 @@ function CompareControls({
               <option key={key} value={key}>{info.label}</option>
             ))}
           </select>
-          <span className={styles['metric-description']}>
-            {METRIC_INFO[metric]?.description}
-          </span>
+        </div>
+        <div className={styles['metric-selector']}>
+          <label>Color by</label>
+          <select value={colorBy} onChange={(e) => onColorByChange(e.target.value)}>
+            <option value="__drift__">Drift metric</option>
+            {numericColumns.length > 0 && (
+              <optgroup label="Columns">
+                {numericColumns.map((col) => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
         </div>
         {metric !== 'displacement' && (
           <div className={styles['metric-k']}>
@@ -99,23 +71,30 @@ function CompareControls({
             />
           </div>
         )}
-        <div className={styles['threshold-control']}>
-          <label>
-            Threshold: {threshold.toFixed(2)}
-            {displacementLoading && <span className={styles['loading-indicator']}> computing...</span>}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={threshold}
-            onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
-          />
-          <span className={styles['threshold-count']}>
-            {aboveThresholdCount} points above threshold
-          </span>
-        </div>
+        {colorBy === '__drift__' && (
+          <div className={styles['threshold-control']}>
+            <label>
+              Threshold: {threshold.toFixed(2)}
+              {displacementLoading && <span className={styles['loading-indicator']}> computing...</span>}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={threshold}
+              onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
+            />
+            <span className={styles['threshold-count']}>
+              {aboveThresholdCount} points above threshold
+            </span>
+          </div>
+        )}
+      </div>
+      <div className={styles['metric-help']}>
+        {colorBy === '__drift__'
+          ? METRIC_INFO[metric]?.description
+          : `Points are colored by the "${colorBy}" column value.`}
       </div>
     </div>
   );

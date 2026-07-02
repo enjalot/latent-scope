@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { extent } from 'd3-array';
-import { scaleSymlog } from 'd3-scale';
+import { scaleSymlog, scaleLinear } from 'd3-scale';
+import { interpolateReds, interpolateViridis } from 'd3-scale-chromatic';
 
 import CompareControls from '../components/Compare/CompareControls';
 import TransitionView from '../components/Compare/TransitionView';
@@ -33,7 +34,6 @@ function Compare() {
 
   // Displacement data and display points
   const [drawPoints, setDrawPoints] = useState([]);
-  const drawPointsRef = useRef([]);
   const [displacementLoading, setDisplacementLoading] = useState(false);
   const [threshold, setThreshold] = useState(0.5);
   const [aboveThresholdCount, setAboveThresholdCount] = useState(0);
@@ -41,6 +41,10 @@ function Compare() {
   // Metric controls
   const [metric, setMetric] = useState('relative');
   const [metricK, setMetricK] = useState(10);
+
+  // Color-by: '__drift__' (the compare metric) or a numeric column name (#131)
+  const [colorBy, setColorBy] = useState('__drift__');
+  const [columnData, setColumnData] = useState(null); // { values, extent }
 
   // Raw displacement data (before threshold) for tooltip display
   const [rawDisplacementData, setRawDisplacementData] = useState([]);
@@ -66,21 +70,37 @@ function Compare() {
   const [searchModel, setSearchModel] = useState(null);
   const [searchIndices, setSearchIndices] = useState([]);
   const [distances, setDistances] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Layout sizing
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState([500, 500]);
 
+  // Measure the maps column so the scatterplots get pixel dimensions. A plain
+  // rAF/timeout pass catches the settled layout on mount; a ResizeObserver then
+  // keeps them in sync when the window or the draggable table column changes.
   useEffect(() => {
     function updateSize() {
-      if (!containerRef.current) return;
-      const { height, width } = containerRef.current.getBoundingClientRect();
-      setContainerSize([width - 15, height - 25]);
+      const el = containerRef.current;
+      if (!el) return;
+      const { height, width } = el.getBoundingClientRect();
+      if (width > 0 && height > 0) setContainerSize([width - 15, height - 25]);
     }
-    window.addEventListener('resize', updateSize);
     updateSize();
-    setTimeout(updateSize, 200);
-    return () => window.removeEventListener('resize', updateSize);
+    const raf = requestAnimationFrame(updateSize);
+    const t = setTimeout(updateSize, 200);
+    window.addEventListener('resize', updateSize);
+    let ro;
+    if (containerRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(updateSize);
+      ro.observe(containerRef.current);
+    }
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+      window.removeEventListener('resize', updateSize);
+      ro && ro.disconnect();
+    };
   }, []);
 
   const [scopeWidth, scopeHeight] = containerSize;
@@ -137,6 +157,8 @@ function Compare() {
 
   const prevCompareKey = useRef('');
 
+  // Always compute the drift metric — it powers the tooltip readout and is the
+  // default color source. Color-by-column (#131) reuses the same [3] slot.
   useEffect(() => {
     if (!left || !right || !leftPoints.length || !rightPoints.length) return;
     const key = `${left.id}:${right.id}:${metric}:${metricK}`;
@@ -149,31 +171,58 @@ function Compare() {
       .then((r) => r.json())
       .then((displacementData) => {
         setRawDisplacementData(displacementData);
-        const log = scaleSymlog(extent(displacementData), [0, 1]);
-        const dpts = leftPoints.map((d, i) => {
-          const displacement = log(displacementData[i]);
-          return [d[0], d[1], displacement < threshold ? 1 : 0, displacement];
-        });
-        setDrawPoints(dpts);
-        drawPointsRef.current = dpts;
-        setAboveThresholdCount(dpts.filter((d) => d[2] !== 1).length);
         setDisplacementLoading(false);
         prevCompareKey.current = key;
       });
-  }, [datasetId, left, right, leftPoints, rightPoints, metric, metricK, threshold]);
+  }, [datasetId, left, right, leftPoints, rightPoints, metric, metricK]);
 
-  // Update threshold without re-fetching
+  // Fetch the selected numeric column's values when coloring by a column.
   useEffect(() => {
-    if (!drawPointsRef.current.length) return;
-    const newPoints = drawPointsRef.current.map((point) => [
-      point[0],
-      point[1],
-      point[3] < threshold ? 1 : 0,
-      point[3],
-    ]);
-    setDrawPoints(newPoints);
-    setAboveThresholdCount(newPoints.filter((d) => d[2] !== 1).length);
-  }, [threshold]);
+    if (colorBy === '__drift__') {
+      setColumnData(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`${apiUrl}/datasets/${datasetId}/column/${encodeURIComponent(colorBy)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setColumnData({ values: data.values, extent: data.extent });
+      })
+      .catch(() => !cancelled && setColumnData(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [datasetId, colorBy]);
+
+  // Derive the drawn points ([x, y, dimFlag, normalizedColorValue]) from either
+  // the drift metric (symlog + threshold dimming) or the chosen column (linear
+  // normalize, no dimming). Slot [3] is what Scatter maps to color via valueB.
+  useEffect(() => {
+    if (!leftPoints.length) return;
+
+    if (colorBy === '__drift__') {
+      if (!rawDisplacementData.length) return;
+      const norm = scaleSymlog(extent(rawDisplacementData), [0, 1]);
+      const dpts = leftPoints.map((d, i) => {
+        const v = norm(rawDisplacementData[i]);
+        return [d[0], d[1], v < threshold ? 1 : 0, v];
+      });
+      setDrawPoints(dpts);
+      setAboveThresholdCount(dpts.filter((d) => d[2] !== 1).length);
+    } else {
+      if (!columnData?.values?.length) return;
+      const [lo, hi] = columnData.extent || extent(columnData.values.filter((v) => v != null));
+      const norm = scaleLinear().domain([lo, hi]).range([0, 1]).clamp(true);
+      const dpts = leftPoints.map((d, i) => {
+        const raw = columnData.values[i];
+        // Nulls (NaN/missing) fall to 0 on the ramp and stay fully visible.
+        return [d[0], d[1], 0, raw == null ? 0 : norm(raw)];
+      });
+      setDrawPoints(dpts);
+      setAboveThresholdCount(0);
+    }
+  }, [colorBy, rawDisplacementData, columnData, threshold, leftPoints]);
 
   // ===== Interaction Handlers =====
 
@@ -184,6 +233,16 @@ function Compare() {
 
   const handleSelected = useCallback((indices) => {
     setSelectedIndices(indices);
+  }, []);
+
+  // A lasso brush in either Compare pane. Region selection supersedes the
+  // single-point neighbor mode; both panes highlight the same rows.
+  const handleRegionSelect = useCallback((indices) => {
+    setSelectedIndices(indices || []);
+    if (indices?.length) {
+      setNeighborSelectedIndex(null);
+      setNeighborIndices([]);
+    }
   }, []);
 
   const handleHover = useCallback((index) => {
@@ -222,24 +281,42 @@ function Compare() {
   // Search
   const handleSearch = useCallback(
     (query) => {
-      if (!searchModel) return;
-      fetch(
-        `${apiUrl}/search/nn?${new URLSearchParams({
-          dataset: datasetId,
-          query,
-          embedding_id: searchModel.id,
-          dimensions: searchModel.dimensions,
-        })}`
-      )
+      if (!searchModel || !query) return;
+      const params = new URLSearchParams({
+        dataset: datasetId,
+        query,
+        embedding_id: searchModel.id,
+      });
+      // Only send dimensions when the embedding actually declares them —
+      // otherwise the string "undefined" reaches the server and int() 500s,
+      // making search appear completely broken (matches apiService's guard).
+      if (searchModel.dimensions != null) {
+        params.set('dimensions', searchModel.dimensions);
+      }
+      setSearchLoading(true);
+      fetch(`${apiUrl}/search/nn?${params}`)
         .then((r) => r.json())
         .then((data) => {
-          setDistances(data.distances);
-          setSearchIndices(data.indices);
-          scatter?.zoomToPoints(data.indices, {
-            transition: true,
-            padding: 0.2,
-            transitionDuration: 1500,
-          });
+          const indices = data.indices || [];
+          setDistances(data.distances || []);
+          setSearchIndices(indices);
+          setSearchLoading(false);
+          if (indices.length) {
+            try {
+              scatter?.zoomToPoints(indices, {
+                transition: true,
+                padding: 0.2,
+                transitionDuration: 1500,
+              });
+            } catch (e) {
+              /* scatter not ready — results still render in the panel */
+            }
+          }
+        })
+        .catch(() => {
+          setDistances([]);
+          setSearchIndices([]);
+          setSearchLoading(false);
         });
     },
     [searchModel, datasetId, scatter]
@@ -276,23 +353,35 @@ function Compare() {
   const pointSizeRange = [5, 1];
   const opacityRange = [1, 0.2];
 
-  // Resizable bottom panel
-  const [panelHeight, setPanelHeight] = useState(200);
+  // Color-by derived values (#131)
+  const colorInterpolator = colorBy === '__drift__' ? interpolateReds : interpolateViridis;
+  const colorExtent = colorBy === '__drift__' ? [0, 1] : columnData?.extent || [0, 1];
+  const numericColumns = Object.entries(dataset?.column_metadata || {})
+    .filter(([, m]) => m?.type === 'number')
+    .map(([name]) => name);
+
+  // Resizable right-hand table column (horizontal drag). Defaults to null so the
+  // column starts at a 50/50 flex split; the first drag pins it to a pixel width.
+  const [tableWidth, setTableWidth] = useState(null);
+  const tableColRef = useRef(null);
   const isDraggingRef = useRef(false);
-  const dragStartYRef = useRef(0);
-  const dragStartHeightRef = useRef(0);
+  const dragStartXRef = useRef(0);
+  const dragStartWidthRef = useRef(0);
 
   const handleDragStart = useCallback((e) => {
     e.preventDefault();
     isDraggingRef.current = true;
-    dragStartYRef.current = e.clientY;
-    dragStartHeightRef.current = panelHeight;
+    dragStartXRef.current = e.clientX;
+    // Start from the current rendered width (handles the initial 50/50 case).
+    dragStartWidthRef.current =
+      tableWidth ?? tableColRef.current?.getBoundingClientRect().width ?? 440;
 
     const handleDragMove = (e) => {
       if (!isDraggingRef.current) return;
-      const delta = dragStartYRef.current - e.clientY;
-      const newHeight = Math.max(40, Math.min(600, dragStartHeightRef.current + delta));
-      setPanelHeight(newHeight);
+      // Dragging left widens the table column.
+      const delta = dragStartXRef.current - e.clientX;
+      const newWidth = Math.max(280, Math.min(1100, dragStartWidthRef.current + delta));
+      setTableWidth(newWidth);
     };
 
     const handleDragEnd = () => {
@@ -303,21 +392,24 @@ function Compare() {
 
     document.addEventListener('mousemove', handleDragMove);
     document.addEventListener('mouseup', handleDragEnd);
-  }, [panelHeight]);
+  }, [tableWidth]);
 
   if (!dataset) return <div>Loading...</div>;
+
+  const umapSelectProps = {
+    umaps,
+    embeddings,
+    left,
+    right,
+    onSetLeft: handleSetLeft,
+    onSetRight: handleSetRight,
+  };
 
   return (
     <div className={styles['container']}>
       <CompareControls
         dataset={dataset}
         datasetId={datasetId}
-        umaps={umaps}
-        embeddings={embeddings}
-        left={left}
-        right={right}
-        onSetLeft={handleSetLeft}
-        onSetRight={handleSetRight}
         threshold={threshold}
         onThresholdChange={setThreshold}
         aboveThresholdCount={aboveThresholdCount}
@@ -326,92 +418,116 @@ function Compare() {
         metricK={metricK}
         onMetricKChange={setMetricK}
         displacementLoading={displacementLoading}
+        colorBy={colorBy}
+        onColorByChange={setColorBy}
+        numericColumns={numericColumns}
       />
 
-      <div className={styles['visualization']}>
-        <div className={styles['view-tabs']}>
-          {viewModes.map((mode) => (
-            <button
-              key={mode.id}
-              onClick={() => setViewMode(mode.id)}
-              className={
-                mode.id === viewMode ? styles['view-tab-active'] : styles['view-tab-inactive']
-              }
-            >
-              {mode.name}
-            </button>
-          ))}
+      {/* Two-column workspace: stacked maps on the left, data table on the right */}
+      <div className={styles['workspace']}>
+        <div className={styles['maps-column']}>
+          <div className={styles['view-tabs']}>
+            {viewModes.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => setViewMode(mode.id)}
+                className={
+                  mode.id === viewMode ? styles['view-tab-active'] : styles['view-tab-inactive']
+                }
+              >
+                {mode.name}
+              </button>
+            ))}
+          </div>
+
+          <div ref={containerRef} className={styles['view-container']}>
+            {viewMode === 'transition' && (
+              <TransitionView
+                {...umapSelectProps}
+                leftPoints={leftPoints}
+                rightPoints={rightPoints}
+                drawPoints={drawPoints}
+                width={scopeWidth}
+                height={scopeHeight}
+                direction={direction}
+                onDirectionChange={setDirection}
+                onScatter={setScatter}
+                onView={handleView}
+                onSelect={handleSelected}
+                onHover={handleHover}
+                xDomain={xDomain}
+                yDomain={yDomain}
+                searchAnnotations={searchAnnotations}
+                hoverAnnotations={hoverAnnotations}
+                pointSizeRange={pointSizeRange}
+                opacityRange={opacityRange}
+              />
+            )}
+
+            {viewMode === 'side-by-side' && (
+              <SideBySideView
+                {...umapSelectProps}
+                datasetId={datasetId}
+                dataset={dataset}
+                leftPoints={leftPoints}
+                rightPoints={rightPoints}
+                drawPoints={drawPoints}
+                displacementData={rawDisplacementData}
+                width={scopeWidth}
+                height={scopeHeight}
+                onScatter={setScatter}
+                onSelect={handleSelected}
+                onHover={handleHover}
+                onNeighborSelect={handleNeighborSelect}
+                onRegionSelect={handleRegionSelect}
+                selectedIndices={selectedIndices}
+                searchIndices={searchIndices}
+                pointSizeRange={pointSizeRange}
+                opacityRange={opacityRange}
+                hoveredIndex={hoveredIndex}
+                metricK={metricK}
+                colorInterpolator={colorInterpolator}
+                colorExtent={colorExtent}
+                colorLabel={colorBy === '__drift__' ? 'Drift' : colorBy}
+              />
+            )}
+          </div>
         </div>
 
-        <div ref={containerRef} className={styles['view-container']}>
-          {viewMode === 'transition' && (
-            <TransitionView
-              leftPoints={leftPoints}
-              rightPoints={rightPoints}
-              drawPoints={drawPoints}
-              width={scopeWidth}
-              height={scopeHeight}
-              direction={direction}
-              onDirectionChange={setDirection}
-              onScatter={setScatter}
-              onView={handleView}
-              onSelect={handleSelected}
-              onHover={handleHover}
-              xDomain={xDomain}
-              yDomain={yDomain}
-              searchAnnotations={searchAnnotations}
-              hoverAnnotations={hoverAnnotations}
-              pointSizeRange={pointSizeRange}
-              opacityRange={opacityRange}
-            />
-          )}
-
-          {viewMode === 'side-by-side' && (
-            <SideBySideView
-              datasetId={datasetId}
-              dataset={dataset}
-              left={left}
-              right={right}
-              leftPoints={leftPoints}
-              rightPoints={rightPoints}
-              drawPoints={drawPoints}
-              displacementData={rawDisplacementData}
-              width={scopeWidth}
-              height={scopeHeight}
-              onScatter={setScatter}
-              onSelect={handleSelected}
-              onHover={handleHover}
-              onNeighborSelect={handleNeighborSelect}
-              pointSizeRange={pointSizeRange}
-              opacityRange={opacityRange}
-              hoveredIndex={hoveredIndex}
-              metricK={metricK}
-            />
-          )}
+        <div className={styles['col-resize-handle']} onMouseDown={handleDragStart}>
+          <div className={styles['col-resize-grip']} />
         </div>
-      </div>
 
-      <div className={styles['drag-handle']} onMouseDown={handleDragStart}>
-        <div className={styles['drag-grip']} />
-      </div>
-      <div style={{ height: panelHeight, minHeight: 40 }}>
-        <CompareDataPanel
-          dataset={dataset}
-          datasetId={datasetId}
-          embeddings={embeddings}
-          selectedIndices={selectedIndices}
-          neighborSelectedIndex={neighborSelectedIndex}
-          neighborIndices={neighborIndices}
-          onClearSelection={handleClearSelection}
-          searchIndices={searchIndices}
-          distances={distances}
-          onClearSearch={handleClearSearch}
-          onSearch={handleSearch}
-          searchModel={searchModel}
-          onSearchModelChange={handleSearchModelChange}
-          onHover={handleHover}
-          onClick={handleClicked}
-        />
+        <div
+          ref={tableColRef}
+          className={styles['table-column']}
+          style={
+            tableWidth != null
+              ? { width: tableWidth, flexGrow: 0, flexShrink: 0 }
+              : { flex: 1 }
+          }
+        >
+          <CompareDataPanel
+            dataset={dataset}
+            datasetId={datasetId}
+            embeddings={embeddings}
+            left={left}
+            right={right}
+            selectedIndices={selectedIndices}
+            neighborSelectedIndex={neighborSelectedIndex}
+            neighborIndices={neighborIndices}
+            onClearSelection={handleClearSelection}
+            searchIndices={searchIndices}
+            distances={distances}
+            searchLoading={searchLoading}
+            onClearSearch={handleClearSearch}
+            onSearch={handleSearch}
+            searchModel={searchModel}
+            onSearchModelChange={handleSearchModelChange}
+            onHover={handleHover}
+            onClick={handleClicked}
+          />
+        </div>
       </div>
     </div>
   );

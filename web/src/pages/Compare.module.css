@@ -1,19 +1,59 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
   height: 100%;
   overflow: hidden;
   padding: 6px;
 }
 
-/* Visualization area */
-.visualization {
+/* Two-column workspace: stacked maps on the left, results table on the right. */
+.workspace {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.maps-column {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.table-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.col-resize-handle {
+  width: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.col-resize-grip {
+  width: 3px;
+  height: 40px;
+  border-radius: 2px;
+  background: #ccc;
+  transition: background 0.15s;
+}
+
+.col-resize-handle:hover .col-resize-grip,
+.col-resize-handle:active .col-resize-grip {
+  background: #aaa;
 }
 
 .view-tabs {
@@ -50,34 +90,23 @@
   overflow: hidden;
 }
 
-/* Drag handle between visualization and data panel */
-.drag-handle {
-  height: 8px;
-  cursor: ns-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  user-select: none;
-}
-
-.drag-handle:hover .drag-grip,
-.drag-handle:active .drag-grip {
-  background: #aaa;
-}
-
-.drag-grip {
-  width: 40px;
-  height: 3px;
-  border-radius: 2px;
-  background: #ccc;
-  transition: background 0.15s;
-}
-
-/* Responsive */
+/* Responsive: stack the table under the maps on narrow screens */
 @media screen and (max-width: 1024px) {
   .container {
     overflow-y: auto;
+  }
+
+  .workspace {
+    flex-direction: column;
+  }
+
+  .table-column {
+    width: auto !important;
+    min-height: 240px;
+  }
+
+  .col-resize-handle {
+    display: none;
   }
 }
 
@@ -90,12 +119,12 @@
     background: #333;
   }
 
-  .drag-grip {
+  .col-resize-grip {
     background: #555;
   }
 
-  .drag-handle:hover .drag-grip,
-  .drag-handle:active .drag-grip {
+  .col-resize-handle:hover .col-resize-grip,
+  .col-resize-handle:active .col-resize-grip {
     background: #888;
   }
 }

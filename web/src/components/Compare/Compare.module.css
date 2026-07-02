@@ -6,6 +6,7 @@
   padding: 8px 12px;
   border: 1px solid lightgray;
   border-radius: 5px;
+  flex-shrink: 0;
 }
 
 .controls-header {
@@ -39,64 +40,49 @@
   padding: 4px 6px;
 }
 
+/* A single row of equal-height control groups (label on top, control below),
+   all aligned to the top so nothing looks ragged. */
 .metric-controls {
   display: flex;
   flex-direction: row;
-  gap: 12px;
-  align-items: flex-end;
+  gap: 16px;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
-.metric-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-selector label {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: #666;
-}
-
-.metric-description {
-  font-size: 0.75em;
-  color: #888;
-  line-height: 1.3;
-  max-width: 300px;
-}
-
-.metric-k {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-k label {
-  font-size: 0.85em;
-  font-weight: 600;
-  color: #666;
-}
-
-.metric-k input[type='range'] {
-  width: 120px;
-}
-
+.metric-selector,
+.metric-k,
 .threshold-control {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
+.metric-selector label,
+.metric-k label,
 .threshold-control label {
   font-size: 0.85em;
   font-weight: 600;
   color: #666;
+  white-space: nowrap;
 }
 
+.metric-selector select {
+  padding: 4px 6px;
+  min-width: 170px;
+}
+
+.metric-k input[type='range'],
 .threshold-control input[type='range'] {
-  width: 100%;
+  width: 150px;
+}
+
+/* One help/description line spanning the row, so per-control descriptions don't
+   make the control heights ragged. */
+.metric-help {
+  font-size: 0.78em;
+  color: #888;
+  line-height: 1.3;
 }
 
 .threshold-count {
@@ -146,17 +132,42 @@
   min-height: 0;
 }
 
+/* Stack the two maps vertically (top = left umap, bottom = right umap). */
 .side-by-side-container {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   flex: 1;
   min-height: 0;
 }
 
 .scatter-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 4px;
+}
+
+/* Inline UMAP picker shown directly above each map */
+.umap-inline-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.umap-inline-label {
+  font-size: 0.8em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.umap-inline-select select {
   flex: 1;
   min-width: 0;
+  padding: 3px 6px;
+  font-size: 0.82em;
 }
 
 .link-zoom-toggle {
@@ -179,6 +190,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.selection-hint {
+  font-size: 0.8em;
+  color: #aaa;
+  font-style: italic;
 }
 
 .clear-neighbors {
@@ -229,7 +246,12 @@
   position: relative;
   border: 1px solid gray;
   border-radius: 5px;
-  padding: 6px;
+  /* No padding: the regl canvas and the absolutely-positioned overlay canvases
+     (.annotation-plot, top:0/left:0) must share the exact same box, or the
+     colored points render offset from the hover/selection markers. */
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .scatter canvas {
@@ -443,4 +465,83 @@
   .side-by-side-container {
     flex-direction: column;
   }
+}
+
+.spread-summary {
+  margin: 6px 0 10px;
+  padding: 6px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.spread-title {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.spread-note {
+  font-weight: 400;
+  color: #999;
+  font-style: italic;
+}
+
+.spread-table {
+  border-collapse: collapse;
+  font-size: 0.78em;
+}
+
+.spread-table th,
+.spread-table td {
+  text-align: right;
+  padding: 1px 10px 1px 0;
+  color: #444;
+}
+
+.spread-table th:first-child,
+.spread-table td:first-child {
+  text-align: left;
+  color: #777;
+}
+
+/* Search loading indicator */
+.search-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 0.85em;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ccc;
+  border-top-color: seagreen;
+  border-radius: 50%;
+  display: inline-block;
+  animation: compare-spin 0.7s linear infinite;
+}
+
+@keyframes compare-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Full-row hover tooltip in the results tables */
+.row-tooltip {
+  max-width: 460px;
+  z-index: 1000;
+  font-size: 0.82em;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+}
+
+/* Let wide result tables scroll horizontally within the column */
+.data-panel .tab-content {
+  overflow: auto;
 }

@@ -330,6 +330,56 @@ def create_app(data_dir=None, read_only=None):
             "totalPages": math.ceil(len(rows) / per_page),
         })
 
+    @app.route('/api/datasets/<dataset>/column/<column>', methods=['GET'])
+    def get_dataset_column(dataset, column):
+        """Return a single numeric column's values in row order, for color-by.
+
+        Powers the Compare page's continuous color-by-column layer (#131). Reads
+        from the cached input.parquet (``DATAFRAMES``), so repeat requests are
+        free. Non-numeric columns are rejected — coloring needs a numeric ramp.
+        The ``extent`` comes from meta.json's precomputed ``column_metadata`` when
+        available, falling back to the column's own min/max.
+        """
+        import numpy as np
+        import pandas as pd
+
+        df = _load_dataset_dataframe(data_dir, dataset, app.config['DATAFRAMES'])
+        if column not in df.columns:
+            return jsonify({"error": f"unknown column: {column}"}), 404
+        series = df[column]
+        if not pd.api.types.is_numeric_dtype(series):
+            return jsonify({"error": f"column '{column}' is not numeric"}), 400
+
+        # Prefer the extent recorded at ingest time; fall back to live min/max.
+        extent = None
+        try:
+            meta_path = os.path.join(data_dir, dataset, "meta.json")
+            with open(meta_path, encoding='utf-8') as f:
+                meta = json.load(f)
+            extent = (meta.get("column_metadata") or {}).get(column, {}).get("extent")
+        except (OSError, json.JSONDecodeError):
+            extent = None
+        if not extent or extent[0] is None or extent[1] is None:
+            valid = series.replace([np.inf, -np.inf], np.nan).dropna()
+            if len(valid):
+                extent = [float(valid.min()), float(valid.max())]
+            else:
+                extent = [None, None]
+
+        # NaN/inf aren't valid JSON; null them so the client can skip them.
+        # na_value is required for pandas nullable/Arrow dtypes (Int64, Float64,
+        # …) — without it to_numpy(dtype="float64") raises on missing values.
+        values = series.to_numpy(dtype="float64", na_value=np.nan)
+        values = np.where(np.isfinite(values), values, np.nan)
+        values = [None if np.isnan(v) else float(v) for v in values]
+
+        return jsonify({
+            "column": column,
+            "type": "number",
+            "extent": extent,
+            "values": values,
+        })
+
     if not read_only:
         @app.route('/api/settings', methods=['POST'])
         def update_settings():

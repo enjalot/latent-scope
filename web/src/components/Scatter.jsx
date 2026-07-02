@@ -23,6 +23,7 @@ ScatterPlot.propTypes = {
   onScatter: PropTypes.func,
   onView: PropTypes.func,
   onSelect: PropTypes.func,
+  onLassoSelect: PropTypes.func,
   onHover: PropTypes.func,
 };
 
@@ -62,6 +63,7 @@ function ScatterPlot({
   onScatter,
   onView,
   onSelect,
+  onLassoSelect,
   onHover,
   activeFilterTab,
 }) {
@@ -69,6 +71,10 @@ function ScatterPlot({
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
   const scatterplotRef = useRef(null);
+  // Set on `lassoEnd` (which fires just before the paired `select`) so the
+  // select handler can tell a shift-drag lasso apart from a single click —
+  // regl's `select` payload is identical for both.
+  const lassoActiveRef = useRef(false);
 
   // Store callbacks in refs so they never trigger effect re-runs.
   // Recreating the scatterplot destroys the WebGL context and causes
@@ -76,10 +82,12 @@ function ScatterPlot({
   const onScatterRef = useRef(onScatter);
   const onViewRef = useRef(onView);
   const onSelectRef = useRef(onSelect);
+  const onLassoSelectRef = useRef(onLassoSelect);
   const onHoverRef = useRef(onHover);
   onScatterRef.current = onScatter;
   onViewRef.current = onView;
   onSelectRef.current = onSelect;
+  onLassoSelectRef.current = onLassoSelect;
   onHoverRef.current = onHover;
 
   const handleMouseLeave = useCallback(() => {
@@ -116,11 +124,25 @@ function ScatterPlot({
       yDomain.current = ys.domain();
       onViewRef.current && onViewRef.current(xDomain.current, yDomain.current);
     });
+    scatterplot.subscribe('lassoEnd', () => {
+      lassoActiveRef.current = true;
+    });
     scatterplot.subscribe('select', ({ points }) => {
-      onSelectRef.current && onSelectRef.current(points);
+      if (lassoActiveRef.current) {
+        // A region brush. Route it to onLassoSelect and immediately drop regl's
+        // internal selection — under colorBy:'valueB' the library can't render a
+        // custom active color, so the highlight is drawn as an overlay instead.
+        lassoActiveRef.current = false;
+        onLassoSelectRef.current && onLassoSelectRef.current(points);
+        scatterplot.deselect({ preventEvent: true });
+      } else {
+        onSelectRef.current && onSelectRef.current(points);
+      }
     });
     scatterplot.subscribe('deselect', () => {
+      lassoActiveRef.current = false;
       onSelectRef.current && onSelectRef.current([]);
+      onLassoSelectRef.current && onLassoSelectRef.current([]);
     });
     scatterplot.subscribe('pointOver', (pointIndex) => {
       onHoverRef.current && onHoverRef.current(pointIndex);

@@ -5,6 +5,9 @@ import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
 import CrosshairPlot from './CrosshairPlot';
 import NeighborPlot from './NeighborPlot';
+import SelectionOverlay from './SelectionOverlay';
+import ColorLegend from './ColorLegend';
+import UmapSelect from './UmapSelect';
 import styles from './Compare.module.css';
 
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -14,8 +17,12 @@ const apiUrl = import.meta.env.VITE_API_URL;
 function SideBySideView({
   datasetId,
   dataset,
+  umaps,
+  embeddings,
   left,
   right,
+  onSetLeft,
+  onSetRight,
   leftPoints,
   rightPoints,
   drawPoints,
@@ -25,21 +32,24 @@ function SideBySideView({
   onScatter,
   onHover,
   onNeighborSelect,
+  onRegionSelect,
+  selectedIndices,
+  searchIndices,
   pointSizeRange,
   opacityRange,
   hoveredIndex,
   metricK,
+  colorInterpolator,
+  colorExtent,
+  colorLabel,
 }) {
   const leftScatterRef = useRef(null);
   const rightScatterRef = useRef(null);
-  const [linkZoom, setLinkZoom] = useState(true);
 
   const [leftXDomain, setLeftXDomain] = useState([-1, 1]);
   const [leftYDomain, setLeftYDomain] = useState([-1, 1]);
   const [rightXDomain, setRightXDomain] = useState([-1, 1]);
   const [rightYDomain, setRightYDomain] = useState([-1, 1]);
-
-  const zoomSourceRef = useRef(null);
 
   // Click/neighbor state
   const [clickedIndex, setClickedIndex] = useState(null);
@@ -87,53 +97,18 @@ function SideBySideView({
     rightScatterRef.current = s;
   }, []);
 
-  const handleLeftView = useCallback(
-    (xd, yd) => {
-      setLeftXDomain(xd);
-      setLeftYDomain(yd);
-      if (linkZoom && zoomSourceRef.current !== 'right') {
-        zoomSourceRef.current = 'left';
-        setRightXDomain(xd);
-        setRightYDomain(yd);
-        try {
-          rightScatterRef.current?.zoomToArea({
-            x: xd[0],
-            y: yd[0],
-            width: xd[1] - xd[0],
-            height: yd[1] - yd[0],
-          })?.catch?.(() => {});
-        } catch (e) { /* scatter not ready yet */ }
-        setTimeout(() => {
-          zoomSourceRef.current = null;
-        }, 50);
-      }
-    },
-    [linkZoom]
-  );
+  // Each pane zooms independently — the same viewport coordinates mean different
+  // things in two different projections, so linking them isn't meaningful. We
+  // only track each pane's domain to keep its overlays aligned.
+  const handleLeftView = useCallback((xd, yd) => {
+    setLeftXDomain(xd);
+    setLeftYDomain(yd);
+  }, []);
 
-  const handleRightView = useCallback(
-    (xd, yd) => {
-      setRightXDomain(xd);
-      setRightYDomain(yd);
-      if (linkZoom && zoomSourceRef.current !== 'left') {
-        zoomSourceRef.current = 'right';
-        setLeftXDomain(xd);
-        setLeftYDomain(yd);
-        try {
-          leftScatterRef.current?.zoomToArea({
-            x: xd[0],
-            y: yd[0],
-            width: xd[1] - xd[0],
-            height: yd[1] - yd[0],
-          })?.catch?.(() => {});
-        } catch (e) { /* scatter not ready yet */ }
-        setTimeout(() => {
-          zoomSourceRef.current = null;
-        }, 50);
-      }
-    },
-    [linkZoom]
-  );
+  const handleRightView = useCallback((xd, yd) => {
+    setRightXDomain(xd);
+    setRightYDomain(yd);
+  }, []);
 
   // Fetch hover text for tooltip
   useEffect(() => {
@@ -168,6 +143,21 @@ function SideBySideView({
     setNeighborIndices([]);
     onNeighborSelect && onNeighborSelect(null, []);
   }, [onNeighborSelect]);
+
+  // A lasso (shift+drag) in either pane. Region brushing supersedes the
+  // single-point neighbor mode, and the same row set lights up in both panes.
+  const handleRegionSelect = useCallback(
+    (indices) => {
+      if (indices?.length) {
+        setClickedIndex(null);
+        setClickedSide(null);
+        setNeighborIndices([]);
+        onNeighborSelect && onNeighborSelect(null, []);
+      }
+      onRegionSelect && onRegionSelect(indices || []);
+    },
+    [onRegionSelect, onNeighborSelect]
+  );
 
   // Handle click on a scatter — toggle neighbor mode
   const handleLeftClick = useCallback(
@@ -233,19 +223,14 @@ function SideBySideView({
       ? displacementData[hoveredIndex].toFixed(3)
       : null;
 
-  const halfWidth = Math.floor((width - 12) / 2);
+  // Maps are stacked vertically: each is full column width, and shares the
+  // available height (minus the per-map dropdown rows + gaps).
+  const mapWidth = width;
+  const mapHeight = Math.max(120, Math.floor((height - 88) / 2));
 
   return (
     <div className={styles['side-by-side-view']}>
       <div className={styles['view-toolbar']}>
-        <label className={styles['link-zoom-toggle']}>
-          <input
-            type="checkbox"
-            checked={linkZoom}
-            onChange={(e) => setLinkZoom(e.target.checked)}
-          />
-          Link zoom
-        </label>
         {clickedIndex != null && (
           <span className={styles['neighbor-info']}>
             Showing k={metricK} neighbors from {clickedSide} map (point {clickedIndex})
@@ -257,15 +242,41 @@ function SideBySideView({
             </button>
           </span>
         )}
-        <span className={styles['side-label']}>← Left</span>
-        <span className={styles['side-label']}>Right →</span>
+        {clickedIndex == null && selectedIndices?.length > 0 && (
+          <span className={styles['neighbor-info']}>
+            {selectedIndices.length} points selected
+            <button
+              className={styles['clear-neighbors']}
+              onClick={() => handleRegionSelect([])}
+            >
+              Clear
+            </button>
+          </span>
+        )}
+        {clickedIndex == null && !selectedIndices?.length && (
+          <span className={styles['selection-hint']}>⇧ + drag to select a region</span>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+          <ColorLegend
+            interpolator={colorInterpolator || interpolateReds}
+            extent={colorExtent}
+            label={colorLabel}
+          />
+        </div>
       </div>
       <div className={styles['side-by-side-container']}>
-        {/* Left scatter */}
+        {/* Left scatter (top) */}
         <div className={styles['scatter-panel']}>
+          <UmapSelect
+            label="Left"
+            value={left?.id}
+            umaps={umaps}
+            embeddings={embeddings}
+            onChange={onSetLeft}
+          />
           <div
             className={styles['scatter-container']}
-            style={{ width: halfWidth, height }}
+            style={{ width: mapWidth, height: mapHeight }}
             data-tooltip-id="compare-hover-tooltip"
           >
             {leftDisplayPoints.length > 0 && (
@@ -278,14 +289,15 @@ function SideBySideView({
                       pointScale={1}
                       pointSizeRange={pointSizeRange}
                       opacityRange={clickedIndex != null ? [0.15, 0.15] : opacityRange}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                       colorScaleType="continuous"
-                      colorInterpolator={interpolateReds}
+                      colorInterpolator={colorInterpolator || interpolateReds}
                       opacityBy="valueA"
                       onScatter={handleLeftScatter}
                       onView={handleLeftView}
                       onSelect={handleLeftClick}
+                      onLassoSelect={handleRegionSelect}
                       onHover={onHover}
                     />
                   ) : (
@@ -295,11 +307,33 @@ function SideBySideView({
                       size="8"
                       xDomain={leftXDomain}
                       yDomain={leftYDomain}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                     />
                   )}
                 </div>
+                {clickedIndex == null && searchIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={leftPoints}
+                    selectedIndices={searchIndices}
+                    xDomain={leftXDomain}
+                    yDomain={leftYDomain}
+                    width={mapWidth}
+                    height={mapHeight}
+                    color="#4488ff"
+                    stroke="#22508a"
+                  />
+                )}
+                {clickedIndex == null && selectedIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={leftPoints}
+                    selectedIndices={selectedIndices}
+                    xDomain={leftXDomain}
+                    yDomain={leftYDomain}
+                    width={mapWidth}
+                    height={mapHeight}
+                  />
+                )}
                 {clickedIndex != null ? (
                   <NeighborPlot
                     points={leftPoints}
@@ -307,16 +341,16 @@ function SideBySideView({
                     neighborIndices={neighborIndices}
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 ) : (
                   <CrosshairPlot
                     point={leftHoverPoint}
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 )}
               </>
@@ -324,11 +358,18 @@ function SideBySideView({
           </div>
         </div>
 
-        {/* Right scatter */}
+        {/* Right scatter (bottom) */}
         <div className={styles['scatter-panel']}>
+          <UmapSelect
+            label="Right"
+            value={right?.id}
+            umaps={umaps}
+            embeddings={embeddings}
+            onChange={onSetRight}
+          />
           <div
             className={styles['scatter-container']}
-            style={{ width: halfWidth, height }}
+            style={{ width: mapWidth, height: mapHeight }}
             data-tooltip-id="compare-hover-tooltip"
           >
             {rightDisplayPoints.length > 0 && (
@@ -341,14 +382,15 @@ function SideBySideView({
                       pointScale={1}
                       pointSizeRange={pointSizeRange}
                       opacityRange={clickedIndex != null ? [0.15, 0.15] : opacityRange}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                       colorScaleType="continuous"
-                      colorInterpolator={interpolateReds}
+                      colorInterpolator={colorInterpolator || interpolateReds}
                       opacityBy="valueA"
                       onScatter={handleRightScatter}
                       onView={handleRightView}
                       onSelect={handleRightClick}
+                      onLassoSelect={handleRegionSelect}
                       onHover={onHover}
                     />
                   ) : (
@@ -358,11 +400,33 @@ function SideBySideView({
                       size="8"
                       xDomain={rightXDomain}
                       yDomain={rightYDomain}
-                      width={halfWidth}
-                      height={height}
+                      width={mapWidth}
+                      height={mapHeight}
                     />
                   )}
                 </div>
+                {clickedIndex == null && searchIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={rightPoints}
+                    selectedIndices={searchIndices}
+                    xDomain={rightXDomain}
+                    yDomain={rightYDomain}
+                    width={mapWidth}
+                    height={mapHeight}
+                    color="#4488ff"
+                    stroke="#22508a"
+                  />
+                )}
+                {clickedIndex == null && selectedIndices?.length > 0 && (
+                  <SelectionOverlay
+                    points={rightPoints}
+                    selectedIndices={selectedIndices}
+                    xDomain={rightXDomain}
+                    yDomain={rightYDomain}
+                    width={mapWidth}
+                    height={mapHeight}
+                  />
+                )}
                 {clickedIndex != null ? (
                   <NeighborPlot
                     points={rightPoints}
@@ -370,16 +434,16 @@ function SideBySideView({
                     neighborIndices={neighborIndices}
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 ) : (
                   <CrosshairPlot
                     point={rightHoverPoint}
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
-                    height={height}
+                    width={mapWidth}
+                    height={mapHeight}
                   />
                 )}
               </>

@@ -12,8 +12,29 @@ DataTable.propTypes = {
   onTagset: PropTypes.func,
   onHover: PropTypes.func,
   onClick: PropTypes.func,
+  rowTooltipId: PropTypes.string,
 };
-function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick }) {
+
+const escapeHtml = (s) =>
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+// Build a readable "column: value" HTML block for a row's hover tooltip.
+function rowTooltipHtml(row, headers) {
+  return headers
+    .filter((h) => h !== 'index')
+    .map((h) => {
+      let v = row[h];
+      if (v == null) v = '';
+      if (typeof v === 'object') v = JSON.stringify(v);
+      return `<div><b>${escapeHtml(h)}:</b> ${escapeHtml(v)}</div>`;
+    })
+    .join('');
+}
+
+function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick, rowTooltipId }) {
   if (!data.length) {
     return <p>No data available.</p>;
   }
@@ -63,11 +84,13 @@ function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick 
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr 
-            key={index} 
-            onMouseEnter={() => onHover && onHover(row.index)} 
+          <tr
+            key={index}
+            onMouseEnter={() => onHover && onHover(row.index)}
             onMouseLeave={() => onHover && onHover()}
             onClick={() => onClick && onClick(row.index)}
+            data-tooltip-id={rowTooltipId || undefined}
+            data-tooltip-html={rowTooltipId ? rowTooltipHtml(row, headers) : undefined}
             >
             {headers.map((header, idx) => {
               let d = row[header]
