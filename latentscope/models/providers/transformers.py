@@ -13,6 +13,28 @@ class TransformersEmbedProvider(EmbedModelProvider):
         from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)#, backend="onnx")
         self.tokenizer = self.model.tokenizer
+        # Task-conditioned models (e.g. jina-v3/v5) advertise `config.task_names`
+        # and refuse to encode until a task is selected (they swap a LoRA adapter
+        # per task). Select the requested task, else a sensible default, so these
+        # models work without the caller needing a task-specialised checkpoint.
+        try:
+            module = self.model[0]
+            task_names = list(getattr(getattr(module, "config", None), "task_names", None) or [])
+            self.task_names = task_names
+            if task_names and getattr(module, "default_task", None) is None:
+                requested = getattr(self, "task", None) or (self.params or {}).get("task")
+                if requested and requested in task_names:
+                    chosen = requested
+                elif "retrieval" in task_names:
+                    chosen = "retrieval"
+                else:
+                    chosen = task_names[0]
+                module.default_task = chosen
+                self.task = chosen
+                print(f"transformers: model is task-conditioned {task_names}; "
+                      f"using task '{chosen}'")
+        except Exception as e:
+            print(f"transformers: task auto-detect skipped ({e})")
         # If the model defines task prompts (e.g. jina-v5's {query, document})
         # but no default, apply the document/passage prompt automatically so
         # embedding a corpus gets the retrieval "document" representation without
