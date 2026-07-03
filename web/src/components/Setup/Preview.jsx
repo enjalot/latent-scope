@@ -271,6 +271,23 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [hulls, setHulls] = useState([]);
   const [hasHulls, setHasHulls] = useState(false);
   useEffect(() => {
+    if (!cluster && drawPoints.length) {
+      // Clear cluster artifacts when the selection goes away. Without this,
+      // points keep cluster ids in valueA while the Scatter switches back to
+      // the (much shorter) selection palette and opacityBy — out-of-range
+      // values render invisible, i.e. points "disappear".
+      setHulls([]);
+      setHasHulls(false);
+      setClusterLabelData([]);
+      setClusterIndices([]);
+      setClusterLabels([]);
+      setClusterMap({});
+      setDrawPoints((prev) =>
+        prev.some((d) => d[2] !== mapSelectionKey.normal)
+          ? prev.map((d) => [d[0], d[1], mapSelectionKey.normal])
+          : prev
+      );
+    }
     if (cluster && drawPoints.length) {
       let stale = false;
       apiService.fetchClusterLabels(datasetId, cluster.id, labelId).then((data) => {

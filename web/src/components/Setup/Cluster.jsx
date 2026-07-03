@@ -86,13 +86,23 @@ function Cluster() {
       const um = umaps.find((u) => u.id == scope.umap_id);
       setUmap(um);
     }
-    if (scope?.cluster_id) {
-      const cl = clusters?.find((c) => c.id == scope.cluster_id);
-      setCluster(cl);
+    // Re-derive the selected cluster without stomping a still-valid selection:
+    // this effect also re-runs when the clusters list refetches (create/delete),
+    // and the scope draft can reference a cluster that no longer exists.
+    const targetUmapId = scope?.umap_id || umap?.id;
+    const scopeCluster = scope?.cluster_id
+      ? clusters?.find((c) => c.id == scope.cluster_id)
+      : null;
+    if (scopeCluster) {
+      setCluster(scopeCluster);
     } else if (clusters) {
-      setCluster(clusters.filter((c) => c.umap_id == scope?.umap_id)[0]);
+      setCluster((prev) =>
+        prev && prev.umap_id == targetUmapId && clusters.some((c) => c.id == prev.id)
+          ? prev
+          : clusters.filter((c) => c.umap_id == targetUmapId)[0]
+      );
     }
-  }, [scope, clusters, umaps, embeddings]);
+  }, [scope, clusters, umaps, embeddings, umap]);
 
   // Fetch initial data
   useEffect(() => {
@@ -124,7 +134,8 @@ function Cluster() {
         if (clusterJob.job_name == 'cluster') {
           cls = clstrs.find((d) => d.id == clusterJob.run_id);
         } else if (clusterJob.job_name == 'rm') {
-          cls = clstrs[0];
+          // fall back to a cluster on the umap being previewed, not just any
+          cls = clstrs.filter((c) => c.umap_id == umap?.id)[0];
         }
         setCluster(cls);
         setClusters(clstrs);
@@ -133,7 +144,7 @@ function Cluster() {
         }, 500);
       });
     }
-  }, [clusterJob, dataset]);
+  }, [clusterJob, dataset, umap]);
 
   const handleNewCluster = useCallback(
     (e) => {
