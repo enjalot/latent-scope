@@ -180,6 +180,7 @@ function Sae({ embedding, model, onSAE = () => {} }) {
         clearJob={() => {
           setSaeJob(null);
         }}
+        killJob={(job) => apiService.killJob(dataset.id, job.id).then(setSaeJob).catch(console.error)}
         rerunJob={handleRerunSae}
       />
       {/* 

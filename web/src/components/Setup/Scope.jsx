@@ -279,6 +279,9 @@ function Scope() {
               clearJob={() => {
                 setScopeJob(null);
               }}
+              killJob={(job) =>
+                apiService.killJob(dataset.id, job.id).then(setScopeJob).catch(console.error)
+              }
             />
 
             {(savedScope && !scopeJob && isDifferent) || newVersion ? (

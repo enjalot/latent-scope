@@ -245,6 +245,35 @@ function Embedding() {
 
   const [batchSize, setBatchSize] = useState(100);
   const [maxSeqLength, setMaxSeqLength] = useState(512);
+  // Task-conditioned models (e.g. jina-v3/v5) advertise `task_names` in their HF
+  // config and must have a task selected. Detect them and offer a picker so the
+  // popular base checkpoints work without needing a task-specialised variant.
+  const [taskNames, setTaskNames] = useState([]);
+  const [task, setTask] = useState(null);
+
+  useEffect(() => {
+    setTaskNames([]);
+    setTask(null);
+    const m = allModels.find((mm) => mm.id === modelId);
+    const isHF =
+      m && m.name && (m.provider === 'huggingface' || String(m.id || '').startsWith('huggingface-'));
+    if (!isHF) return;
+    let cancelled = false;
+    fetch(`https://huggingface.co/${m.name}/resolve/main/config.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (cancelled || !cfg) return;
+        const tn = cfg.task_names;
+        if (Array.isArray(tn) && tn.length) {
+          setTaskNames(tn);
+          setTask(tn.includes('retrieval') ? 'retrieval' : tn[0]);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [modelId, allModels]);
 
   // Estimation state
   const [embedEstimate, setEmbedEstimate] = useState(null);
@@ -358,9 +387,10 @@ function Embedding() {
         max_seq_length: maxSeqLength,
       };
       if (dimensions) job.dimensions = dimensions;
+      if (task && taskNames.length) job.task = task;
       startEmbeddingsJob(job);
     },
-    [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId, maxSeqLength, imageColumn]
+    [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId, maxSeqLength, imageColumn, task, taskNames]
   );
 
   const handleRerunEmbedding = (job) => {
@@ -510,6 +540,23 @@ function Embedding() {
           {/* The form for creating a new embedding */}
           <form onSubmit={handleNewEmbedding}>
             <div className={styles.step}>
+              {/* Task picker for task-conditioned models (jina-v3/v5). */}
+              {!imageColumn && taskNames.length > 0 && (
+                <label className={styles.taskSelect}>
+                  Task:{' '}
+                  <select
+                    value={task || ''}
+                    onChange={(e) => setTask(e.target.value)}
+                    disabled={!!embeddingsJob}
+                  >
+                    {taskNames.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {/* prefix doesn't apply to image columns */}
               {!imageColumn && (
                 <textarea
@@ -607,6 +654,9 @@ function Embedding() {
               clearJob={() => {
                 setEmbeddingsJob(null);
               }}
+              killJob={(job) =>
+                apiService.killJob(dataset.id, job.id).then(setEmbeddingsJob).catch(console.error)
+              }
               rerunJob={handleRerunEmbedding}
             />
             {/* 

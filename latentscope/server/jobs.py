@@ -322,6 +322,8 @@ def run_embed():
     dimensions = request.values.get('dimensions')
     batch_size = request.values.get('batch_size')
     max_seq_length = request.values.get('max_seq_length')
+    # Task for task-conditioned models (jina-v3/v5). Consumed by ls-embed.
+    task = request.values.get('task')
 
     err = _require_params(dataset=dataset, text_column=text_column, model_id=model_id,
                           prefix=prefix, batch_size=batch_size)
@@ -335,6 +337,8 @@ def run_embed():
         command.append(f'--dimensions={dimensions}')
     if max_seq_length is not None:
         command.append(f'--max_seq_length={max_seq_length}')
+    if task:
+        command.append(f'--task={task}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

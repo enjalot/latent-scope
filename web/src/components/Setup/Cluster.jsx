@@ -382,7 +382,11 @@ function Cluster() {
             />
           </form>
 
-          <JobProgress job={clusterJob} clearJob={() => setClusterJob(null)} />
+          <JobProgress
+            job={clusterJob}
+            clearJob={() => setClusterJob(null)}
+            killJob={(job) => apiService.killJob(dataset.id, job.id).then(setClusterJob).catch(console.error)}
+          />
         </div>
 
         <div className={styles['cluster-list']}>
