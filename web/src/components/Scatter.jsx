@@ -217,19 +217,17 @@ function ScatterPlot({
           pointSize: pointSize,
         });
       }
+      // Apply the palette before drawing: the new point values (e.g. fresh
+      // cluster ids) must never render against the previous palette, and a
+      // second draw() here would cancel the transition it races with.
+      scatterplot.set({
+        pointColor: pointColor,
+      });
       if (prevPoints && prevPoints.length === points.length) {
-        scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
-          scatterplot.set({
-            pointColor: pointColor,
-          });
-          scatterplot.draw(points, { transition: false });
-        });
+        scatterplot.draw(points, { transition: true, transitionDuration: duration });
       } else {
-        scatterplot.set({
-          pointColor: pointColor,
-        });
+        scatterplot.draw(points, { transition: false });
       }
-      scatterplot.draw(points, { transition: false });
     }
     prevPointsRef.current = points;
   }, [

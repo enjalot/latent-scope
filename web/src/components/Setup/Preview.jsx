@@ -39,6 +39,9 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [lastSearchText, setLastSearchText] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [drawPoints, setDrawPoints] = useState([]);
+  // bumped whenever a fresh umap point set is fetched; lets the cluster
+  // recolor effect re-run even though the point count stays the same
+  const [pointsVersion, setPointsVersion] = useState(0);
 
   const [deletedIndices] = useState([]);
 
@@ -152,10 +155,18 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   // grab the x,y coordinates from the umap
   useEffect(() => {
     if (umap) {
+      let stale = false;
       apiService.fetchUmapPoints(datasetId, umap.id).then((data) => {
+        if (stale) return;
         let pts = data.map((d) => [d.x, d.y, mapSelectionKey.normal]);
         setDrawPoints(pts);
+        // signal downstream effects (cluster recolor) that a fresh set of
+        // points landed, even when the length is unchanged
+        setPointsVersion((v) => v + 1);
       });
+      return () => {
+        stale = true;
+      };
     }
   }, [datasetId, umap]);
 
@@ -261,7 +272,12 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [hasHulls, setHasHulls] = useState(false);
   useEffect(() => {
     if (cluster && drawPoints.length) {
+      let stale = false;
       apiService.fetchClusterLabels(datasetId, cluster.id, labelId).then((data) => {
+        // an older request must not clobber the state of a newer one, and a
+        // response landing after fresh umap points arrive would recolor
+        // against outdated positions
+        if (stale) return;
         setClusterLabelData(data);
         const processedHulls = processHulls(data, drawPoints);
         setHulls(processedHulls);
@@ -282,12 +298,14 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
 
         // When there are no hulls (EVoC), color points by cluster ID
         if (processedHulls.length === 0) {
-          const clusterPoints = drawPoints.map((d, i) => [d[0], d[1], ci[i] ?? 0]);
-          setDrawPoints(clusterPoints);
+          setDrawPoints((prev) => prev.map((d, i) => [d[0], d[1], ci[i] ?? 0]));
         }
       });
+      return () => {
+        stale = true;
+      };
     }
-  }, [datasetId, cluster, drawPoints.length, labelId]);
+  }, [datasetId, cluster, pointsVersion, drawPoints.length, labelId]);
 
   const [pointSize, setPointSize] = useState(0.25);
   useEffect(() => {
