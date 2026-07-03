@@ -1,6 +1,8 @@
 import csv
 import json
 import os
+import urllib.error
+import urllib.request
 import uuid
 from importlib.resources import files
 
@@ -29,6 +31,25 @@ def get_chat_models():
     with chat_path.open('r', encoding='utf-8') as file:
         models = json.load(file)
     return jsonify(models)
+
+
+@models_bp.route('/ollama_models', methods=['GET'])
+def get_ollama_models():
+    """Proxy the server-local Ollama tags list.
+
+    The browser may be on a different machine than the server (and its Ollama),
+    so model discovery has to go through the API rather than the client
+    fetching localhost:11434 directly.
+    """
+    base = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    if not base.startswith("http"):
+        base = f"http://{base}"
+    try:
+        with urllib.request.urlopen(f"{base}/api/tags", timeout=3) as resp:
+            data = json.load(resp)
+    except (urllib.error.URLError, OSError, ValueError):
+        data = {"models": []}
+    return jsonify(data)
 
 
 @models_bp.route('/embedding_models/recent', methods=['GET'])
