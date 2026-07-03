@@ -22,7 +22,9 @@ function JobProgress({
   const preRef = useRef(null);
   const [onlyLast, setOnlyLast] = useState(overrideOnlyLast);
 
-  const isError = job?.status == 'error' || !!job?.error;
+  // 'dead' covers killed jobs and vanished processes — they need the same
+  // dismiss/rerun escape hatch as errors, or the step's form stays disabled
+  const isError = job?.status == 'error' || job?.status == 'dead' || !!job?.error;
 
   useEffect(() => {
     if (preRef.current) {
@@ -61,7 +63,11 @@ function JobProgress({
           ) : null}
           {isError ? (
             <div className="job-progress-error" style={{ color: '#b00020' }}>
-              <b>Job failed{job.error ? `: ${job.error}` : ''}</b>
+              <b>
+                {job.status == 'dead'
+                  ? `Job ${job.cause_of_death == 'killed' ? 'killed' : 'died'}`
+                  : `Job failed${job.error ? `: ${job.error}` : ''}`}
+              </b>
               {history.length ? <pre>{history.slice(-5).join('\n')}</pre> : null}
             </div>
           ) : null}

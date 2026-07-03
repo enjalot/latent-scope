@@ -212,24 +212,28 @@ function ScatterPlot({
           pointSize: pointSizeRange || [2, 4, 5, 6, pointSize],
         });
       } else {
+        // explicitly unset data-driven opacity/size: the instance persists
+        // across renders, so a previous opacityBy='valueA' would otherwise
+        // keep mapping values (e.g. cluster ids) into a too-short opacity
+        // array — out-of-range points render invisible
         scatterplot.set({
+          opacityBy: null,
+          sizeBy: null,
           opacity: opacity,
           pointSize: pointSize,
         });
       }
+      // Apply the palette before drawing: the new point values (e.g. fresh
+      // cluster ids) must never render against the previous palette, and a
+      // second draw() here would cancel the transition it races with.
+      scatterplot.set({
+        pointColor: pointColor,
+      });
       if (prevPoints && prevPoints.length === points.length) {
-        scatterplot.draw(points, { transition: true, transitionDuration: duration }).then(() => {
-          scatterplot.set({
-            pointColor: pointColor,
-          });
-          scatterplot.draw(points, { transition: false });
-        });
+        scatterplot.draw(points, { transition: true, transitionDuration: duration });
       } else {
-        scatterplot.set({
-          pointColor: pointColor,
-        });
+        scatterplot.draw(points, { transition: false });
       }
-      scatterplot.draw(points, { transition: false });
     }
     prevPointsRef.current = points;
   }, [
@@ -239,7 +243,10 @@ function ScatterPlot({
     colorScaleType,
     duration,
     colorInterpolator,
+    colorDomain,
+    colorRange,
     missingColor,
+    opacityBy,
     pointScale,
     opacityRange,
     pointSizeRange,

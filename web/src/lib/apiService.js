@@ -192,7 +192,8 @@ export const apiService = {
     });
   },
   fetchOllamaChatModels: async () => {
-    return fetchJson(`http://localhost:11434/api/tags`)
+    // proxied through the server: ollama runs next to the API, not the browser
+    return fetchJson(`${apiUrl}/models/ollama_models`)
       .then((data) => {
         return data?.models?.map((d) => {
           return {

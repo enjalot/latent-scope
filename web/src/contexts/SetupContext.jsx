@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { apiService } from '../lib/apiService';
 
 const BASE_STEPS = ['Embed', 'UMAP', 'Cluster', 'Label Clusters', 'Scope'];
@@ -23,6 +23,7 @@ export const SetupProvider = ({ children }) => {
   const [previewLabel, setPreviewLabel] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Append an optional "Images" step (sprite atlases) for image datasets only.
   // It uses stepId 'id' so it counts as available once a scope is saved.
@@ -51,7 +52,10 @@ export const SetupProvider = ({ children }) => {
         setSavedScope(data);
         console.log('setting saved scope', data);
         setIsLoaded(true);
-        setCurrentStep(5);
+        // a saved scope lands on the Scope step unless the URL asks for a
+        // specific step (e.g. ?step=6 to continue to Images after saving)
+        const stepParam = Number(new URLSearchParams(location.search).get('step'));
+        setCurrentStep(stepParam >= 1 ? stepParam : 5);
       });
     } else {
       console.log('setting scope to null');
@@ -59,7 +63,7 @@ export const SetupProvider = ({ children }) => {
       setSavedScope(null);
       setCurrentStep(1);
     }
-  }, [datasetId, scopeId]);
+  }, [datasetId, scopeId, location.search]);
 
   const updateScope = useCallback((updates) => {
     setScope((prevScope) => ({ ...prevScope, ...updates }));

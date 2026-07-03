@@ -50,7 +50,7 @@ dependencies = [
     "hdbscan>=0.8,<1",
     "evoc>=0.3,<1",
     # ML misc
-    "outlines>=0.1,<2",
+    "outlines>=0.1,<1",
     "nltk>=3.8,<4",
     "latentsae>=0.1.3,<1",
     "datamapplot>=0.5,<1",
