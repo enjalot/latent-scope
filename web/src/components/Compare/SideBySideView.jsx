@@ -1,11 +1,32 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
+import { extent } from 'd3-array';
 import { Tooltip } from 'react-tooltip';
 import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
 import CrosshairPlot from './CrosshairPlot';
 import NeighborPlot from './NeighborPlot';
+import { buildColorPoints } from './colorBy';
 import styles from './Compare.module.css';
+
+// Spread stat: diagonal of the bounding box of the given indices in a point
+// set, giving a quick sense of how dispersed a brush selection is per pane.
+function selectionSpread(points, indices) {
+  if (!points?.length || !indices?.length) return null;
+  const xs = [];
+  const ys = [];
+  for (const i of indices) {
+    const p = points[i];
+    if (p) {
+      xs.push(p[0]);
+      ys.push(p[1]);
+    }
+  }
+  if (!xs.length) return null;
+  const [x0, x1] = extent(xs);
+  const [y0, y1] = extent(ys);
+  return Math.hypot(x1 - x0, y1 - y0);
+}
 
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
@@ -23,12 +44,15 @@ function SideBySideView({
   width,
   height,
   onScatter,
+  onSelect,
   onHover,
   onNeighborSelect,
   pointSizeRange,
   opacityRange,
   hoveredIndex,
   metricK,
+  selectedIndices,
+  colorConfig,
 }) {
   const leftScatterRef = useRef(null);
   const rightScatterRef = useRef(null);
@@ -51,29 +75,71 @@ function SideBySideView({
   const [hoverLoading, setHoverLoading] = useState(false);
   const hoverFetchRef = useRef(0);
 
-  // Build display points for each side
-  const leftDisplayPoints = useMemo(() => {
-    if (!drawPoints?.length || !leftPoints?.length) return [];
-    // When in neighbor mode, dim all metric points
-    if (clickedIndex != null) {
-      return leftPoints.map((p) => [p[0], p[1], 0, 0]);
-    }
-    return leftPoints.map((p, i) => {
-      const dp = drawPoints[i];
-      return [p[0], p[1], dp ? dp[2] : 0, dp ? dp[3] : 0];
-    });
-  }, [leftPoints, drawPoints, clickedIndex]);
+  // Build display points for each side. Three modes, in priority order:
+  //   1. neighbor mode (a point was clicked): dim all metric points so the
+  //      NeighborPlot overlay stands out.
+  //   2. color-by-column mode: encode the column value into the color channel.
+  //   3. drift mode (default): encode the drift metric into the color channel.
+  const buildDisplay = useCallback(
+    (pts) => {
+      if (!pts?.length) return [];
+      if (clickedIndex != null) {
+        return pts.map((p) => [p[0], p[1], 0, 0]);
+      }
+      if (colorConfig) {
+        return buildColorPoints(pts, colorConfig);
+      }
+      if (!drawPoints?.length) return [];
+      return pts.map((p, i) => {
+        const dp = drawPoints[i];
+        return [p[0], p[1], dp ? dp[2] : 0, dp ? dp[3] : 0];
+      });
+    },
+    [drawPoints, clickedIndex, colorConfig]
+  );
 
-  const rightDisplayPoints = useMemo(() => {
-    if (!drawPoints?.length || !rightPoints?.length) return [];
+  const leftDisplayPoints = useMemo(() => buildDisplay(leftPoints), [leftPoints, buildDisplay]);
+  const rightDisplayPoints = useMemo(() => buildDisplay(rightPoints), [rightPoints, buildDisplay]);
+
+  // Color / opacity encoding for the Scatter, shared by both panes. Neighbor
+  // mode keeps the drift-style dim; color-by mode drives hue from the column.
+  const scatterColorProps = useMemo(() => {
     if (clickedIndex != null) {
-      return rightPoints.map((p) => [p[0], p[1], 0, 0]);
+      return {
+        colorScaleType: 'continuous',
+        colorInterpolator: interpolateReds,
+        colorRange: undefined,
+        colorDomain: undefined,
+        opacityBy: 'valueA',
+      };
     }
-    return rightPoints.map((p, i) => {
-      const dp = drawPoints[i];
-      return [p[0], p[1], dp ? dp[2] : 0, dp ? dp[3] : 0];
-    });
-  }, [rightPoints, drawPoints, clickedIndex]);
+    if (colorConfig?.type === 'categorical') {
+      return {
+        colorScaleType: 'categorical',
+        colorInterpolator: undefined,
+        colorRange: colorConfig.colorRange,
+        colorDomain: colorConfig.colorDomain,
+        opacityBy: undefined,
+      };
+    }
+    if (colorConfig?.type === 'numeric') {
+      return {
+        colorScaleType: 'continuous',
+        colorInterpolator: colorConfig.interpolator,
+        colorRange: undefined,
+        colorDomain: undefined,
+        missingColor: colorConfig.missingColor,
+        opacityBy: undefined,
+      };
+    }
+    return {
+      colorScaleType: 'continuous',
+      colorInterpolator: interpolateReds,
+      colorRange: undefined,
+      colorDomain: undefined,
+      opacityBy: 'valueA',
+    };
+  }, [clickedIndex, colorConfig]);
 
   const handleLeftScatter = useCallback(
     (s) => {
@@ -214,12 +280,56 @@ function SideBySideView({
     [clickedIndex, clickedSide, datasetId, left, right, metricK, clearNeighbors, onNeighborSelect]
   );
 
+  // Distinguish a lasso/brush (>1 point) from a single-point click (==1, the
+  // kNN neighbor path). A regl `select` event carries the enclosed indices for
+  // a lasso and a single index for a click; a `deselect` arrives as [].
+  const handleClearBrush = useCallback(() => {
+    onSelect && onSelect([]);
+  }, [onSelect]);
+
+  const handleLeftSelect = useCallback(
+    (indices) => {
+      if (indices && indices.length > 1) {
+        clearNeighbors();
+        onSelect && onSelect(indices);
+      } else if (indices && indices.length === 1) {
+        handleLeftClick(indices);
+      } else {
+        handleClearBrush();
+      }
+    },
+    [handleLeftClick, clearNeighbors, onSelect, handleClearBrush]
+  );
+
+  const handleRightSelect = useCallback(
+    (indices) => {
+      if (indices && indices.length > 1) {
+        clearNeighbors();
+        onSelect && onSelect(indices);
+      } else if (indices && indices.length === 1) {
+        handleRightClick(indices);
+      } else {
+        handleClearBrush();
+      }
+    },
+    [handleRightClick, clearNeighbors, onSelect, handleClearBrush]
+  );
+
   // Clear neighbor mode when UMAPs change
   useEffect(() => {
     setClickedIndex(null);
     setClickedSide(null);
     setNeighborIndices([]);
   }, [left, right]);
+
+  const leftSpread = useMemo(
+    () => selectionSpread(leftPoints, selectedIndices),
+    [leftPoints, selectedIndices]
+  );
+  const rightSpread = useMemo(
+    () => selectionSpread(rightPoints, selectedIndices),
+    [rightPoints, selectedIndices]
+  );
 
   // Hover crosshair points
   const leftHoverPoint =
@@ -257,6 +367,19 @@ function SideBySideView({
             </button>
           </span>
         )}
+        {clickedIndex == null && selectedIndices?.length > 0 && (
+          <span className={styles['neighbor-info']}>
+            {selectedIndices.length} selected
+            {leftSpread != null && ` · spread L ${leftSpread.toFixed(2)}`}
+            {rightSpread != null && ` / R ${rightSpread.toFixed(2)}`}
+            <button className={styles['clear-neighbors']} onClick={handleClearBrush}>
+              Clear
+            </button>
+          </span>
+        )}
+        {clickedIndex == null && !selectedIndices?.length && (
+          <span className={styles['lasso-hint']}>shift + drag to lasso</span>
+        )}
         <span className={styles['side-label']}>← Left</span>
         <span className={styles['side-label']}>Right →</span>
       </div>
@@ -280,12 +403,17 @@ function SideBySideView({
                       opacityRange={clickedIndex != null ? [0.15, 0.15] : opacityRange}
                       width={halfWidth}
                       height={height}
-                      colorScaleType="continuous"
-                      colorInterpolator={interpolateReds}
-                      opacityBy="valueA"
+                      colorScaleType={scatterColorProps.colorScaleType}
+                      colorInterpolator={scatterColorProps.colorInterpolator}
+                      colorRange={scatterColorProps.colorRange}
+                      colorDomain={scatterColorProps.colorDomain}
+                      missingColor={scatterColorProps.missingColor}
+                      opacityBy={scatterColorProps.opacityBy}
+                      enableLasso
+                      selectedIndices={selectedIndices}
                       onScatter={handleLeftScatter}
                       onView={handleLeftView}
-                      onSelect={handleLeftClick}
+                      onSelect={handleLeftSelect}
                       onHover={onHover}
                     />
                   ) : (
@@ -343,12 +471,17 @@ function SideBySideView({
                       opacityRange={clickedIndex != null ? [0.15, 0.15] : opacityRange}
                       width={halfWidth}
                       height={height}
-                      colorScaleType="continuous"
-                      colorInterpolator={interpolateReds}
-                      opacityBy="valueA"
+                      colorScaleType={scatterColorProps.colorScaleType}
+                      colorInterpolator={scatterColorProps.colorInterpolator}
+                      colorRange={scatterColorProps.colorRange}
+                      colorDomain={scatterColorProps.colorDomain}
+                      missingColor={scatterColorProps.missingColor}
+                      opacityBy={scatterColorProps.opacityBy}
+                      enableLasso
+                      selectedIndices={selectedIndices}
                       onScatter={handleRightScatter}
                       onView={handleRightView}
-                      onSelect={handleRightClick}
+                      onSelect={handleRightSelect}
                       onHover={onHover}
                     />
                   ) : (

@@ -284,6 +284,35 @@ export const apiService = {
     const params = new URLSearchParams({ label, description });
     return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/description?${params}`);
   },
+  // Edit the name/description of an existing umap run (experiment gallery,
+  // named steps). Served by datasets_write_bp (WP-C); see CONTRACT.md.
+  updateUmapMeta: async (datasetId, umapId, { name, description } = {}) => {
+    return fetchJson(
+      `${apiUrl}/datasets/${datasetId}/umaps/${umapId}/meta`,
+      postJsonOptions({ name, description })
+    );
+  },
+  // Edit the name/description of an existing cluster run.
+  updateClusterMeta: async (datasetId, clusterId, { name, description } = {}) => {
+    return fetchJson(
+      `${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/meta`,
+      postJsonOptions({ name, description })
+    );
+  },
+  // Per-point numeric (or categorical) values for a column, aligned to
+  // ls_index order, for color-by (#131). Served by datasets_bp (WP-C).
+  // `idOrScope` scopes the values to a scope/umap id via the ?scope= query.
+  fetchColumnValues: async (datasetId, idOrScope, column) => {
+    const params = new URLSearchParams();
+    if (idOrScope !== null && idOrScope !== undefined) {
+      params.set('scope', idOrScope);
+    }
+    const query = params.toString();
+    const url = `${apiUrl}/datasets/${datasetId}/column/${encodeURIComponent(column)}${
+      query ? `?${query}` : ''
+    }`;
+    return fetchJson(url);
+  },
   fetchSaes: async (datasetId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/saes`);
   },

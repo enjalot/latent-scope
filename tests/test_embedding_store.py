@@ -371,3 +371,134 @@ def test_vector_index_with_non_divisible_dimension(data_dir):
     create_vector_index(data_dir, "test-dataset", "embedding-001")
     indices, _ = search_nn(data_dir, "test-dataset", "embedding-001", vectors[5], limit=5)
     assert 5 in indices
+
+
+# ---------------------------------------------------------------------------
+# Migration fidelity (WP-H): full-corpus row-by-row parity + format flip
+# ---------------------------------------------------------------------------
+
+def test_migration_preserves_every_row_in_order(data_dir):
+    """A many-batch migration reproduces the source vectors exactly and in
+    ls_index order (not just a random sample), and flips the storage format
+    hdf5 -> lancedb."""
+    from latentscope.util.embedding_store import (
+        get_storage_format,
+        load_embeddings,
+        migrate_hdf5_to_lancedb,
+    )
+
+    rng = np.random.default_rng(3)
+    # 253 is not a multiple of the batch size -> a short final batch
+    vectors = rng.normal(size=(253, 24)).astype(np.float32)
+    _write_h5(data_dir, "embedding-001", vectors)
+    assert get_storage_format(data_dir, "test-dataset", "embedding-001") == "hdf5"
+
+    result = migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                                     batch_size=32)
+    assert result["status"] == "migrated"
+    assert result["rows"] == 253
+    assert get_storage_format(data_dir, "test-dataset", "embedding-001") == "lancedb"
+
+    loaded = load_embeddings(data_dir, "test-dataset", "embedding-001")
+    assert loaded.shape == (253, 24)
+    # exact, ordered parity for every single row
+    np.testing.assert_allclose(loaded, vectors, atol=1e-6)
+
+
+def test_migration_reports_monotonic_progress(data_dir):
+    """The on_progress callback fires with (current, total) advancing to total."""
+    from latentscope.util.embedding_store import migrate_hdf5_to_lancedb
+
+    vectors = np.random.rand(100, 8).astype(np.float32)
+    _write_h5(data_dir, "embedding-001", vectors)
+
+    seen = []
+    migrate_hdf5_to_lancedb(data_dir, "test-dataset", "embedding-001",
+                            batch_size=30, on_progress=lambda c, t: seen.append((c, t)))
+    assert seen, "on_progress was never called"
+    assert all(t == 100 for _, t in seen)
+    currents = [c for c, _ in seen]
+    assert currents == sorted(currents)  # monotonically non-decreasing
+    assert currents[-1] == 100  # reaches the full count
+
+
+# ---------------------------------------------------------------------------
+# MaxSim ranking correctness (WP-H): relevant doc must outrank irrelevant one
+# ---------------------------------------------------------------------------
+
+def test_maxsim_ranks_relevant_above_irrelevant(data_dir):
+    """Hand-built multi-vector fixture: a two-token query [a, b].
+      * doc_full has tokens along both a and b        -> MaxSim ~ 2
+      * doc_partial has a token along a only           -> MaxSim ~ 1
+      * doc_irrelevant has tokens on orthogonal dirs   -> MaxSim ~ 0
+    The final ranking must be full > partial > irrelevant."""
+    from latentscope.util.embedding_store import (
+        append_embeddings,
+        search_late_interaction,
+    )
+
+    dim = 16
+
+    def _unit(i):
+        v = np.zeros(dim, dtype=np.float32)
+        v[i] = 1.0
+        return v
+
+    a, b = _unit(0), _unit(1)
+    c, d = _unit(2), _unit(3)  # distractor directions
+
+    token_vecs = [
+        np.stack([a, b, c]),        # 0: doc_full   (both query dirs present)
+        np.stack([a, c, d]),        # 1: doc_partial(only a present)
+        np.stack([c, d]),           # 2: doc_irrelevant
+    ]
+    idx_full, idx_partial, idx_irrelevant = 0, 1, 2
+    mean_vecs = np.stack([tv.mean(axis=0) for tv in token_vecs]).astype(np.float32)
+
+    append_embeddings(data_dir, "test-dataset", "embedding-001", mean_vecs,
+                      token_vectors_list=[tv.astype(np.float32) for tv in token_vecs])
+
+    query_tokens = np.stack([a, b]).astype(np.float32)
+    indices, scores = search_late_interaction(
+        data_dir, "test-dataset", "embedding-001", query_tokens, final_limit=5)
+
+    assert indices[0] == idx_full, f"expected doc_full first, got {indices}"
+    score_by_idx = dict(zip(indices, scores))
+    # strict ordering of the three planted relevance tiers
+    assert score_by_idx[idx_full] > score_by_idx[idx_partial] > score_by_idx[idx_irrelevant]
+    # doc_full matches both query tokens -> close to 2.0
+    assert score_by_idx[idx_full] == pytest.approx(2.0, abs=1e-4)
+
+
+def test_maxsim_single_relevant_doc_wins_among_noise(data_dir):
+    """One planted doc shares the query's rare direction; the rest are random
+    noise. MaxSim must surface the planted doc at rank 0."""
+    from latentscope.util.embedding_store import (
+        append_embeddings,
+        search_late_interaction,
+    )
+
+    rng = np.random.default_rng(11)
+    dim = 32
+    n = 40
+    rare = np.zeros(dim, dtype=np.float32)
+    rare[7] = 1.0
+
+    token_vecs = []
+    for _ in range(n):
+        t = rng.normal(size=(4, dim)).astype(np.float32)
+        t /= np.linalg.norm(t, axis=1, keepdims=True)
+        token_vecs.append(t)
+    planted = 23
+    token_vecs[planted][0] = rare  # inject the rare direction as one token
+
+    mean_vecs = np.stack([tv.mean(axis=0) for tv in token_vecs]).astype(np.float32)
+    append_embeddings(data_dir, "test-dataset", "embedding-001", mean_vecs,
+                      token_vectors_list=token_vecs)
+
+    indices, scores = search_late_interaction(
+        data_dir, "test-dataset", "embedding-001",
+        rare[None, :].astype(np.float32), final_limit=5)
+    assert indices[0] == planted, f"expected planted doc {planted} first, got {indices[:5]}"
+    assert scores[0] == pytest.approx(1.0, abs=1e-4)
+    assert scores[0] > scores[1]

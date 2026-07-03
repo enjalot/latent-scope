@@ -6,6 +6,24 @@ This file documents breaking changes to data formats and how to migrate between 
 
 ## Version History
 
+### 1.0.0 — First 1.0 release (July 2026)
+
+Upgrading from **0.6.0**: no manual data migration is required.
+
+- **Embeddings (HDF5 → LanceDB).** 0.6.0 stored embeddings as HDF5; 1.0 uses
+  LanceDB. Existing `.h5` embeddings are **migrated automatically on first load**
+  (see the LanceDB section below). Back up a dataset dir first if it is precious.
+- **New step metadata is additive and backward-compatible.** `umap-NNN.json` and
+  `cluster-NNN.json` may now carry optional `name` / `description`, and
+  `cluster-NNN.json` records `cluster_on` (`"umap"` | `"embedding"`). Older files
+  without these keys load fine; readers tolerate their absence.
+- **No breaking changes to the scope format.** Scopes built on 0.6.0 continue to
+  open; rebuild a dataset only if you want the new fields (named steps, quality
+  metrics, image sprite atlas) populated.
+- **GPU is opt-in.** The default install and behavior are unchanged; the GPU path
+  activates only with `LATENT_SCOPE_DEVICE=cuda`/`auto` **and** the `gpu` extra
+  installed. See `docs/gpu-acceleration.md`.
+
 ### v1.1 — LanceDB Embedding Storage (April 2026)
 
 **Change:** Embedding vectors are now stored in LanceDB tables (Lance format v2.2) instead of HDF5 files. This provides ~50% storage reduction via automatic BSS + LZ4 compression, native vector search, and support for late interaction models (ColBERT/ColPali per-token vectors).

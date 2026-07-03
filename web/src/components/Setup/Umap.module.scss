@@ -33,6 +33,9 @@
 .umap-form input {
   width: 84px;
 }
+.umap-form input.umap-form-text {
+  width: 220px;
+}
 .umap-form-align {
   display: flex;
   flex-direction: row;

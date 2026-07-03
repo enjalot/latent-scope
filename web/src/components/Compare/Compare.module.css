@@ -195,6 +195,17 @@
   background: #4488ff22;
 }
 
+.lasso-hint {
+  font-size: 0.75em;
+  color: #999;
+  font-style: italic;
+}
+
+.color-legend-wrap {
+  display: flex;
+  align-items: flex-end;
+}
+
 /* Hover tooltip */
 .hover-tooltip {
   max-width: 400px;

@@ -9,10 +9,30 @@ import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
 import EstimatePanel from './EstimatePanel';
+import ExperimentGallery from './ExperimentGallery';
 
 import Preview from './Preview';
 
 import styles from './Cluster.module.scss';
+
+// Per-method default input space (matches the CLI/server defaults).
+const DEFAULT_CLUSTER_ON = {
+  evoc: 'embedding',
+  hdbscan: 'umap',
+  kmeans: 'umap',
+  gmm: 'umap',
+};
+
+const METHOD_LABELS = {
+  evoc: 'EVoC',
+  hdbscan: 'HDBSCAN',
+  kmeans: 'KMeans',
+  gmm: 'GMM',
+};
+
+// kmeans/gmm ask for a target number of clusters (the `samples` positional
+// maps to n_clusters); evoc/hdbscan use the same positional as min cluster size.
+const isCentroidMethod = (method) => method === 'kmeans' || method === 'gmm';
 
 // This component is responsible for the embeddings state
 // New embeddings update the list
@@ -39,7 +59,16 @@ function Cluster() {
   const [umap, setUmap] = useState(null);
   const [cluster, setCluster] = useState(null);
   const [method, setMethod] = useState('evoc');
+  const [clusterOn, setClusterOn] = useState(DEFAULT_CLUSTER_ON['evoc']);
   const [qualityMetrics, setQualityMetrics] = useState({});
+
+  // When the method changes, reset the input-space choice to that method's
+  // default (evoc->embedding, hdbscan/kmeans/gmm->umap).
+  const handleMethodChange = useCallback((e) => {
+    const m = e.target.value;
+    setMethod(m);
+    setClusterOn(DEFAULT_CLUSTER_ON[m] || 'umap');
+  }, []);
 
   useEffect(() => {
     setPreviewLabel(cluster?.id);
@@ -115,17 +144,34 @@ function Cluster() {
         umap_id: umap.id,
         samples: data.get('samples'),
         method,
+        cluster_on: clusterOn,
+        name: data.get('name') || '',
+        description: data.get('description') || '',
       };
       if (method === 'evoc') {
         params.n_neighbors = data.get('n_neighbors');
         params.noise_level = data.get('noise_level');
-      } else {
+      } else if (method === 'hdbscan') {
         params.min_samples = data.get('min_samples');
         params.cluster_selection_epsilon = data.get('cluster_selection_epsilon');
       }
+      // kmeans/gmm: only `samples` (= n_clusters) + cluster_on are needed;
+      // the server defaults the unused positionals.
       startClusterJob(params);
     },
-    [startClusterJob, umap, method]
+    [startClusterJob, umap, method, clusterOn]
+  );
+
+  // Inline rename of an existing cluster run (experiment gallery) without re-running.
+  const handleRenameCluster = useCallback(
+    (item, meta) => {
+      return apiService.updateClusterMeta(dataset.id, item.id, meta).then(() =>
+        apiService.fetchClusters(dataset?.id).then((cls) => {
+          setClusters(cls);
+        })
+      );
+    },
+    [dataset]
   );
 
   // Estimation
@@ -161,25 +207,51 @@ function Cluster() {
             Cluster using{' '}
             {method === 'evoc' ? (
               <a href="https://github.com/TutteInstitute/evoc">EVoC</a>
-            ) : (
+            ) : method === 'hdbscan' ? (
               <a href="https://hdbscan.readthedocs.io/en/latest/api.html">HDBSCAN</a>
+            ) : method === 'kmeans' ? (
+              <a href="https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html">
+                KMeans
+              </a>
+            ) : (
+              <a href="https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html">
+                Gaussian Mixture
+              </a>
             )}
             .
           </div>
           <form onSubmit={handleNewCluster}>
             <label>
               <span className={styles['cluster-form-label']}>Method:</span>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                disabled={!!clusterJob || !umap}
-              >
+              <select value={method} onChange={handleMethodChange} disabled={!!clusterJob || !umap}>
                 <option value="evoc">EVoC</option>
                 <option value="hdbscan">HDBSCAN</option>
+                <option value="kmeans">KMeans</option>
+                <option value="gmm">GMM</option>
               </select>
             </label>
             <label>
-              <span className={styles['cluster-form-label']}>Min Cluster Size:</span>
+              <span className={styles['cluster-form-label']}>Cluster on:</span>
+              <select
+                value={clusterOn}
+                onChange={(e) => setClusterOn(e.target.value)}
+                disabled={!!clusterJob || !umap}
+              >
+                <option value="umap">UMAP 2D</option>
+                <option value="embedding">Embeddings hi-dim</option>
+              </select>
+              <span className="tooltip" data-tooltip-id="cluster_on">
+                🤔
+              </span>
+              <Tooltip id="cluster_on" place="top" effect="solid" className="tooltip-area">
+                Which space to cluster in: the 2D UMAP projection or the original high-dimensional
+                embeddings. EVoC defaults to embeddings; the others default to the 2D UMAP.
+              </Tooltip>
+            </label>
+            <label>
+              <span className={styles['cluster-form-label']}>
+                {isCentroidMethod(method) ? 'Number of clusters:' : 'Min Cluster Size:'}
+              </span>
               <input
                 type="number"
                 name="samples"
@@ -190,8 +262,9 @@ function Cluster() {
                 🤔
               </span>
               <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
-                The minimum number of data points needed to form a cluster. Lower values mean more
-                clusters.
+                {isCentroidMethod(method)
+                  ? 'The exact number of clusters to partition the data into.'
+                  : 'The minimum number of data points needed to form a cluster. Lower values mean more clusters.'}
               </Tooltip>
             </label>
             {method === 'evoc' ? (
@@ -231,7 +304,7 @@ function Cluster() {
                   </Tooltip>
                 </label>
               </>
-            ) : (
+            ) : method === 'hdbscan' ? (
               <>
                 <label>
                   <span className={styles['cluster-form-label']}>Min Samples:</span>
@@ -272,7 +345,27 @@ function Cluster() {
                   </Tooltip>
                 </label>
               </>
-            )}
+            ) : null}
+            <label>
+              <span className={styles['cluster-form-label']}>Name:</span>
+              <input
+                type="text"
+                name="name"
+                placeholder="(optional)"
+                className={styles['cluster-form-text']}
+                disabled={!!clusterJob || !umap}
+              />
+            </label>
+            <label>
+              <span className={styles['cluster-form-label']}>Description:</span>
+              <input
+                type="text"
+                name="description"
+                placeholder="(optional)"
+                className={styles['cluster-form-text']}
+                disabled={!!clusterJob || !umap}
+              />
+            </label>
             {umap && (
               <EstimatePanel
                 estimate={clusterEstimate}
@@ -293,105 +386,86 @@ function Cluster() {
         </div>
 
         <div className={styles['cluster-list']}>
-          {umap &&
-            clusters
-              .filter((d) => d.umap_id == umap.id)
-              .map((cl, index) => (
-                <div
-                  className={
-                    styles['item'] + (cl.id === cluster?.id ? ' ' + styles['selected'] : '')
-                  }
-                  key={index}
-                >
-                  <label htmlFor={`cluster${index}`}>
-                    <input
-                      type="radio"
-                      id={`cluster${index}`}
-                      name="cluster"
-                      value={cl}
-                      checked={cl.id === cluster?.id}
-                      onChange={() => setCluster(cl)}
-                    />
-                    <span>
-                      {cl.id}{' '}
-                      <span className={styles['method-badge']}>
-                        {cl.method === 'hdbscan' ? 'HDBSCAN' : 'EVoC'}
-                      </span>
-                      {savedScope?.cluster_id == cl.id ? (
-                        <span className="tooltip" data-tooltip-id="saved">
-                          💾
-                        </span>
-                      ) : null}
+          {umap && (
+            <ExperimentGallery
+              items={clusters.filter((d) => d.umap_id == umap.id)}
+              selectedId={cluster?.id}
+              savedId={savedScope?.cluster_id}
+              onSelect={(cl) => setCluster(cl)}
+              onProceed={handleNextStep}
+              proceedLabel={`Proceed with ${cluster?.id}`}
+              onDelete={(cl) => deleteClusterJob({ cluster_id: cl.id })}
+              isDeleteDisabled={clusterJob && clusterJob.status !== 'completed'}
+              onRename={handleRenameCluster}
+              renderInfo={(cl) => (
+                <>
+                  <span>
+                    <span className={styles['method-badge']}>
+                      {METHOD_LABELS[cl.method] || 'EVoC'}
                     </span>
-                    <div className={styles['item-info']}>
-                      <span>Min Size: {cl.samples}</span>
-                      {cl.method === 'hdbscan' || !cl.method ? (
-                        <>
-                          <span>Min Samples: {cl.min_samples}</span>
-                          {cl.cluster_selection_epsilon ? (
-                            <span>Epsilon: {cl.cluster_selection_epsilon}</span>
-                          ) : null}
-                        </>
-                      ) : (
-                        <>
-                          {cl.n_neighbors && <span>Neighbors: {cl.n_neighbors}</span>}
-                          {cl.noise_level != null && <span>Noise: {cl.noise_level}</span>}
-                        </>
-                      )}
-                    </div>
-                  </label>
-
-                  <img src={cl.url} alt={cl.id} />
-
-                  <div className={styles['item-info']}>
-                    <span>Clusters: {cl.n_clusters}</span>
-                    <span>Noise points: {cl.n_noise}</span>
-                  </div>
-
-                  {qualityMetrics[cl.id] && qualityMetrics[cl.id].silhouette != null && (
-                    <div className={styles['quality-metrics']}>
-                      <span className={styles['metric-badge']}>
-                        Sil: {qualityMetrics[cl.id].silhouette}
-                        <span className="tooltip" data-tooltip-id={`sil-${cl.id}`}>🤔</span>
+                    {cl.cluster_on ? (
+                      <span className={styles['method-badge']}>
+                        on {cl.cluster_on === 'embedding' ? 'hi-dim' : '2D'}
                       </span>
-                      <span className={styles['metric-badge']}>
-                        CH: {Math.round(qualityMetrics[cl.id].calinski_harabasz)}
-                        <span className="tooltip" data-tooltip-id={`ch-${cl.id}`}>🤔</span>
-                      </span>
-                      <span className={styles['metric-badge']}>
-                        DB: {qualityMetrics[cl.id].davies_bouldin}
-                        <span className="tooltip" data-tooltip-id={`db-${cl.id}`}>🤔</span>
-                      </span>
-                      <Tooltip id={`sil-${cl.id}`} place="top" effect="solid" className="tooltip-area">
-                        Silhouette Score [-1,1]: higher means clusters are well-separated
-                      </Tooltip>
-                      <Tooltip id={`ch-${cl.id}`} place="top" effect="solid" className="tooltip-area">
-                        Calinski-Harabasz: higher means denser, well-separated clusters
-                      </Tooltip>
-                      <Tooltip id={`db-${cl.id}`} place="top" effect="solid" className="tooltip-area">
-                        Davies-Bouldin: lower means better separation between clusters
-                      </Tooltip>
-                    </div>
-                  )}
-
-                  {cluster?.id == cl.id ? (
-                    <div className={styles['navigate']}>
-                      <Button
-                        disabled={!cluster}
-                        onClick={handleNextStep}
-                        text={`Proceed with ${cluster?.id}`}
-                      />
-                    </div>
+                    ) : null}
+                  </span>
+                  <span>
+                    {cl.method === 'kmeans' || cl.method === 'gmm'
+                      ? `N clusters: ${cl.samples}`
+                      : `Min Size: ${cl.samples}`}
+                  </span>
+                  {cl.method === 'hdbscan' || !cl.method ? (
+                    <>
+                      <span>Min Samples: {cl.min_samples}</span>
+                      {cl.cluster_selection_epsilon ? (
+                        <span>Epsilon: {cl.cluster_selection_epsilon}</span>
+                      ) : null}
+                    </>
+                  ) : cl.method === 'evoc' ? (
+                    <>
+                      {cl.n_neighbors && <span>Neighbors: {cl.n_neighbors}</span>}
+                      {cl.noise_level != null && <span>Noise: {cl.noise_level}</span>}
+                    </>
                   ) : null}
-
-                  <Button
-                    className={styles['delete']}
-                    color="secondary"
-                    onClick={() => deleteClusterJob({ cluster_id: cl.id })}
-                    text="🗑️"
-                  />
-                </div>
-              ))}
+                  <span>Clusters: {cl.n_clusters}</span>
+                  <span>Noise points: {cl.n_noise}</span>
+                </>
+              )}
+              renderMetrics={(cl) =>
+                qualityMetrics[cl.id] && qualityMetrics[cl.id].silhouette != null ? (
+                  <div className={styles['quality-metrics']}>
+                    <span className={styles['metric-badge']}>
+                      Sil: {qualityMetrics[cl.id].silhouette}
+                      <span className="tooltip" data-tooltip-id={`sil-${cl.id}`}>
+                        🤔
+                      </span>
+                    </span>
+                    <span className={styles['metric-badge']}>
+                      CH: {Math.round(qualityMetrics[cl.id].calinski_harabasz)}
+                      <span className="tooltip" data-tooltip-id={`ch-${cl.id}`}>
+                        🤔
+                      </span>
+                    </span>
+                    <span className={styles['metric-badge']}>
+                      DB: {qualityMetrics[cl.id].davies_bouldin}
+                      <span className="tooltip" data-tooltip-id={`db-${cl.id}`}>
+                        🤔
+                      </span>
+                    </span>
+                    <Tooltip id={`sil-${cl.id}`} place="top" effect="solid" className="tooltip-area">
+                      Silhouette Score [-1,1]: higher means clusters are well-separated
+                    </Tooltip>
+                    <Tooltip id={`ch-${cl.id}`} place="top" effect="solid" className="tooltip-area">
+                      Calinski-Harabasz: higher means denser, well-separated clusters
+                    </Tooltip>
+                    <Tooltip id={`db-${cl.id}`} place="top" effect="solid" className="tooltip-area">
+                      Davies-Bouldin: lower means better separation between clusters
+                    </Tooltip>
+                  </div>
+                ) : null
+              }
+            />
+          )}
           {umap && clusters.filter((c) => c.umap_id === umap?.id).length >= 2 && (
             <div className={styles['compare-link']}>
               <Link to={`/datasets/${dataset?.id}/compare-clusters/`}>

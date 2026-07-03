@@ -156,7 +156,33 @@ embedding.
 
 ---
 
-## 8. Next steps
+## 8. How much data can I load?
+
+Latent Scope is designed for interactive **exploration**, not billion-row
+warehousing ([issue #33](https://github.com/enjalot/latent-scope/issues/33)).
+Practical guidance:
+
+- **Sweet spot: up to a few hundred thousand rows.** The published demos are in
+  the 50k–100k range and stay snappy in the browser. Datasets up to ~500k are
+  workable; beyond that, expect slower UMAP/cluster steps and a heavier map.
+- **Embedding is the main time cost.** On CPU, use a small model
+  (`transformers-BAAI___bge-small-en-v1.5`) and start with a sample of your data.
+  A GPU dramatically speeds up both embedding and (optionally) UMAP/clustering —
+  see [gpu-acceleration.md](gpu-acceleration.md).
+- **ColBERT and image datasets are heavier.** ColBERT stores one vector *per
+  token* (fp16 in LanceDB), so multi-vector datasets use far more disk than dense
+  ones; image atlases add tiled sprite pyramids. Budget disk accordingly and keep
+  these datasets smaller while iterating.
+- **Everything is flat files.** Each step writes to your dataset directory, so you
+  can inspect sizes as you go and delete intermediate runs you don't need.
+
+To work with a large source, sample it down at ingest time (e.g. slice the
+DataFrame before `ls.ingest(...)`) and scale up once the pipeline settings look
+right.
+
+---
+
+## 9. Next steps
 
 Once data is ingested and embedded:
 
@@ -166,6 +192,13 @@ ls-cluster mydataset umap-001 5 3 0.0 --method hdbscan
 ls-scope   mydataset embedding-001 umap-001 cluster-001 default "My scope" "description"
 ls-serve   $LATENT_SCOPE_DATA          # open http://localhost:5001 to explore
 ```
+
+- [clustering.md](clustering.md) — clustering methods (EVoC / HDBSCAN / KMeans /
+  GMM), the `--cluster_on` input choice, and named experiment runs.
+- [gpu-acceleration.md](gpu-acceleration.md) — optional cuML GPU acceleration and
+  the `LATENT_SCOPE_DEVICE` control.
+- [exploring.md](exploring.md) — color-by, the Compare page's shared selection,
+  the experiment gallery, and the curation (post-1.0) status.
 
 See [`CLAUDE.md`](../CLAUDE.md) for the agent quickstart and
 [`DEVELOPMENT.md`](../DEVELOPMENT.md) for the developer setup.

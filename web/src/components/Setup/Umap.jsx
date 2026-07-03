@@ -11,6 +11,7 @@ import { apiService, apiUrl } from '../../lib/apiService';
 
 import Preview from './Preview';
 import EstimatePanel from './EstimatePanel';
+import ExperimentGallery from './ExperimentGallery';
 
 import styles from './Umap.module.scss';
 
@@ -91,6 +92,8 @@ function Umap() {
       const neighbors = data.get('neighbors');
       const min_dist = data.get('min_dist');
       const seed = data.get('seed');
+      const name = data.get('name');
+      const description = data.get('description');
       const align = Array.from(document.querySelectorAll('input[name="umapAlign"]:checked'))
         .map((input) => input.value)
         .sort((a, b) => a.localeCompare(b))
@@ -110,10 +113,24 @@ function Umap() {
         align,
         save: s,
         seed,
+        name: name || '',
+        description: description || '',
       };
       startUmapJob(job);
     },
     [startUmapJob, embedding, init, save]
+  );
+
+  // Inline rename of an existing umap run (experiment gallery) without re-running.
+  const handleRenameUmap = useCallback(
+    (item, meta) => {
+      return apiService.updateUmapMeta(dataset.id, item.id, meta).then(() =>
+        apiService.fetchUmaps(dataset?.id).then((umps) => {
+          setUmaps(umps);
+        })
+      );
+    },
+    [dataset]
   );
 
   const [showAlign, setShowAlign] = useState(false);
@@ -211,6 +228,27 @@ function Umap() {
               </Tooltip>
             </label>
 
+            <label>
+              <span className={styles['umap-form-label']}>Name: </span>
+              <input
+                type="text"
+                name="name"
+                placeholder="(optional)"
+                className={styles['umap-form-text']}
+                disabled={!!umapJob}
+              />
+            </label>
+            <label>
+              <span className={styles['umap-form-label']}>Description: </span>
+              <input
+                type="text"
+                name="description"
+                placeholder="(optional)"
+                className={styles['umap-form-text']}
+                disabled={!!umapJob}
+              />
+            </label>
+
             <div className={styles['umap-form-align']}>
               <Switch onChange={toggleShowAlign} color="secondary" label="Align UMAP" />
               <span className="tooltip" data-tooltip-id="align-umap">
@@ -300,74 +338,37 @@ function Umap() {
             </Link>
           </div>
         )}
-        <div className={styles['umap-list']}>
-          {umaps
-            .filter((d) => d.embedding_id == embedding?.id)
-            .map((um, index) => (
-              <div
-                className={
-                  `${styles['item']}` + (um.id === umap?.id ? ' ' + styles['selected'] : '')
-                }
-                key={index}
-              >
-                <label htmlFor={`umap${index}`}>
-                  <input
-                    type="radio"
-                    id={`umap${index}`}
-                    name="umap"
-                    value={um}
-                    checked={um.id === umap?.id}
-                    onChange={() => setUmap(um)}
-                  />
-                  <span>
-                    {um.id}{' '}
-                    {savedScope?.umap_id == um.id ? (
-                      <span className="tooltip" data-tooltip-id="saved">
-                        💾
-                      </span>
-                    ) : null}
-                  </span>
-                  <div className={styles['item-info']}>
-                    <span>Neighbors: {um.neighbors}</span>
-                    <span>Min Dist: {um.min_dist}</span>
-                    {clusters.filter((d) => d.umap_id == um.id).length > 0 ? (
-                      <span>Clusters: {clusters.filter((d) => d.umap_id == um.id).length}</span>
-                    ) : null}
-                  </div>
-                </label>
-
-                <img src={um.url} alt={um.id} />
-
-                {um.align ? (
-                  <div className={styles['umap-align-list']}>
-                    {umaps
-                      .filter((d) => d.align_id == um.id && d.id != um.id)
-                      .map((d) => {
-                        return <img key={d.id} src={d.url} alt={d.id} />;
-                      })}
-                  </div>
-                ) : null}
-
-                {um.id == umap?.id ? (
-                  <div className={styles['navigate']}>
-                    <Button
-                      disabled={!umap}
-                      onClick={handleNextStep}
-                      text={`Proceed with ${umap?.id}`}
-                    ></Button>
-                  </div>
-                ) : null}
-
-                <Button
-                  className={styles['delete']}
-                  color="secondary"
-                  onClick={() => deleteUmapJob({ umap_id: um.id })}
-                  disabled={umapJob && umapJob.status !== 'completed'}
-                  text="🗑️"
-                />
+        <ExperimentGallery
+          items={umaps.filter((d) => d.embedding_id == embedding?.id)}
+          selectedId={umap?.id}
+          savedId={savedScope?.umap_id}
+          onSelect={(um) => setUmap(um)}
+          onProceed={handleNextStep}
+          proceedLabel={`Proceed with ${umap?.id}`}
+          onDelete={(um) => deleteUmapJob({ umap_id: um.id })}
+          isDeleteDisabled={umapJob && umapJob.status !== 'completed'}
+          onRename={handleRenameUmap}
+          renderInfo={(um) => (
+            <>
+              <span>Neighbors: {um.neighbors}</span>
+              <span>Min Dist: {um.min_dist}</span>
+              {clusters.filter((d) => d.umap_id == um.id).length > 0 ? (
+                <span>Clusters: {clusters.filter((d) => d.umap_id == um.id).length}</span>
+              ) : null}
+            </>
+          )}
+          renderExtra={(um) =>
+            um.align ? (
+              <div className={styles['umap-align-list']}>
+                {umaps
+                  .filter((d) => d.align_id == um.id && d.id != um.id)
+                  .map((d) => (
+                    <img key={d.id} src={d.url} alt={d.id} />
+                  ))}
               </div>
-            ))}
-        </div>
+            ) : null
+          }
+        />
 
         <br></br>
       </div>

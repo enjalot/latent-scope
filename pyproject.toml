@@ -31,6 +31,9 @@ dependencies = [
     # Server
     "Flask>=3.0,<4",
     "Flask-Cors>=4.0,<7",
+    # Production WSGI server for `ls-serve` (falls back to the Flask dev server
+    # only if somehow absent). Core dep so a pip install serves cleanly.
+    "waitress>=3,<4",
     # API providers
     "openai>=1.12,<3",
     "tiktoken>=0.5,<1",
@@ -58,6 +61,31 @@ dependencies = [
     "pylate>=1.6.0",
     # Images (ingest sniffing + image embedding providers import PIL directly)
     "pillow>=10,<14",
+]
+
+[project.optional-dependencies]
+# GPU acceleration (issue #63). NOT a default dependency: latentscope.util.device
+# probes cuML with a guarded import and falls back to CPU when this extra is
+# absent. Install with `pip install "latentscope[gpu]"` on a CUDA 12.x box.
+#
+# cuml-cu12 / cuvs-cu12 are the RAPIDS wheels for the CUDA 12 line. Wheels are
+# published on the NVIDIA PyPI index, so installing this extra also needs:
+#   --extra-index-url=https://pypi.nvidia.com
+#
+# VERSION CAP — validated on-device (RTX 5090, driver 570.211.01 = CUDA 12.8):
+# an unbounded `>=25.2` resolves to RAPIDS 26.6, whose libcuml is built for
+# CUDA 12.9 (needs the nvJitLink 12.9 symbol __nvJitLinkGetLinkedCubinSize_12_9)
+# and FAILS to load on a 12.8 driver. RAPIDS 25.2.x is the validated-working set
+# on CUDA 12.8. Users on a newer driver (>=12.9) may raise this cap.
+#
+# You ALSO need a driver-matched torch: the default PyPI torch is a cu130 build
+# that reports no CUDA on a 12.8 driver, which disables the GPU path. Install a
+# cu128 build first, e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+# See docs/gpu-acceleration.md for the full validated install recipe.
+gpu = [
+    "cuml-cu12==25.2.*",   # validated on CUDA 12.8 (gsv); 26.x needs CUDA 12.9
+    "cuvs-cu12==25.2.*",
 ]
 
 [project.urls]
@@ -103,9 +131,6 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=5.0",
     "ruff>=0.4",
-]
-serve = [
-    "waitress>=3",
 ]
 
 [tool.pytest.ini_options]

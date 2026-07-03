@@ -13,18 +13,40 @@ ScatterPlot.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   pointScale: PropTypes.number,
+  colorScaleType: PropTypes.oneOf(['categorical', 'continuous']),
   colorDomain: PropTypes.array,
   colorRange: PropTypes.array,
   colorInterpolator: PropTypes.func,
+  // Neutral color for missing values; when set on a continuous scale it is
+  // prepended to the ramp so callers can route missing rows to valueB≈0.
+  missingColor: PropTypes.string,
   opacityBy: PropTypes.string,
   opacityRange: PropTypes.array,
   pointSizeRange: PropTypes.array,
   duration: PropTypes.number,
+  // When true, shift+drag draws a lasso and fires onSelect with the enclosed
+  // point indices (regl-scatterplot's built-in lasso). Selection styling
+  // (dim-the-rest) is always configured; the prop mainly signals intent.
+  enableLasso: PropTypes.bool,
+  // Controlled selection: an array of point indices to highlight. Selected
+  // points stay opaque while the rest dim (opacityInactiveScale), matching the
+  // app's selected-vs-not visual language. Cross-pane linking is achieved by
+  // feeding the same array to multiple ScatterPlots.
+  selectedIndices: PropTypes.array,
   onScatter: PropTypes.func,
   onView: PropTypes.func,
   onSelect: PropTypes.func,
   onHover: PropTypes.func,
+  activeFilterTab: PropTypes.any,
 };
+
+// Selected points keep full opacity; everything else dims to this scale so a
+// brush selection reads the same way as elsewhere in the app.
+const SELECTED_OPACITY_INACTIVE_SCALE = 0.2;
+// #5cb85c (colors.js "selected" green) as an rgba triple; only visible when
+// colorBy is uniform (Compare always drives colorBy, so the dimming carries
+// the signal), but set for correctness / other Scatter consumers.
+const SELECTED_COLOR = [92 / 255, 184 / 255, 92 / 255, 1];
 
 const calculatePointSize = (numPoints) => {
   const minPoints = 100;
@@ -56,9 +78,12 @@ function ScatterPlot({
   colorInterpolator = interpolateOranges,
   colorDomain = null,
   colorRange = null,
+  missingColor = null,
   opacityBy,
   opacityRange = null,
   pointSizeRange = null,
+  enableLasso = false,
+  selectedIndices = null,
   onScatter,
   onView,
   onSelect,
@@ -97,6 +122,11 @@ function ScatterPlot({
       width,
       height,
       pointColorHover: [0.1, 0.1, 0.1, 0.5],
+      // regl-scatterplot maps SHIFT -> lasso by default; keep it explicit when
+      // lasso is requested so a shift+drag brushes points and fires `select`.
+      ...(enableLasso ? { keyMap: { shift: 'lasso', alt: 'rotate' } } : {}),
+      pointColorActive: SELECTED_COLOR,
+      opacityInactiveScale: SELECTED_OPACITY_INACTIVE_SCALE,
       xScale,
       yScale,
     });
@@ -135,7 +165,7 @@ function ScatterPlot({
       scatterplotRef.current = null;
       scatterplot.destroy();
     };
-  }, [width, height, activeFilterTab]);
+  }, [width, height, activeFilterTab, enableLasso]);
 
   const prevPointsRef = useRef();
   useEffect(() => {
@@ -168,6 +198,9 @@ function ScatterPlot({
         let r = range(0, 50);
         const colorScale = scaleSequential(colorInterpolator).domain([0, 50]);
         pointColor = r.map((i) => rgb(colorScale(i)).hex());
+        // Reserve index 0 for the neutral no-value color; callers map missing
+        // rows to valueB≈0 so they render neutral instead of the ramp minimum.
+        if (missingColor) pointColor = [missingColor, ...pointColor];
         scatterplot.set({ colorBy: 'valueB' });
       }
 
@@ -206,10 +239,29 @@ function ScatterPlot({
     colorScaleType,
     duration,
     colorInterpolator,
+    missingColor,
     pointScale,
     opacityRange,
     pointSizeRange,
   ]);
+
+  // Controlled selection: apply `selectedIndices` to the native regl selection
+  // so selected points stay opaque and the rest dim. Re-applied when `points`
+  // change because a redraw can re-render without the highlight. `preventEvent`
+  // avoids echoing back into onSelect (which would loop across linked panes).
+  useEffect(() => {
+    const scatterplot = scatterplotRef.current;
+    if (!scatterplot) return;
+    // `null`/`undefined` = uncontrolled: leave the native selection (driven by
+    // the component's own onSelect handling) untouched. An array (even empty)
+    // opts into controlled selection.
+    if (selectedIndices == null) return;
+    if (selectedIndices.length) {
+      scatterplot.select(selectedIndices, { preventEvent: true });
+    } else {
+      scatterplot.deselect({ preventEvent: true });
+    }
+  }, [selectedIndices, points]);
 
   return (
     <canvas
