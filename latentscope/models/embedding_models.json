@@ -1,5 +1,17 @@
 [
   {
+    "provider": "transformers",
+    "name": "jinaai/jina-embeddings-v5-text-nano-retrieval",
+    "id": "transformers-jinaai___jina-embeddings-v5-text-nano-retrieval",
+    "params": {
+      "max_tokens": 8192,
+      "dimensions": [
+        768
+      ],
+      "prefix": "Document: "
+    }
+  },
+  {
     "provider": "openai",
     "name": "text-embedding-3-small",
     "id": "openai-text-embedding-3-small",
