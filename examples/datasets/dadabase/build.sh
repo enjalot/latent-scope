@@ -12,8 +12,8 @@ INPUT="${INPUT:-$LATENT_SCOPE_DATA/../sources/dadabase.csv}"
 require_input "$INPUT"
 
 ls_ingest  "$DS" --path "$INPUT" --text_column joke
-ls_embed   "$DS" joke transformers-nomic-ai___nomic-embed-text-v1.5 --prefix "clustering: "
-ls_umap    "$DS" embedding-001 100 0.1 --name "nomic n100"
+ls_embed   "$DS" joke transformers-jinaai___jina-embeddings-v5-text-nano-retrieval --prefix "Document: "
+ls_umap    "$DS" embedding-001 100 0.1 --name "jina-v5-nano n100"
 ls_cluster "$DS" umap-001 25 5 0.0 --method evoc --name "evoc 25"
 ls_label   "$DS" joke cluster-001 openai-gpt-4o 10 ""
 ls_scope   "$DS" embedding-001 umap-001 cluster-001 cluster-001-labels-001 \

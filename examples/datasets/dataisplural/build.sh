@@ -12,8 +12,8 @@ INPUT="${INPUT:-$LATENT_SCOPE_DATA/../sources/dataisplural.csv}"
 require_input "$INPUT"
 
 ls_ingest  "$DS" --path "$INPUT" --text_column text
-ls_embed   "$DS" text transformers-nomic-ai___nomic-embed-text-v1.5
-ls_umap    "$DS" embedding-001 25 0.1 --name "nomic n25"
+ls_embed   "$DS" text transformers-jinaai___jina-embeddings-v5-text-nano-retrieval --prefix "Document: "
+ls_umap    "$DS" embedding-001 25 0.1 --name "jina-v5-nano n25"
 ls_cluster "$DS" umap-001 5 5 0.0 --method evoc --name "evoc 5"
 ls_label   "$DS" text cluster-001 openai-gpt-4o-mini 10 ""
 ls_scope   "$DS" embedding-001 umap-001 cluster-001 cluster-001-labels-001 \

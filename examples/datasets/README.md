@@ -37,7 +37,7 @@ README/docs should point downloads at `--revision v1.0`.
 | [`marqo-ge-sample`](marqo-ge-sample/build.sh) | `enjalot/ls-marqo-ge-sample` | 20k | **images** + text/numeric/categorical | image map (sprite atlas), **color-by** (`position` numeric, `source` categorical) | featured / hero |
 | [`dadabase`](dadabase/build.sh) | `enjalot/ls-dadabase` | 53k | text | fast text pipeline, LLM labels | ✅ quickstart |
 | [`fineweb-edu-100k`](fineweb-edu-100k/build.sh) | `enjalot/ls-fineweb-edu-100k` | 100k | text | scale, TF-IDF labels | — |
-| [`common-corpus-100k`](common-corpus-100k/build.sh) | `enjalot/ls-common-corpus-100k` | 100k | text | multilingual, jina-v3 | — |
+| [`common-corpus-100k`](common-corpus-100k/build.sh) | `enjalot/ls-common-corpus-100k` | 100k | text | multilingual | — |
 | [`dataisplural`](dataisplural/build.sh) | `enjalot/ls-dataisplural` | 2k | text | tiny, LLM labels | — |
 
 **Starter recommendation:** make `marqo-ge-sample` the **featured** demo (it
@@ -55,10 +55,17 @@ LATENT_SCOPE_DATA=~/latent-scope-data LATENT_SCOPE_DEVICE=auto \
 ```
 
 Recipes source [`_lib.sh`](_lib.sh) for CLI resolution (works for a pip install
-or a dev checkout) and common env. Parameters (embedding model, umap/cluster
-settings, label model) were recovered from the existing published datasets; the
-**SOURCE** section of each recipe documents where the raw input comes from —
-verify/adjust it, since some original source ids are best-effort.
+or a dev checkout) and common env. The umap/cluster/label parameters were
+recovered from the existing published datasets; the **SOURCE** section of each
+recipe documents where the raw input comes from — verify/adjust it, since some
+original source ids are best-effort.
+
+**Text embedder:** all text demos share
+`jinaai/jina-embeddings-v5-text-nano-retrieval` (768-dim, multilingual, embedded
+with the `Document: ` task prefix) — the same model the SAE work targets, so the
+demos, the SAEs, and the taxonomy line up on one embedding space. (This replaces
+the previous per-dataset mix of nomic-embed-text-v1.5 / jina-embeddings-v3.) The
+`marqo-ge-sample` image demo uses CLIP.
 
 > **Note:** these recipes are scaffolding for a follow-up to the 1.0 release.
 > The `--revision` flag ships in 1.0; the actual re-bake + republish is a
