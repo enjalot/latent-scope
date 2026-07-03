@@ -66,10 +66,13 @@ function JobProgress({
             </div>
           ) : null}
           {clearJob && job.status == 'completed' ? (
-            <button onClick={clearJob}>👍 Dismiss</button>
+            <button type="button" onClick={clearJob}>
+              👍 Dismiss
+            </button>
           ) : null}
           {killJob && job.status == 'running' ? (
             <button
+              type="button"
               onClick={() => {
                 killJob(job);
               }}
@@ -79,8 +82,16 @@ function JobProgress({
           ) : null}
           {isError ? (
             <div className="error-choices">
-              {clearJob ? <button onClick={clearJob}>🤬 Dismiss</button> : null}
-              {rerunJob ? <button onClick={() => rerunJob(job)}>🔁 Rerun</button> : null}
+              {clearJob ? (
+                <button type="button" onClick={clearJob}>
+                  🤬 Dismiss
+                </button>
+              ) : null}
+              {rerunJob ? (
+                <button type="button" onClick={() => rerunJob(job)}>
+                  🔁 Rerun
+                </button>
+              ) : null}
             </div>
           ) : null}
           <span className="timer">

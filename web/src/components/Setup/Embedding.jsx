@@ -377,8 +377,10 @@ function Embedding() {
       const form = e.target;
       const data = new FormData(form);
       // const model = allModels.find(model => model.id === data.get('modelName'));
-      // prefix doesn't apply to image columns (the textarea is hidden)
-      const prefix = imageColumn ? '' : data.get('prefix');
+      // prefix doesn't apply to image columns (the textarea is hidden).
+      // Coerce a missing/empty value to "" so it never serializes to the string
+      // "null"/"undefined" (which would then be prepended to every document).
+      const prefix = imageColumn ? '' : (data.get('prefix') ?? '');
       let job = {
         text_column: textColumn,
         model_id: modelId,
