@@ -47,7 +47,18 @@ function JobProgress({
           Running <b>{job.job_name}</b>
           <br />
           <code>{Array.isArray(job.command) ? job.command.join(' ') : job.command}</code>
-          <pre ref={preRef}>{onlyLast ? history[history.length - 1] : history.join('\n')}</pre>
+          <pre ref={preRef} className={onlyLast ? 'log-collapsed' : 'log-expanded'}>
+            {onlyLast ? history[history.length - 1] : history.join('\n')}
+          </pre>
+          {history.length > 1 && !allwaysOnlyLast ? (
+            <button
+              type="button"
+              className="log-toggle"
+              onClick={() => setOnlyLast((v) => !v)}
+            >
+              {onlyLast ? `▸ Show full log (${history.length} lines)` : '▾ Show latest only'}
+            </button>
+          ) : null}
           {isError ? (
             <div className="job-progress-error" style={{ color: '#b00020' }}>
               <b>Job failed{job.error ? `: ${job.error}` : ''}</b>

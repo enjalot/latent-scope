@@ -54,6 +54,18 @@ def _require_params(**params):
     return None
 
 
+def _atomic_write_json(path, obj):
+    """Write JSON atomically: serialize to a temp file in the same directory,
+    then os.replace() (an atomic rename on the same filesystem). A concurrent
+    reader always sees a complete file — the old one or the new one — never a
+    truncated/partial write mid-``json.dump`` (which caused intermittent
+    JSONDecodeErrors when polling / killing a running job)."""
+    tmp = f"{path}.{os.getpid()}.tmp"
+    with open(tmp, 'w') as f:
+        json.dump(obj, f)
+    os.replace(tmp, path)
+
+
 def run_job(data_dir, dataset, job_id, command):
     """Execute a CLI command in a subprocess and write progress to a JSON file.
 
@@ -91,8 +103,7 @@ def run_job(data_dir, dataset, job_id, command):
     def write_job():
         job["progress"] = list(progress)
         job["times"] = list(times)
-        with open(progress_file, 'w') as f:
-            json.dump(job, f)
+        _atomic_write_json(progress_file, job)
 
     write_job()
 
@@ -214,8 +225,7 @@ def reconcile_stale_jobs(data_dir):
         job["times"] = times
         job["last_update"] = _now()
         try:
-            with open(path, 'w') as f:
-                json.dump(job, f)
+            _atomic_write_json(path, job)
         except Exception:
             continue
 
@@ -425,8 +435,7 @@ def kill_job():
         job["status"] = "dead"
         job["cause_of_death"] = "process not found, presumed dead"
     job["last_update"] = _now()
-    with open(progress_file, 'w') as f:
-        json.dump(job, f)
+    _atomic_write_json(progress_file, job)
     return jsonify(job)
 
 
@@ -850,5 +859,4 @@ def _write_completed_job(data_dir, dataset, job_id, description):
         "progress": [],
         "times": [],
     }
-    with open(os.path.join(job_dir, f"{job_id}.json"), 'w') as f:
-        json.dump(job, f)
+    _atomic_write_json(os.path.join(job_dir, f"{job_id}.json"), job)
