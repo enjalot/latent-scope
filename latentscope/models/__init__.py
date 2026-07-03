@@ -157,10 +157,12 @@ def get_chat_model(model_id):
         else:
             raise ValueError("No custom_models.json found in data directory")
     elif model_id.startswith("ollama-"):
+        from latentscope.util import get_ollama_base_url
+
         model = {
             "provider": "ollama",
             "name": model_id[len("ollama-"):],
-            "url": "http://localhost:11434/v1",
+            "url": f"{get_ollama_base_url()}/v1",
             "params": {},
         }
     else:

@@ -53,6 +53,18 @@ def _safe_set_key(env_file, key, value):
         )
 
 
+def get_ollama_base_url():
+    """Return the Ollama base URL from OLLAMA_HOST (default localhost).
+
+    Used by both model discovery (the /api/tags proxy) and chat execution so
+    the UI never advertises models the pipeline can't reach.
+    """
+    base = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+    if not base.startswith("http"):
+        base = f"http://{base}"
+    return base
+
+
 def get_data_dir():
     """Return the data directory from the LATENT_SCOPE_DATA environment variable.
 

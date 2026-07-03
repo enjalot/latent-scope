@@ -8,6 +8,8 @@ from importlib.resources import files
 
 from flask import Blueprint, current_app, jsonify, request
 
+from latentscope.util import get_ollama_base_url
+
 # Create a Blueprint
 models_bp = Blueprint('models_bp', __name__)
 models_write_bp = Blueprint('models_write_bp', __name__)
@@ -41,9 +43,7 @@ def get_ollama_models():
     so model discovery has to go through the API rather than the client
     fetching localhost:11434 directly.
     """
-    base = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-    if not base.startswith("http"):
-        base = f"http://{base}"
+    base = get_ollama_base_url()
     try:
         with urllib.request.urlopen(f"{base}/api/tags", timeout=3) as resp:
             data = json.load(resp)
