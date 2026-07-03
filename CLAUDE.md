@@ -4,6 +4,12 @@ Guidance for AI agents (Claude Code and others) working on this codebase. If you
 are an agent asked to "run the pipeline" or "show me the results", jump to
 [Agent quickstart](#agent-quickstart-run-it-for-the-user).
 
+> **Using Latent Scope for a user** (running the pipeline, choosing a model,
+> serving results) → the cross-provider runbook is [`AGENTS.md`](AGENTS.md)
+> (Claude Code also loads it via `.claude/skills/latent-scope/`). This file
+> (`CLAUDE.md`) focuses on the codebase itself — layout, design decisions, and
+> contributing. When the two overlap, `AGENTS.md` is authoritative for *usage*.
+
 ---
 
 ## What Latent Scope does

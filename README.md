@@ -45,6 +45,15 @@ Follow the documentation guides to get started:
 3. [Explore and Curate](https://enjalot.github.io/latent-scope/explore-and-curate)
 4. [Exporting Data](https://enjalot.github.io/latent-scope/exporting-data)
 
+### Using with AI coding agents
+
+Latent Scope ships a cross-provider **agent skill** so tools like Claude Code,
+Codex, and Cursor can drive the pipeline on your behalf. The runbook is
+[`AGENTS.md`](AGENTS.md) (Claude Code also auto-loads it via
+`.claude/skills/latent-scope/`); [`CLAUDE.md`](CLAUDE.md) covers the codebase.
+Point your agent at the repo and ask it to "map my data" and it should know the
+whole flow.
+
 ## Example Analysis
 
 What can you do with Latent Scope? The following examples demonstrate the kinds of perspective and insights you can gain from your unstructured text data.
