@@ -207,6 +207,16 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
 
     if prefix is None:
         prefix = ""
+    # Avoid double-applying a task prompt: if the transformers provider already
+    # auto-applies the model's own document prompt (default_prompt_name, e.g.
+    # jina-v5), a manual --prefix would stack on top of it ("Document: Document:
+    # ..."). Prefer the model's prompt and drop the redundant manual prefix.
+    if prefix and isinstance(model, TransformersEmbedProvider):
+        auto_prompt = getattr(getattr(model, "model", None), "default_prompt_name", None)
+        if auto_prompt:
+            print(f"Model auto-applies its '{auto_prompt}' prompt; ignoring the "
+                  f"manual prefix {prefix!r} to avoid double-prompting.")
+            prefix = ""
     if input_type == "image":
         if not getattr(model, "supports_images", False):
             print(f"Error: column '{text_column}' is an image column but model "
