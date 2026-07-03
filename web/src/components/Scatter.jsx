@@ -212,7 +212,13 @@ function ScatterPlot({
           pointSize: pointSizeRange || [2, 4, 5, 6, pointSize],
         });
       } else {
+        // explicitly unset data-driven opacity/size: the instance persists
+        // across renders, so a previous opacityBy='valueA' would otherwise
+        // keep mapping values (e.g. cluster ids) into a too-short opacity
+        // array — out-of-range points render invisible
         scatterplot.set({
+          opacityBy: null,
+          sizeBy: null,
           opacity: opacity,
           pointSize: pointSize,
         });
@@ -237,7 +243,10 @@ function ScatterPlot({
     colorScaleType,
     duration,
     colorInterpolator,
+    colorDomain,
+    colorRange,
     missingColor,
+    opacityBy,
     pointScale,
     opacityRange,
     pointSizeRange,
