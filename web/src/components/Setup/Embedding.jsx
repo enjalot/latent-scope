@@ -15,7 +15,7 @@ import {
   modelSupportsImages,
   filterModelsForColumn,
 } from '../../lib/embeddingColumns';
-import { saeAvailable } from '../../lib/SAE';
+import { getSaeForModel } from '../../lib/SAE';
 import { debounce } from '../../utils';
 import SettingsModal from '../SettingsModal';
 
@@ -784,8 +784,8 @@ function Embedding() {
                       <br />
                     )}
 
-                    {saeAvailable[emb.model_id] ? (
-                      <Sae embedding={emb} model={saeAvailable[emb.model_id]} onSAE={handleSAE} />
+                    {getSaeForModel(emb.model_id) ? (
+                      <Sae embedding={emb} model={getSaeForModel(emb.model_id)} onSAE={handleSAE} />
                     ) : null}
                   </span>
                 </label>

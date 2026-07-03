@@ -82,7 +82,7 @@ def nn():
     except Exception:
         count = 0
     if count > 0:
-        embedding = np.array(model.embed([query], dimensions=dimensions))
+        embedding = np.array(model.embed_query([query], dimensions=dimensions))
         query_vec = embedding[0] if embedding.ndim > 1 else embedding
         indices, distances = search_nn(
             DATA_DIR, dataset, embedding_id, query_vec, limit=150
@@ -108,7 +108,7 @@ def nn():
         nne.fit(embeddings)
         NN_CACHE[nn_key] = nne
 
-    embedding = np.array(model.embed([query], dimensions=dimensions))
+    embedding = np.array(model.embed_query([query], dimensions=dimensions))
     distances, indices = nne.kneighbors(embedding)
     return jsonify(
         indices=indices[0].tolist(),
@@ -121,7 +121,7 @@ def nn_lance(data_dir, dataset, scope_id, model, query, dimensions):
     import lancedb
     db = lancedb.connect(os.path.join(data_dir, dataset, "lancedb"))
     table = db.open_table(scope_id)
-    embedding = model.embed([query], dimensions=dimensions)
+    embedding = model.embed_query([query], dimensions=dimensions)
     results = table.search(embedding).metric("cosine").select(["index"]).limit(100).to_list()
     indices = [result["index"] for result in results]
     distances = [result["_distance"] for result in results]
@@ -235,7 +235,7 @@ def features():
         NN_CACHE[nn_key] = nne
 
     query = request.args.get('query')
-    embedding = np.array(model.embed([query], dimensions=dimensions))
+    embedding = np.array(model.embed_query([query], dimensions=dimensions))
     distances, indices = nne.kneighbors(embedding)
     return jsonify(
         indices=indices[0].tolist(),

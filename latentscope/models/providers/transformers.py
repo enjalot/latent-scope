@@ -43,6 +43,9 @@ class TransformersEmbedProvider(EmbedModelProvider):
         try:
             prompts = getattr(self.model, "prompts", None) or {}
             has_default = getattr(self.model, "default_prompt_name", None)
+            # Remember the query-side prompt so embed_query() can encode search
+            # queries with it instead of the document default.
+            self.query_prompt_name = next((k for k in ("query", "question") if k in prompts), None)
             if prompts and not has_default:
                 for key in ("document", "passage", "corpus", "doc", "text"):
                     if key in prompts:
@@ -53,16 +56,31 @@ class TransformersEmbedProvider(EmbedModelProvider):
         except Exception as e:
             print(f"transformers: prompt auto-detect skipped ({e})")
 
-    def embed(self, inputs, dimensions=None):
-        embeddings = self.model.encode(inputs, convert_to_tensor=True)
+    def _finalize(self, embeddings, dimensions):
         # Support Matroyshka embeddings
         if dimensions is not None and dimensions > 0:
             embeddings = self.torch.nn.functional.layer_norm(embeddings, normalized_shape=(embeddings.shape[1],))
             embeddings = embeddings[:, :dimensions]
-
         # Normalize embeddings
         normalized_embeddings = self.torch.nn.functional.normalize(embeddings, p=2, dim=1)
         return normalized_embeddings.tolist()
+
+    def embed(self, inputs, dimensions=None):
+        # Corpus embedding: uses the model's default prompt (the document/passage
+        # prompt auto-applied in load_model, if the model advertises one).
+        return self._finalize(self.model.encode(inputs, convert_to_tensor=True), dimensions)
+
+    def embed_query(self, inputs, dimensions=None):
+        # Query embedding for nearest-neighbor search: override the document
+        # default with the model's *query* prompt when it has one, so searches
+        # aren't encoded with the document/passage prompt (which would make
+        # retrieval inconsistent for prompt-aware models like jina-v5).
+        prompt_name = getattr(self, "query_prompt_name", None)
+        if prompt_name:
+            embeddings = self.model.encode(inputs, convert_to_tensor=True, prompt_name=prompt_name)
+        else:
+            embeddings = self.model.encode(inputs, convert_to_tensor=True)
+        return self._finalize(embeddings, dimensions)
 
 
 class TransformersChatProvider(ChatModelProvider):
