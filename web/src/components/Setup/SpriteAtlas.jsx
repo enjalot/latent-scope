@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { Button } from 'react-element-forge';
 import { useStartJobPolling } from '../Job/Run';
 import JobProgress from '../Job/Progress';
-import { apiUrl } from '../../lib/apiService';
+import { apiService, apiUrl } from '../../lib/apiService';
 import { fetchAtlasStatus, fetchAtlasPlan } from '../../lib/atlasUrl';
 import { useSetup } from '../../contexts/SetupContext';
 import AtlasPlanPreview from './AtlasPlanPreview';
@@ -254,7 +254,11 @@ function SpriteAtlas() {
         />
       </div>
 
-      <JobProgress job={atlasJob} clearJob={() => setAtlasJob(null)} />
+      <JobProgress
+        job={atlasJob}
+        clearJob={() => setAtlasJob(null)}
+        killJob={(job) => apiService.killJob(dataset.id, job.id).then(setAtlasJob).catch(console.error)}
+      />
 
       {status.generated && (
         <div className={styles.summary}>

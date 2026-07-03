@@ -94,10 +94,13 @@ def main():
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
     parser.add_argument('--batch_size', type=int, help='Set the batch size (number of sentences to embed in one call)', default=100)
     parser.add_argument('--max_seq_length', type=int, help='Set the max sequence length for the model', default=None)
+    parser.add_argument('--task', type=str, default=None,
+                        help='Task for task-conditioned models (e.g. jina-v3/v5): '
+                             'retrieval, clustering, classification, text-matching')
 
     # Parse arguments
     args = parser.parse_args()
-    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length)
+    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length, task=args.task)
 
 def _make_token_counter(model):
     """Best-effort per-text token counter using a tokenizer the embedding
@@ -121,7 +124,7 @@ def _make_token_counter(model):
     return count
 
 
-def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None):
+def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None, task=None):
     import numpy as np
     import pandas as pd
 
@@ -189,6 +192,10 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     print("RUNNING:", embedding_id)
     print("MODEL ID", model_id)
     model = get_embedding_model(model_id)
+    # Requested task for task-conditioned models (jina-v3/v5); the provider reads
+    # this in load_model and falls back to a sensible default when unset.
+    if task:
+        model.task = task
     print("MODEL", model)
     print("loading", model.name)
     model.load_model()
@@ -207,6 +214,19 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
 
     if prefix is None:
         prefix = ""
+    # Prompt precedence: an explicit --prefix (user intent) wins over a model's
+    # auto-applied prompt. Some sentence-transformers models set a default prompt
+    # (default_prompt_name) so a corpus is embedded with the model's own document
+    # prompt when the user gives no prefix. If the user DID specify a prefix,
+    # honor it and disable the auto prompt so the two don't stack. This is
+    # model-agnostic — it keys off whether the model advertises a default prompt.
+    if isinstance(model, TransformersEmbedProvider):
+        st = getattr(model, "model", None)
+        auto_prompt = getattr(st, "default_prompt_name", None)
+        if auto_prompt and prefix:
+            print(f"Using the specified prefix {prefix!r}; disabling the model's "
+                  f"auto-applied '{auto_prompt}' prompt so they don't stack.")
+            st.default_prompt_name = None
     if input_type == "image":
         if not getattr(model, "supports_images", False):
             print(f"Error: column '{text_column}' is an image column but model "
@@ -357,6 +377,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         "dimensions": stats["dimensions"],
         "max_seq_length": max_seq_length,
         "prefix": prefix,
+        "task": getattr(model, "task", None),
         "late_interaction": is_late_interaction,
         "min_values": stats["min_values"],
         "max_values": stats["max_values"],

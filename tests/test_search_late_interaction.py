@@ -32,6 +32,10 @@ class FakeLIProvider:
         means, _ = self.embed_multi(inputs, dimensions)
         return means.tolist()
 
+    def embed_query(self, inputs, dimensions=None):
+        # Mirror the base provider: query embedding defaults to embed().
+        return self.embed(inputs, dimensions=dimensions)
+
 
 @pytest.fixture
 def li_dataset(tmp_data_dir):

@@ -15,3 +15,21 @@
   color: springgreen;
   padding: 6px;
 }
+/* Job log: collapsed shows just the latest line; expanded scrolls. */
+.job-progress pre.log-collapsed {
+  max-height: 2.4em;
+  overflow: hidden;
+}
+.job-progress pre.log-expanded {
+  max-height: 16em;
+  overflow-y: auto;
+}
+.job-progress .log-toggle {
+  font-size: 0.8em;
+  padding: 1px 6px;
+  margin: 2px 0 4px;
+  cursor: pointer;
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}

@@ -138,9 +138,9 @@ export const apiService = {
       // convert the HF data format to ours
       const hfm = data.map((d) => {
         return {
-          id: '🤗-' + d.id.replace('/', '___'),
+          id: 'huggingface-' + d.id.replace('/', '___'),
           name: d.id,
-          provider: '🤗',
+          provider: 'huggingface',
           downloads: d.downloads,
           params: {},
         };
@@ -160,9 +160,9 @@ export const apiService = {
         .filter((d) => d.tags.includes('conversational') && !d.tags.includes('gguf'))
         .map((d) => {
           return {
-            id: '🤗-' + d.id.replace('/', '___'),
+            id: 'huggingface-' + d.id.replace('/', '___'),
             name: d.id,
-            provider: '🤗',
+            provider: 'huggingface',
             downloads: d.downloads,
             params: {},
           };

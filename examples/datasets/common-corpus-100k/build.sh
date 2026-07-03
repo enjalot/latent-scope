@@ -12,7 +12,7 @@ INPUT="${INPUT:-$LATENT_SCOPE_DATA/../sources/common-corpus-100k.parquet}"
 require_input "$INPUT"
 
 ls_ingest  "$DS" --path "$INPUT" --text_column text
-ls_embed   "$DS" text transformers-jinaai___jina-embeddings-v5-text-nano-retrieval --prefix "Document: "
+ls_embed   "$DS" text huggingface-jinaai___jina-embeddings-v5-text-nano-retrieval
 ls_umap    "$DS" embedding-001 25 0.1 --name "jina-v5-nano n25"
 ls_cluster "$DS" umap-001 25 5 0.0 --method evoc --name "evoc 25"
 ls_label   "$DS" text cluster-001 nltk-top-words 10 ""

@@ -327,7 +327,11 @@ function Umap() {
               text="New UMAP"
             ></Button>
 
-            <JobProgress job={umapJob} clearJob={() => setUmapJob(null)} />
+            <JobProgress
+              job={umapJob}
+              clearJob={() => setUmapJob(null)}
+              killJob={(job) => apiService.killJob(dataset.id, job.id).then(setUmapJob).catch(console.error)}
+            />
           </form>
         </div>
         {/* The list of available UMAPS */}

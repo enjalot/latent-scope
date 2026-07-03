@@ -81,7 +81,11 @@ function ModelSelect({
   const formatGroupLabel = useCallback((option) => {
     return (
       <div style={groupStyles}>
-        {option.label == '🤗' ? <span>🤗 Local Models</span> : <span>{option.label}</span>}
+        {option.label == 'huggingface' ? (
+          <span>🤗 Local Models</span>
+        ) : (
+          <span>{option.label}</span>
+        )}
         {option.options.length ? (
           <span style={groupBadgeStyles}>{option.options.length}</span>
         ) : null}

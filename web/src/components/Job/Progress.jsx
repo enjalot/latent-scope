@@ -46,8 +46,19 @@ function JobProgress({
         <div className="job-progress">
           Running <b>{job.job_name}</b>
           <br />
-          <code>{job.command}</code>
-          <pre ref={preRef}>{onlyLast ? history[history.length - 1] : history.join('\n')}</pre>
+          <code>{Array.isArray(job.command) ? job.command.join(' ') : job.command}</code>
+          <pre ref={preRef} className={onlyLast ? 'log-collapsed' : 'log-expanded'}>
+            {onlyLast ? history[history.length - 1] : history.join('\n')}
+          </pre>
+          {history.length > 1 && !allwaysOnlyLast ? (
+            <button
+              type="button"
+              className="log-toggle"
+              onClick={() => setOnlyLast((v) => !v)}
+            >
+              {onlyLast ? `▸ Show full log (${history.length} lines)` : '▾ Show latest only'}
+            </button>
+          ) : null}
           {isError ? (
             <div className="job-progress-error" style={{ color: '#b00020' }}>
               <b>Job failed{job.error ? `: ${job.error}` : ''}</b>
@@ -55,10 +66,13 @@ function JobProgress({
             </div>
           ) : null}
           {clearJob && job.status == 'completed' ? (
-            <button onClick={clearJob}>👍 Dismiss</button>
+            <button type="button" onClick={clearJob}>
+              👍 Dismiss
+            </button>
           ) : null}
           {killJob && job.status == 'running' ? (
             <button
+              type="button"
               onClick={() => {
                 killJob(job);
               }}
@@ -68,8 +82,16 @@ function JobProgress({
           ) : null}
           {isError ? (
             <div className="error-choices">
-              {clearJob ? <button onClick={clearJob}>🤬 Dismiss</button> : null}
-              {rerunJob ? <button onClick={() => rerunJob(job)}>🔁 Rerun</button> : null}
+              {clearJob ? (
+                <button type="button" onClick={clearJob}>
+                  🤬 Dismiss
+                </button>
+              ) : null}
+              {rerunJob ? (
+                <button type="button" onClick={() => rerunJob(job)}>
+                  🔁 Rerun
+                </button>
+              ) : null}
             </div>
           ) : null}
           <span className="timer">

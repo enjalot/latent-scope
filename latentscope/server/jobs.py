@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -53,6 +54,18 @@ def _require_params(**params):
     return None
 
 
+def _atomic_write_json(path, obj):
+    """Write JSON atomically: serialize to a temp file in the same directory,
+    then os.replace() (an atomic rename on the same filesystem). A concurrent
+    reader always sees a complete file — the old one or the new one — never a
+    truncated/partial write mid-``json.dump`` (which caused intermittent
+    JSONDecodeErrors when polling / killing a running job)."""
+    tmp = f"{path}.{os.getpid()}.tmp"
+    with open(tmp, 'w') as f:
+        json.dump(obj, f)
+    os.replace(tmp, path)
+
+
 def run_job(data_dir, dataset, job_id, command):
     """Execute a CLI command in a subprocess and write progress to a JSON file.
 
@@ -90,13 +103,20 @@ def run_job(data_dir, dataset, job_id, command):
     def write_job():
         job["progress"] = list(progress)
         job["times"] = list(times)
-        with open(progress_file, 'w') as f:
-            json.dump(job, f)
+        _atomic_write_json(progress_file, job)
 
     write_job()
 
     env = os.environ.copy()
     env['PYTHONUNBUFFERED'] = '1'
+    # Resolve the CLI entry point robustly. subprocess searches PATH, but a
+    # server launched from a venv whose bin dir is not on PATH (e.g. started by
+    # absolute python path) would fail to find ls-embed/ls-umap/... Fall back to
+    # the same bin dir as the running interpreter before giving up.
+    if command and shutil.which(command[0]) is None:
+        candidate = os.path.join(os.path.dirname(sys.executable), command[0])
+        if os.path.exists(candidate):
+            command = [candidate, *command[1:]]
     try:
         process = subprocess.Popen(
             command,
@@ -205,8 +225,7 @@ def reconcile_stale_jobs(data_dir):
         job["times"] = times
         job["last_update"] = _now()
         try:
-            with open(path, 'w') as f:
-                json.dump(job, f)
+            _atomic_write_json(path, job)
         except Exception:
             continue
 
@@ -313,6 +332,8 @@ def run_embed():
     dimensions = request.values.get('dimensions')
     batch_size = request.values.get('batch_size')
     max_seq_length = request.values.get('max_seq_length')
+    # Task for task-conditioned models (jina-v3/v5). Consumed by ls-embed.
+    task = request.values.get('task')
 
     err = _require_params(dataset=dataset, text_column=text_column, model_id=model_id,
                           prefix=prefix, batch_size=batch_size)
@@ -326,6 +347,8 @@ def run_embed():
         command.append(f'--dimensions={dimensions}')
     if max_seq_length is not None:
         command.append(f'--max_seq_length={max_seq_length}')
+    if task:
+        command.append(f'--task={task}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -412,8 +435,7 @@ def kill_job():
         job["status"] = "dead"
         job["cause_of_death"] = "process not found, presumed dead"
     job["last_update"] = _now()
-    with open(progress_file, 'w') as f:
-        json.dump(job, f)
+    _atomic_write_json(progress_file, job)
     return jsonify(job)
 
 
@@ -837,5 +859,4 @@ def _write_completed_job(data_dir, dataset, job_id, description):
         "progress": [],
         "times": [],
     }
-    with open(os.path.join(job_dir, f"{job_id}.json"), 'w') as f:
-        json.dump(job, f)
+    _atomic_write_json(os.path.join(job_dir, f"{job_id}.json"), job)
