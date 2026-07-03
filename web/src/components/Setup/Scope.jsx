@@ -19,6 +19,7 @@ function Scope() {
     setScope,
     setSavedScope,
     setScopes,
+    steps,
   } = useSetup();
 
   const navigate = useNavigate();
@@ -143,11 +144,18 @@ function Scope() {
         if (!s) s = scopes[scopes.length - 1];
         setScope(s);
         setSavedScope(s);
-        // navigate(`/datasets/${dataset.id}/setup/${s?.id}`);
-        navigate(`/datasets/${dataset.id}/explore/${s?.id}`);
+        // Image datasets continue to the Images (sprite atlas) step — it
+        // depends on the saved scope, so it has to come after this job.
+        // Text datasets go straight to Explore.
+        const imagesStep = steps?.indexOf('Images');
+        if (imagesStep > -1) {
+          navigate(`/datasets/${dataset.id}/setup/${s?.id}?step=${imagesStep + 1}`);
+        } else {
+          navigate(`/datasets/${dataset.id}/explore/${s?.id}`);
+        }
       });
     }
-  }, [scopeJob, dataset, navigate, setScope, setSavedScope, setScopes]);
+  }, [scopeJob, dataset, navigate, setScope, setSavedScope, setScopes, steps]);
 
   const handleSaveScope = useCallback(
     (event) => {

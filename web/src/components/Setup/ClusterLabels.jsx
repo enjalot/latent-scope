@@ -1,5 +1,5 @@
 // NewEmbedding.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { groups } from 'd3-array';
 
 import { useStartJobPolling } from '../Job/Run';
@@ -50,6 +50,33 @@ function ClusterLabels() {
   const [clusters, setClusters] = useState([]);
 
   const [chatModel, setChatModel] = useState(null);
+
+  // On image datasets the embedding column can be the image column, and image
+  // structs must not be fed to the labeling chat model — let the user pick a
+  // text column to label with instead.
+  const embedColumnIsImage =
+    dataset?.column_metadata?.[embedding?.text_column]?.type === 'image';
+  const textColumns = useMemo(
+    () =>
+      (dataset?.columns || []).filter((c) => {
+        const type = dataset?.column_metadata?.[c]?.type;
+        return type !== 'image' && (type === 'string' || c === dataset?.text_column);
+      }),
+    [dataset]
+  );
+  const [labelColumn, setLabelColumn] = useState(null);
+  useEffect(() => {
+    if (!embedColumnIsImage) {
+      setLabelColumn(embedding?.text_column || null);
+    } else {
+      const preferred =
+        dataset?.text_column &&
+        dataset?.column_metadata?.[dataset.text_column]?.type !== 'image'
+          ? dataset.text_column
+          : textColumns[0];
+      setLabelColumn(preferred || null);
+    }
+  }, [embedColumnIsImage, embedding, dataset, textColumns]);
   // the models used to label a particular cluster (the ones the user has run)
   const [clusterLabelSets, setClusterLabelSets] = useState([]);
   // the actual labels for the given cluster
@@ -243,7 +270,7 @@ function ClusterLabels() {
       const form = e.target;
       const data = new FormData(form);
       const model = chatModel?.id;
-      const text_column = embedding.text_column;
+      const text_column = labelColumn || embedding.text_column;
       const cluster_id = cluster.id;
       const context = data.get('context');
       const samples = data.get('samples');
@@ -259,7 +286,7 @@ function ClusterLabels() {
         max_tokens_total,
       });
     },
-    [cluster, embedding, chatModel, startClusterLabelsJob]
+    [cluster, embedding, chatModel, labelColumn, startClusterLabelsJob]
   );
 
   function handleRerun(job) {
@@ -324,6 +351,29 @@ function ClusterLabels() {
             </label>
           </form>
           <form onSubmit={handleNewLabels}>
+            {embedColumnIsImage ? (
+              <label>
+                <span className={styles['cluster-labels-form-label']}>Label using column:</span>
+                <select
+                  value={labelColumn || ''}
+                  onChange={(e) => setLabelColumn(e.target.value)}
+                  disabled={!!clusterLabelsJob || !cluster}
+                >
+                  {textColumns.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <span className="tooltip" data-tooltip-id="label-column">
+                  🤔
+                </span>
+                <Tooltip id="label-column" place="top" effect="solid" className="tooltip-area">
+                  The embedding was built on an image column, which can&apos;t be sent to the chat
+                  model. Cluster labels will be generated from this text column instead.
+                </Tooltip>
+              </label>
+            ) : null}
             <label>
               <span className={styles['cluster-labels-form-label']}>Samples:</span>
               <input
