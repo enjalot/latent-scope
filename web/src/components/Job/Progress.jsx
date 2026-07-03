@@ -46,7 +46,7 @@ function JobProgress({
         <div className="job-progress">
           Running <b>{job.job_name}</b>
           <br />
-          <code>{job.command}</code>
+          <code>{Array.isArray(job.command) ? job.command.join(' ') : job.command}</code>
           <pre ref={preRef}>{onlyLast ? history[history.length - 1] : history.join('\n')}</pre>
           {isError ? (
             <div className="job-progress-error" style={{ color: '#b00020' }}>

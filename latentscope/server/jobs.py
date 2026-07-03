@@ -4,6 +4,7 @@ import os
 import shlex
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -97,6 +98,14 @@ def run_job(data_dir, dataset, job_id, command):
 
     env = os.environ.copy()
     env['PYTHONUNBUFFERED'] = '1'
+    # Resolve the CLI entry point robustly. subprocess searches PATH, but a
+    # server launched from a venv whose bin dir is not on PATH (e.g. started by
+    # absolute python path) would fail to find ls-embed/ls-umap/... Fall back to
+    # the same bin dir as the running interpreter before giving up.
+    if command and shutil.which(command[0]) is None:
+        candidate = os.path.join(os.path.dirname(sys.executable), command[0])
+        if os.path.exists(candidate):
+            command = [candidate, *command[1:]]
     try:
         process = subprocess.Popen(
             command,

@@ -13,6 +13,23 @@ class TransformersEmbedProvider(EmbedModelProvider):
         from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer(self.name, trust_remote_code=True, device=self.device)#, backend="onnx")
         self.tokenizer = self.model.tokenizer
+        # If the model defines task prompts (e.g. jina-v5's {query, document})
+        # but no default, apply the document/passage prompt automatically so
+        # embedding a corpus gets the retrieval "document" representation without
+        # the user having to know the right --prefix. A manual --prefix still
+        # stacks on top if provided, so leave it empty for prompt-aware models.
+        try:
+            prompts = getattr(self.model, "prompts", None) or {}
+            has_default = getattr(self.model, "default_prompt_name", None)
+            if prompts and not has_default:
+                for key in ("document", "passage", "corpus", "doc", "text"):
+                    if key in prompts:
+                        self.model.default_prompt_name = key
+                        print(f"transformers: auto-applying '{key}' prompt "
+                              f"({prompts[key]!r}) for {self.name}")
+                        break
+        except Exception as e:
+            print(f"transformers: prompt auto-detect skipped ({e})")
 
     def embed(self, inputs, dimensions=None):
         embeddings = self.model.encode(inputs, convert_to_tensor=True)

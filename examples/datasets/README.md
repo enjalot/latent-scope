@@ -61,10 +61,11 @@ recipe documents where the raw input comes from — verify/adjust it, since some
 original source ids are best-effort.
 
 **Text embedder:** all text demos share
-`jinaai/jina-embeddings-v5-text-nano-retrieval` (768-dim, multilingual, embedded
-with the `Document: ` task prefix) — the same model the SAE work targets, so the
-demos, the SAEs, and the taxonomy line up on one embedding space. (This replaces
-the previous per-dataset mix of nomic-embed-text-v1.5 / jina-embeddings-v3.) The
+`jinaai/jina-embeddings-v5-text-nano-retrieval` (768-dim, multilingual) — the
+same model the SAE work targets, so the demos, the SAEs, and the taxonomy line
+up on one embedding space. (This replaces the previous per-dataset mix of
+nomic-embed-text-v1.5 / jina-embeddings-v3.) No manual prefix is needed: the
+`transformers` provider auto-applies the model's `document` task prompt. The
 `marqo-ge-sample` image demo uses CLIP.
 
 > **Note:** these recipes are scaffolding for a follow-up to the 1.0 release.
