@@ -201,10 +201,13 @@ Don't claim a map "works" without looking. Cheap checks:
 ## Publishing a dataset (when the user wants to share)
 
 ```bash
-uv run ls-upload-dataset $LATENT_SCOPE_DATA/<ds> <hf_user>/ls-<ds>
+uv run ls-upload-dataset $LATENT_SCOPE_DATA/<ds> ls-<ds>
 ```
-Pin a format-compatible version on download with
-`ls-download-dataset <repo> <name> $LATENT_SCOPE_DATA --revision v1.0`. Tag the
+Note the asymmetry: **upload takes a bare repo name** (`ls-<ds>`) — it always
+publishes under your authenticated HF account (a namespaced id is normalized to
+its bare name). **Download takes the full `<user>/<repo>`.** Pin a
+format-compatible version on download with
+`ls-download-dataset <user>/<repo> <name> $LATENT_SCOPE_DATA --revision v1.0`. Tag the
 HF repo (`v1.0`) so older downloads keep working after a rebuild. Reproducible
 build recipes for the demo datasets live in `examples/datasets/`.
 

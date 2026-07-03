@@ -48,6 +48,13 @@ def upload_to_huggingface(directory_path, dataset_name, main_parquet_path=None, 
     username = user_info["name"]
     print("USERNAME", username)
 
+    # Normalize to a bare repo name. `create_repo` uses this as-is while
+    # `upload_folder`/`push_to_hub` below prefix it with `{username}/...`. If the
+    # caller passed a namespaced id (e.g. `alice/ls-foo`), leaving it would make
+    # the upload target `alice/alice/ls-foo` and fail — so strip any namespace
+    # here; the dataset always publishes under the authenticated account.
+    dataset_name = dataset_name.rsplit("/", 1)[-1]
+
     directory = Path(directory_path)
 
     # Create the repository if it doesn't exist
