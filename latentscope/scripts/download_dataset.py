@@ -13,7 +13,7 @@ from huggingface_hub import hf_hub_download, snapshot_download
 from latentscope.util import get_key
 
 
-def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
+def download_from_huggingface(dataset_repo, dataset_name, output_dir, token=None, revision=None):
     """
     Download a latentscope dataset from Hugging Face.
 
@@ -21,6 +21,9 @@ def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
         dataset_path (str): Path to the dataset on Hugging Face (e.g., 'username/dataset-name')
         output_dir (str): Local directory to save the downloaded files
         token (str, optional): Hugging Face API token
+        revision (str, optional): Git revision (tag/branch/commit) to pull. Use
+            this to pin a format-compatible version, e.g. ``v1.0``. Defaults to
+            the repo's default branch.
     """
     # Get token from .env if not provided
     if not token:
@@ -44,6 +47,7 @@ def download_from_huggingface(dataset_repo, dataset_name,output_dir,token=None):
             repo_type="dataset",
             local_dir=str(latentscope_path),
             token=token,
+            revision=revision,
             local_dir_use_symlinks=False
         )
 
@@ -104,10 +108,14 @@ def main():
     parser.add_argument('dataset_name', help='Name of the dataset')
     parser.add_argument('output_dir', help='Local directory to save the downloaded files')
     parser.add_argument('--token', help='Hugging Face API token', default=None)
+    parser.add_argument('--revision', default=None,
+                        help='Git revision (tag/branch/commit) to pull, e.g. v1.0 '
+                             '(default: the repo default branch)')
 
     args = parser.parse_args()
 
-    download_from_huggingface(args.dataset_repo, args.dataset_name, args.output_dir, args.token)
+    download_from_huggingface(args.dataset_repo, args.dataset_name, args.output_dir,
+                              args.token, revision=args.revision)
 
 if __name__ == "__main__":
     main()
