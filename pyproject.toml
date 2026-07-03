@@ -28,6 +28,9 @@ dependencies = [
     "torch>=2.1,<3",
     "transformers>=4.40,<6",
     "sentence-transformers>=3.0,<6",
+    # peft is required by some models' custom code loaded via trust_remote_code
+    # (e.g. jina-embeddings-v5, which uses LoRA task adapters).
+    "peft>=0.10,<1",
     # Server
     "Flask>=3.0,<4",
     "Flask-Cors>=4.0,<7",
