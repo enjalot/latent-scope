@@ -55,6 +55,9 @@ def main():
                         help='Number of neighbors for EVoC kNN graph (default: 15)')
     parser.add_argument('--noise_level', type=float, default=0.5,
                         help='EVoC noise level 0.0-1.0 (default: 0.5)')
+    parser.add_argument('--approx_n_clusters', type=int, default=None,
+                        help='EVoC: aim for approximately this many clusters '
+                             '(picks the closest cluster layer)')
     parser.add_argument('--name', type=str, default=None,
                         help='Human-friendly title for this cluster run')
     parser.add_argument('--description', type=str, default=None,
@@ -65,6 +68,7 @@ def main():
               args.cluster_selection_epsilon, args.column,
               method=args.method, cluster_on=args.cluster_on,
               n_neighbors=args.n_neighbors, noise_level=args.noise_level,
+              approx_n_clusters=args.approx_n_clusters,
               name=args.name, description=args.description)
 
 
@@ -87,14 +91,37 @@ def _as_numpy_labels(labels):
     return np.asarray(labels)
 
 
-def _run_evoc(embeddings, samples, n_neighbors=15, noise_level=0.5):
+def _evoc_node_embedding_dim(n_features, n_neighbors):
+    """Cap EVoC's internal node-embedding dimension on low-dimensional input.
+
+    EVoC PCA-initializes its node embedding with min(max(n_neighbors // 4, 4), 15)
+    components; when the clustering input has fewer features than that (e.g. the
+    2-D umap with --cluster_on umap) PCA raises ValueError. Return the feature
+    count in that case, or None to keep EVoC's default.
+    """
+    default_dim = min(max(n_neighbors // 4, 4), 15)
+    if n_features < default_dim:
+        return n_features
+    return None
+
+
+def _run_evoc(embeddings, samples, n_neighbors=15, noise_level=0.5, approx_n_clusters=None):
     """Run EVoC clustering on the input vectors (always CPU — no cuML equivalent)."""
     import evoc
-    print(f"Running EVoC clustering with base_min_cluster_size={samples}, n_neighbors={n_neighbors}, noise_level={noise_level}")
+    kwargs = {}
+    node_dim = _evoc_node_embedding_dim(embeddings.shape[1], n_neighbors)
+    if node_dim is not None:
+        kwargs['node_embedding_dim'] = node_dim
+    if approx_n_clusters is not None:
+        kwargs['approx_n_clusters'] = approx_n_clusters
+    print(f"Running EVoC clustering with base_min_cluster_size={samples}, "
+          f"n_neighbors={n_neighbors}, noise_level={noise_level}"
+          + (f", {kwargs}" if kwargs else ""))
     clusterer = evoc.EVoC(
         base_min_cluster_size=samples,
         n_neighbors=n_neighbors,
         noise_level=noise_level,
+        **kwargs,
     )
     labels = clusterer.fit_predict(embeddings)
     return labels
@@ -169,7 +196,7 @@ def _run_gmm(embeddings, n_clusters):
 
 def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon, column,
               method='evoc', cluster_on=None, n_neighbors=15, noise_level=0.5,
-              name=None, description=None):
+              approx_n_clusters=None, name=None, description=None):
     DATA_DIR = get_data_dir()
     cluster_dir = os.path.join(DATA_DIR, dataset_id, "clusters")
     # Check if clusters directory exists, if not, create it
@@ -232,7 +259,8 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
 
         if method == 'evoc':
             cluster_labels = _run_evoc(cluster_input, samples,
-                                       n_neighbors=n_neighbors, noise_level=noise_level)
+                                       n_neighbors=n_neighbors, noise_level=noise_level,
+                                       approx_n_clusters=approx_n_clusters)
         elif method == 'kmeans':
             cluster_labels = _run_kmeans(cluster_input, samples, use_cuml=res.use_cuml)
         elif method == 'gmm':
@@ -317,6 +345,8 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     if method == 'evoc':
         meta["n_neighbors"] = n_neighbors
         meta["noise_level"] = noise_level
+        if approx_n_clusters is not None:
+            meta["approx_n_clusters"] = approx_n_clusters
     if name is not None:
         meta["name"] = name
     if description is not None:

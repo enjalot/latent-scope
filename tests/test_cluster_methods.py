@@ -165,3 +165,19 @@ def test_cluster_on_explicit_umap_recorded(umapped_dataset):
     meta = _read_cluster_meta(data_dir, dataset_id)
     assert meta["cluster_on"] == "umap"
     assert meta["n_clusters"] == 4
+
+
+def test_evoc_node_embedding_dim_caps_low_dim_input():
+    """EVoC PCA-inits its node embedding with up to 15 components; on 2-D umap
+    input the dim must be capped at the feature count or PCA raises."""
+    from latentscope.scripts.cluster import _evoc_node_embedding_dim
+
+    # 2-D umap input: evoc default would be min(max(15 // 4, 4), 15) = 4 > 2
+    assert _evoc_node_embedding_dim(2, 15) == 2
+    # more neighbors → bigger default (20 // 4 = 5), still capped by features
+    assert _evoc_node_embedding_dim(2, 20) == 2
+    # high-dimensional embeddings keep evoc's default behavior
+    assert _evoc_node_embedding_dim(768, 15) is None
+    assert _evoc_node_embedding_dim(768, 100) is None
+    # boundary: features equal to the default dim → no override needed
+    assert _evoc_node_embedding_dim(4, 15) is None
