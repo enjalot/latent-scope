@@ -312,7 +312,11 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     hulls_by_label = {}
     compute_hulls = (effective_cluster_on == 'umap')
     for label in non_noise_labels:
-        indices = np.where(cluster_labels == label)[0]
+        # Hulls outline the cluster the algorithm actually found: use the raw
+        # (pre-reassignment) members. Reassigned noise points can come from
+        # anywhere on the map — as convex hull vertices they stretch the
+        # polygon far beyond the cluster (a single outlier dominates).
+        indices = np.where(raw_cluster_labels == label)[0]
         points = umap_embeddings[indices]
         if not compute_hulls or len(points) < 3:
             hulls_by_label[label] = []

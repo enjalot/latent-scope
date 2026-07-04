@@ -162,6 +162,8 @@ function Cluster() {
       if (method === 'evoc') {
         params.n_neighbors = data.get('n_neighbors');
         params.noise_level = data.get('noise_level');
+        const approx = data.get('approx_n_clusters');
+        if (approx) params.approx_n_clusters = approx;
       } else if (method === 'hdbscan') {
         params.min_samples = data.get('min_samples');
         params.cluster_selection_epsilon = data.get('cluster_selection_epsilon');
@@ -312,6 +314,24 @@ function Cluster() {
                   <Tooltip id="noise_level" place="top" effect="solid" className="tooltip-area">
                     Controls the noise threshold (0.0-1.0). Lower values cluster more data points;
                     higher values are more selective and leave more points as noise.
+                  </Tooltip>
+                </label>
+                <label>
+                  <span className={styles['cluster-form-label']}>Approx. Clusters:</span>
+                  <input
+                    type="number"
+                    name="approx_n_clusters"
+                    placeholder="auto"
+                    min="2"
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="approx_n_clusters">
+                    🤔
+                  </span>
+                  <Tooltip id="approx_n_clusters" place="top" effect="solid" className="tooltip-area">
+                    Aim for approximately this many clusters: EVoC builds a hierarchy of cluster
+                    layers and picks the one closest to this count. Leave empty to let EVoC choose
+                    automatically (which can land on very few clusters for large datasets).
                   </Tooltip>
                 </label>
               </>

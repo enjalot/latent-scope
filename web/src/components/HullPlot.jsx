@@ -88,9 +88,12 @@ const HullPlot = ({
     if (!xDomain || !yDomain || !validHulls.length) return;
 
     // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
+    // Compare a cheap signature of ALL hulls — sampling only the first N
+    // missed changes in later hulls (stale outlines with many clusters).
+    const hullSignature = (hs) =>
+      `${hs.length}:` + hs.map((h) => `${h.length},${h[0]},${h[h.length - 1]}`).join('|');
     const hullsChanged =
-      !prevHulls.current ||
-      JSON.stringify(hulls.slice(0, 10)) !== JSON.stringify(prevHulls.current.slice(0, 10));
+      !prevHulls.current || hullSignature(hulls) !== hullSignature(prevHulls.current);
     // const pointsChanged = !prevPoints.current || (JSON.stringify(points[0]) !== JSON.stringify(prevPoints.current[0]))
 
     if (!hullsChanged) return;
