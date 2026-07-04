@@ -310,7 +310,12 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     # embeddings (evoc default) the clusters may be scattered across the 2D
     # projection, so convex hulls are not meaningful — skip them.
     hulls_by_label = {}
-    compute_hulls = (effective_cluster_on == 'umap')
+    # Hulls require spatially compact clusters in umap space. Density methods
+    # clustering directly on the 2D coords satisfy that; EVoC does not even
+    # with umap input — it re-embeds a kNN graph internally, so its clusters
+    # can span the map (measured: 44/173 clusters covered >50% of the map on
+    # a 100k corpus) and convex hulls of them are meaningless spaghetti.
+    compute_hulls = (effective_cluster_on == 'umap' and method != 'evoc')
     for label in non_noise_labels:
         # Hulls outline the cluster the algorithm actually found: use the raw
         # (pre-reassignment) members. Reassigned noise points can come from
