@@ -120,15 +120,18 @@ def get_dataset_image(dataset):
         column: name of an image-typed column (per meta.json column_metadata).
         index:  row index into the dataset.
         size:   optional max dimension; when given the image is thumbnailed
-                and re-encoded as WebP. Capped at 1024, and quantized up to
-                the next THUMBNAIL_SIZE_BUCKETS bucket.
+                and re-encoded as WebP. Capped at 1024. The response never
+                exceeds the requested size.
 
     Thumbnails are served from a write-through cache in the sprites layout
-    (``<dataset>/sprites/<column>-<bucket>/<shard>/<index>.webp``): a hit is
-    sent straight from disk with no decode; a miss falls back to the parquet
-    read + PIL decode and persists the result for next time. Only the row
-    group containing the requested row is read (restricted to the one
-    column), so multi-GB image datasets are never fully loaded.
+    (``<dataset>/sprites/<column>-<bucket>/<shard>/<index>.webp``), stored at
+    THUMBNAIL_SIZE_BUCKETS granularity (the requested size quantized up).
+    Bucket-sized requests are sent straight from disk with no decode;
+    non-bucket sizes are downscaled from the cached bucket rendition. A miss
+    falls back to the parquet read + PIL decode and persists the bucket
+    rendition for next time. Only the row group containing the requested row
+    is read (restricted to the one column), so multi-GB image datasets are
+    never fully loaded.
     """
     import io
 
@@ -170,9 +173,24 @@ def get_dataset_image(dataset):
         bucket = _thumbnail_bucket(size)
         cache_path = _thumbnail_cache_path(dataset, column, index, bucket)
         if os.path.exists(cache_path):
-            response = send_file(cache_path, mimetype="image/webp")
-            response.headers["Cache-Control"] = headers["Cache-Control"]
-            return response
+            if size == bucket:
+                # hot path: bucket-sized requests (what the UI makes) are a
+                # plain file send, no decode
+                response = send_file(cache_path, mimetype="image/webp")
+                response.headers["Cache-Control"] = headers["Cache-Control"]
+                return response
+            # size is a documented *maximum*: honor it by downscaling the
+            # cached bucket thumbnail (cheap — it's already small) instead of
+            # serving a larger image than the caller asked for.
+            try:
+                img = Image.open(cache_path)
+                img.thumbnail((size, size))
+                buf = io.BytesIO()
+                img.save(buf, format="WEBP", quality=80)
+                return Response(buf.getvalue(), mimetype="image/webp", headers=headers)
+            except Exception:
+                # corrupted cache entry — fall through and regenerate it
+                pass
 
     file_path = os.path.join(_data_dir(), dataset, "input.parquet")
     parquet_file = pq.ParquetFile(file_path)
@@ -221,6 +239,12 @@ def get_dataset_image(dataset):
                 current_app.logger.warning(
                     "could not cache thumbnail %s: %s", cache_path, e
                 )
+        if size < bucket:
+            # the cache keeps the bucket rendition; the response honors the
+            # requested maximum
+            img.thumbnail((size, size))
+            buf = io.BytesIO()
+            img.save(buf, format="WEBP", quality=80)
         return Response(buf.getvalue(), mimetype="image/webp", headers=headers)
 
     try:

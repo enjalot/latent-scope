@@ -86,9 +86,9 @@ def test_image_endpoint_size_param_returns_webp_thumbnail(client, image_dataset)
     assert response.headers["Cache-Control"] == "public, max-age=86400"
     img = Image.open(io.BytesIO(response.data))
     assert img.format == "WEBP"
-    # size=8 quantizes up to the 64 cache bucket; PIL never upscales, so the
-    # 32x16 source comes back at most bucket-sized
-    assert max(img.size) <= 64
+    # size is a maximum dimension: the cache stores the 64 bucket rendition,
+    # but the response is downscaled to the requested size
+    assert max(img.size) <= 8
     # WebP is lossy; just check the dominant channel survived (green)
     r, g, b = img.convert("RGB").getpixel((0, 0))
     assert g > 200 and r < 60 and b < 60
@@ -203,6 +203,33 @@ def test_image_thumbnail_size_quantized_up_to_bucket(
     response = get_image(client, image_dataset, column="image", index=2, size=64)
     assert response.status_code == 200
     assert os.path.exists(cache_path(tmp_data_dir, index=2, bucket=64))
+
+
+def test_image_thumbnail_size_is_a_maximum(client, image_dataset, tmp_data_dir, monkeypatch):
+    """A non-bucket size never returns a larger image than requested: the
+    response is downscaled from the cached bucket rendition, without touching
+    the parquet."""
+    # seed the 150 bucket with a solid magenta 150px rendition
+    sentinel = make_webp_bytes((255, 0, 255), size=(150, 100))
+    path = cache_path(tmp_data_dir, index=3, bucket=150)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(sentinel)
+
+    # prove the cache (not the parquet) is the source
+    import pyarrow.parquet as pq
+
+    def boom(*args, **kwargs):
+        raise AssertionError("parquet should not be read on a cache hit")
+
+    monkeypatch.setattr(pq, "ParquetFile", boom)
+
+    response = get_image(client, image_dataset, column="image", index=3, size=120)
+    assert response.status_code == 200
+    img = Image.open(io.BytesIO(response.data))
+    assert max(img.size) <= 120
+    r, g, b = img.convert("RGB").getpixel((0, 0))
+    assert r > 200 and b > 200 and g < 60
 
 
 def test_image_original_bytes_not_cached(client, image_dataset, tmp_data_dir):
