@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import shutil
 
 from latentscope import __version__
 from latentscope.util import get_data_dir
@@ -23,14 +24,27 @@ def main():
     parser.add_argument(
         "--text_column", type=str, help="Column to use as text for the scope"
     )
+    parser.add_argument(
+        "--skip_thumbnails",
+        action="store_true",
+        help="Skip pre-generating 150px thumbnails for binary image columns "
+        "(they will be generated lazily on first view instead)",
+    )
     args = parser.parse_args()
-    ingest_file(args.id, args.path, args.text_column)
+    ingest_file(
+        args.id, args.path, args.text_column, skip_thumbnails=args.skip_thumbnails
+    )
 
 
 IMAGE_FILE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 
+# Thumbnail size prebaked at ingest for binary image columns. Must be one of
+# the /image endpoint's THUMBNAIL_SIZE_BUCKETS (and match the size the
+# frontend requests) so the prebaked set is what actually gets served.
+THUMBNAIL_SIZE = 150
 
-def ingest_directory(dataset_id, dir_path, text_column=None):
+
+def ingest_directory(dataset_id, dir_path, text_column=None, skip_thumbnails=False):
     """Ingest a directory of image files as an image dataset.
 
     Reads each image's raw bytes into an `image` column (local file *paths* are
@@ -78,10 +92,10 @@ def ingest_directory(dataset_id, dir_path, text_column=None):
         )
     print(f"read {len(rows)} images from {dir_path}")
     df = pd.DataFrame(rows)
-    ingest(dataset_id, df, text_column or "filename")
+    ingest(dataset_id, df, text_column or "filename", skip_thumbnails=skip_thumbnails)
 
 
-def ingest_file(dataset_id, file_path, text_column=None):
+def ingest_file(dataset_id, file_path, text_column=None, skip_thumbnails=False):
     import pandas as pd
 
     DATA_DIR = get_data_dir()
@@ -99,7 +113,9 @@ def ingest_file(dataset_id, file_path, text_column=None):
     if not file_path:
         file_path = os.path.join(directory, "input.csv")
     if os.path.isdir(os.path.expanduser(file_path)):
-        return ingest_directory(dataset_id, file_path, text_column)
+        return ingest_directory(
+            dataset_id, file_path, text_column, skip_thumbnails=skip_thumbnails
+        )
     file_type = file_path.split(".")[-1]
     print(f"File type detected: {file_type}")
     file = os.path.join(file_path)
@@ -117,7 +133,7 @@ def ingest_file(dataset_id, file_path, text_column=None):
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
 
-    ingest(dataset_id, df, text_column)
+    ingest(dataset_id, df, text_column, skip_thumbnails=skip_thumbnails)
 
 
 def _binary_image_bytes(value):
@@ -163,7 +179,7 @@ def _looks_like_binary_image_column(non_null_series, sample_size=10):
     return any(_decodes_as_image(raw) for raw in raws)
 
 
-def ingest(dataset_id, df, text_column=None):
+def ingest(dataset_id, df, text_column=None, skip_thumbnails=False):
 
     DATA_DIR = get_data_dir()
     print("DATA DIR", DATA_DIR)
@@ -318,6 +334,41 @@ def ingest(dataset_id, df, text_column=None):
         if not os.path.exists(file_path):
             with open(file_path, "w") as file:
                 file.write("")  # Initialize with an empty JSON object
+
+    # The sprites dir is a thumbnail cache derived from input.parquet; a
+    # re-ingest of the same dataset id changes the rows underneath it, so any
+    # existing cache is stale (generate_sprites resumes past existing files
+    # and the /image cache hit is served before the parquet is consulted).
+    # Clear it unconditionally — it self-heals lazily even when prebake is
+    # skipped.
+    sprites_dir = os.path.join(DATA_DIR, dataset_id, "sprites")
+    if os.path.exists(sprites_dir):
+        print(f"clearing stale thumbnail cache {sprites_dir}")
+        shutil.rmtree(sprites_dir, ignore_errors=True)
+
+    # Prebake 150px thumbnails for binary image columns so the first hover /
+    # table render is served straight from disk instead of decoding the
+    # original image per request. url-kind image columns point at remote
+    # files and cannot be prebaked. Matches the /image endpoint's cache
+    # layout (<dataset>/sprites/<column>-150/...).
+    binary_image_columns = [
+        col
+        for col, meta in column_metadata.items()
+        if meta.get("image_kind") == "binary"
+    ]
+    if skip_thumbnails:
+        if binary_image_columns:
+            print("skipping thumbnail generation (--skip_thumbnails)")
+    else:
+        from latentscope.scripts.sprites import generate_sprites
+
+        for col in binary_image_columns:
+            print(f"generating {THUMBNAIL_SIZE}px thumbnails for image column {col!r}")
+            try:
+                generate_sprites(dataset_id, col, size=THUMBNAIL_SIZE)
+            except Exception as e:
+                # thumbnails are a cache; never fail the ingest over them
+                print(f"warning: thumbnail generation failed for {col!r}: {e}")
 
 
 if __name__ == "__main__":
