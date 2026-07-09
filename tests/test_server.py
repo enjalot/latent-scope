@@ -227,3 +227,32 @@ class TestDataframeCache:
         r2 = client.post('/api/column-filter', json={"dataset": "ds-hit", "filters": []})
         assert json.loads(r1.data) == json.loads(r2.data)
         assert len(app.config['DATAFRAMES']) == 1
+
+
+# ---------------------------------------------------------------------------
+# Frontend bundle (catch-all route)
+# ---------------------------------------------------------------------------
+
+class TestMissingDist:
+    """A source checkout without a built web bundle should fail loudly, not 404."""
+
+    def _patch_no_dist(self, monkeypatch, tmp_path):
+        import latentscope.server.app as app_module
+        monkeypatch.setattr(app_module, "files", lambda pkg: tmp_path)
+
+    def test_ui_route_returns_503_with_build_instructions(
+        self, client, monkeypatch, tmp_path
+    ):
+        self._patch_no_dist(monkeypatch, tmp_path)
+        response = client.get('/datasets/foo/explore/scopes-001')
+        assert response.status_code == 503
+        assert b"npm run production" in response.data
+
+    def test_api_routes_unaffected(self, client, monkeypatch, tmp_path):
+        self._patch_no_dist(monkeypatch, tmp_path)
+        assert client.get('/api/version').status_code == 200
+
+    def test_missing_dist_warning(self, monkeypatch, tmp_path):
+        from latentscope.server.app import missing_dist_warning
+        self._patch_no_dist(monkeypatch, tmp_path)
+        assert "npm install" in missing_dist_warning()

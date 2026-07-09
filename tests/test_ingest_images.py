@@ -136,3 +136,40 @@ def test_image_column_not_picked_as_default_text_column(ingest_env):
 
     meta = load_meta(ingest_env, "img-default-col")
     assert meta["text_column"] == "caption"
+
+
+def test_ingest_directory_of_images(ingest_env, tmp_path):
+    """`ls-ingest <ds> --path <dir>` on a folder of images builds an image dataset."""
+    from latentscope.scripts.ingest import ingest_file
+
+    img_dir = tmp_path / "shots"
+    img_dir.mkdir()
+    for i in range(4):
+        Image.new("RGB", (4, 4), (i * 50, 20, 20)).save(img_dir / f"shot_{i}.png")
+    Image.new("RGB", (4, 4), (0, 200, 0)).save(img_dir / "photo.jpg")
+    (img_dir / "notes.txt").write_text("not an image")
+    (img_dir / "subdir").mkdir()
+
+    ingest_file("img-folder", str(img_dir))
+
+    meta = load_meta(ingest_env, "img-folder")
+    image_meta = meta["column_metadata"]["image"]
+    assert image_meta["type"] == "image"
+    assert image_meta["image_kind"] == "binary"
+    assert meta["length"] == 5  # txt + subdir skipped
+    assert meta["text_column"] == "filename"
+
+    out = pd.read_parquet(os.path.join(ingest_env, "img-folder", "input.parquet"))
+    assert set(out.columns) >= {"image", "filename", "date", "size_kb"}
+    assert isinstance(out["image"].iloc[0], bytes)
+    assert sorted(out["filename"])[-1] == "shot_3.png"
+
+
+def test_ingest_directory_without_images_raises(ingest_env, tmp_path):
+    from latentscope.scripts.ingest import ingest_file
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    (empty / "readme.md").write_text("hi")
+    with pytest.raises(ValueError, match="No image files"):
+        ingest_file("img-empty", str(empty))

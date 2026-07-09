@@ -17,7 +17,8 @@ export LATENT_SCOPE_DATA=~/latent-scope-data   # where datasets are stored
 
 ## 1. Ingesting a file
 
-`ls-ingest` accepts **CSV, Parquet, JSON, JSONL, and XLSX**:
+`ls-ingest` accepts **CSV, Parquet, JSON, JSONL, and XLSX** — or a **directory
+of images** (see §4):
 
 ```bash
 ls-ingest mydataset --path /path/to/data.csv --text_column text
@@ -25,8 +26,9 @@ ls-ingest mydataset --path /path/to/data.csv --text_column text
 
 - `mydataset` — the dataset id (its directory name under `LATENT_SCOPE_DATA`).
 - `--path` — the source file. Format is inferred from the extension
-  (`.csv`, `.parquet`, `.json`, `.jsonl`, `.xlsx`). If omitted, `ls-ingest` looks
-  for `input.csv` inside the dataset directory.
+  (`.csv`, `.parquet`, `.json`, `.jsonl`, `.xlsx`); a directory is ingested as
+  an image dataset. If omitted, `ls-ingest` looks for `input.csv` inside the
+  dataset directory.
 - `--text_column` — which column to embed by default. If omitted, the UI lets
   you pick later; you can always embed a different column with `ls-embed`.
 
@@ -87,6 +89,20 @@ with a single space so row alignment is preserved) rather than crashing the run.
 ---
 
 ## 4. Image datasets
+
+**From a folder of images** — pass a directory to `ls-ingest` and it builds the
+dataset for you: each file's bytes land in an `image` column, with `filename`
+(the default text column), `date` (file mtime), and `size_kb` alongside for
+labeling and color-by. Non-recursive; picks up `png/jpg/jpeg/webp/gif`:
+
+```bash
+ls-ingest myshots --path ~/Desktop
+```
+
+**From a table** — an image column is detected from raw bytes / HF-style
+`{"bytes": …}` dicts or `http…` URLs (see §2). A column of **local file paths
+is treated as plain strings** — read the bytes into the frame yourself, or use
+the folder form above.
 
 Image columns are embedded with an image/multimodal model (e.g. CLIP):
 

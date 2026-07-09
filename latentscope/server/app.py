@@ -363,9 +363,44 @@ def create_app(data_dir=None, read_only=None):
             pth = files('latentscope').joinpath(f"web/dist/{path}")
             return send_from_directory(pth.parent, pth.name)
         pth = files('latentscope').joinpath("web/dist/index.html")
+        if not pth.is_file():
+            return _MISSING_DIST_HTML, 503, {"Content-Type": "text/html"}
         return send_from_directory(pth.parent, pth.name)
 
     return app
+
+
+# Served (with a 503) on UI routes when the frontend bundle is missing — i.e. a
+# source checkout that has never been built. The API blueprints still work; only
+# the catch-all has nothing to send. Checked per-request, so once the bundle is
+# built no restart is needed.
+_MISSING_DIST_HTML = """<!doctype html>
+<title>Latent Scope — frontend not built</title>
+<style>body{font-family:system-ui;max-width:42rem;margin:4rem auto;line-height:1.5}
+pre{background:#f4f4f4;padding:1rem;overflow-x:auto}</style>
+<h1>Frontend not built</h1>
+<p>The API server is running, but <code>latentscope/web/dist/index.html</code>
+does not exist — this is a source checkout without a built web bundle
+(a pip-installed <code>latentscope</code> ships it pre-built).</p>
+<p>Build it once from the repo root (requires Node):</p>
+<pre>cd web &amp;&amp; npm install &amp;&amp; npm run production &amp;&amp; cd ..
+mkdir -p latentscope/web/dist
+cp -r web/dist/production/* latentscope/web/dist/</pre>
+<p>Then reload this page — no server restart needed.</p>
+"""
+
+
+def missing_dist_warning():
+    """Return a warning string if the web bundle is missing, else None."""
+    if files('latentscope').joinpath("web/dist/index.html").is_file():
+        return None
+    return (
+        "WARNING: latentscope/web/dist/index.html not found — the web UI is not "
+        "built, so all non-/api routes will return 503. Build it with: "
+        "cd web && npm install && npm run production && "
+        "cp -r web/dist/production/* ../latentscope/web/dist/ "
+        "(no restart needed afterwards)."
+    )
 
 
 def serve(host="0.0.0.0", port=5001, debug=False, data_dir=None, read_only=None):
@@ -376,6 +411,9 @@ def serve(host="0.0.0.0", port=5001, debug=False, data_dir=None, read_only=None)
     ``LATENT_SCOPE_DEBUG=1`` to force the development server.
     """
     application = create_app(data_dir=data_dir, read_only=read_only)
+    warning = missing_dist_warning()
+    if warning:
+        print(warning, flush=True)
     if _parse_bool_env(os.getenv("LATENT_SCOPE_DEBUG")):
         debug = True
     if not debug:

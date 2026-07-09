@@ -55,13 +55,41 @@ uv run ls-scope    mydata embedding-001 umap-001 cluster-001 default "My scope" 
 **without** an LLM. For nicer labels run `ls-label` with a chat model first and
 pass that labels id instead of `default`.
 
+**Full pipeline on a folder of images** (screenshots, product photos, …) —
+`ls-ingest` accepts a **directory** and builds the image dataset for you
+(reads each file's bytes into an `image` column, adds `filename`/`date`/`size_kb`
+for labeling and color-by; non-recursive; png/jpg/jpeg/webp/gif):
+```bash
+uv run ls-ingest       shots --path ~/Desktop                 # a directory ⇒ image dataset
+uv run ls-embed        shots image clip-openai___clip-vit-base-patch32
+uv run ls-umap         shots embedding-001 25 0.1
+uv run ls-cluster      shots umap-001 25 5 0.0 --method hdbscan
+uv run ls-scope        shots embedding-001 umap-001 cluster-001 default "Shots" "desc"
+uv run ls-sprite-atlas shots scopes-001 image                 # image map tiles (do not skip)
+```
+If the images are referenced from a *table* instead, know that ingest only
+detects an image column from raw **bytes** / HF `{"bytes",…}` dicts or `http…`
+URLs — a column of local file paths is treated as plain strings. Read the bytes
+into the frame (or just point ingest at the folder).
+
 **Show the user the result (one command):**
 ```bash
 uv run ls-serve $LATENT_SCOPE_DATA        # API + built web UI at http://localhost:5001
 ```
-Open `http://localhost:5001`, pick the dataset, open the scope. This serves the
-**pre-built** web assets — no Node needed. On a LAN box, others reach it at
-`http://<host>.local:5001`.
+Open `http://localhost:5001`, pick the dataset, open the scope. On a LAN box,
+others reach it at `http://<host>.local:5001`.
+
+> **pip install vs. source checkout:** a pip-installed `latentscope` ships the
+> web UI pre-built — `ls-serve` just works, no Node. A **source checkout does
+> not include `latentscope/web/dist/`** — the API still works but every UI
+> route returns **503 with build instructions** (older versions: a JSON 404).
+> Build it once:
+> ```bash
+> cd web && npm install && npm run production && cd ..   # if npm ci fails, use npm install
+> mkdir -p latentscope/web/dist && cp -r web/dist/production/* latentscope/web/dist/
+> ```
+> The catch-all reads from disk per request, so **no server restart** is needed
+> after the copy. (`bash build.sh` does this too, plus a wheel build.)
 
 **Copyable end-to-end example:** `examples/colbert_quickstart/run.sh` builds a
 tiny dataset, embeds it on CPU, runs the whole pipeline, and verifies search.
@@ -72,7 +100,7 @@ tiny dataset, embeds it on CPU, runs the whole pipeline, and verifies search.
 
 | step | command (positional args) | writes |
 | --- | --- | --- |
-| ingest | `ls-ingest <ds> --path <file> --text_column <col>` (or a DataFrame via the library API) | `input.parquet`, `meta.json` (column detection) |
+| ingest | `ls-ingest <ds> --path <file-or-image-dir> --text_column <col>` (or a DataFrame via the library API) | `input.parquet`, `meta.json` (column detection) |
 | embed | `ls-embed <ds> <col> <model_id> [--task] [--prefix] [--dimensions] [--batch_size] [--max_seq_length]` | `embeddings/embedding-NNN.*` (LanceDB) |
 | umap | `ls-umap <ds> <embedding_id> <neighbors> <min_dist> [--name --description]` | `umaps/umap-NNN.*` (x,y in [-1,1]) |
 | cluster | `ls-cluster <ds> <umap_id> <samples> <min_samples> <epsilon> [--method] [--cluster_on] [--name]` | `clusters/cluster-NNN.*` + `…-labels-default.parquet` |
@@ -170,8 +198,14 @@ Don't claim a map "works" without looking. Cheap checks:
 1. The step CLIs exit 0 and write their files; `ls-cluster` prints `n_clusters`.
 2. `ls-serve` the data dir and hit the API: `GET /api/datasets/<ds>/scopes`
    returns the scope; `GET /api/datasets/<ds>/column/<numeric_col>?scope=<id>`
-   returns per-point values.
-3. If you can drive a browser, screenshot `…/datasets/<ds>/explore/<scope>` and
+   returns per-point values. For image datasets, confirm the atlas:
+   `GET /api/datasets/<ds>/scopes/<scope>/atlas/status?column=<image_col>`
+   (the param is **`column`**, not `image_column`) → `"generated": true`.
+3. Check the UI itself is served: `curl -s -o /dev/null -w '%{http_code}'
+   http://localhost:5001/` must be **200** (503/404 ⇒ the web bundle isn't
+   built — see the source-checkout note above). API-only checks can pass while
+   every UI route fails.
+4. If you can drive a browser, screenshot `…/datasets/<ds>/explore/<scope>` and
    confirm the scatter renders points + cluster labels (not a blank/white map).
    The served UI is the **pre-built** bundle (`latentscope/web/dist`); frontend
    source changes require a rebuild before they appear.
@@ -182,9 +216,11 @@ Don't claim a map "works" without looking. Cheap checks:
 
 - **`peft` is required** for jina-v5's remote code (it's a core dep now; if you
   see "requires peft", `pip install peft`).
-- **Serving updated frontend code:** `ls-serve` serves `latentscope/web/dist`. If
-  you changed `web/src`, rebuild: `cd web && npm run production` then copy
-  `web/dist/production/*` → `latentscope/web/dist/` (or `bash build.sh`).
+- **Serving frontend code from a source checkout:** `ls-serve` serves
+  `latentscope/web/dist`, which a fresh clone **doesn't have** (UI routes 503;
+  `ls-serve` prints a warning at startup). Build + copy as in the
+  source-checkout note above; same recipe after changing `web/src`. No restart
+  needed — the catch-all re-reads disk per request.
 - **Job runner:** long steps run as subprocess jobs; the Setup UI has a 💀 Kill
   button and an expandable log. Jobs also self-kill after 5 min of no output.
 - **Data size:** designed for up to ~a few million points; UMAP/HDBSCAN memory
@@ -217,7 +253,7 @@ build recipes for the demo datasets live in `examples/datasets/`.
 
 - *"Show me the structure of this CSV"* → Golden path (ingest→embed→umap→cluster→scope) + `ls-serve`.
 - *"Which items are similar to X?"* → open the scope, use similarity search; or `ls-embed` + the search API.
-- *"Cluster my product images"* → ingest (image column auto-detected) → `ls-embed <ds> <image_col> clip-…` → umap → cluster → scope → `ls-sprite-atlas`.
+- *"Cluster my product images / map my screenshots"* → a folder of images: `ls-ingest <ds> --path <dir>` then embed the `image` column with `clip-…` → umap → cluster → scope → `ls-sprite-atlas` (see the image golden path above). A table with an image column works the same once ingested (bytes or http URLs, never local paths).
 - *"Overlay my quality score on the map"* → include the numeric column at ingest, then color-by it in Explore.
 - *"Make it faster"* → GPU (`LATENT_SCOPE_DEVICE=cuda` + `[gpu]` extra) or a Mac (MPS), or a smaller model.
 

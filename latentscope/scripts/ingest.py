@@ -16,13 +16,69 @@ def main():
     parser.add_argument(
         "--path",
         type=str,
-        help="Path to csv/parquet/json/jsonl/xlsx file, otherwise assumes input.csv in dataset directory",
+        help="Path to a csv/parquet/json/jsonl/xlsx file, OR a directory of images "
+        "(png/jpg/jpeg/webp/gif — ingested as an image dataset with filename/date/"
+        "size_kb metadata columns). Otherwise assumes input.csv in dataset directory",
     )
     parser.add_argument(
         "--text_column", type=str, help="Column to use as text for the scope"
     )
     args = parser.parse_args()
     ingest_file(args.id, args.path, args.text_column)
+
+
+IMAGE_FILE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+
+
+def ingest_directory(dataset_id, dir_path, text_column=None):
+    """Ingest a directory of image files as an image dataset.
+
+    Reads each image's raw bytes into an `image` column (local file *paths* are
+    never sniffed as images — only bytes and http URLs are — so the bytes must
+    land in the frame). Adds `filename`, `date` (file mtime), and `size_kb`
+    columns for labeling and color-by. Non-recursive.
+    """
+    from datetime import datetime
+
+    import pandas as pd
+
+    dir_path = os.path.expanduser(dir_path)
+    names = sorted(
+        n
+        for n in os.listdir(dir_path)
+        if n.lower().endswith(IMAGE_FILE_EXTENSIONS)
+        and os.path.isfile(os.path.join(dir_path, n))
+    )
+    if not names:
+        raise ValueError(
+            f"No image files ({', '.join(IMAGE_FILE_EXTENSIONS)}) found in {dir_path}"
+        )
+    subdirs = [
+        n for n in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, n))
+    ]
+    if subdirs:
+        print(
+            f"note: ingest is non-recursive; skipping {len(subdirs)} subdirector"
+            f"{'y' if len(subdirs) == 1 else 'ies'} in {dir_path}"
+        )
+
+    rows = []
+    for name in names:
+        path = os.path.join(dir_path, name)
+        with open(path, "rb") as f:
+            raw = f.read()
+        mtime = datetime.fromtimestamp(os.path.getmtime(path))
+        rows.append(
+            {
+                "image": raw,
+                "filename": name,
+                "date": mtime.strftime("%Y-%m-%d"),
+                "size_kb": round(len(raw) / 1024, 1),
+            }
+        )
+    print(f"read {len(rows)} images from {dir_path}")
+    df = pd.DataFrame(rows)
+    ingest(dataset_id, df, text_column or "filename")
 
 
 def ingest_file(dataset_id, file_path, text_column=None):
@@ -42,6 +98,8 @@ def ingest_file(dataset_id, file_path, text_column=None):
 
     if not file_path:
         file_path = os.path.join(directory, "input.csv")
+    if os.path.isdir(os.path.expanduser(file_path)):
+        return ingest_directory(dataset_id, file_path, text_column)
     file_type = file_path.split(".")[-1]
     print(f"File type detected: {file_type}")
     file = os.path.join(file_path)

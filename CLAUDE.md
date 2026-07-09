@@ -26,9 +26,11 @@ ingest → embed → umap → cluster → label → scope → (sprite atlas) →
 
 ### Capabilities (what an agent can offer a user)
 
-- **Text and image datasets.** Ingest CSV/Parquet/JSON/JSONL/XLSX or a pandas
-  DataFrame. Image columns (HF `{bytes,path}` dicts, raw bytes, or URLs) are
-  auto-detected and embeddable (issue #87).
+- **Text and image datasets.** Ingest CSV/Parquet/JSON/JSONL/XLSX, a pandas
+  DataFrame, or a **directory of images** (`ls-ingest <ds> --path <dir>` reads
+  bytes + filename/date/size_kb columns). Image columns (HF `{bytes,path}`
+  dicts, raw bytes, or URLs) are auto-detected and embeddable (issue #87);
+  local file *paths* in a table are not.
 - **Dense embeddings** from many providers (sentence-transformers/HF,
   OpenAI, Cohere, Voyage, Mistral, Together, and any OpenAI-compatible endpoint).
 - **ColBERT late-interaction (multi-vector) embeddings** via `pylate` — per-token
@@ -86,8 +88,11 @@ and pass that labels id instead of `default`.
 uv run ls-serve $LATENT_SCOPE_DATA            # serves API + built web UI at http://localhost:5001
 ```
 Open `http://localhost:5001`, pick the dataset, open the scope. This serves the
-**pre-built** web assets — no Node required. Use this when the user just wants to
-look at results.
+**pre-built** web assets (`latentscope/web/dist`) — no Node required *if they
+exist*. A fresh source checkout doesn't include them: UI routes return 503 with
+build instructions until you build once (`cd web && npm install && npm run
+production`, then copy `web/dist/production/*` → `latentscope/web/dist/`; no
+restart needed). Pip installs ship them pre-built.
 
 **Live frontend dev (two processes, only when changing React):**
 ```bash
