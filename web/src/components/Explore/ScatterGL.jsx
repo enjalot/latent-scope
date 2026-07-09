@@ -565,6 +565,10 @@ function ScatterGL({
       const nearestPoint = findNearestPoint(x, y);
       if (nearestPoint !== -1) {
         onSelect([nearestPoint]);
+      } else {
+        // Clicking empty space clears the selection (e.g. closes the
+        // point detail drawer).
+        onSelect([]);
       }
     },
     [points, onSelect, findNearestPoint]

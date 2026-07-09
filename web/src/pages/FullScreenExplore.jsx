@@ -10,6 +10,7 @@ import LeftPane from '../components/Explore/LeftPane';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import FilterDataTable from '../components/Explore/FilterDataTable';
 import ClusterLabelsPanel from '../components/Explore/ClusterLabelsPanel';
+import PointDetail from '../components/Explore/PointDetail';
 
 import { ScopeProvider, useScope } from '../contexts/ScopeContext';
 import { FilterProvider, useFilter } from '../contexts/FilterContext';
@@ -78,10 +79,19 @@ function ExploreContent() {
   const [hovered, setHovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  // Note: these currently have no setters wired up; they exist to satisfy
-  // VisualizationPane's props with stable empty values.
+  // Note: this currently has no setter wired up; it exists to satisfy
+  // VisualizationPane's props with a stable empty value.
   const [dataTableRows] = useState([]);
-  const [selectedAnnotations] = useState([]);
+  // Index of the point whose detail drawer is open (null = closed).
+  const [selectedIndex, setSelectedIndex] = useState(null);
+
+  // Highlight the selected point on the map (same [x, y] annotation shape as
+  // the hover annotations).
+  const selectedAnnotations = useMemo(() => {
+    if (selectedIndex === null || selectedIndex === undefined) return [];
+    const sr = scopeRows?.[selectedIndex];
+    return sr ? [[sr.x, sr.y]] : [];
+  }, [selectedIndex, scopeRows]);
 
   // Add a ref to track the latest requested index
   const latestHoverIndexRef = useRef(null);
@@ -144,8 +154,31 @@ function ExploreContent() {
 
   const [showClusters, setShowClusters] = useState(false);
 
-  // Handlers for responding to individual data points
-  const handleClicked = useCallback(() => {}, []);
+  // Handlers for responding to individual data points.
+  // Clicking a table row opens the detail drawer for that row.
+  const handleClicked = useCallback(
+    (index) => {
+      if (index === null || index === undefined || deletedIndicesSet.has(index)) return;
+      setSelectedIndex(index);
+    },
+    [deletedIndicesSet]
+  );
+
+  // Clicking a point on the map opens the detail drawer; clicking empty
+  // space (ScatterGL sends an empty selection) closes it.
+  const handleSelected = useCallback(
+    (indices) => {
+      const index = indices?.[0];
+      if (index === undefined || index === -1 || deletedIndicesSet.has(index)) {
+        setSelectedIndex(null);
+        return;
+      }
+      setSelectedIndex(index);
+    },
+    [deletedIndicesSet]
+  );
+
+  const handleDetailClose = useCallback(() => setSelectedIndex(null), []);
 
   const handleHover = useCallback(
     (index) => {
@@ -362,13 +395,14 @@ function ExploreContent() {
                 hovered={hovered}
                 hoveredIndex={hoveredIndex}
                 onHover={handleHover}
-                onSelect={() => {}}
+                onSelect={handleSelected}
                 hoverAnnotations={hoverAnnotations}
                 selectedAnnotations={selectedAnnotations}
                 hoveredCluster={hoveredCluster}
                 dataTableRows={dataTableRows}
               />
             ) : null}
+            <PointDetail selectedIndex={selectedIndex} onClose={handleDetailClose} />
           </div>
         </div>
       </div>
