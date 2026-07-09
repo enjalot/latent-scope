@@ -20,7 +20,7 @@ FilterDataTable.propTypes = {
   onClick: PropTypes.func,
 };
 
-function RowWithHover({ props, onHover }) {
+function RowWithHover({ props, onHover, onClick }) {
   const { row } = props;
   const { ls_index } = row;
   return (
@@ -32,6 +32,12 @@ function RowWithHover({ props, onHover }) {
       }}
       onMouseLeave={() => {
         onHover(null);
+      }}
+      onClick={(event) => {
+        // Ignore clicks on interactive cell content: links, buttons, and the
+        // SAE feature plot canvas (which opens its own modal).
+        if (event.target.closest('a, button, canvas')) return;
+        onClick(ls_index);
       }}
     />
   );
@@ -46,6 +52,7 @@ function FilterDataTable({
   feature = -1,
   features = [],
   onHover = () => {},
+  onClick = () => {},
 }) {
   const { dataTableRows, page, setPage, totalPages, loading } = useFilter();
 
@@ -230,9 +237,9 @@ function FilterDataTable({
 
   const renderRowWithHover = useCallback(
     (key, props) => {
-      return <RowWithHover key={key} props={props} onHover={onHover} />;
+      return <RowWithHover key={key} props={props} onHover={onHover} onClick={onClick} />;
     },
-    [onHover]
+    [onHover, onClick]
   );
 
   return (
