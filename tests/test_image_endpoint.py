@@ -6,6 +6,7 @@ where POST /api/indexed 500ed on datasets with binary image columns
 """
 
 import io
+import os
 
 import pandas as pd
 import pytest
@@ -30,7 +31,11 @@ def make_png_bytes(color, size=IMG_SIZE):
 
 @pytest.fixture
 def image_dataset(tmp_data_dir, monkeypatch):
-    """A tiny ingested dataset with an HF-style binary image column."""
+    """A tiny ingested dataset with an HF-style binary image column.
+
+    Ingested with skip_thumbnails so the thumbnail cache starts cold and the
+    cache tests below can observe the write-through behavior.
+    """
     monkeypatch.setenv("LATENT_SCOPE_DATA", tmp_data_dir)
     monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
     from latentscope.scripts.ingest import ingest
@@ -42,8 +47,15 @@ def image_dataset(tmp_data_dir, monkeypatch):
         ],
         "text": [f"a {name} image" for name, _ in COLORS],
     })
-    ingest(DATASET_ID, df, text_column="text")
+    ingest(DATASET_ID, df, text_column="text", skip_thumbnails=True)
     return DATASET_ID
+
+
+def cache_path(data_dir, index, bucket, dataset=DATASET_ID, column="image"):
+    """Path where /image write-through-caches a thumbnail (sprite layout)."""
+    return os.path.join(
+        data_dir, dataset, "sprites", f"{column}-{bucket}", "000", f"{index}.webp"
+    )
 
 
 def get_image(client, dataset, **params):
@@ -74,7 +86,9 @@ def test_image_endpoint_size_param_returns_webp_thumbnail(client, image_dataset)
     assert response.headers["Cache-Control"] == "public, max-age=86400"
     img = Image.open(io.BytesIO(response.data))
     assert img.format == "WEBP"
-    assert max(img.size) <= 8
+    # size=8 quantizes up to the 64 cache bucket; PIL never upscales, so the
+    # 32x16 source comes back at most bucket-sized
+    assert max(img.size) <= 64
     # WebP is lossy; just check the dominant channel survived (green)
     r, g, b = img.convert("RGB").getpixel((0, 0))
     assert g > 200 and r < 60 and b < 60
@@ -114,6 +128,103 @@ def test_image_endpoint_bad_size_400(client, image_dataset):
     assert get_image(
         client, image_dataset, column="image", index=0, size=1024
     ).status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Write-through thumbnail cache (sprite layout)
+# ---------------------------------------------------------------------------
+
+def make_webp_bytes(color, size=(3, 3)):
+    img = Image.new("RGB", size, color)
+    buf = io.BytesIO()
+    img.save(buf, format="WEBP", quality=80)
+    return buf.getvalue()
+
+
+def test_image_thumbnail_miss_creates_cache_file(client, image_dataset, tmp_data_dir):
+    path = cache_path(tmp_data_dir, index=0, bucket=150)
+    assert not os.path.exists(path)
+
+    response = get_image(client, image_dataset, column="image", index=0, size=150)
+    assert response.status_code == 200
+    assert response.content_type == "image/webp"
+    assert response.headers["Cache-Control"] == "public, max-age=86400"
+
+    # the thumbnail was persisted in the sprite layout, byte-for-byte
+    assert os.path.exists(path)
+    with open(path, "rb") as f:
+        assert f.read() == response.data
+    # no stray tmp files left behind
+    assert all(
+        not name.endswith(".webp.tmp") and ".tmp-" not in name
+        for name in os.listdir(os.path.dirname(path))
+    )
+
+
+def test_image_thumbnail_second_request_served_from_cache(
+    client, image_dataset, tmp_data_dir
+):
+    # warm the cache
+    first = get_image(client, image_dataset, column="image", index=1, size=150)
+    assert first.status_code == 200
+
+    # overwrite the cached file with a sentinel webp: if the second request
+    # is served from the cache (no parquet read / decode), we get it back
+    sentinel = make_webp_bytes((255, 0, 255))
+    assert sentinel != first.data
+    path = cache_path(tmp_data_dir, index=1, bucket=150)
+    with open(path, "wb") as f:
+        f.write(sentinel)
+
+    second = get_image(client, image_dataset, column="image", index=1, size=150)
+    assert second.status_code == 200
+    assert second.content_type == "image/webp"
+    assert second.headers["Cache-Control"] == "public, max-age=86400"
+    assert second.data == sentinel
+
+
+def test_image_thumbnail_size_quantized_up_to_bucket(
+    client, image_dataset, tmp_data_dir
+):
+    # 120 is not a bucket: it quantizes up to 150 and shares that cache
+    response = get_image(client, image_dataset, column="image", index=2, size=120)
+    assert response.status_code == 200
+    assert os.path.exists(cache_path(tmp_data_dir, index=2, bucket=150))
+    assert not os.path.exists(cache_path(tmp_data_dir, index=2, bucket=100))
+
+    # a follow-up size=150 request is a cache hit on the same file
+    sentinel = make_webp_bytes((1, 2, 3))
+    with open(cache_path(tmp_data_dir, index=2, bucket=150), "wb") as f:
+        f.write(sentinel)
+    again = get_image(client, image_dataset, column="image", index=2, size=150)
+    assert again.data == sentinel
+
+    # exact bucket sizes cache under their own bucket
+    response = get_image(client, image_dataset, column="image", index=2, size=64)
+    assert response.status_code == 200
+    assert os.path.exists(cache_path(tmp_data_dir, index=2, bucket=64))
+
+
+def test_image_original_bytes_not_cached(client, image_dataset, tmp_data_dir):
+    response = get_image(client, image_dataset, column="image", index=3)
+    assert response.status_code == 200
+    assert response.content_type == "image/png"
+    assert not os.path.exists(os.path.join(tmp_data_dir, DATASET_ID, "sprites"))
+
+
+def test_image_thumbnail_served_even_if_cache_write_fails(
+    client, image_dataset, tmp_data_dir, monkeypatch
+):
+    """A failed cache persist must not fail the request."""
+    monkeypatch.setattr("os.replace", _raise_oserror)
+
+    response = get_image(client, image_dataset, column="image", index=0, size=150)
+    assert response.status_code == 200
+    assert response.content_type == "image/webp"
+
+
+def _raise_oserror(*args, **kwargs):
+    raise OSError("disk full")
 
 
 # ---------------------------------------------------------------------------

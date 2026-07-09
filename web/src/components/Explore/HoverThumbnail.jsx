@@ -1,14 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
- * Fixed-size thumbnail for the map hover tooltip. Manages its own loaded
- * state so it can show a loading placeholder instead of leaving the previous
- * point's image on screen while the new one fetches. Mount with a key tied to
- * the hovered index so it resets per point.
+ * Fixed-size thumbnail for the map hover tooltip. Swaps `src` in place:
+ * the incoming image is preloaded off-screen while the previous point's
+ * image stays visible (slightly dimmed), so rapid hovering never flashes a
+ * "loading…" placeholder. The placeholder only appears before the very
+ * first image resolves; failed loads show "no image".
  */
 function HoverThumbnail({ src, alt, size = 150 }) {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
+  // the image currently displayed (last one that finished loading)
+  const [current, setCurrent] = useState(null);
+  // status of the incoming src: 'loading' | 'loaded' | 'error'
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    if (!src) {
+      setCurrent(null);
+      setStatus('error');
+      return undefined;
+    }
+    let cancelled = false;
+    setStatus('loading');
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled) {
+        setCurrent({ src, alt });
+        setStatus('loaded');
+      }
+    };
+    img.onerror = () => {
+      if (!cancelled) {
+        setCurrent(null);
+        setStatus('error');
+      }
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src, alt]);
 
   return (
     <div
@@ -24,20 +54,21 @@ function HoverThumbnail({ src, alt, size = 150 }) {
         color: 'rgba(0,0,0,0.55)',
       }}
     >
-      {!loaded && !errored && <span>loading…</span>}
-      {errored && <span>no image</span>}
-      <img
-        src={src}
-        alt={alt}
-        onLoad={() => setLoaded(true)}
-        onError={() => setErrored(true)}
-        style={{
-          maxWidth: size,
-          maxHeight: size,
-          objectFit: 'contain',
-          display: loaded ? 'block' : 'none',
-        }}
-      />
+      {status === 'error' && <span>no image</span>}
+      {status === 'loading' && !current && <span>loading…</span>}
+      {current && (
+        <img
+          src={current.src}
+          alt={current.alt}
+          style={{
+            maxWidth: size,
+            maxHeight: size,
+            objectFit: 'contain',
+            display: 'block',
+            opacity: status === 'loading' ? 0.5 : 1,
+          }}
+        />
+      )}
     </div>
   );
 }

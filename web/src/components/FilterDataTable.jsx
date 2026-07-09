@@ -437,7 +437,7 @@ function FilterDataTable({
           renderCell: ({ row }) => (
             <img
               loading="lazy"
-              src={imageUrlFor(dataset.id, col, row.ls_index, 100)}
+              src={imageUrlFor(dataset.id, col, row.ls_index, 150)}
               alt={`${col} ${row.ls_index}`}
               style={{ height: '100%', maxHeight: '48px', objectFit: 'contain' }}
             />

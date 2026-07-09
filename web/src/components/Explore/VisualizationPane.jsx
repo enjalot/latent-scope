@@ -616,7 +616,6 @@ function VisualizationPane({
             <span>Index: {hovered.index}</span>
             {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
               <HoverThumbnail
-                key={hovered.index}
                 src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
                 alt={`${hoverImageColumn} ${hovered.index}`}
                 size={150}

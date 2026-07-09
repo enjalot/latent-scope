@@ -87,6 +87,31 @@ def update_dataset_meta(dataset):
     return jsonify(json_contents)
 
 
+# Thumbnail cache size buckets: a requested ?size= is quantized UP to the
+# next bucket so the on-disk cache cannot fragment across arbitrary sizes.
+# The buckets share the sprite layout (<dataset>/sprites/<col>-<size>/...),
+# so anything prebaked by ls-sprites or ingest is served without a decode.
+THUMBNAIL_SIZE_BUCKETS = (64, 100, 150, 300, 600, 1024)
+
+
+def _thumbnail_bucket(size):
+    """Quantize a requested thumbnail size up to the next cache bucket."""
+    for bucket in THUMBNAIL_SIZE_BUCKETS:
+        if size <= bucket:
+            return bucket
+    return THUMBNAIL_SIZE_BUCKETS[-1]
+
+
+def _thumbnail_cache_path(dataset, column, index, bucket):
+    """On-disk cache path for a thumbnail, matching the ls-sprites layout."""
+    from latentscope.scripts.sprites import shard_for, sprite_dir_name
+
+    return os.path.join(
+        _data_dir(), dataset, "sprites",
+        sprite_dir_name(column, bucket), shard_for(index), f"{index}.webp",
+    )
+
+
 @datasets_bp.route('/<dataset>/image', methods=['GET'])
 def get_dataset_image(dataset):
     """Serve a single image cell from input.parquet.
@@ -95,15 +120,20 @@ def get_dataset_image(dataset):
         column: name of an image-typed column (per meta.json column_metadata).
         index:  row index into the dataset.
         size:   optional max dimension; when given the image is thumbnailed
-                and re-encoded as WebP. Capped at 1024.
+                and re-encoded as WebP. Capped at 1024, and quantized up to
+                the next THUMBNAIL_SIZE_BUCKETS bucket.
 
-    Only the row group containing the requested row is read (restricted to
-    the one column), so multi-GB image datasets are never fully loaded.
+    Thumbnails are served from a write-through cache in the sprites layout
+    (``<dataset>/sprites/<column>-<bucket>/<shard>/<index>.webp``): a hit is
+    sent straight from disk with no decode; a miss falls back to the parquet
+    read + PIL decode and persists the result for next time. Only the row
+    group containing the requested row is read (restricted to the one
+    column), so multi-GB image datasets are never fully loaded.
     """
     import io
 
     import pyarrow.parquet as pq
-    from flask import Response
+    from flask import Response, send_file
     from PIL import Image
 
     column = request.args.get('column')
@@ -126,13 +156,27 @@ def get_dataset_image(dataset):
         if size < 1 or size > 1024:
             return jsonify({"error": "size must be between 1 and 1024"}), 400
 
-    file_path = os.path.join(_data_dir(), dataset, "input.parquet")
-    parquet_file = pq.ParquetFile(file_path)
     try:
         index = int(request.args.get('index'))
     except (TypeError, ValueError):
         return jsonify({"error": "index must be an integer"}), 404
-    if index < 0 or index >= parquet_file.metadata.num_rows:
+    if index < 0:
+        return jsonify({"error": "index out of range"}), 404
+
+    headers = {"Cache-Control": "public, max-age=86400"}
+
+    bucket = cache_path = None
+    if size is not None:
+        bucket = _thumbnail_bucket(size)
+        cache_path = _thumbnail_cache_path(dataset, column, index, bucket)
+        if os.path.exists(cache_path):
+            response = send_file(cache_path, mimetype="image/webp")
+            response.headers["Cache-Control"] = headers["Cache-Control"]
+            return response
+
+    file_path = os.path.join(_data_dir(), dataset, "input.parquet")
+    parquet_file = pq.ParquetFile(file_path)
+    if index >= parquet_file.metadata.num_rows:
         return jsonify({"error": "index out of range"}), 404
 
     # Locate the row group containing the row via cumulative row counts.
@@ -153,18 +197,30 @@ def get_dataset_image(dataset):
     if not isinstance(value, bytes) or len(value) == 0:
         return jsonify({"error": "no image bytes at this index"}), 404
 
-    headers = {"Cache-Control": "public, max-age=86400"}
-
     if size is not None:
         try:
             img = Image.open(io.BytesIO(value))
             if img.mode not in ("RGB", "RGBA", "L"):
                 img = img.convert("RGB")
-            img.thumbnail((size, size))
+            img.thumbnail((bucket, bucket))
             buf = io.BytesIO()
             img.save(buf, format="WEBP", quality=80)
         except Exception:
             return jsonify({"error": "could not decode image"}), 404
+        # Write-through: persist the thumbnail so the next request skips the
+        # parquet read + decode entirely. Best-effort — a failed write (e.g.
+        # read-only filesystem) must never fail the request.
+        if not current_app.config.get('READ_ONLY'):
+            tmp_path = f"{cache_path}.tmp-{os.getpid()}"
+            try:
+                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+                with open(tmp_path, "wb") as f:
+                    f.write(buf.getvalue())
+                os.replace(tmp_path, cache_path)
+            except OSError as e:
+                current_app.logger.warning(
+                    "could not cache thumbnail %s: %s", cache_path, e
+                )
         return Response(buf.getvalue(), mimetype="image/webp", headers=headers)
 
     try:
@@ -255,12 +311,7 @@ def get_dataset_sprite(dataset):
     if index < 0 or index >= meta.get("length", 0):
         return jsonify({"error": "index out of range"}), 404
 
-    from latentscope.scripts.sprites import sprite_dir_name
-
-    shard = f"{index // 1000:03d}"
-    sprite_path = os.path.join(
-        _data_dir(), dataset, "sprites", sprite_dir_name(column, size), shard, f"{index}.webp"
-    )
+    sprite_path = _thumbnail_cache_path(dataset, column, index, size)
     if not os.path.exists(sprite_path):
         return jsonify({"error": "no sprite at this index"}), 404
 

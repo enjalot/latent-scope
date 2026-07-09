@@ -165,6 +165,76 @@ def test_ingest_directory_of_images(ingest_env, tmp_path):
     assert sorted(out["filename"])[-1] == "shot_3.png"
 
 
+def sprite_path(data_dir, dataset_id, index, column="image", size=150):
+    shard = f"{index // 1000:03d}"
+    return os.path.join(
+        data_dir, dataset_id, "sprites", f"{column}-{size}", shard, f"{index}.webp"
+    )
+
+
+def test_ingest_directory_prebakes_150px_thumbnails(ingest_env, tmp_path):
+    """Folder ingest generates a 150px webp sprite per row for the image column."""
+    from latentscope.scripts.ingest import ingest_file
+
+    img_dir = tmp_path / "shots"
+    img_dir.mkdir()
+    for i in range(3):
+        Image.new("RGB", (300, 200), (i * 60, 30, 30)).save(img_dir / f"shot_{i}.png")
+
+    ingest_file("img-sprites", str(img_dir))
+
+    meta = load_meta(ingest_env, "img-sprites")
+    for i in range(meta["length"]):
+        path = sprite_path(ingest_env, "img-sprites", i)
+        assert os.path.exists(path), f"missing prebaked sprite for row {i}"
+        with Image.open(path) as img:
+            assert img.format == "WEBP"
+            assert max(img.size) <= 150
+
+    # manifest marks the set complete so /sprites/status reports generated
+    manifest_file = os.path.join(ingest_env, "img-sprites", "sprites", "image-150.json")
+    with open(manifest_file) as f:
+        manifest = json.load(f)
+    assert manifest["complete"] is True
+    assert manifest["count"] == meta["length"]
+    assert manifest["size"] == 150
+
+
+def test_ingest_skip_thumbnails_flag(ingest_env, tmp_path):
+    from latentscope.scripts.ingest import ingest_file
+
+    img_dir = tmp_path / "shots"
+    img_dir.mkdir()
+    Image.new("RGB", (8, 8), (10, 20, 30)).save(img_dir / "only.png")
+
+    ingest_file("img-nosprites", str(img_dir), skip_thumbnails=True)
+
+    meta = load_meta(ingest_env, "img-nosprites")
+    assert meta["column_metadata"]["image"]["type"] == "image"
+    assert not os.path.exists(os.path.join(ingest_env, "img-nosprites", "sprites"))
+
+
+def test_ingest_dataframe_prebakes_thumbnails_for_binary_image_columns(ingest_env):
+    """DataFrame ingest (HF-style dict column) also prebakes; url columns don't."""
+    from latentscope.scripts.ingest import ingest
+
+    n = 3
+    df = pd.DataFrame({
+        "image": [{"bytes": make_png_bytes((i * 70, 10, 10)), "path": f"{i}.png"}
+                  for i in range(n)],
+        "image_url": [f"http://example.com/img{i}.png" for i in range(n)],
+        "caption": [f"caption {i}" for i in range(n)],
+    })
+    ingest("img-df-sprites", df, text_column="caption")
+
+    for i in range(n):
+        assert os.path.exists(sprite_path(ingest_env, "img-df-sprites", i))
+    # url-kind image columns are remote: nothing to prebake
+    assert not os.path.exists(
+        os.path.join(ingest_env, "img-df-sprites", "sprites", "image_url-150")
+    )
+
+
 def test_ingest_directory_without_images_raises(ingest_env, tmp_path):
     from latentscope.scripts.ingest import ingest_file
 
