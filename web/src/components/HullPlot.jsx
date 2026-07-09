@@ -83,6 +83,71 @@ const HullPlot = ({
     return Math.max(baseFontSize * scaleFactor, 8); // Ensure minimum font size of 8px
   };
 
+  // Approximate width per character (assuming monospace font)
+  const calculateTextWidth = (text, fontSize) => {
+    const charWidth = fontSize * 0.6; // Monospace fonts are typically ~60% as wide as they are tall
+    return text.length * charWidth + 2 * fontSize; // Add padding of 1 character width on each side
+  };
+
+  // Draw (or reposition) the label pill + text for each hull in screen
+  // coordinates. Called from BOTH effects — on hull changes and on every
+  // zoom/pan — so the background rect and the text always move together.
+  const renderLabels = (svg) => {
+    let labelBgSel = svg.selectAll('rect.hull-label-bg').data(label ? hulls : []);
+    labelBgSel.exit().remove();
+    let labelSel = svg.selectAll('text.hull-label').data(label ? hulls : []);
+    labelSel.exit().remove();
+    if (!label) return;
+
+    const fontSize = calculateScaledFontSize(width, height);
+    const textWidth = calculateTextWidth(labelToShow, fontSize);
+    const pillHeight = fontSize * 2;
+    // The pill sits above the hull's highest point; the text is anchored to
+    // the pill's exact vertical center so the two stay aligned at any font
+    // size (previously the text hung from a fixed baseline offset while the
+    // pill's box scaled with the font).
+    const pillTop = (d) =>
+      hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y -
+      8 -
+      pillHeight;
+
+    // background rects first so the text (appended after) paints on top
+    labelBgSel
+      .enter()
+      .append('rect')
+      .attr('class', 'hull-label-bg')
+      .merge(labelBgSel)
+      .attr('fill', '#7baf5a')
+      .attr('rx', 3)
+      .attr('ry', 3)
+      .attr('opacity', 0.85)
+      .attr('x', (d) => {
+        const centroid = hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height);
+        return centroid.x - textWidth / 2; // Center the background
+      })
+      .attr('y', pillTop)
+      .attr('width', textWidth)
+      .attr('height', pillHeight);
+
+    labelSel
+      .enter()
+      .append('text')
+      .attr('class', 'hull-label')
+      .merge(labelSel)
+      .attr('dy', null) // clear the legacy baseline nudge on merged elements
+      .attr(
+        'x',
+        (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
+      )
+      .attr('y', (d) => pillTop(d) + pillHeight / 2)
+      .attr('text-anchor', 'middle')
+      .attr('fill', 'white')
+      .attr('font-family', 'monospace')
+      .attr('dominant-baseline', 'central')
+      .attr('font-size', fontSize)
+      .text(labelToShow);
+  };
+
   useEffect(() => {
     const validHulls = hulls.filter((h) => h && h.length > 0);
     if (!xDomain || !yDomain || !validHulls.length) return;
@@ -174,81 +239,8 @@ const HullPlot = ({
     //   }
     // })
 
-    // Handle hull labels
-    let labelSel = svg.selectAll('text.hull-label').data(hulls);
-
-    labelSel.exit().remove();
-
-    // Add background rectangles for labels so that can be seen over the data points
-    let labelBgSel = svg.selectAll('rect.hull-label-bg').data(hulls);
-
-    labelBgSel.exit().remove();
-
-    if (label) {
-      // Add this helper function to calculate text width
-      const calculateTextWidth = (text, fontSize) => {
-        // Approximate width per character (assuming monospace font)
-        const charWidth = fontSize * 0.6; // Monospace fonts are typically ~60% as wide as they are tall
-        return text.length * charWidth + 2 * fontSize; // Add padding of 1 character width on each side
-      };
-
-      labelBgSel
-        .enter()
-        .append('rect')
-        .attr('class', 'hull-label-bg')
-        .merge(labelBgSel)
-        .attr('fill', '#7baf5a')
-        .attr('rx', 3)
-        .attr('ry', 3)
-        .attr('opacity', 0.85)
-        .attr('x', (d) => {
-          const centroid = hullToSvgCoordinate(
-            calculateCentroid(d),
-            xDomain,
-            yDomain,
-            width,
-            height
-          );
-          const fontSize = calculateScaledFontSize(width, height);
-          const textWidth = calculateTextWidth(labelToShow, fontSize);
-          return centroid.x - textWidth / 2; // Center the background
-        })
-        .attr('y', (d) => {
-          const highest = hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height);
-          return highest.y - 20; // Position above the highest point
-        })
-        .attr('width', () => {
-          const fontSize = calculateScaledFontSize(width, height);
-          return calculateTextWidth(labelToShow, fontSize);
-        })
-        .attr('height', () => {
-          const fontSize = calculateScaledFontSize(width, height);
-          return fontSize * 2; // Make height 1.5 times the font size for proper padding
-        });
-    }
-
-    if (label) {
-      labelSel
-        .enter()
-        .append('text')
-        .attr('class', 'hull-label')
-        .merge(labelSel)
-        .attr('dy', -5)
-        .attr(
-          'x',
-          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
-        )
-        .attr(
-          'y',
-          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
-        )
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .attr('font-family', 'monospace')
-        .attr('alignment-baseline', 'auto')
-        .attr('font-size', calculateScaledFontSize(width, height))
-        .text(label.label);
-    }
+    // Handle hull labels (pill + text together)
+    renderLabels(svg);
 
     setTimeout(() => {
       prevHulls.current = hulls;
@@ -275,32 +267,10 @@ const HullPlot = ({
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    // Handle hull labels
-    let labelSel = svg.selectAll('text.hull-label').data(hulls);
-
-    labelSel.exit().remove();
-
-    if (label) {
-      labelSel
-        .enter()
-        .append('text')
-        .attr('class', 'hull-label')
-        .merge(labelSel)
-        .attr('dy', -5)
-        .attr(
-          'x',
-          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
-        )
-        .attr(
-          'y',
-          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
-        )
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .attr('alignment-baseline', 'auto')
-        .attr('font-size', calculateScaledFontSize(width, height))
-        .text(label.label);
-    }
+    // Handle hull labels: reposition the pill AND the text on every zoom/pan
+    // (previously only the text moved, so the label background stayed behind
+    // at its old position while zooming).
+    renderLabels(svg);
 
     const g = svg.select('g.hull-container');
     g.attr(
@@ -348,22 +318,20 @@ const HullPlot = ({
 
 export default HullPlot;
 
-
-
-// const HullPlotCanvas = ({ 
-//   points, 
+// const HullPlotCanvas = ({
+//   points,
 //   hulls,
 //   fill,
 //   stroke,
 //   strokeWidth,
 //   symbol,
-//   xDomain, 
-//   yDomain, 
-//   width, 
+//   xDomain,
+//   yDomain,
+//   width,
 //   height
 // }) => {
 //   const container = useRef();
-  
+
 //   useEffect(() => {
 //     if(xDomain && yDomain) {
 //       const xScale = scaleLinear()
@@ -377,7 +345,7 @@ export default HullPlot;
 //       const canvas = container.current
 //       const ctx = canvas.getContext('2d')
 //       ctx.clearRect(0, 0, width, height)
-//       ctx.fillStyle = fill 
+//       ctx.fillStyle = fill
 //       ctx.strokeStyle = stroke
 //       ctx.font = `${zScale(strokeWidth)}px monospace`
 //       ctx.globalAlpha = 0.75
@@ -404,10 +372,10 @@ export default HullPlot;
 
 //   }, [points, hulls, fill, stroke, strokeWidth, xDomain, yDomain, width, height])
 
-//   return <canvas 
+//   return <canvas
 //     className="hull-plot"
-//     ref={container} 
-//     width={width} 
+//     ref={container}
+//     width={width}
 //     height={height} />;
 // };
 
