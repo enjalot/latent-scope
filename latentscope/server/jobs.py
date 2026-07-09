@@ -611,6 +611,7 @@ def run_cluster():
     method = request.values.get('method', 'evoc')
     n_neighbors = request.values.get('n_neighbors')
     noise_level = request.values.get('noise_level')
+    approx_n_clusters = request.values.get('approx_n_clusters')
     # Input space to cluster on: 2D umap projection or high-dim embeddings.
     # Consumed by ls-cluster (WP-B). Optional; the script defaults per method
     # (evoc->embedding, hdbscan/kmeans/gmm->umap) when omitted here.
@@ -645,6 +646,8 @@ def run_cluster():
             command.append(f'--n_neighbors={n_neighbors}')
         if noise_level is not None:
             command.append(f'--noise_level={noise_level}')
+        if approx_n_clusters and approx_n_clusters not in ('null', '0'):
+            command.append(f'--approx_n_clusters={approx_n_clusters}')
     if cluster_on:
         command.append(f'--cluster_on={cluster_on}')
     if name:
