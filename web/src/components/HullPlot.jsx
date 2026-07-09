@@ -101,6 +101,15 @@ const HullPlot = ({
 
     const fontSize = calculateScaledFontSize(width, height);
     const textWidth = calculateTextWidth(labelToShow, fontSize);
+    const pillHeight = fontSize * 2;
+    // The pill sits above the hull's highest point; the text is anchored to
+    // the pill's exact vertical center so the two stay aligned at any font
+    // size (previously the text hung from a fixed baseline offset while the
+    // pill's box scaled with the font).
+    const pillTop = (d) =>
+      hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y -
+      8 -
+      pillHeight;
 
     // background rects first so the text (appended after) paints on top
     labelBgSel
@@ -116,28 +125,25 @@ const HullPlot = ({
         const centroid = hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height);
         return centroid.x - textWidth / 2; // Center the background
       })
-      .attr('y', (d) => {
-        const highest = hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height);
-        return highest.y - 20; // Position above the highest point
-      })
+      .attr('y', pillTop)
       .attr('width', textWidth)
-      .attr('height', fontSize * 2);
+      .attr('height', pillHeight);
 
     labelSel
       .enter()
       .append('text')
       .attr('class', 'hull-label')
       .merge(labelSel)
-      .attr('dy', -5)
+      .attr('dy', null) // clear the legacy baseline nudge on merged elements
       .attr(
         'x',
         (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
       )
-      .attr('y', (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y)
+      .attr('y', (d) => pillTop(d) + pillHeight / 2)
       .attr('text-anchor', 'middle')
       .attr('fill', 'white')
       .attr('font-family', 'monospace')
-      .attr('alignment-baseline', 'auto')
+      .attr('dominant-baseline', 'central')
       .attr('font-size', fontSize)
       .text(labelToShow);
   };
