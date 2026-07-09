@@ -1,6 +1,66 @@
+@import "./_shared";
+
+// Two-column layout like the other steps: scrollable form on the left,
+// action cards (Explore) on the right under the "Preview:" header.
 .atlas {
+  @include setup-container;
+}
+
+.atlas-preview {
+  @include setup-right;
+}
+
+.preview {
+  @include setup-preview;
+
+  .scope-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 6px;
+  }
+
+  .action-card {
+    background: var(--background);
+    padding: 1.5rem;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    p {
+      color: var(--text-secondary);
+      margin: 0;
+    }
+  }
+
+  .action-card-explore {
+    border: 2px solid var(--semantic-color-semantic-success);
+  }
+
+  .action-link {
+    margin-top: auto;
+    text-decoration: none;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.atlas-empty {
   padding: 16px;
-  max-width: 760px;
+}
+
+.atlas-setup {
+  @include setup-left;
+  padding: 16px;
 
   h3 {
     margin: 0 0 8px;
@@ -117,10 +177,6 @@
       margin: 0 0 10px;
       padding-left: 18px;
       font-size: 13px;
-    }
-
-    .exploreLink {
-      font-weight: 600;
     }
   }
 }

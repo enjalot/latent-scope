@@ -13,6 +13,9 @@ function PointLabel({
   textColor = 'white',
   k,
   maxZoom,
+  // Tone the dots down (smaller, translucent) so they don't cover the
+  // imagery on image-map scopes. The hovered dot stays fully opaque.
+  muted = false,
 }) {
   const svgRef = useRef();
 
@@ -41,6 +44,8 @@ function PointLabel({
     const svg = select(svgRef.current);
 
     let sf = 1.25 + (k / maxZoom) * 4;
+    // muted dots also stop growing with zoom so they never eclipse an image cell
+    if (muted) sf = Math.min(sf, 2.5) * 0.7;
 
     // Remove existing elements
     svg.selectAll('circle.point-label-circle').remove();
@@ -70,6 +75,9 @@ function PointLabel({
       })
       .attr('r', (d) => (hovered && d.ls_index === hovered.index ? 8 * sf : 6 * sf))
       .attr('fill', contrastColor)
+      .attr('fill-opacity', (d) =>
+        muted ? (hovered && d.ls_index === hovered.index ? 0.95 : 0.55) : 1
+      )
       .attr('stroke', (d) => (hovered && d.ls_index === hovered.index ? '#111' : 'none'))
       .attr('stroke-width', 2);
 
@@ -96,8 +104,11 @@ function PointLabel({
       .attr('font-family', 'monospace')
       .attr('dominant-baseline', 'middle')
       .attr('font-size', fontSize)
+      .attr('fill-opacity', (d) =>
+        muted ? (hovered && d.ls_index === hovered.index ? 1 : 0.85) : 1
+      )
       .text((d) => d.index + 1);
-  }, [selectedPoints, xDomain, yDomain, width, height, textColor, hovered]);
+  }, [selectedPoints, xDomain, yDomain, width, height, textColor, hovered, muted]);
 
   return (
     <svg ref={svgRef} className={styles.pointLabelPlot} width={width} height={height}>

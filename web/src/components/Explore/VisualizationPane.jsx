@@ -106,8 +106,14 @@ function VisualizationPane({
     [atlasStatus]
   );
 
-  const { featureFilter, clusterFilter, shownIndices, filteredIndices, filterConfig, filterActive } =
-    useFilter();
+  const {
+    featureFilter,
+    clusterFilter,
+    shownIndices,
+    filteredIndices,
+    filterConfig,
+    filterActive,
+  } = useFilter();
 
   // only show the hull if we are filtering by cluster
   const showHull = filterConfig?.type === filterConstants.CLUSTER;
@@ -321,11 +327,84 @@ function VisualizationPane({
 
   // Level of detail for the image map at the current zoom (tunable thresholds).
   const lod = useMemo(
-    () => atlasLod(transform?.k || 1, width, atlasResolutions, vizConfig.atlasSwitchPx, vizConfig.atlasPointsPx),
+    () =>
+      atlasLod(
+        transform?.k || 1,
+        width,
+        atlasResolutions,
+        vizConfig.atlasSwitchPx,
+        vizConfig.atlasPointsPx
+      ),
     [transform, width, atlasResolutions, vizConfig.atlasSwitchPx, vizConfig.atlasPointsPx]
   );
   // Points drawn on top of the atlas: past the deepest grid, or always-on.
   const pointsVisible = imageMode && (lod.deepest || alwaysShowPoints);
+
+  // Cluster hull layers, shared between the text-mode position (under the
+  // atlas/heatmap) and the image-mode position (above them). In image mode
+  // the all-clusters outline is drawn thinner and more transparent so it
+  // reads as a subtle boundary over the imagery rather than a drawn shape.
+  const hullLayers = (
+    <>
+      {vizConfig.showClusterOutlines && hulls.length > 0 && (
+        <HullPlot
+          hulls={hulls}
+          // stroke="#E7C7AA"
+          // stroke={cluster && cluster.hull ? 'lightgray' : '#E7C7AA'}
+          // stroke={isDark ? '#E0EFFF' : '#d4b297'}
+          stroke="#d4b297"
+          // stroke={'#E0EFFF'}
+          fill="none"
+          duration={200}
+          strokeWidth={imageMode ? 0.5 : 0.75}
+          opacity={imageMode ? 0.45 : 0.75}
+          xDomain={xDomain}
+          yDomain={yDomain}
+          width={width}
+          height={height}
+        />
+      )}
+      {hoveredCluster && hoveredHulls?.length > 0 && scope.cluster_labels_lookup && (
+        <HullPlot
+          hulls={hoveredHulls}
+          fill="#8bcf66"
+          stroke="#6aa64f"
+          strokeWidth={2.5}
+          // if there are selected indices already, that means other points will be less visible
+          // so we can make the hull a bit more transparent
+          opacity={imageMode ? 0.15 : 0.2}
+          duration={0}
+          xDomain={xDomain}
+          yDomain={yDomain}
+          width={width}
+          height={height}
+          label={scope.cluster_labels_lookup[hoveredCluster.cluster]}
+          k={transform.k}
+          maxZoom={maxZoom}
+        />
+      )}
+      {/* Cluster is selected via filter */}
+      {showHull &&
+        clusterFilter.cluster &&
+        clusterFilter.cluster.hull?.length > 0 &&
+        !scope.ignore_hulls &&
+        scope.cluster_labels_lookup && (
+          <HullPlot
+            hulls={clusterHulls}
+            fill="#D3965E"
+            stroke="#C77C37"
+            strokeWidth={3}
+            opacity={imageMode ? 0.18 : 0.25}
+            duration={0}
+            xDomain={xDomain}
+            yDomain={yDomain}
+            width={width}
+            height={height}
+            label={scope.cluster_labels_lookup[clusterFilter.cluster.cluster]}
+          />
+        )}
+    </>
+  );
 
   // ensure the order of selectedPoints
   // exactly matches the ordering of indexes in shownIndices.
@@ -436,63 +515,10 @@ function VisualizationPane({
             height={height}
           />
         )}
-        {/* show all the hulls */}
-        {vizConfig.showClusterOutlines && hulls.length && (
-          <HullPlot
-            hulls={hulls}
-            // stroke="#E7C7AA"
-            // stroke={cluster && cluster.hull ? 'lightgray' : '#E7C7AA'}
-            // stroke={isDark ? '#E0EFFF' : '#d4b297'}
-            stroke="#d4b297"
-            // stroke={'#E0EFFF'}
-            fill="none"
-            duration={200}
-            strokeWidth={0.75}
-            xDomain={xDomain}
-            yDomain={yDomain}
-            width={width}
-            height={height}
-          />
-        )}
-        {hoveredCluster && hoveredHulls?.length > 0 && scope.cluster_labels_lookup && (
-          <HullPlot
-            hulls={hoveredHulls}
-            fill="#8bcf66"
-            stroke="#6aa64f"
-            strokeWidth={2.5}
-            // if there are selected indices already, that means other points will be less visible
-            // so we can make the hull a bit more transparent
-            opacity={0.2}
-            duration={0}
-            xDomain={xDomain}
-            yDomain={yDomain}
-            width={width}
-            height={height}
-            label={scope.cluster_labels_lookup[hoveredCluster.cluster]}
-            k={transform.k}
-            maxZoom={maxZoom}
-          />
-        )}
-        {/* Cluster is selected via filter */}
-        {showHull &&
-          clusterFilter.cluster &&
-          clusterFilter.cluster.hull?.length > 0 &&
-          !scope.ignore_hulls &&
-          scope.cluster_labels_lookup && (
-            <HullPlot
-              hulls={clusterHulls}
-              fill="#D3965E"
-              stroke="#C77C37"
-              strokeWidth={3}
-              opacity={0.25}
-              duration={0}
-              xDomain={xDomain}
-              yDomain={yDomain}
-              width={width}
-              height={height}
-              label={scope.cluster_labels_lookup[clusterFilter.cluster.cluster]}
-            />
-          )}
+        {/* Cluster hulls render here (under the atlas) for text scopes; in
+            image mode they render later, above the atlas/heatmap tiles, so
+            boundaries stay visible over the imagery. */}
+        {!imageMode && hullLayers}
         {/* Image map: the atlas sheet (representative image per heatmap cell)
             takes over from the heatmap as you zoom in. */}
         {imageMode && scope?.id && atlasStatus.generated && (
@@ -560,6 +586,8 @@ function VisualizationPane({
             // stroke="black"
           />
         )}
+        {/* In image mode the hulls sit above the atlas/heatmap imagery */}
+        {imageMode && hullLayers}
         <PointLabel
           selectedPoints={selectedPoints}
           hovered={hovered}
@@ -569,6 +597,7 @@ function VisualizationPane({
           height={height}
           k={transform.k}
           maxZoom={maxZoom}
+          muted={imageMode}
         />
         {isSmallScreen && (
           <CrossHair xDomain={xDomain} yDomain={yDomain} width={width} height={height} />

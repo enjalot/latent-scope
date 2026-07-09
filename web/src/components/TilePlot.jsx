@@ -57,32 +57,34 @@ const TilePlot = ({
 
       if(!tiles.length) return
 
-      let rw = zScale(width / tileMeta.cols * 2)
+      // Cell size in pixels per axis. The x and y scales stretch the square
+      // data domain to the (possibly non-square) canvas, so a cell is a
+      // rectangle on screen — sizing per axis keeps the grid gapless and
+      // aligned with the atlas image tiles, which fill the same rects.
+      let rwx = Math.abs(xScale(tileMeta.size) - xScale(0))
+      let rwy = Math.abs(yScale(tileMeta.size) - yScale(0))
 
       // global extent of count
       let countExtent = extent(tiles.map(tile => tile.points.length))
       let colorScale = scaleSequential(interpolateOranges)
         .domain(countExtent)
 
-      console.log("tiles", tiles)
-
       tiles.map((tile) => {
         if(!tile) return;
         let tx = xScale(tile.tile_index % tileMeta.cols * tileMeta.size - tileMeta.cols * tileMeta.size / 2)
         let ty = yScale(Math.floor(tile.tile_index / tileMeta.cols) * tileMeta.size - tileMeta.cols * tileMeta.size / 2 + tileMeta.size)
-        // if(i < 5) console.log("tile", tile, tx, ty, rw)
 
         if(fill){
           // calculate color based on the count
           let count = tile.points.length
           let color = colorScale(count)
           ctx.fillStyle = color
-          ctx.fillRect(tx, ty, rw, rw);
+          ctx.fillRect(tx, ty, rwx, rwy);
         }
         if(stroke){
-          ctx.strokeRect(tx, ty, rw, rw);
+          ctx.strokeRect(tx, ty, rwx, rwy);
         }
-        
+
       })
     }
 
