@@ -235,6 +235,34 @@ def test_ingest_dataframe_prebakes_thumbnails_for_binary_image_columns(ingest_en
     )
 
 
+def test_reingest_clears_stale_thumbnail_cache(ingest_env):
+    """Re-ingesting a dataset id invalidates cached thumbnails: old rows'
+    thumbnails must not survive (the /image cache hit is served before the
+    parquet is consulted, so stale files would keep being served)."""
+    from latentscope.scripts.ingest import ingest
+
+    def frame(n):
+        return pd.DataFrame({
+            "image": [{"bytes": make_png_bytes((i * 40, 20, 20)), "path": f"{i}.png"}
+                      for i in range(n)],
+            "caption": [f"caption {i}" for i in range(n)],
+        })
+
+    ingest("img-reingest", frame(3), text_column="caption")
+    assert os.path.exists(sprite_path(ingest_env, "img-reingest", 2))
+
+    # re-ingest with fewer rows: index 2 no longer exists
+    ingest("img-reingest", frame(2), text_column="caption")
+    assert os.path.exists(sprite_path(ingest_env, "img-reingest", 1))
+    assert not os.path.exists(sprite_path(ingest_env, "img-reingest", 2))
+
+    # re-ingest with prebake skipped still clears the stale cache
+    ingest("img-reingest", frame(2), text_column="caption", skip_thumbnails=True)
+    assert not os.path.exists(
+        os.path.join(ingest_env, "img-reingest", "sprites")
+    )
+
+
 def test_ingest_directory_without_images_raises(ingest_env, tmp_path):
     from latentscope.scripts.ingest import ingest_file
 

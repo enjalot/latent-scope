@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import shutil
 
 from latentscope import __version__
 from latentscope.util import get_data_dir
@@ -333,6 +334,17 @@ def ingest(dataset_id, df, text_column=None, skip_thumbnails=False):
         if not os.path.exists(file_path):
             with open(file_path, "w") as file:
                 file.write("")  # Initialize with an empty JSON object
+
+    # The sprites dir is a thumbnail cache derived from input.parquet; a
+    # re-ingest of the same dataset id changes the rows underneath it, so any
+    # existing cache is stale (generate_sprites resumes past existing files
+    # and the /image cache hit is served before the parquet is consulted).
+    # Clear it unconditionally — it self-heals lazily even when prebake is
+    # skipped.
+    sprites_dir = os.path.join(DATA_DIR, dataset_id, "sprites")
+    if os.path.exists(sprites_dir):
+        print(f"clearing stale thumbnail cache {sprites_dir}")
+        shutil.rmtree(sprites_dir, ignore_errors=True)
 
     # Prebake 150px thumbnails for binary image columns so the first hover /
     # table render is served straight from disk instead of decoding the
