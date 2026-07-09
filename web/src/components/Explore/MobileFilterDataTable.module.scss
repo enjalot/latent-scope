@@ -65,9 +65,7 @@
   user-select: none;
   -webkit-touch-callout: none;
   display: flex;
-  flex-direction: row;
-  gap: 8px;
-  align-items: flex-start;
+  flex-direction: column;
   transition: all 0.2s ease-out;
 }
 
@@ -77,6 +75,33 @@
   border-bottom: 1px solid #eee;
 }
 
+.rowHeader {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.rowChevron {
+  margin-left: auto;
+  padding: 0 4px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+// The expanded body reuses the desktop drawer's detail view (images with
+// lightbox, text block, per-type field list).
+.rowDetail {
+  padding: 8px 4px 4px 26px;
+  user-select: text;
+  -webkit-user-select: text;
+
+  img {
+    max-width: 100%;
+  }
+}
+
 .rowText {
   font-size: 16px;
   overflow: hidden;
@@ -84,14 +109,6 @@
   white-space: nowrap;
   transition: all 0.2s ease-out;
   max-width: calc(100vw - 80px);
-}
-
-.rowText.expandedText {
-  white-space: normal;
-  text-overflow: clip;
-  max-height: none;
-  line-height: 1.4;
-  padding: 4px 0;
 }
 
 .rowCluster {

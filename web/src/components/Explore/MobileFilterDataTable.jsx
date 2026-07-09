@@ -4,32 +4,46 @@ import styles from './MobileFilterDataTable.module.scss';
 import { useFilter } from '@/contexts/FilterContext';
 import { useScope } from '@/contexts/ScopeContext';
 import ClusterIcon from './Search/ClusterIcon';
+import PointDetailContent from './PointDetailContent';
 
-const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index }) {
+const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index, onExpanded }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const expand = useCallback(() => setIsExpanded(!isExpanded), [isExpanded]);
+  const toggle = useCallback(() => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      if (next) onExpanded?.();
+      return next;
+    });
+  }, [onExpanded]);
 
   return (
     <div
       className={`${styles.dataRow} ${isExpanded ? styles.expanded : ''}`}
       onMouseEnter={() => onHover(row.ls_index)}
       onMouseLeave={() => onHover(null)}
-      onClick={expand}
     >
-      <div className={styles.rowIndex}>
-        <div className={styles.indexCircle}>{index + 1}</div>
-      </div>
-      <div className={styles.rowPreview}>
-        <div className={`${styles.rowText} ${isExpanded ? styles.expandedText : ''}`}>
-          {row[dataset.text_column]}
+      {/* Tap the header to expand/collapse; the detail body below is the
+          same per-datatype view as the desktop drawer. */}
+      <div className={styles.rowHeader} onClick={toggle}>
+        <div className={styles.rowIndex}>
+          <div className={styles.indexCircle}>{index + 1}</div>
         </div>
-        <div className={styles.rowCluster}>
-          <p className={styles.textPreview}>
-            <ClusterIcon cluster={row.ls_cluster} />
-            {clusterMap[row.ls_index]?.label}
-          </p>
+        <div className={styles.rowPreview}>
+          <div className={styles.rowText}>{row[dataset.text_column]}</div>
+          <div className={styles.rowCluster}>
+            <p className={styles.textPreview}>
+              <ClusterIcon cluster={row.ls_cluster} />
+              {clusterMap[row.ls_index]?.label}
+            </p>
+          </div>
         </div>
+        <div className={styles.rowChevron}>{isExpanded ? '▾' : '▸'}</div>
       </div>
+      {isExpanded && (
+        <div className={styles.rowDetail} onClick={(e) => e.stopPropagation()}>
+          <PointDetailContent row={row} index={row.ls_index} />
+        </div>
+      )}
     </div>
   );
 });
@@ -62,6 +76,12 @@ function MobileFilterDataTable({ dataset, onHover = () => {}, onClick }) {
   const handleTouchEnd = () => {
     setIsDragging(false);
   };
+
+  // When a row expands, make sure the sheet is tall enough to actually see
+  // the detail (images especially) without having to drag it up first.
+  const handleRowExpanded = useCallback(() => {
+    setContainerHeight((height) => Math.max(height, Math.min(520, window.innerHeight * 0.6)));
+  }, []);
 
   if (dataTableRows.length === 0) {
     return null;
@@ -106,6 +126,7 @@ function MobileFilterDataTable({ dataset, onHover = () => {}, onClick }) {
                 onClick={onClick}
                 dataset={dataset}
                 clusterMap={clusterMap}
+                onExpanded={handleRowExpanded}
               />
             ))}
           </div>
