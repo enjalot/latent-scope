@@ -19,6 +19,8 @@ class NLTKChatProvider(ChatModelProvider):
                 return " ".join(tokens)
 
         nltk.download('punkt')
+        # nltk >= 3.9 moved the pretrained tokenizer tables to punkt_tab
+        nltk.download('punkt_tab')
         nltk.download('stopwords')
         self.encoder = Encoder()
 
