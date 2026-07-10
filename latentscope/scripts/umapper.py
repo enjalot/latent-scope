@@ -15,6 +15,8 @@ def main():
     parser.add_argument('embedding_id', type=str, help='Name of embedding model to use')
     parser.add_argument('neighbors', type=int, nargs="?", help='Output file', default=25)
     parser.add_argument('min_dist', type=float, nargs="?", help='Output file', default=0.075)
+    parser.add_argument('--dimensions', type=int, help='Number of UMAP output dimensions (2 or 3)',
+                        default=2)
     parser.add_argument('--init', type=str, help='Initialize with UMAP', default=None)
     parser.add_argument('--align', type=str, help='Align UMAP with multiple embeddings', default=None)
     parser.add_argument('--save', action='store_true', help='Save the UMAP model')
@@ -34,11 +36,11 @@ def main():
     if args.sae_id:
         sparse_umapper(args.dataset_id, args.embedding_id, args.sae_id, args.neighbors, args.min_dist,
                        save=args.save, init=args.init, seed=seed, name=args.name,
-                       description=args.description)
+                       description=args.description, dimensions=args.dimensions)
     else:
         umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist, save=args.save,
                 init=args.init, align=args.align, seed=seed, name=args.name,
-                description=args.description)
+                description=args.description, dimensions=args.dimensions)
 
 
 # TODO move this into shared space
@@ -80,7 +82,7 @@ def load_embeddings(dataset_id, embedding_id):
         # Use LanceDB-backed store (with HDF5 fallback)
         return lance_load_embeddings(DATA_DIR, dataset_id, embedding_id)
 
-def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
+def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None, n_components=2):
     """Build a CPU umap-learn reducer with our canonical params."""
     import umap
 
@@ -89,7 +91,7 @@ def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
         min_dist=min_dist,
         metric='cosine',
         random_state=seed,
-        n_components=2,
+        n_components=n_components,
         verbose=True,
     )
     if init_array is not None:
@@ -97,7 +99,7 @@ def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
     return umap.UMAP(**kwargs)
 
 
-def _make_cuml_reducer(neighbors, min_dist, seed):
+def _make_cuml_reducer(neighbors, min_dist, seed, n_components=2):
     """Build a cuML (GPU) reducer, mapping umap-learn params faithfully.
 
     Param mapping umap-learn -> cuml.manifold.UMAP:
@@ -117,7 +119,7 @@ def _make_cuml_reducer(neighbors, min_dist, seed):
         min_dist=min_dist,
         metric='cosine',
         random_state=seed,
-        n_components=2,
+        n_components=n_components,
         verbose=True,
     )
 
@@ -133,8 +135,8 @@ def _to_numpy(arr):
     return np.asarray(arr)
 
 
-def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=None):
-    """Fit-transform embeddings to 2D, preferring cuML when requested.
+def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=None, n_components=2):
+    """Fit-transform embeddings to ``n_components`` dims, preferring cuML when requested.
 
     Returns (umap_embeddings, reducer). On the GPU path the fitted cuML reducer
     is returned too (callers only pickle CPU reducers). If cuML construction or
@@ -143,7 +145,7 @@ def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=Non
     """
     if use_cuml and init_array is None:
         try:
-            reducer = _make_cuml_reducer(neighbors, min_dist, seed)
+            reducer = _make_cuml_reducer(neighbors, min_dist, seed, n_components=n_components)
             print("umapper: reducing with cuML GPU UMAP (metric=cosine)")
             sys.stdout.flush()
             umap_embeddings = _to_numpy(reducer.fit_transform(embeddings))
@@ -154,15 +156,26 @@ def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=Non
     elif use_cuml and init_array is not None:
         print("umapper: warm-start init has no cuML equivalent; using CPU umap-learn")
 
-    reducer = _make_cpu_reducer(neighbors, min_dist, seed, init_array)
+    reducer = _make_cpu_reducer(neighbors, min_dist, seed, init_array, n_components=n_components)
     print("umapper: reducing with CPU umap-learn UMAP (metric=cosine)")
     sys.stdout.flush()
     umap_embeddings = reducer.fit_transform(embeddings)
     return umap_embeddings, reducer
 
 
+def _umap_columns(dimensions):
+    """Canonical parquet column names for an ``n_components``-D UMAP.
+
+    2 -> [x, y]; 3 -> [x, y, z]. Higher dims fall back to x, y, z, d3, d4, ...
+    """
+    base = ['x', 'y', 'z']
+    if dimensions <= len(base):
+        return base[:dimensions]
+    return base + [f"d{i}" for i in range(len(base), dimensions)]
+
+
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None,
-            seed=None, name=None, description=None):
+            seed=None, name=None, description=None, dimensions=2):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -210,8 +223,8 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         umap_embeddings = 2 * umap_embeddings - 1
 
         print("writing normalized umap", umap_id)
-        # save umap embeddings to a parquet file with columns x,y
-        df = pd.DataFrame(umap_embeddings, columns=['x', 'y'])
+        # save umap embeddings to a parquet file with columns x,y[,z]
+        df = pd.DataFrame(umap_embeddings, columns=_umap_columns(dimensions))
 
         # TODO I moved this to scope.py it's cheap and it makes it backwards compatible
         # Calculate tile indices for a 64x64 grid from -1 to 1
@@ -254,6 +267,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
                 "embedding_id": emb_id,
                 "neighbors": neighbors,
                 "min_dist": min_dist,
+                "dimensions": dimensions,
                 "min_values": min_values.tolist(),
                 "max_values": max_values.tolist(),
             }
@@ -302,7 +316,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             min_dist=min_dist,
             metric='cosine',
             random_state=seed,
-            n_components=2,
+            n_components=dimensions,
             verbose=True,
         )
         print("a_embeddings", len(a_embeddings), a_embeddings[0].shape[0])
@@ -329,10 +343,11 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     use_cuml = res.use_cuml and not save
     if res.use_cuml and save:
         print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
-    print("reducing", embeddings.shape[1], "embeddings to 2 dimensions")
+    print("reducing", embeddings.shape[1], "embeddings to", dimensions, "dimensions")
 
     umap_embeddings, reducer = _reduce_umap(
-        embeddings, neighbors, min_dist, seed, use_cuml, init_array=init_array
+        embeddings, neighbors, min_dist, seed, use_cuml, init_array=init_array,
+        n_components=dimensions
     )
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id)
 
@@ -344,7 +359,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     print("done with", umap_id)
 
 def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False,
-                   init=None, seed=None, name=None, description=None):
+                   init=None, seed=None, name=None, description=None, dimensions=2):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -407,8 +422,8 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
         umap_embeddings = 2 * umap_embeddings - 1
 
         print("writing normalized umap", umap_id)
-        # save umap embeddings to a parquet file with columns x,y
-        df = pd.DataFrame(umap_embeddings, columns=['x', 'y'])
+        # save umap embeddings to a parquet file with columns x,y[,z]
+        df = pd.DataFrame(umap_embeddings, columns=_umap_columns(dimensions))
         output_file = os.path.join(umap_dir, f"{umap_id}.parquet")
         df.to_parquet(output_file)
         print("wrote", output_file)
@@ -430,6 +445,7 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
                 "sae_id": sae_id,
                 "neighbors": neighbors,
                 "min_dist": min_dist,
+                "dimensions": dimensions,
             }
             if init is not None and init != "":
                 meta["init"] = init,
@@ -454,12 +470,13 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
     use_cuml = res.use_cuml and not save
     if res.use_cuml and save:
         print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
-    print("reducing", matrix.shape[0], "sparse features to 2 dimensions")
+    print("reducing", matrix.shape[0], "sparse features to", dimensions, "dimensions")
 
     import time
     time.sleep(1)  # Wait for a second before starting
     umap_embeddings, reducer = _reduce_umap(
-        matrix, neighbors, min_dist, seed, use_cuml, init_array=init_array
+        matrix, neighbors, min_dist, seed, use_cuml, init_array=init_array,
+        n_components=dimensions
     )
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id, sae_id)
 
