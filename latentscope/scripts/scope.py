@@ -8,6 +8,53 @@ from latentscope import __version__
 from latentscope.util import get_data_dir
 
 
+def make_tiles(x, y, num_tiles=64):
+    """Map normalized [-1, 1] x/y coords to a flat 2D grid-cell index.
+
+    Row-major, x fastest: ``idx = row * num_tiles + col`` over an
+    ``num_tiles x num_tiles`` grid on the [-1, 1]^2 domain.
+    """
+    import numpy as np
+    tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
+
+    # Calculate row and column indices (0..num_tiles-1) for each point
+    col_indices = np.floor((x + 1) / tile_size).astype(int)
+    row_indices = np.floor((y + 1) / tile_size).astype(int)
+
+    # Clip indices to valid range in case of numerical edge cases
+    col_indices = np.clip(col_indices, 0, num_tiles - 1)
+    row_indices = np.clip(row_indices, 0, num_tiles - 1)
+
+    # Convert 2D grid indices to 1D tile index (row * num_cols + col)
+    tile_indices = row_indices * num_tiles + col_indices
+    return tile_indices
+
+
+def make_voxels(x, y, z, num_voxels=32):
+    """Map normalized [-1, 1] x/y/z coords to a flat 3D voxel index.
+
+    FROZEN cell-index convention (see latent-renders ARCHITECTURE.md §2.4).
+    Row-major with x fastest, cubic grid (nx == ny == nz == num_voxels)::
+
+        bin(c, n) = clip(floor((c + 1) / 2 * n), 0, n - 1)
+        idx       = (z_bin * n + y_bin) * n + x_bin
+
+    This must stay byte-identical to binning.py in latent-renders or the
+    voxel<->minecraft<->city alignment drifts. The 2D ``make_tiles`` above is
+    the exact projection of this onto the (x, y) plane.
+    """
+    import numpy as np
+
+    def _bin(c, n):
+        b = np.floor((c + 1) / 2 * n).astype(int)
+        return np.clip(b, 0, n - 1)
+
+    x_bin = _bin(x, num_voxels)
+    y_bin = _bin(y, num_voxels)
+    z_bin = _bin(z, num_voxels)
+    return (z_bin * num_voxels + y_bin) * num_voxels + x_bin
+
+
 def main():
     parser = argparse.ArgumentParser(description='Setup a scope')
     parser.add_argument('dataset_id', type=str, help='Dataset id (directory name in data folder)')
@@ -206,27 +253,16 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     umap_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", umap_id + ".parquet"))
     print("umap columns", umap_df.columns)
 
-    # TODO: make this a shared function with umapper.py
-    # or maybe we don't need it in UMAP.py at all?
-    def make_tiles(x, y, num_tiles=64):
-        import numpy as np
-        tile_size = 2.0 / num_tiles  # Size of each tile (-1 to 1 = range of 2)
-
-        # Calculate row and column indices (0-63) for each point
-        col_indices = np.floor((x + 1) / tile_size).astype(int)
-        row_indices = np.floor((y + 1) / tile_size).astype(int)
-
-        # Clip indices to valid range in case of numerical edge cases
-        col_indices = np.clip(col_indices, 0, num_tiles - 1)
-        row_indices = np.clip(row_indices, 0, num_tiles - 1)
-
-        # Convert 2D grid indices to 1D tile index (row * num_cols + col)
-        tile_indices = row_indices * num_tiles + col_indices
-        return tile_indices
-
     # umap_df['tile_index_32'] = make_tiles(umap_df['x'], umap_df['y'], 32)
     umap_df['tile_index_64'] = make_tiles(umap_df['x'], umap_df['y'], 64)
     umap_df['tile_index_128'] = make_tiles(umap_df['x'], umap_df['y'], 128)
+
+    # When the chosen UMAP is 3D (has a z column), also compute voxel indices.
+    # tile_index_64/128 stay 2D (x,y) so all existing 2D consumers are unchanged.
+    if 'z' in umap_df.columns:
+        print("3D umap detected, computing voxel indices")
+        umap_df['voxel_index_32'] = make_voxels(umap_df['x'], umap_df['y'], umap_df['z'], 32)
+        umap_df['voxel_index_64'] = make_voxels(umap_df['x'], umap_df['y'], umap_df['z'], 64)
 
     cluster_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_id + ".parquet"))
     cluster_labels_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "clusters", cluster_labels_id + ".parquet"))
@@ -256,6 +292,9 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
 
     scope["rows"] = len(scope_parquet)
     scope["columns"] = scope_parquet.columns.tolist()
+    # Record projection dimensionality so external tools can detect a 3D scope
+    # without inspecting the parquet. 3D scopes also carry voxel_index_32/64.
+    scope["dimensions"] = 3 if 'z' in scope_parquet.columns else 2
     scope["size"] = os.path.getsize(os.path.join(directory, id + ".parquet"))
     scope["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 

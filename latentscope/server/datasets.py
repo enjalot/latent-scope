@@ -735,7 +735,12 @@ def get_dataset_cluster_quality(dataset, cluster):
     umap_id = meta["umap_id"]
     umap_path = os.path.join(DATA_DIR, dataset, "umaps", f"{umap_id}.parquet")
     umap_df = pd.read_parquet(umap_path)
-    umap_points = np.column_stack((umap_df['x'], umap_df['y']))
+    # Use all projection axes (x, y and z for 3D umaps) so quality metrics match
+    # the space the clustering was actually computed in.
+    axes = [umap_df['x'], umap_df['y']]
+    if 'z' in umap_df.columns:
+        axes.append(umap_df['z'])
+    umap_points = np.column_stack(axes)
 
     # Load cluster assignments
     cluster_df = pd.read_parquet(os.path.join(cluster_dir, f"{cluster}.parquet"))
