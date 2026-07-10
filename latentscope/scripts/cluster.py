@@ -329,7 +329,12 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
             # All-noise runs (non_noise_labels empty) also land here — even
             # with --assign-noise there are no centroids to reassign to, so
             # everything becomes one big Unclustered cluster with id 0.
-            unclustered_cluster = int(non_noise_labels.shape[0])
+            # max+1 (not len) so a non-dense label set (e.g. the `column`
+            # path supplying labels {1, 2}) can never collide with a real
+            # cluster id; for dense 0..n-1 output the two are identical.
+            unclustered_cluster = (
+                int(non_noise_labels.max()) + 1 if non_noise_labels.shape[0] > 0 else 0
+            )
             cluster_labels[cluster_labels == -1] = unclustered_cluster
             if assign_noise:
                 hint = ("--assign-noise had no effect: there are no non-noise "

@@ -237,6 +237,29 @@ def test_noise_kept_as_unclustered_cluster_by_default(umapped_dataset, monkeypat
     assert unclustered_lookup[0]["hull"] == []
 
 
+def test_unclustered_id_never_collides_with_non_dense_labels(umapped_dataset, monkeypatch):
+    """Non-dense label sets (a gap at 0 — possible via the `column` path or an
+    unexpected backend) must not merge noise into a real cluster: the
+    Unclustered id is max(labels)+1, not len(labels)."""
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    # real clusters 1 and 2 (0 unused) + noise: len(non_noise)=2 would collide
+    # with real cluster 2; max+1=3 must be chosen instead
+    labels = [1] * 50 + [2] * 50 + [-1] * 20
+    _plant_noise_labels(monkeypatch, labels)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    df = _read_cluster_df(data_dir, dataset_id)
+    assert df["cluster"].tolist() == [1] * 50 + [2] * 50 + [3] * 20
+    # real cluster 2 kept exactly its own 50 points
+    assert (df["cluster"] == 2).sum() == 50
+
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert meta["unclustered_cluster"] == 3
+
+
 def test_assign_noise_flag_restores_centroid_reassignment(umapped_dataset,
                                                           monkeypatch, capsys):
     data_dir, dataset_id = umapped_dataset
