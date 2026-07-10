@@ -125,6 +125,13 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     extracts = []
     for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
     # for i, row in clusters.iterrows():
+        if unclustered_cluster is not None and i == unclustered_cluster:
+            # The noise bucket is never sent to the LLM (skipped again below),
+            # so don't spend time/memory loading and tokenizing what can be a
+            # very large set of rows; the empty placeholder keeps extracts
+            # index-aligned with clusters.
+            extracts.append([])
+            continue
         indices = row['indices']
         # items = df.loc[list(indices), text_column]
         items = df.loc[list(indices)]

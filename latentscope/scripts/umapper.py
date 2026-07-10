@@ -531,9 +531,28 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             print(f"relation {i} -> {i + 1}: {len(rel)} shared rows")
         aligned = reducer.fit_transform(a_embeddings, relations=relations)
         print("ALIGNED", aligned)
+        import pickle
+        mappers = getattr(reducer, "mappers_", None)
         for i,emb in enumerate(a_embedding_ids):
+            aligned_umap_id = f"umap-{next_umap_number+i:03d}"
             print("processing", emb, "umap", next_umap_number+i)
-            process_umap_embeddings(f"umap-{next_umap_number+i:03d}", aligned[i], emb, umap_id)
+            process_umap_embeddings(aligned_umap_id, aligned[i], emb, umap_id)
+            if save and mappers is not None:
+                # Each slice's mapper is a full fitted UMAP, but its internal
+                # embedding_ lives in the mapper's OWN frame, not the aligned
+                # frame that was just written (alignment happens outside the
+                # mappers). UMAP.transform embeds new points relative to
+                # embedding_, so swap in the slice's aligned coordinates
+                # before pickling — a later --transform-from then projects
+                # newly appended rows into this slice's raw aligned frame,
+                # and the meta's min/max (or registration transform) carries
+                # them into the published frame.
+                mapper = mappers[i]
+                mapper.embedding_ = np.ascontiguousarray(
+                    np.asarray(aligned[i]), dtype=np.float32)
+                with open(os.path.join(umap_dir, f"{aligned_umap_id}.pkl"), "wb") as f:
+                    pickle.dump(mapper, f)
+                print(f"saved aligned reducer to {aligned_umap_id}.pkl")
 
         print("done with aligned umap")
         return
