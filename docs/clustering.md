@@ -1,6 +1,6 @@
 # Clustering methods
 
-After projecting embeddings with `ls-umap`, the `ls-cluster` step assigns every
+After projecting embeddings with [`ls-umap`](umap.md), the `ls-cluster` step assigns every
 point a cluster id. Latent Scope 1.0 supports four clustering methods and lets
 you choose whether to cluster on the 2D UMAP projection or the original
 high-dimensional embedding ([issue #41](https://github.com/enjalot/latent-scope/issues/41)).

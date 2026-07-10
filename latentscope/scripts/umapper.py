@@ -18,6 +18,12 @@ def main():
     parser.add_argument('--init', type=str, help='Initialize with UMAP', default=None)
     parser.add_argument('--align', type=str, help='Align UMAP with multiple embeddings', default=None)
     parser.add_argument('--save', action='store_true', help='Save the UMAP model')
+    parser.add_argument('--transform-from', dest='transform_from', type=str, default=None,
+                        help='Project rows appended since an existing umap through its saved '
+                             '(--save) reducer; old points keep their published positions')
+    parser.add_argument('--register-to', dest='register_to', type=str, default=None,
+                        help='Register the new layout onto an existing umap with a similarity '
+                             'transform fit on the shared row prefix')
     parser.add_argument('--seed', type=int, help='Random seed', default=None)
     parser.add_argument('--sae_id', type=str, help='SAE to project instead of embedding', default=None)
     parser.add_argument('--name', type=str, help='Human-friendly name for this umap', default=None)
@@ -31,14 +37,24 @@ def main():
     if seed == -1:
         seed = None
 
-    if args.sae_id:
+    if args.transform_from:
+        if args.align or args.init or args.save or args.sae_id or args.register_to:
+            parser.error("--transform-from cannot be combined with "
+                         "--align/--init/--save/--sae_id/--register-to")
+        # neighbors/min_dist are ignored in this mode (the saved reducer already
+        # encodes them); the source umap's values are inherited for provenance.
+        transform_umap(args.dataset_id, args.embedding_id, args.transform_from,
+                       name=args.name, description=args.description)
+    elif args.sae_id:
+        if args.register_to:
+            parser.error("--register-to is not supported with --sae_id")
         sparse_umapper(args.dataset_id, args.embedding_id, args.sae_id, args.neighbors, args.min_dist,
                        save=args.save, init=args.init, seed=seed, name=args.name,
                        description=args.description)
     else:
         umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist, save=args.save,
-                init=args.init, align=args.align, seed=seed, name=args.name,
-                description=args.description)
+                init=args.init, align=args.align, seed=seed, register_to=args.register_to,
+                name=args.name, description=args.description)
 
 
 # TODO move this into shared space
@@ -161,8 +177,171 @@ def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=Non
     return umap_embeddings, reducer
 
 
+def _next_umap_id(umap_dir):
+    """Allocate the next umap-NNN id from the json files already in umap_dir."""
+    umap_files = [f for f in os.listdir(umap_dir) if re.match(r"umap-\d+\.json", f)]
+    if len(umap_files) > 0:
+        last_umap = sorted(umap_files)[-1]
+        last_umap_number = int(last_umap.split("-")[1].split(".")[0])
+        next_umap_number = last_umap_number + 1
+    else:
+        next_umap_number = 1
+    return f"umap-{next_umap_number:03d}"
+
+
+def _read_umap_meta(umap_dir, umap_id):
+    meta_path = os.path.join(umap_dir, f"{umap_id}.json")
+    if not os.path.exists(meta_path):
+        raise ValueError(f"umap meta not found: {meta_path}")
+    with open(meta_path) as f:
+        return json.load(f)
+
+
+def _resolve_reducer_id(umap_dir, umap_id):
+    """Follow the reducer_id chain from umap_id to a umap with a saved .pkl.
+
+    A umap made with --save has its own pickle; a umap made with
+    --transform-from records the reducer_id whose pickle produced it (pickles
+    are large so they are never copied). Returns the id whose .pkl exists, or
+    None if the chain dead-ends.
+    """
+    current = umap_id
+    seen = set()
+    while current and current not in seen:
+        seen.add(current)
+        if os.path.exists(os.path.join(umap_dir, f"{current}.pkl")):
+            return current
+        meta_path = os.path.join(umap_dir, f"{current}.json")
+        if not os.path.exists(meta_path):
+            return None
+        with open(meta_path) as f:
+            current = json.load(f).get("reducer_id")
+    return None
+
+
+def transform_umap(dataset_id, embedding_id, transform_from, name=None, description=None):
+    """Project rows appended since `transform_from` through its saved reducer.
+
+    The daily half of the growing-dataset workflow (issue #142): old rows are
+    copied verbatim from the source umap's parquet so the published map stays
+    pixel-stable; only the new rows (embedding rows beyond the source umap's
+    length) are transformed, then mapped into the source's [-1, 1] frame using
+    its stored min/max (or its registration transform if the source was made
+    with --register-to). New points may land slightly outside [-1, 1]; they
+    are left there rather than rescaling the old points.
+
+    Returns the new umap id, or None if there were no new rows.
+    """
+    DATA_DIR = get_data_dir()
+    umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
+
+    import pickle
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+
+    from latentscope.scripts.registration import (
+        apply_normalization,
+        apply_similarity,
+        count_out_of_frame,
+    )
+
+    source_meta = _read_umap_meta(umap_dir, transform_from)
+    source_embedding_id = source_meta.get("embedding_id")
+    if source_embedding_id != embedding_id:
+        raise ValueError(
+            f"{transform_from} was fit on embedding {source_embedding_id!r}, not "
+            f"{embedding_id!r}; transforming through a reducer fit on a different "
+            "embedding is not meaningful")
+
+    reducer_id = _resolve_reducer_id(umap_dir, transform_from)
+    if reducer_id is None:
+        raise ValueError(
+            f"no saved reducer (.pkl) found for {transform_from} (or its reducer_id "
+            "chain); re-run the source umap with --save to enable --transform-from")
+    with open(os.path.join(umap_dir, f"{reducer_id}.pkl"), 'rb') as f:
+        reducer = pickle.load(f)
+
+    source_df = pd.read_parquet(os.path.join(umap_dir, f"{transform_from}.parquet"))
+    n_old = len(source_df)
+
+    print("loading embeddings")
+    embeddings = load_embeddings(dataset_id, embedding_id)
+    n_total = embeddings.shape[0]
+    if n_total < n_old:
+        raise ValueError(
+            f"embedding {embedding_id} has {n_total} rows but source umap "
+            f"{transform_from} has {n_old}; the dataset should only grow")
+    if n_total == n_old:
+        print(f"no new rows: {embedding_id} and {transform_from} both have {n_total} rows")
+        return None
+
+    umap_id = _next_umap_id(umap_dir)
+    print("RUNNING:", umap_id)
+    print(f"transforming {n_total - n_old} new rows through {reducer_id}")
+    new_raw = reducer.transform(embeddings[n_old:])
+
+    min_values = np.array(source_meta["min_values"])
+    max_values = np.array(source_meta["max_values"])
+    registration = source_meta.get("registration")
+    if registration is not None:
+        # the source's parquet frame came from a similarity registration, not
+        # from min/max normalization; reuse the same transform for new points
+        new_coords = apply_similarity(new_raw, registration["scale"],
+                                      np.array(registration["rotation"]),
+                                      np.array(registration["translation"]))
+    else:
+        new_coords = apply_normalization(new_raw, min_values, max_values)
+    outside = count_out_of_frame(new_coords)
+    if outside > 0:
+        print(f"{outside} new points fall outside [-1, 1]; leaving them "
+              "(old points stay fixed)")
+
+    # old rows verbatim, new rows appended in the same dtype
+    coord_dtype = source_df["x"].dtype
+    new_df = pd.DataFrame(new_coords.astype(coord_dtype), columns=['x', 'y'])
+    df = pd.concat([source_df[['x', 'y']], new_df], ignore_index=True)
+    output_file = os.path.join(umap_dir, f"{umap_id}.parquet")
+    df.to_parquet(output_file)
+    print("wrote", output_file)
+
+    fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
+    point_size = calculate_point_size(len(df))
+    print("POINT SIZE", point_size, "for", len(df), "points")
+    plt.scatter(df['x'], df['y'], s=point_size, alpha=0.5)
+    plt.axis('off')  # remove axis
+    plt.gca().set_position([0, 0, 1, 1])  # remove margins
+    plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+
+    with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
+        meta = {
+            "id": umap_id,
+            "embedding_id": embedding_id,
+            # inherited from the source for provenance; the pickled reducer
+            # already encodes them
+            "neighbors": source_meta.get("neighbors"),
+            "min_dist": source_meta.get("min_dist"),
+            # the source's frame is this umap's frame
+            "min_values": min_values.tolist(),
+            "max_values": max_values.tolist(),
+            "transformed_from": transform_from,
+            "reducer_id": reducer_id,
+        }
+        if registration is not None:
+            meta["registration"] = registration
+        if name is not None:
+            meta["name"] = name
+        if description is not None:
+            meta["description"] = description
+        json.dump(meta, f, indent=2)
+
+    print("done with", umap_id)
+    return umap_id
+
+
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None,
-            seed=None, name=None, description=None):
+            seed=None, register_to=None, name=None, description=None):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -172,16 +351,8 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
 
     # determine the index of the last umap run by looking in the dataset directory
     # for files named umap-<number>.json
-    umap_files = [f for f in os.listdir(umap_dir) if re.match(r"umap-\d+\.json", f)]
-    if len(umap_files) > 0:
-        last_umap = sorted(umap_files)[-1]
-        last_umap_number = int(last_umap.split("-")[1].split(".")[0])
-        next_umap_number = last_umap_number + 1
-    else:
-        next_umap_number = 1
-
-    # make the umap name from the number, zero padded to 3 digits
-    umap_id = f"umap-{next_umap_number:03d}"
+    umap_id = _next_umap_id(umap_dir)
+    next_umap_number = int(umap_id.split("-")[1])
     print("RUNNING:", umap_id)
 
     import pickle
@@ -192,6 +363,12 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     import pandas as pd
     import umap
 
+    from latentscope.scripts.registration import (
+        count_out_of_frame,
+        prefix_relations,
+        register_layout,
+    )
+
     print("loading embeddings")
     # embedding_path = os.path.join(DATA_DIR, dataset_id, "embeddings", f"{embedding_id}.h5")
     # with h5py.File(embedding_path, 'r') as f:
@@ -199,15 +376,51 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     #     embeddings = np.array(dataset)
     embeddings = load_embeddings(dataset_id, embedding_id)
 
+    # --register-to: load the published layout the new one should be anchored to
+    register_target = None
+    if register_to is not None and register_to != "":
+        print("registering onto", register_to)
+        target_meta = _read_umap_meta(umap_dir, register_to)
+        target_df = pd.read_parquet(os.path.join(umap_dir, f"{register_to}.parquet"))
+        register_target = {
+            "umap_id": register_to,
+            "coords": target_df[['x', 'y']].to_numpy(),
+            # after registration the coords are already in the target's [-1, 1]
+            # frame, so the target's frame values carry over (identity fallback
+            # for old metas without them)
+            "min_values": target_meta.get("min_values", [-1.0, -1.0]),
+            "max_values": target_meta.get("max_values", [1.0, 1.0]),
+        }
+
     def process_umap_embeddings(umap_id, umap_embeddings, emb_id, align_id=None):
-        min_values = np.min(umap_embeddings, axis=0)
-        max_values = np.max(umap_embeddings, axis=0)
+        registration = None
+        if register_target is not None:
+            # similarity-register (rotation + uniform scale + translation) onto
+            # the target via the shared row prefix; the result is already in the
+            # target's [-1, 1] frame so min/max renormalization is skipped
+            umap_embeddings, (r_scale, r_rot, r_trans) = register_layout(
+                umap_embeddings, register_target["coords"])
+            umap_embeddings = umap_embeddings.astype(np.float32)
+            registration = {
+                "scale": float(r_scale),
+                "rotation": r_rot.tolist(),
+                "translation": r_trans.tolist(),
+            }
+            min_values = np.array(register_target["min_values"])
+            max_values = np.array(register_target["max_values"])
+            outside = count_out_of_frame(umap_embeddings)
+            if outside > 0:
+                print(f"{umap_id}: {outside} registered points fall outside [-1, 1]; "
+                      "not rescaling")
+        else:
+            min_values = np.min(umap_embeddings, axis=0)
+            max_values = np.max(umap_embeddings, axis=0)
 
-        # Scale the embeddings to the range [0, 1]
-        umap_embeddings = (umap_embeddings - min_values) / (max_values - min_values)
+            # Scale the embeddings to the range [0, 1]
+            umap_embeddings = (umap_embeddings - min_values) / (max_values - min_values)
 
-        # Scale the embeddings to the range [-1, 1]
-        umap_embeddings = 2 * umap_embeddings - 1
+            # Scale the embeddings to the range [-1, 1]
+            umap_embeddings = 2 * umap_embeddings - 1
 
         print("writing normalized umap", umap_id)
         # save umap embeddings to a parquet file with columns x,y
@@ -262,6 +475,9 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             if align is not None and align != "":
                 meta["align"] = f"{embedding_id},{align}"
                 meta["align_id"] = align_id
+            if register_target is not None:
+                meta["registered_to"] = register_target["umap_id"]
+                meta["registration"] = registration
             if name is not None:
                 meta["name"] = name
             if description is not None:
@@ -305,9 +521,14 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             n_components=2,
             verbose=True,
         )
-        print("a_embeddings", len(a_embeddings), a_embeddings[0].shape[0])
-        relations = [{j: j for j in range(a_embeddings[i].shape[0])} for i in range(len(a_embeddings)-1)]
-        print("relations", len(relations))
+        # shared-prefix relations: for growing (append-only) windows the shared
+        # rows between window i and i+1 are the index prefix of the shorter one;
+        # identical to the old identity relations when lengths are equal
+        lengths = [a_emb.shape[0] for a_emb in a_embeddings]
+        print("a_embeddings", len(a_embeddings), "lengths", lengths)
+        relations = prefix_relations(lengths)
+        for i, rel in enumerate(relations):
+            print(f"relation {i} -> {i + 1}: {len(rel)} shared rows")
         aligned = reducer.fit_transform(a_embeddings, relations=relations)
         print("ALIGNED", aligned)
         for i,emb in enumerate(a_embedding_ids):
@@ -354,16 +575,7 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
 
     # determine the index of the last umap run by looking in the dataset directory
     # for files named umap-<number>.json
-    umap_files = [f for f in os.listdir(umap_dir) if re.match(r"umap-\d+\.json", f)]
-    if len(umap_files) > 0:
-        last_umap = sorted(umap_files)[-1]
-        last_umap_number = int(last_umap.split("-")[1].split(".")[0])
-        next_umap_number = last_umap_number + 1
-    else:
-        next_umap_number = 1
-
-    # make the umap name from the number, zero padded to 3 digits
-    umap_id = f"umap-{next_umap_number:03d}"
+    umap_id = _next_umap_id(umap_dir)
     print("RUNNING:", umap_id)
 
     import pickle

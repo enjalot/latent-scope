@@ -102,7 +102,7 @@ tiny dataset, embeds it on CPU, runs the whole pipeline, and verifies search.
 | --- | --- | --- |
 | ingest | `ls-ingest <ds> --path <file-or-image-dir> --text_column <col>` (or a DataFrame via the library API) | `input.parquet`, `meta.json` (column detection) |
 | embed | `ls-embed <ds> <col> <model_id> [--task] [--prefix] [--dimensions] [--batch_size] [--max_seq_length]` | `embeddings/embedding-NNN.*` (LanceDB) |
-| umap | `ls-umap <ds> <embedding_id> <neighbors> <min_dist> [--name --description]` | `umaps/umap-NNN.*` (x,y in [-1,1]) |
+| umap | `ls-umap <ds> <embedding_id> <neighbors> <min_dist> [--save --transform-from --align --register-to --name --description]` (growing datasets: docs/umap.md) | `umaps/umap-NNN.*` (x,y in [-1,1]) |
 | cluster | `ls-cluster <ds> <umap_id> <samples> <min_samples> <epsilon> [--method] [--cluster_on] [--name]` | `clusters/cluster-NNN.*` + `…-labels-default.parquet` |
 | label | `ls-label <ds> <text_col> <cluster_id> <chat_model_id> <samples> <context>` | `clusters/<cluster>-labels-NNN.parquet` |
 | scope | `ls-scope <ds> <embedding_id> <umap_id> <cluster_id> <labels_id> "<label>" "<desc>"` | `scopes/scopes-NNN.*` + per-scope LanceDB |
