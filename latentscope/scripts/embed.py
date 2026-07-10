@@ -212,6 +212,21 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         except AttributeError:
             print("Warning: This model does not support setting max_seq_length. Continuing with default length.")
 
+    # OOM preflight (#143): report the effective sequence cap and warn when the
+    # model is effectively uncapped and the user didn't cap it themselves.
+    # Never silently cap — that would change the embedding results.
+    effective_max_seq_length = getattr(getattr(model, "model", None),
+                                       "max_seq_length", None)
+    if isinstance(effective_max_seq_length, int):
+        print(f"effective max_seq_length: {effective_max_seq_length}")
+        if max_seq_length is None and effective_max_seq_length > 2048:
+            print("WARNING: this model accepts sequences up to "
+                  f"{effective_max_seq_length} tokens. Long documents times "
+                  f"batch_size={batch_size} can exhaust MPS/CUDA memory. If you "
+                  "hit an out-of-memory error, re-run with something like "
+                  "--max_seq_length 512 --batch_size 32 (note: capping the "
+                  "sequence length changes the resulting embeddings).")
+
     if prefix is None:
         prefix = ""
     # Prompt precedence: an explicit --prefix (user intent) wins over a model's
@@ -320,6 +335,9 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print("wrote original data for batch along with processed inputs in _ls_sentences_ column to\n", batch_path)
             print("debug with command:")
             print("ls-embed-debug", batch_path, model_id)
+            print("already-embedded batches are preserved; resume from the last "
+                  "completed batch with:")
+            print(f"ls-embed {dataset_id} {text_column} {model_id} --rerun {embedding_id}")
 
             sys.exit(1)
 
@@ -386,6 +404,14 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
 
     with open(os.path.join(embedding_dir, f"{embedding_id}.json"), 'w') as f:
         json.dump(meta, f, indent=2)
+
+    # The run completed: any debug batch parquet left behind by an earlier
+    # failed attempt (see the except block above) is now stale — clean it up.
+    debug_pattern = re.compile(rf"{re.escape(embedding_id)}-batch-\d+\.parquet$")
+    stale_debug = [f for f in os.listdir(embedding_dir) if debug_pattern.match(f)]
+    for stale in stale_debug:
+        os.remove(os.path.join(embedding_dir, stale))
+        print("cleaned up stale debug batch file", stale)
 
     print("done with", embedding_id)
 
