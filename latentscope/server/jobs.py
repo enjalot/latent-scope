@@ -612,6 +612,11 @@ def run_cluster():
     n_neighbors = request.values.get('n_neighbors')
     noise_level = request.values.get('noise_level')
     approx_n_clusters = request.values.get('approx_n_clusters')
+    base_n_clusters = request.values.get('base_n_clusters')
+    seed = request.values.get('seed')
+    # Opt back in to the pre-1.0 behavior of reassigning noise points to their
+    # nearest cluster centroid (#143). Default keeps them as "Unclustered".
+    assign_noise = request.values.get('assign_noise')
     # Input space to cluster on: 2D umap projection or high-dim embeddings.
     # Consumed by ls-cluster (WP-B). Optional; the script defaults per method
     # (evoc->embedding, hdbscan/kmeans/gmm->umap) when omitted here.
@@ -648,6 +653,12 @@ def run_cluster():
             command.append(f'--noise_level={noise_level}')
         if approx_n_clusters and approx_n_clusters not in ('null', '0'):
             command.append(f'--approx_n_clusters={approx_n_clusters}')
+        if base_n_clusters and base_n_clusters not in ('null', '0'):
+            command.append(f'--base_n_clusters={base_n_clusters}')
+    if seed and seed != 'null':
+        command.append(f'--seed={seed}')
+    if assign_noise and assign_noise not in ('null', 'false', 'False', '0'):
+        command.append('--assign-noise')
     if cluster_on:
         command.append(f'--cluster_on={cluster_on}')
     if name:
