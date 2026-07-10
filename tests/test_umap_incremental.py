@@ -180,6 +180,48 @@ def _make_source_umap(data_dir, dataset_id, n_old, umap_id="umap-001",
     return umap_dir
 
 
+class FakeAlignedUMAP:
+    """Stand-in for umap.AlignedUMAP exposing fit_transform + mappers_."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def fit_transform(self, embeddings, relations=None):
+        self.mappers_ = [FakeReducer() for _ in embeddings]
+        return [np.asarray(e)[:, :2].astype(np.float32) for e in embeddings]
+
+
+def test_align_save_persists_per_slice_reducers(embedded_dataset, monkeypatch):
+    """--align --save writes a .pkl per aligned output, so the documented
+    periodic-refit -> daily --transform-from cadence actually works (the align
+    branch used to return before the save path, leaving the refit with no
+    reducer)."""
+    data_dir, dataset_id = embedded_dataset
+    import umap
+    monkeypatch.setattr(umap, "AlignedUMAP", FakeAlignedUMAP)
+    from latentscope.scripts.umapper import transform_umap, umapper
+
+    # align the embedding with itself: two equal windows, two aligned outputs
+    umapper(dataset_id, "embedding-001", neighbors=5, min_dist=0.1,
+            align="embedding-001", save=True)
+
+    umap_dir = os.path.join(data_dir, dataset_id, "umaps")
+    for uid in ("umap-001", "umap-002"):
+        pkl_path = os.path.join(umap_dir, f"{uid}.pkl")
+        assert os.path.exists(pkl_path), f"{uid} missing its saved reducer"
+        with open(pkl_path, "rb") as f:
+            saved = pickle.load(f)
+        assert hasattr(saved, "transform")
+        # the pickled mapper's embedding_ must be the slice's ALIGNED frame
+        # (mappers' own frames differ from the aligned outputs), so that
+        # transform() of new rows lands in the frame the parquet was built from
+        assert saved.embedding_.shape == (N_ROWS, 2)
+
+    # the daily cadence resolves the aligned output's reducer: resolution and
+    # pickle.load happen BEFORE the no-new-rows noop, so None means success
+    assert transform_umap(dataset_id, "embedding-001", "umap-002") is None
+
+
 def test_transform_from_appends_new_rows(embedded_dataset):
     data_dir, dataset_id = embedded_dataset
     from latentscope.scripts.umapper import transform_umap
