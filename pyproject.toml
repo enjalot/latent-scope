@@ -97,7 +97,9 @@ gpu = [
 # Model2Vec models or to load repos published in the raw model2vec format
 # (which sentence-transformers loads via StaticEmbedding.from_model2vec).
 model2vec = [
-    "model2vec>=0.3,<1",
+    # [distill] pulls the distillation deps (torch, transformers, skeletoken);
+    # base model2vec alone can only load raw-format repos, not distill new ones
+    "model2vec[distill]>=0.3,<1",
 ]
 
 [project.urls]

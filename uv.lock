@@ -3024,7 +3024,7 @@ gpu = [
     { name = "cuvs-cu12" },
 ]
 model2vec = [
-    { name = "model2vec" },
+    { name = "model2vec", extra = ["distill"] },
 ]
 
 [package.dev-dependencies]
@@ -3051,7 +3051,7 @@ requires-dist = [
     { name = "latentsae", specifier = ">=0.1.3,<1" },
     { name = "matplotlib", specifier = ">=3.8,<4" },
     { name = "mistralai", specifier = ">=1.0,<3" },
-    { name = "model2vec", marker = "extra == 'model2vec'", specifier = ">=0.3,<1" },
+    { name = "model2vec", extras = ["distill"], marker = "extra == 'model2vec'", specifier = ">=0.3,<1" },
     { name = "nltk", specifier = ">=3.8,<4" },
     { name = "numpy", specifier = ">=1.26,<3" },
     { name = "openai", specifier = ">=1.12,<3" },
@@ -3482,6 +3482,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/54/c8/8efa9e52d210957b02b1c711f4e3b88d1e9eb5485d1869aaa9833d0cd1c5/model2vec-0.8.2.tar.gz", hash = "sha256:4e88d1a5eb2136475ebd90505689046f61caf25c69371c331f21c6499637c110", size = 4532469 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7b/a1/38101b223fb6cea0f2e401fbacdf4f6121628d45dc9329b255d7ac843234/model2vec-0.8.2-py3-none-any.whl", hash = "sha256:f0ecfe994316e401dca583fbf6dd22079d308c05717dd36d40bff60f265431cf", size = 54749 },
+]
+
+[package.optional-dependencies]
+distill = [
+    { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "scikit-learn", version = "1.8.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "skeletoken" },
+    { name = "torch" },
+    { name = "transformers" },
 ]
 
 [[package]]
@@ -6652,6 +6661,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050 },
+]
+
+[[package]]
+name = "skeletoken"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "protobuf" },
+    { name = "pydantic" },
+    { name = "regex" },
+    { name = "tokenizers" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/19/23/4892fa72b6f3ba7fc38a023621216dc4fc2de221288e8a3d98d7978f9cd1/skeletoken-0.3.3.tar.gz", hash = "sha256:f96405a7583ba089fb327a65e92a650d939ea6d35621b3a05b05205246030f1a", size = 234168 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/0d/fdef375cd6cadb706df245d2ba831eb127a3cb01cb583088aea6422c786d/skeletoken-0.3.3-py3-none-any.whl", hash = "sha256:258b801852312d6c247ca9ca495a758dd6f39523d70c92334f9c617152478b20", size = 40317 },
 ]
 
 [[package]]
