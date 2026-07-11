@@ -24,7 +24,7 @@ import ColorLegend from './ColorLegend';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { useColorBy } from '../../hooks/useColorBy';
-import { Readout } from '../ui';
+import { Readout, Spinner } from '../ui';
 
 // Signature #1 — viewport reticle ticks: four corner L-marks that turn amber
 // while a selection/filter is active. Pure chrome: pointer-events none.
@@ -406,6 +406,11 @@ function VisualizationPane({
 
   return (
     <div ref={umapRef} className={styles.visualizationPane}>
+      {!scopeRows?.length && (
+        <div className="ls-scrim">
+          <Spinner label="LOADING MAP…" />
+        </div>
+      )}
       <ViewportReticle active={selectionActive} />
       <div className={styles.configToggleContainer}>
         <button

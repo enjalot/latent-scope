@@ -17,6 +17,7 @@ const DataMapPlot = lazy(() => import('./pages/DataMapPlot'));
 
 import 'react-element-forge/dist/style.css';
 import './styles/primitives.scss';
+import { Spinner } from './components/ui';
 
 const env = import.meta.env;
 console.log('ENV', env);
@@ -39,7 +40,20 @@ function App() {
     <Router basename={env.BASE_NAME}>
       <Nav />
       <div className="page">
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div
+              className="ls-loading"
+              style={{
+                width: '100%',
+                alignItems: 'center',
+                paddingTop: 'var(--ls-space-8)',
+              }}
+            >
+              <Spinner label="LOADING…" />
+            </div>
+          }
+        >
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/settings" element={<Settings />} />

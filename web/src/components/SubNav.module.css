@@ -31,19 +31,13 @@
   gap: var(--ls-space-1);
 }
 
-/* doubled selector outranks forge Select's own single-class rules without !important */
+/* native .ls-select; content is machine facts (dataset id, run ids) — mono
+   readout voice. Doubled selector outranks the global .ls-select rules
+   without !important. Compact padding so the box clears the subnav's
+   bottom border. */
 .scopeSelector.scopeSelector {
   min-width: 250px;
-}
-
-.scopeSelector select {
-  padding-right: 40px; /* clearance for forge Select's chevron */
-}
-
-/* scope selector content is machine facts (dataset id, run ids) — mono readout voice;
-   doubled selector outranks forge Select's own font rules without !important.
-   Compact padding so the box clears the subnav's bottom border. */
-.scopeSelector.scopeSelector select {
+  max-width: 480px;
   font-family: var(--ls-font-mono);
   font-size: var(--ls-text-xs);
   font-weight: 500;

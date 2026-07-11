@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
 import styles from './SubNav.module.css';
-import { Select } from 'react-element-forge';
 
 const tabClass = (extra = '') => `ls-tab ${styles.tab}${extra ? ` ${extra}` : ''}`;
 
@@ -18,12 +17,12 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
         <div className={styles.tabsContainer}>
           <div className={styles.leftTabs}>
             <div className={styles.scope}>
-              <Select
-                className={styles.scopeSelector}
+              <select
+                className={`ls-select ${styles.scopeSelector}`}
                 onChange={() => {}}
                 value=""
-                options={[]}
                 disabled
+                aria-label="Scope"
               />
             </div>
             <div className={styles.divider} />
@@ -52,12 +51,18 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
       <div className={styles.tabsContainer}>
         <div className={styles.leftTabs}>
           <div className={styles.scope}>
-            <Select
-              className={styles.scopeSelector}
+            <select
+              className={`ls-select ${styles.scopeSelector}`}
               onChange={onScopeChange}
               value={scope?.id || ''}
-              options={scopeOptions}
-            />
+              aria-label="Scope"
+            >
+              {scopeOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className={styles.divider} />
           <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`} className={activeTab('/setup')}>

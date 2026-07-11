@@ -78,6 +78,11 @@
   white-space: nowrap;
 }
 
+/* adjacent badges/chips never touch, even in gap-less containers */
+:is(.ls-badge, .ls-chip) + :is(.ls-badge, .ls-chip) {
+  margin-inline-start: var(--ls-space-1);
+}
+
 /* semantic washes: 12% of the semantic base over the panel surface */
 .ls-badge--critical {
   background: color-mix(
