@@ -9,6 +9,62 @@
     }
   },
   {
+    "provider": "anthropic",
+    "name": "claude-haiku-4-5",
+    "id": "anthropic-claude-haiku-4-5",
+    "params": {
+      "max_tokens": 8192
+    }
+  },
+  {
+    "provider": "anthropic",
+    "name": "claude-sonnet-5",
+    "id": "anthropic-claude-sonnet-5",
+    "params": {
+      "max_tokens": 8192
+    }
+  },
+  {
+    "provider": "anthropic",
+    "name": "claude-opus-4-8",
+    "id": "anthropic-claude-opus-4-8",
+    "params": {
+      "max_tokens": 8192
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-5.5",
+    "id": "openai-gpt-5.5",
+    "params": {
+      "max_completion_tokens": 128000
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-5.4",
+    "id": "openai-gpt-5.4",
+    "params": {
+      "max_completion_tokens": 128000
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-5.4-mini",
+    "id": "openai-gpt-5.4-mini",
+    "params": {
+      "max_completion_tokens": 64000
+    }
+  },
+  {
+    "provider": "openai",
+    "name": "gpt-5.4-nano",
+    "id": "openai-gpt-5.4-nano",
+    "params": {
+      "max_completion_tokens": 32000
+    }
+  },
+  {
     "provider": "openai",
     "name": "gpt-5.1",
     "id": "openai-gpt-5.1",
@@ -78,22 +134,6 @@
     "id": "openai-gpt-4o-mini",
     "params": {
       "max_tokens": 128000
-    }
-  },
-  {
-    "provider": "openai",
-    "name": "gpt-4-turbo",
-    "id": "openai-gpt-4-turbo",
-    "params": {
-      "max_tokens": 128000
-    }
-  },
-  {
-    "provider": "openai",
-    "name": "gpt-4",
-    "id": "openai-gpt-4",
-    "params": {
-      "max_tokens": 8192
     }
   }
 ]

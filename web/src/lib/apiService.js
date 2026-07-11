@@ -329,6 +329,11 @@ export const apiService = {
   fetchExportList: async (datasetId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/export/list`);
   },
+  combineExport: async (datasetId, scopeId) => {
+    return fetchJson(`${apiUrl}/datasets/${datasetId}/export/combine/${scopeId}`, {
+      method: 'POST',
+    });
+  },
   fetchDatasets: async () => {
     return fetchJson(`${apiUrl}/datasets`);
   },

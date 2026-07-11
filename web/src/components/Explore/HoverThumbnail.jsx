@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import styles from './HoverThumbnail.module.scss';
+
 /**
  * Fixed-size thumbnail for the map hover tooltip. Swaps `src` in place:
  * the incoming image is preloaded off-screen while the previous point's
@@ -41,32 +43,16 @@ function HoverThumbnail({ src, alt, size = 150 }) {
   }, [src, alt]);
 
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        marginTop: 4,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0,0,0,0.12)',
-        fontSize: 11,
-        color: 'rgba(0,0,0,0.55)',
-      }}
-    >
-      {status === 'error' && <span>no image</span>}
-      {status === 'loading' && !current && <span>loading…</span>}
+    // width/height stay inline: they come from the `size` prop
+    <div className={styles.thumb} style={{ width: size, height: size }}>
+      {status === 'error' && <span className={styles.status}>no image</span>}
+      {status === 'loading' && !current && <span className={styles.status}>loading…</span>}
       {current && (
         <img
+          className={`${styles.image} ${status === 'loading' ? styles.imageLoading : ''}`}
           src={current.src}
           alt={current.alt}
-          style={{
-            maxWidth: size,
-            maxHeight: size,
-            objectFit: 'contain',
-            display: 'block',
-            opacity: status === 'loading' ? 0.5 : 1,
-          }}
+          style={{ maxWidth: size, maxHeight: size }}
         />
       )}
     </div>

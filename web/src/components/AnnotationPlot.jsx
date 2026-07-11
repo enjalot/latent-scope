@@ -30,11 +30,21 @@ const AnnotationPlot = ({
 
       const zScale = (t) => fixedSize ? +t : t/(.1 + xDomain[1] - xDomain[0])
       const canvas = container.current
+      // Render at device resolution (retina) while laying out at CSS pixels.
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = width * dpr
+      canvas.height = height * dpr
       const ctx = canvas.getContext('2d')
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, width, height)
       ctx.fillStyle = fill
       ctx.strokeStyle = stroke
-      ctx.font = `${zScale(size)}px monospace`
+      // symbols are machine-fact glyphs: use the app mono stack
+      const monoFont =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--ls-font-mono')
+          .trim() || 'monospace'
+      ctx.font = `${zScale(size)}px ${monoFont}`
       ctx.globalAlpha = 0.75
       let rw = zScale(size)
       if(!points.length) return
@@ -59,10 +69,11 @@ const AnnotationPlot = ({
 
   }, [points, fill, stroke, size, xDomain, yDomain, width, height])
 
-  return <canvas 
+  return <canvas
     className="annotation-plot"
-    ref={container} 
-    width={width} 
+    ref={container}
+    style={{ width, height }}
+    width={width}
     height={height} />;
 };
 

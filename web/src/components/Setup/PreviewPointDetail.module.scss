@@ -1,0 +1,69 @@
+// Point-detail drawer anchored inside the Setup preview pane (the .preview
+// container is position:relative). Same panel-surface chrome as the Explore
+// drawer (PointDetail.module.scss), scoped to the pane instead of the page.
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--ls-drawer-width);
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-2);
+  box-shadow: var(--ls-shadow-2);
+  z-index: var(--ls-z-drawer);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-3) var(--ls-space-4);
+  border-bottom: 1px solid var(--borders-color-border-1);
+  flex-shrink: 0;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
+  color: var(--text-color-text-main);
+}
+
+// the row index is a machine fact
+.titleIndex {
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.cluster {
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.closeButton {
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ls-space-3) var(--ls-space-4) var(--ls-space-5);
+}
+
+.loading {
+  padding: var(--ls-space-2) 0;
+}

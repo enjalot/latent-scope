@@ -1,79 +1,288 @@
-:root { 
-    /* Light Mode */
-    /* color */
-    --borders-color-border-1: #e6e6e6;
-    --borders-color-border-2: #cacaca;
-    --borders-color-border-3: #cacaca33;
-    --interactions---primary-color-interaction-primary: #b87333;
-    --interactions---primary-color-interaction-primary-active: #945e2b;
-    --interactions---primary-color-interaction-primary-disabled: #d4b297;
-    --interactions---primary-color-interaction-primary-hover: #d28440;
-    --interactions---secondary-color-interaction-secondary: #ffffff;
-    --interactions---secondary-color-interaction-secondary-active: #efe7e2;
-    --interactions---secondary-color-interaction-secondary-disabled: #f2f1ef99;
-    --interactions---secondary-color-interaction-secondary-hover: #f9f4f2;
-    --neutrals-color-neutral-0: #ffffff;
-    --neutrals-color-neutral-0-reverse: #000000;
-    --neutrals-color-neutral-1: #f4f2f0;
-    --neutrals-color-neutral-2: #e0ddd9;
-    --neutrals-color-neutral-3: #b5b1ad;
-    --overlays-color-background-modal-overlay: #0000004d;
-    --overlays-color-background-overlay: #4d4a4766;
-    --semantic-color-semantic-critical: #b34b4b;
-    --semantic-color-semantic-critical-active: #923838;
-    --semantic-color-semantic-critical-disabled: #d9979799;
-    --semantic-color-semantic-critical-hover: #c75f5f;
-    --semantic-color-semantic-info: #7a9db3;
-    --semantic-color-semantic-info-active: #688494;
-    --semantic-color-semantic-info-disabled: #aab7c399;
-    --semantic-color-semantic-info-hover: #8ab2c5;
-    --semantic-color-semantic-neutral: #a0978d;
-    --semantic-color-semantic-neutral-active: #877b74;
-    --semantic-color-semantic-neutral-disabled: #c6bfb999;
-    --semantic-color-semantic-neutral-hover: #b1a89e;
-    --semantic-color-semantic-success: #7baf5a;
-    --semantic-color-semantic-success-active: #659547;
-    --semantic-color-semantic-success-disabled: #a7c99799;
-    --semantic-color-semantic-success-hover: #8bcf66;
-    --semantic-color-semantic-warning: #d1a344;
-    --semantic-color-semantic-warning-active: #b48634;
-    --semantic-color-semantic-warning-disabled: #e6c68f99;
-    --semantic-color-semantic-warning-hover: #e4b45a;
-    --text-color-text-critical: #802e2e;
-    --text-color-text-info: #4a6d82;
-    --text-color-text-main: #262a30;
-    --text-color-text-neutral: #6e5e56;
-    --text-color-text-primary: #a36022;
-    --text-color-text-reverse: #ffffff;
-    --text-color-text-reverse-subtle: #e7e7e7;
-    --text-color-text-subtle: #757575;
-    --text-color-text-success: #51793d;
-    --text-color-text-warning: #8b6c2e;
+/*
+ * AMBER CONSOLE — the single source of truth for every color and --ls-* token.
+ * Light-first; one dark override block at the bottom. See DESIGN.md.
+ * Token NAMES consumed by react-element-forge are frozen — change values only.
+ */
+:root {
+    color-scheme: light dark;
 
-    /* Dark Mode */
+    /* ------------------------------------------------------------------ */
+    /* Neutrals — warm paper. Contract: neutral-1 = page, neutral-0 = panel
+       (panel is lighter than page in BOTH modes), 2 = hover/inset, 3 = pressed. */
+    --neutrals-color-neutral-0: #ffffff;
+    --neutrals-color-neutral-0-reverse: #151312;
+    --neutrals-color-neutral-1: #f6f4f1;
+    --neutrals-color-neutral-2: #eae6e0;
+    --neutrals-color-neutral-3: #cfc9c1;
+
+    --borders-color-border-1: #e3dfd9;
+    --borders-color-border-2: #c8c2b9;
+    --borders-color-border-3: #c8c2b933;
+
+    /* ------------------------------------------------------------------ */
+    /* Interaction — amber, the single accent. Light hover DEEPENS (stamped
+       metal); dark hover BRIGHTENS (phosphor). */
+    --interactions---primary-color-interaction-primary: #a35c14;
+    --interactions---primary-color-interaction-primary-hover: #8a4c0f;
+    --interactions---primary-color-interaction-primary-active: #713d0a;
+    --interactions---primary-color-interaction-primary-disabled: #d9bd9e;
+    --interactions---secondary-color-interaction-secondary: #ffffff;
+    --interactions---secondary-color-interaction-secondary-hover: #f6f2ec;
+    --interactions---secondary-color-interaction-secondary-active: #eae3d9;
+    --interactions---secondary-color-interaction-secondary-disabled: #f4f1ec99;
+
+    /* ------------------------------------------------------------------ */
+    /* Semantic families — muted phosphor set: info cyan-slate, success sage,
+       warning yellow (25° off amber), critical brick. */
+    --semantic-color-semantic-critical: #b0453c;
+    --semantic-color-semantic-critical-hover: #c2564c;
+    --semantic-color-semantic-critical-active: #8f342d;
+    --semantic-color-semantic-critical-disabled: #d9a29c99;
+    --semantic-color-semantic-critical-bg-alt: #f7e4e0;
+    --semantic-color-semantic-info: #4f7d8c;
+    --semantic-color-semantic-info-hover: #5f8fa0;
+    --semantic-color-semantic-info-active: #406873;
+    --semantic-color-semantic-info-disabled: #a9c2ca99;
+    --semantic-color-semantic-success: #5f8f4e;
+    --semantic-color-semantic-success-hover: #6fa15c;
+    --semantic-color-semantic-success-active: #4d7740;
+    --semantic-color-semantic-success-disabled: #abc6a099;
+    --semantic-color-semantic-warning: #c29a2b;
+    --semantic-color-semantic-warning-hover: #d3ab3c;
+    --semantic-color-semantic-warning-active: #a37f1f;
+    --semantic-color-semantic-warning-disabled: #e3cd9199;
+    --semantic-color-semantic-neutral: #998f83;
+    --semantic-color-semantic-neutral-hover: #a89e92;
+    --semantic-color-semantic-neutral-active: #7d746a;
+    --semantic-color-semantic-neutral-disabled: #c9c2b999;
+    --semantic-color-semantic-neutral-inactive: #c9c2b9;
+
+    /* ------------------------------------------------------------------ */
+    /* Text */
+    --text-color-text-main: #26221c;
+    --text-color-text-subtle: #5c574f;
+    --text-color-text-primary: #96540f;
+    --text-color-text-critical: #8a3129;
+    --text-color-text-info: #3d6470;
+    --text-color-text-success: #47663a;
+    --text-color-text-warning: #7d6217;
+    --text-color-text-neutral: #6e6459;
+    --text-color-text-reverse: #ffffff;
+    --text-color-text-reverse-subtle: #e9e4dc;
+    --text-color-text-disabled: #a19a8f;
+
+    /* ------------------------------------------------------------------ */
+    /* Overlays */
+    --overlays-color-background-overlay: #26221c66;
+    --overlays-color-background-modal-overlay: #18141066;
+
+    /* ------------------------------------------------------------------ */
+    /* App-level color tokens (consumed by forge or app code directly) */
+    --color-avatar-bg: #efe4d3;
+    --color-background-subtle-callout: #f4ede1;
+    --color-background-critical: #f7e4e0;
+    --color-status-ready: #4d8a3d;
+    --color-status-busy: #c2811f;
+    --color-status-offline: #9a938a;
+    --color-badge-primary-bg: #26221c;
+    --color-badge-primary-text: #f6f4f1;
+    --color-badge-secondary-bg: #ffffff;
+    --color-badge-secondary-text: #26221c;
+    --color-interactions-menu: #26221c;
+    --color-interactions-menu-hover: #574f45;
+    --color-interactions-menu-inactive: #8c857b;
+    --copy-button-text-color: #5c574f;
+
+    /* ================================================================== */
+    /* --ls-* system tokens                                               */
+    /* ================================================================== */
+
+    /* spacing — 4px base; legacy 20px paddings round to 16 (dense) or 24 (roomy) */
+    --ls-space-1: 4px;
+    --ls-space-2: 8px;
+    --ls-space-3: 12px;
+    --ls-space-4: 16px;
+    --ls-space-5: 24px;
+    --ls-space-6: 32px;
+    --ls-space-7: 48px;
+    --ls-space-8: 64px;
+
+    /* radius — 3 stops */
+    --ls-radius-1: 3px;      /* chips, badges, tooltips, swatches, scrollbar thumb */
+    --ls-radius-2: 6px;      /* buttons, inputs, cards, panels, console */
+    --ls-radius-3: 10px;     /* modals, drawers, floating HUD panels */
+    --ls-radius-round: 999px; /* diodes + avatar ONLY */
+
+    /* layout chrome */
+    --ls-nav-height: 48px;
+    --ls-subnav-height: 40px;
+    --ls-page-offset: calc(var(--ls-nav-height) + var(--ls-subnav-height));
+    --ls-pane-config-width: 300px;
+    --ls-drawer-width: 400px;
+
+    /* z-index — named layers; map plot layers stay DOM-ordered with NO z-index */
+    --ls-z-base: 0;
+    --ls-z-raised: 10;
+    --ls-z-sticky: 50;
+    --ls-z-nav: 100;
+    --ls-z-hud: 200;
+    --ls-z-drawer: 300;
+    --ls-z-sheet: 350;
+    --ls-z-dropdown: 400;
+    --ls-z-overlay: 500;
+    --ls-z-modal: 510;
+    --ls-z-toast: 600;
+    --ls-z-tooltip: 700;
+
+    /* elevation — light: soft shadows; dark elevation always pairs with a 1px border */
+    --ls-shadow-1: 0 1px 2px rgba(21, 19, 18, 0.08);
+    --ls-shadow-2: 0 4px 12px rgba(21, 19, 18, 0.12);
+    --ls-shadow-3: 0 12px 32px rgba(21, 19, 18, 0.2);
+    --ls-glow-status: none; /* the ONLY glow in the system; lights up in dark */
+
+    /* focus — one ring everywhere */
+    --ls-focus-ring-color: var(--interactions---primary-color-interaction-primary);
+    --ls-focus-ring: 2px solid var(--ls-focus-ring-color);
+    --ls-focus-ring-offset: 2px;
+
+    /* type */
+    --ls-font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+    --ls-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+    --ls-text-2xs: 0.6875rem;
+    --ls-text-xs: 0.75rem;
+    --ls-text-sm: 0.875rem;
+    --ls-text-md: 1rem;
+    --ls-text-lg: 1.125rem;
+    --ls-text-xl: 1.25rem;
+    --ls-text-2xl: 1.5rem;
+    --ls-text-3xl: 1.625rem; /* page-title ceiling */
+    --ls-leading-body: 1.5;
+    --ls-leading-ui: 1.4;
+    --ls-leading-tight: 1.25;
+    --ls-tracking-label: 0.06em;
+    --ls-tracking-wordmark: 0.08em;
+
+    /* motion */
+    --ls-dur-fast: 150ms;
+    --ls-dur-base: 200ms;
+    --ls-dur-slow: 250ms;
+    --ls-ease-out: cubic-bezier(0.2, 0, 0, 1);
+    --ls-ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);
+
+    /* surfaces */
+    --ls-surface-page: var(--neutrals-color-neutral-1);
+    --ls-surface-panel: var(--neutrals-color-neutral-0);
+    --ls-surface-map: var(--neutrals-color-neutral-0);
+    --ls-surface-input: #ffffff;
+    --ls-surface-console: #0e0d0b; /* console is dark in BOTH modes */
+    --ls-console-text: #e8b465;
+    --ls-console-text-dim: #8a7a5c;
+    --ls-console-border: #26221c;
+    --ls-scrim: rgba(246, 244, 241, 0.85);
+
+    /* accent washes (JS-readable; use instead of inline color-mix) */
+    --ls-accent-surface: #a35c141a;
+    --ls-accent-line: #a35c1473;
+
+    /* JS-readable chrome colors for canvas/WebGL (via getComputedStyle) */
+    --ls-color-selection: #2f7a8e;
+    --ls-color-selection-fill: #2f7a8e22;
+    --ls-color-crosshair: #9a938a;
+    --ls-color-canvas-grid: #26221c14;
+    --ls-color-hover-halo: #26221c33;
+
+    /* ------------------------------------------------------------------ */
+    /* Dark — warm graphite well. Panels rise LIGHTER than the page.       */
     @media (prefers-color-scheme: dark) {
-        --borders-color-border-1: #3a3a3a;
-        --borders-color-border-2: #4a4a4a;
-        --borders-color-border-3: #4a4a4a33;
-        
-        --neutrals-color-neutral-0: #242424;
+        --neutrals-color-neutral-0: #1d1a17;
         --neutrals-color-neutral-0-reverse: #ffffff;
-        --neutrals-color-neutral-1: #2f2f2f;
-        --neutrals-color-neutral-2: #3d3d3d;
-        --neutrals-color-neutral-3: #505050;
-        
-        --text-color-text-main: #e7e7e7;
-        --text-color-text-subtle: #a0a0a0;
-        --text-color-text-reverse: #242424;
-        --text-color-text-reverse-subtle: #2f2f2f;
-        
-        /* Keep the interaction colors the same for brand consistency */
-        --interactions---primary-color-interaction-primary: #b87333;
-        --interactions---primary-color-interaction-primary-hover: #d28440;
-        --interactions---primary-color-interaction-primary-active: #945e2b;
-        
-        --interactions---secondary-color-interaction-secondary: #2f2f2f;
-        --interactions---secondary-color-interaction-secondary-hover: #3d3d3d;
-        --interactions---secondary-color-interaction-secondary-active: #505050;
+        --neutrals-color-neutral-1: #151312;
+        --neutrals-color-neutral-2: #282420;
+        --neutrals-color-neutral-3: #3a352f;
+
+        --borders-color-border-1: #332e28;
+        --borders-color-border-2: #4a443c;
+        --borders-color-border-3: #4a443c33;
+
+        --interactions---primary-color-interaction-primary: #e59d4b;
+        --interactions---primary-color-interaction-primary-hover: #f0ab5c;
+        --interactions---primary-color-interaction-primary-active: #cc8636;
+        --interactions---primary-color-interaction-primary-disabled: #6e5636;
+        --interactions---secondary-color-interaction-secondary: #24201c;
+        --interactions---secondary-color-interaction-secondary-hover: #2e2924;
+        --interactions---secondary-color-interaction-secondary-active: #3a342d;
+        --interactions---secondary-color-interaction-secondary-disabled: #24201c99;
+
+        --semantic-color-semantic-critical: #c14f41;
+        --semantic-color-semantic-critical-hover: #d4604f;
+        --semantic-color-semantic-critical-active: #a03f33;
+        --semantic-color-semantic-critical-disabled: #c14f4166;
+        --semantic-color-semantic-critical-bg-alt: #3a201c;
+        --semantic-color-semantic-info: #6fa9b8;
+        --semantic-color-semantic-info-hover: #85bccb;
+        --semantic-color-semantic-info-active: #5b93a2;
+        --semantic-color-semantic-info-disabled: #6fa9b866;
+        --semantic-color-semantic-success: #83b370;
+        --semantic-color-semantic-success-hover: #95c281;
+        --semantic-color-semantic-success-active: #6f9c5e;
+        --semantic-color-semantic-success-disabled: #83b37066;
+        --semantic-color-semantic-warning: #d9b34a;
+        --semantic-color-semantic-warning-hover: #e5c25c;
+        --semantic-color-semantic-warning-active: #c19c39;
+        --semantic-color-semantic-warning-disabled: #d9b34a66;
+        --semantic-color-semantic-neutral: #6b6156;
+        --semantic-color-semantic-neutral-hover: #7b7165;
+        --semantic-color-semantic-neutral-active: #595044;
+        --semantic-color-semantic-neutral-disabled: #6b615666;
+        --semantic-color-semantic-neutral-inactive: #4a443c;
+
+        --text-color-text-main: #ece7df;
+        --text-color-text-subtle: #a39d92;
+        --text-color-text-primary: #eda453;
+        --text-color-text-critical: #e89c90;
+        --text-color-text-info: #93c3d1;
+        --text-color-text-success: #a4cc92;
+        --text-color-text-warning: #dcc06a;
+        --text-color-text-neutral: #b3a99c;
+        --text-color-text-reverse: #1a1713;
+        --text-color-text-reverse-subtle: #2e2923;
+        --text-color-text-disabled: #6f685e;
+
+        --overlays-color-background-overlay: #00000080;
+        --overlays-color-background-modal-overlay: #000000a6;
+
+        --color-avatar-bg: #3a3226;
+        --color-background-subtle-callout: #2b241a;
+        --color-background-critical: #3a201c;
+        --color-status-ready: #7fd45e;
+        --color-status-busy: #f0a848;
+        --color-status-offline: #7a736a;
+        --color-badge-primary-bg: #ece7df;
+        --color-badge-primary-text: #1d1a17;
+        --color-badge-secondary-bg: #282420;
+        --color-badge-secondary-text: #ece7df;
+        --color-interactions-menu: #ece7df;
+        --color-interactions-menu-hover: #c9c2b6;
+        --color-interactions-menu-inactive: #837c71;
+        --copy-button-text-color: #a39d92;
+
+        --ls-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+        --ls-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+        --ls-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.65);
+        --ls-glow-status: 0 0 6px currentColor;
+
+        --ls-surface-map: #0e0d0b;
+        --ls-surface-input: #151312;
+        --ls-console-border: var(--borders-color-border-2);
+        --ls-scrim: rgba(21, 19, 18, 0.85);
+
+        --ls-accent-surface: #e59d4b1f;
+        --ls-accent-line: #e59d4b73;
+
+        --ls-color-selection: #7fc4d6;
+        --ls-color-selection-fill: #7fc4d61f;
+        --ls-color-crosshair: #7a736a;
+        --ls-color-canvas-grid: #ece7df12;
+        --ls-color-hover-halo: #ece7df2e;
     }
 }

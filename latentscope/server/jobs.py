@@ -493,20 +493,34 @@ def run_umap():
     # Number of UMAP output dimensions (2 or 3). 3D umaps also get z + voxel
     # indices computed at scope time; consumed by ls-umap's --dimensions flag.
     dimensions = request.values.get('dimensions')
+    # Incremental / registered umaps (issue #142)
+    transform_from = request.values.get('transform_from')
+    register_to = request.values.get('register_to')
     # Optional named-step metadata (issue: experiment gallery + named steps).
     # Consumed by ls-umap (WP-A) and written into umap-NNN.json.
     name = request.values.get('name')
     description = request.values.get('description')
 
-    err = _require_params(dataset=dataset, embedding_id=embedding_id,
-                          neighbors=neighbors, min_dist=min_dist)
+    if transform_from:
+        # neighbors/min_dist are ignored by the transform path (the saved
+        # reducer already encodes them)
+        err = _require_params(dataset=dataset, embedding_id=embedding_id)
+    else:
+        err = _require_params(dataset=dataset, embedding_id=embedding_id,
+                              neighbors=neighbors, min_dist=min_dist)
     if err:
         return err
 
     job_id = str(uuid.uuid4())
-    command = ['ls-umap', dataset, embedding_id, neighbors, min_dist]
+    command = ['ls-umap', dataset, embedding_id]
+    if neighbors is not None and min_dist is not None:
+        command += [neighbors, min_dist]
     if dimensions:
         command.append(f'--dimensions={dimensions}')
+    if transform_from:
+        command.append(f'--transform-from={transform_from}')
+    if register_to:
+        command.append(f'--register-to={register_to}')
     if init:
         command.append(f'--init={init}')
     if align:
@@ -617,6 +631,11 @@ def run_cluster():
     n_neighbors = request.values.get('n_neighbors')
     noise_level = request.values.get('noise_level')
     approx_n_clusters = request.values.get('approx_n_clusters')
+    base_n_clusters = request.values.get('base_n_clusters')
+    seed = request.values.get('seed')
+    # Opt back in to the pre-1.0 behavior of reassigning noise points to their
+    # nearest cluster centroid (#143). Default keeps them as "Unclustered".
+    assign_noise = request.values.get('assign_noise')
     # Input space to cluster on: 2D umap projection or high-dim embeddings.
     # Consumed by ls-cluster (WP-B). Optional; the script defaults per method
     # (evoc->embedding, hdbscan/kmeans/gmm->umap) when omitted here.
@@ -653,6 +672,12 @@ def run_cluster():
             command.append(f'--noise_level={noise_level}')
         if approx_n_clusters and approx_n_clusters not in ('null', '0'):
             command.append(f'--approx_n_clusters={approx_n_clusters}')
+        if base_n_clusters and base_n_clusters not in ('null', '0'):
+            command.append(f'--base_n_clusters={base_n_clusters}')
+    if seed and seed != 'null':
+        command.append(f'--seed={seed}')
+    if assign_noise and assign_noise not in ('null', 'false', 'False', '0'):
+        command.append('--assign-noise')
     if cluster_on:
         command.append(f'--cluster_on={cluster_on}')
     if name:

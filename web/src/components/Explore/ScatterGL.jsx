@@ -132,6 +132,16 @@ function ScatterGL({
   const { isDark: isDarkMode } = useColorMode();
   const { setCenteredIndices } = useFilter();
 
+  // WebGL clear color = the map surface token (--ls-surface-map), so the CSS
+  // background and the GL clear can never disagree. Re-read on theme change.
+  const clearColor = useMemo(() => {
+    const hex = getComputedStyle(document.documentElement)
+      .getPropertyValue('--ls-surface-map')
+      .trim();
+    const c = rgb(hex || (isDarkMode ? '#0e0d0b' : '#ffffff'));
+    return [c.r / 255, c.g / 255, c.b / 255, 1];
+  }, [isDarkMode]);
+
   const debouncedSetCenteredIndices = useDebounce(setCenteredIndices, 50);
 
   const canvasRef = useRef(null);
@@ -375,7 +385,7 @@ function ScatterGL({
     if (!reglRef.current || !drawPointsRef.current) return;
 
     reglRef.current.clear({
-      color: isDarkMode ? [0.067, 0.067, 0.067, 1] : [0.98, 0.98, 0.98, 1],
+      color: clearColor,
       depth: 1,
     });
 
@@ -413,7 +423,7 @@ function ScatterGL({
       height,
       blendParams,
     });
-  }, [points, pointColors, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, dynamicSize, hidePoints]);
+  }, [points, pointColors, transform, pointScale, pointOpacity, featureIsSelected, width, height, isDarkMode, clearColor, dynamicSize, hidePoints]);
 
   // Update useEffect to rebuild quadtree when points change
   useEffect(() => {

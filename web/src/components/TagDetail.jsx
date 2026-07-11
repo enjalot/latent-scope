@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 const apiUrl = import.meta.env.VITE_API_URL
 
 import DataTable from './DataTable';
-
+import { Spinner } from './ui';
 
 function TagDetail() {
   const [dataset, setDataset] = useState(null);
@@ -39,7 +39,7 @@ function TagDetail() {
   }, [datasetId, tagId])
 
 
-  if (!dataset) return <div>Loading...</div>;
+  if (!dataset) return <Spinner label="LOADING DATASET…" />;
   const datasetUrl = "/datasets/" + datasetId
 
   return (

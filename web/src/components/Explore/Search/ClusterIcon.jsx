@@ -1,4 +1,8 @@
-const Icon = ({ width = 24, height = 24, color = 'rgb(212, 178, 151)' }) => (
+const Icon = ({
+  width = 24,
+  height = 24,
+  color = 'var(--interactions---primary-color-interaction-primary)',
+}) => (
   <svg
     width={width}
     height={height}

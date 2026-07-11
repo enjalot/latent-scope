@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Button } from 'react-element-forge';
 import SubNav from '../components/SubNav';
 import { apiService, apiUrl } from '../lib/apiService';
 import HFUpload from '../components/HFUpload';
@@ -90,6 +91,17 @@ function Export() {
     navigate(`/datasets/${datasetId}/export/${e.target.value}`);
   };
 
+  const [combining, setCombining] = useState(false);
+  const handleCombine = useCallback(() => {
+    setCombining(true);
+    apiService
+      .combineExport(datasetId, scopeId)
+      .then(() => apiService.fetchExportList(datasetId))
+      .then(setDatasetFiles)
+      .catch(console.error)
+      .finally(() => setCombining(false));
+  }, [datasetId, scopeId]);
+
   return (
     <div className={styles['page']}>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={navigateToScope} />
@@ -98,17 +110,13 @@ function Export() {
           <h2>
             Export Data for {dataset?.id} {scopeId}
           </h2>
-          <p>
+          <div>
             {hasHFKey ? (
-              <div>
-                <HFUpload dataset={dataset} scope={scope} />
-              </div>
+              <HFUpload dataset={dataset} scope={scope} />
             ) : (
-              <div>
-                <Link to="/settings">Setup Hugging Face API Key</Link>
-              </div>
+              <Link to="/settings">Setup Hugging Face API Key</Link>
             )}
-          </p>
+          </div>
         </div>
         <div className={styles['scope-files']}>
           <h3>Scope {scopeId}</h3>
@@ -117,13 +125,22 @@ function Export() {
             cluster and label from clustering and labeling) and the metadata into a single JSON.
           </p>
           <ul>{scopeFiles.map(fileLink)}</ul>
+          {scopeId ? (
+            <Button
+              color="secondary"
+              size="small"
+              onClick={handleCombine}
+              disabled={combining}
+              text={combining ? 'Generating…' : 'Generate combined export (includes tags)'}
+            />
+          ) : null}
         </div>
         {scopeId ? (
           <div className={styles['code-snippets']}>
             <h3>Python code snippets</h3>
             <p className={styles['description']}>Load the data and embeddings in python.</p>
             {/* prettier-ignore */}
-            <code>
+            <code className="ls-console">
             import h5py<br/>
             import numpy as np<br/>
             import pandas as pd<br/>
@@ -136,7 +153,7 @@ function Export() {
             {hasLance ? (
               <div className={styles['code-snippet']}>
                 <p className={styles['description']}>Query using LanceDB</p>
-                <code>
+                <code className="ls-console">
                   import lancedb
                   <br />
                   db = lancedb.connect(&quot;{hasLance[3].split('/scopes')[0]}&quot;)

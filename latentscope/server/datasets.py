@@ -898,6 +898,39 @@ def new_scope_cluster(dataset, scope):
     return jsonify({"success": True, "message": "Cluster created successfully"})
 
 
+@datasets_write_bp.route('/<dataset>/export/combine/<scope>', methods=['POST'])
+def combine_scope_export(dataset, scope):
+    """Write an on-demand combined export parquet for a scope.
+
+    Reads the scope's ``<scope>-input.parquet`` (input joined with scope
+    columns) and adds a boolean ``tag_<name>`` column for every tag in the
+    dataset, True at the tagged row indices. The result is written to
+    ``scopes/<scope>-export.parquet`` (issue #38).
+    """
+    import pandas as pd
+
+    from latentscope.server.tags import load_tag_indices
+
+    _safe_dataset(scope, param='scope')
+    DATA_DIR = _data_dir()
+    scope_input_path = os.path.join(DATA_DIR, dataset, "scopes", scope + "-input.parquet")
+    if not os.path.exists(scope_input_path):
+        return jsonify({"error": f"No input parquet found for scope {scope}"}), 404
+
+    df = pd.read_parquet(scope_input_path)
+    for tag, indices in load_tag_indices(DATA_DIR, dataset).items():
+        df[f"tag_{tag}"] = df["index"].isin(indices)
+
+    export_name = scope + "-export.parquet"
+    export_path = os.path.join(DATA_DIR, dataset, "scopes", export_name)
+    df.to_parquet(export_path)
+    return jsonify({
+        "name": export_name,
+        "relative_path": os.path.join("scopes", export_name),
+        "size": os.path.getsize(export_path),
+    })
+
+
 @datasets_bp.route('/<dataset>/export/list', methods=['GET'])
 def get_dataset_export_list(dataset):
     DATA_DIR = _data_dir()

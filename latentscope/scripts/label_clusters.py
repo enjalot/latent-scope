@@ -73,6 +73,9 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     with open(os.path.join(cluster_dir, f"{cluster_id}.json")) as f:
         cluster_meta = json.load(f)
     umap_id = cluster_meta["umap_id"]
+    # Cluster id of the noise bucket when noise reassignment was off (#143);
+    # it keeps the literal label "Unclustered" instead of an LLM summary.
+    unclustered_cluster = cluster_meta.get("unclustered_cluster")
     umap = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.parquet"))
     df["x"] = umap["x"]
     df["y"] = umap["y"]
@@ -122,6 +125,13 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
     extracts = []
     for i, row in tqdm(clusters.iterrows(), total=clusters.shape[0], desc="Preparing extracts"):
     # for i, row in clusters.iterrows():
+        if unclustered_cluster is not None and i == unclustered_cluster:
+            # The noise bucket is never sent to the LLM (skipped again below),
+            # so don't spend time/memory loading and tokenizing what can be a
+            # very large set of rows; the empty placeholder keeps extracts
+            # index-aligned with clusters.
+            extracts.append([])
+            continue
         indices = row['indices']
         # items = df.loc[list(indices), text_column]
         items = df.loc[list(indices)]
@@ -196,6 +206,16 @@ def labeler(dataset_id, text_column="text", cluster_id="cluster-001", model_id="
                 tqdm.write(f"skipping {i} already labeled {clusters.loc[i, 'label']}")
                 time.sleep(0.01)
                 continue
+
+        if unclustered_cluster is not None and i == unclustered_cluster:
+            # Noise bucket: don't ask the LLM to summarize what is by
+            # definition unrelated content; keep the honest label.
+            tqdm.write(f"cluster {i} is the noise bucket; keeping label 'Unclustered'")
+            clusters.loc[i, 'label'] = "Unclustered"
+            clusters.loc[i, 'label_raw'] = "Unclustered"
+            clusters.loc[i, 'labeled'] = True
+            clusters.to_parquet(os.path.join(cluster_dir, f"{label_id}.parquet"))
+            continue
 
         try:
             time.sleep(0.01)

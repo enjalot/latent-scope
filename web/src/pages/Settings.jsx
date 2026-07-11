@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiService, apiUrl } from '../lib/apiService';
 const readonly = import.meta.env.MODE == 'read_only';
 
+import { Button } from 'react-element-forge';
 import CustomModels from '../components/CustomModels';
 import CustomEmbeddingModels from '../components/CustomEmbeddingModels';
+import { StatusDiode } from '../components/ui';
 
 import styles from './Settings.module.css';
 
@@ -64,20 +66,24 @@ const Settings = () => {
         As set in the environment variable <code>LATENT_SCOPE_DATA</code>
       </div>
       <div className={styles['api-keys']}>
-        <b>The following API keys are available for use:</b>
+        <span className={styles['api-keys-title']}>
+          The following API keys are available for use:
+        </span>
         {envSettings.supported_api_keys?.map((key) => {
+          const isSet = envSettings.api_keys.indexOf(key) >= 0;
           return (
             <span className={styles['api-key']} key={key}>
-              {envSettings.api_keys.indexOf(key) >= 0 ? (
-                <span className={styles['api-key-status']}>✅</span>
-              ) : (
-                <span className={styles['api-key-status']}>◻️</span>
-              )}
-              &nbsp;
+              <StatusDiode status={isSet ? 'ready' : 'offline'} />
               <span className={styles['key-text']}>{key}</span>
               <form onSubmit={(e) => saveKey(key, e)}>
                 <input type="password" className={styles['api-key-input']} />
-                <button>{envSettings.api_keys.indexOf(key) >= 0 ? 'Update' : 'Save'}</button>
+                <Button
+                  type="submit"
+                  color="secondary"
+                  variant="outline"
+                  size="small"
+                  text={isSet ? 'Update' : 'Save'}
+                />
               </form>
             </span>
           );

@@ -1,17 +1,12 @@
-
 .preview {
   padding: 0;
   position: relative;
-}
-.preview-header {
-  position: absolute;
-  top: -70px;
 }
 
 .search-box {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ls-space-3);
 }
 .search-input {
   flex-grow: 1;
@@ -20,31 +15,34 @@
   flex-grow: 0;
 }
 .search-button-container {
-  padding-top: 6px;
+  padding-top: var(--ls-space-2);
 }
 
 .row-information {
-  margin-top: 6px;
-  padding-top: 0px;
-  padding: 6px;
+  margin-top: var(--ls-space-2);
+  padding: var(--ls-space-2);
   div {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--ls-space-2);
   }
-  
+
   span {
     display: flex;
     align-items: center;
     min-height: 42px; // Match button height
+    font-family: var(--ls-font-mono);
+    font-size: var(--ls-text-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-color-text-subtle);
   }
 }
 
 .scatter-container {
-  margin-top: 6px;
+  margin-top: var(--ls-space-2);
   border: 1px solid var(--borders-color-border-1);
-  border-radius: 6px;
-  padding: 6px;
+  border-radius: var(--ls-radius-2);
+  padding: var(--ls-space-2);
 }
 
 .tooltip-content {
@@ -53,6 +51,5 @@
 }
 
 .view-toggle {
-  margin-top: 8px;
-  // width: 100%;
+  margin-top: var(--ls-space-2);
 }

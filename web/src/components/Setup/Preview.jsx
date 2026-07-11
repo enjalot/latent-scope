@@ -8,12 +8,15 @@ import { Tooltip } from 'react-tooltip';
 import { processHulls } from '../../utils';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService } from '../../lib/apiService';
-import FilterDataTable from '../FilterDataTable';
+import { useColorMode } from '@/hooks/useColorMode';
+import FilterDataTable from '../Explore/FilterDataTable';
 import Scatter from '../Scatter';
 import Scatter3D from '../Explore/Scatter3D';
 import HullPlot from '../HullPlot';
+import PreviewPointDetail from './PreviewPointDetail';
 import {
   mapSelectionColorsLight,
+  mapSelectionColorsDark,
   mapSelectionDomain,
   mapSelectionKey,
   mapSelectionOpacity,
@@ -24,6 +27,20 @@ import styles from './Preview.module.scss';
 
 function Preview({ embedding, umap, cluster, labelId } = {}) {
   const { datasetId, dataset, scope } = useSetup();
+  const { isDark } = useColorMode();
+
+  // theme-aware chrome for the preview map: selection palette + hull outline
+  const selectionColors = isDark ? mapSelectionColorsDark : mapSelectionColorsLight;
+  const hullStroke = useMemo(
+    () =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue('--text-color-text-main')
+        .trim() || 'black',
+    // isDark is load-bearing: the token value flips with the theme even though
+    // it isn't referenced directly inside the memo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isDark]
+  );
 
   const length = dataset?.length || 100;
   // Search related state
@@ -192,8 +209,18 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
 
   const [selectedIndices, setSelectedIndices] = useState([]);
 
+  // Row detail drawer: clicking a point on the preview map opens it for
+  // that row (like Explore's PointDetail); Escape / the X close it.
+  const [detailIndex, setDetailIndex] = useState(null);
+  const handleDetailClose = useCallback(() => setDetailIndex(null), []);
+  // A new point set (different umap or dataset) invalidates the open row.
+  useEffect(() => {
+    setDetailIndex(null);
+  }, [datasetId, umap]);
+
   const clearSelection = useCallback(() => {
     setSelectedIndices([]);
+    setDetailIndex(null);
     setDataIndices(range(0, 100));
     setDrawPoints(drawPoints.map((d) => [d[0], d[1], mapSelectionKey.normal]));
   }, [setSelectedIndices, setDataIndices, setDrawPoints, drawPoints]);
@@ -202,6 +229,9 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const handleSelected = useCallback(
     (selected) => {
       setSelectedIndices(selected);
+      // Clicking a point opens the detail drawer for it (a lasso opens the
+      // first row, matching Explore); clicking empty space closes it.
+      setDetailIndex(selected?.length ? selected[0] : null);
       // TODO: figure out how to reset the color without clearing the selected points
       // the problem is, we use regl-scatter internal state to vis the selected points
       // but if we update the drawPoints it will clear state
@@ -356,9 +386,6 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
 
   return (
     <div className={styles['preview']}>
-      {/* <div className={styles["preview-header"]}>
-      <h3>Preview: {stepTitle}</h3>
-    </div> */}
       <div className={styles['search-box']}>
         <Input
           className={styles['search-input']}
@@ -412,7 +439,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
               duration={1000}
               colorScaleType="categorical"
               colorInterpolator={cluster && !hasHulls ? interpolateSpectral : undefined}
-              colorRange={cluster && !hasHulls ? undefined : mapSelectionColorsLight}
+              colorRange={cluster && !hasHulls ? undefined : selectionColors}
               colorDomain={cluster && !hasHulls ? undefined : mapSelectionDomain}
               opacityRange={cluster && !hasHulls ? undefined : mapSelectionOpacity}
               pointSizeRange={cluster && !hasHulls ? undefined : pointSizeRange}
@@ -426,7 +453,7 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
           {!is3DUmap && hulls.length ? (
             <HullPlot
               hulls={hulls}
-              stroke="black"
+              stroke={hullStroke}
               fill="none"
               delay={0}
               duration={200}
@@ -501,17 +528,18 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
       {umap && viewMode !== 'table' && (
         <Tooltip
           id="featureTooltip"
+          className="ls-tooltip"
           isOpen={hoveredIndex !== null}
           delayShow={0}
           delayHide={0}
           delayUpdate={0}
+          // position is data-driven (anchored to the hovered point); theming
+          // comes from the ls-tooltip class, never inline colors
           style={{
             position: 'absolute',
             left: tooltipPosition.x,
             top: tooltipPosition.y,
             pointerEvents: 'none',
-            maxWidth: '400px',
-            backgroundColor: hovered?.ls_search_index >= 0 ? '#111' : '#666',
           }}
         >
           {hovered && embedding && (
@@ -534,6 +562,15 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             </div>
           )}
         </Tooltip>
+      )}
+
+      {dataset && (
+        <PreviewPointDetail
+          dataset={dataset}
+          selectedIndex={detailIndex}
+          clusterLabel={detailIndex !== null ? clusterMap[detailIndex]?.label : null}
+          onClose={handleDetailClose}
+        />
       )}
     </div>
   );

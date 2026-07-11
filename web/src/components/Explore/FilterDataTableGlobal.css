@@ -1,0 +1,49 @@
+/*
+  react-data-grid overrides for FilterDataTable, scoped under the `.ls-rdg`
+  wrapper class placed on the component's root div. Base .ls-rdg theming
+  lives in styles/primitives.scss; this file carries the rules the merged
+  FilterDataTable forks depended on (formerly leaked globals in the deleted
+  components/FilterDataTable.css).
+
+  react-data-grid's own stylesheet lives inside `@layer rdg.*`, so these
+  unlayered rules win the cascade without any `!important`. NOTE: rdg
+  re-declares every `--rdg-*` custom property on the grid root element
+  itself, so a var set on the `.ls-rdg` wrapper is inert (an element's own
+  declaration beats an inherited one, layers notwithstanding) — vars must be
+  set with an element-targeted selector like `.ls-rdg .rdg` to take effect.
+  That is why the full Amber Console table var set lives here rather than
+  relying on the wrapper-level block in primitives.scss.
+*/
+
+.ls-rdg .rdg {
+  border: none;
+  --rdg-color: var(--text-color-text-main);
+  --rdg-border-color: var(--borders-color-border-1);
+  --rdg-background-color: var(--ls-surface-panel);
+  --rdg-header-background-color: var(--neutrals-color-neutral-1);
+  --rdg-header-draggable-background-color: var(--neutrals-color-neutral-2);
+  --rdg-row-hover-background-color: color-mix(
+    in srgb,
+    var(--neutrals-color-neutral-2) 55%,
+    transparent
+  );
+  --rdg-row-selected-background-color: var(--ls-accent-surface);
+  --rdg-row-selected-hover-background-color: color-mix(
+    in srgb,
+    var(--interactions---primary-color-interaction-primary) 16%,
+    transparent
+  );
+  --rdg-selection-color: var(--ls-accent-line);
+  --rdg-checkbox-focus-color: var(--ls-focus-ring-color);
+  --rdg-font-size: var(--ls-text-sm);
+}
+
+.ls-rdg .rdg-row {
+  cursor: pointer;
+}
+
+/* SAE feature plot canvases render inside grid cells (FeaturePlot.jsx uses a
+   plain global class, so the rule lives here rather than in the module). */
+.ls-rdg .feature-plot-container canvas {
+  cursor: pointer;
+}

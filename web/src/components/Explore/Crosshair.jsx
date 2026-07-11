@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import scaleCanvas from '../../lib/canvas';
+import { useColorMode } from '@/hooks/useColorMode';
 
 const CrossHair = ({ xDomain, yDomain, width, height }) => {
   const canvasRef = useRef();
+  const { isDark } = useColorMode();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -15,18 +17,18 @@ const CrossHair = ({ xDomain, yDomain, width, height }) => {
 
   useEffect(() => {
     if (xDomain && yDomain) {
-      // const xScale = scaleLinear().domain(xDomain).range([0, width]);
-      // const yScale = scaleLinear().domain(yDomain).range([height, 0]);
-
-      // const zScale = (t) => t / (0.1 + xDomain[1] - xDomain[0]);
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, width, height);
-      // ctx.font = `${zScale(size)}px monospace`;
       ctx.globalAlpha = 0.25;
 
+      // Chrome color lives in a CSS token; re-read on theme change.
+      const crosshairColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--ls-color-crosshair')
+        .trim();
+
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'lightgray';
+      ctx.strokeStyle = crosshairColor || '#9a938a';
       ctx.beginPath();
       ctx.moveTo(width / 2, 0);
       ctx.lineTo(width / 2, height);
@@ -37,7 +39,7 @@ const CrossHair = ({ xDomain, yDomain, width, height }) => {
       ctx.lineTo(width, height / 2);
       ctx.stroke();
     }
-  }, [xDomain, yDomain, width, height]);
+  }, [xDomain, yDomain, width, height, isDark]);
 
   return (
     <canvas

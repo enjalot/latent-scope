@@ -1,4 +1,4 @@
-import { Button, Switch } from 'react-element-forge';
+import { Switch } from 'react-element-forge';
 import styles from './ConfigurationPanel.module.scss';
 
 const ConfigurationPanel = ({
@@ -22,29 +22,36 @@ const ConfigurationPanel = ({
     vizConfig;
 
   return (
-    <div className={`${styles.panel} ${isOpen ? styles.open : ''}`}>
-      <div className={styles.header}>
-        <h3>{title}</h3>
-        <Button
-          className={styles.closeButton}
-          variant="outline"
+    <div className={`${styles.panel} ls-panel ls-panel--floating ${isOpen ? styles.open : ''}`}>
+      <div className="ls-panel__header">
+        <h3 className="ls-panel__title">{title}</h3>
+        <button
+          type="button"
+          className="ls-icon-btn"
           onClick={onClose}
           aria-label="Minimize configuration panel"
-          icon="minus"
-        />
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
       </div>
 
-      <div className={styles.content}>
-        {/* Dropdown Example
+      <div>
         <div className={styles.configSection}>
-          <label>Color by</label>
-          <select className={styles.select}>
-            <option>Nomic Topic: medium</option>
-          </select>
-        </div> */}
-
-        <div className={styles.configSection}>
-          <label>Point Size: {pointSize}x</label>
+          <label>
+            Point Size<span className={styles.value}>{pointSize}×</span>
+          </label>
           <input
             type="range"
             min="0.1"
@@ -57,7 +64,9 @@ const ConfigurationPanel = ({
         </div>
 
         <div className={styles.configSection}>
-          <label>Point Opacity: {pointOpacity}x</label>
+          <label>
+            Point Opacity<span className={styles.value}>{pointOpacity}×</span>
+          </label>
           <input
             type="range"
             min="0.1"
@@ -109,7 +118,10 @@ const ConfigurationPanel = ({
             {imageMode && (
               <>
                 <div className={styles.configSection}>
-                  <label>Image size before switching: {atlasSwitchPx}px</label>
+                  <label>
+                    Image size before switching
+                    <span className={styles.value}>{atlasSwitchPx}px</span>
+                  </label>
                   <input
                     type="range"
                     min="8"
@@ -121,7 +133,10 @@ const ConfigurationPanel = ({
                   />
                 </div>
                 <div className={styles.configSection}>
-                  <label>Zoom into images before points: {atlasPointsPx}px</label>
+                  <label>
+                    Zoom into images before points
+                    <span className={styles.value}>{atlasPointsPx}px</span>
+                  </label>
                   <input
                     type="range"
                     min="32"
@@ -136,8 +151,6 @@ const ConfigurationPanel = ({
             )}
           </>
         )}
-
-        <div className={styles.configSection}></div>
       </div>
     </div>
   );

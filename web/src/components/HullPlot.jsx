@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-// import { scaleLinear } from 'd3-scale';
 import { line, curveLinearClosed } from 'd3-shape';
 import { select } from 'd3-selection';
-// import { interpolate } from 'flubber';
+import { useColorMode } from '@/hooks/useColorMode';
 
 import './HullPlot.css';
 
@@ -47,9 +46,16 @@ const HullPlot = ({
   width,
   height,
   label = undefined,
+  // Label pill chrome. When not provided, the values are read from the theme
+  // tokens (inverse "badge" surface) at render time so they flip with the
+  // color scheme. Pass explicit values to override per call site.
+  labelFill = undefined,
+  labelTextColor = undefined,
 }) => {
   const svgRef = useRef();
   const prevHulls = useRef();
+  // re-render the token-colored labels when the theme flips
+  const { colorMode } = useColorMode();
 
   const hasLabel = label !== undefined;
   let labelToShow = label;
@@ -83,23 +89,94 @@ const HullPlot = ({
     return Math.max(baseFontSize * scaleFactor, 8); // Ensure minimum font size of 8px
   };
 
+  // Approximate width per character (assuming monospace font)
+  const calculateTextWidth = (text, fontSize) => {
+    const charWidth = fontSize * 0.6; // Monospace fonts are typically ~60% as wide as they are tall
+    return text.length * charWidth + 2 * fontSize; // Add padding of 1 character width on each side
+  };
+
+  // Draw (or reposition) the label pill + text for each hull in screen
+  // coordinates. Called from BOTH effects — on hull changes and on every
+  // zoom/pan — so the background rect and the text always move together.
+  const renderLabels = (svg) => {
+    let labelBgSel = svg.selectAll('rect.hull-label-bg').data(label ? hulls : []);
+    labelBgSel.exit().remove();
+    let labelSel = svg.selectAll('text.hull-label').data(label ? hulls : []);
+    labelSel.exit().remove();
+    if (!label) return;
+
+    // Chrome colors + mono stack come from the theme tokens unless the caller
+    // passed explicit values (fallbacks match the light-mode token values).
+    const rootStyle = getComputedStyle(document.documentElement);
+    const pillFill =
+      labelFill || rootStyle.getPropertyValue('--color-badge-primary-bg').trim() || '#26221c';
+    const pillTextColor =
+      labelTextColor ||
+      rootStyle.getPropertyValue('--color-badge-primary-text').trim() ||
+      '#f6f4f1';
+    const monoFont = rootStyle.getPropertyValue('--ls-font-mono').trim() || 'monospace';
+
+    const fontSize = calculateScaledFontSize(width, height);
+    const textWidth = calculateTextWidth(labelToShow, fontSize);
+    const pillHeight = fontSize * 2;
+    // The pill sits above the hull's highest point; the text is anchored to
+    // the pill's exact vertical center so the two stay aligned at any font
+    // size (previously the text hung from a fixed baseline offset while the
+    // pill's box scaled with the font).
+    const pillTop = (d) =>
+      hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y -
+      8 -
+      pillHeight;
+
+    // background rects first so the text (appended after) paints on top
+    labelBgSel
+      .enter()
+      .append('rect')
+      .attr('class', 'hull-label-bg')
+      .merge(labelBgSel)
+      .attr('fill', pillFill)
+      .attr('rx', 3)
+      .attr('ry', 3)
+      .attr('opacity', 0.85)
+      .attr('x', (d) => {
+        const centroid = hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height);
+        return centroid.x - textWidth / 2; // Center the background
+      })
+      .attr('y', pillTop)
+      .attr('width', textWidth)
+      .attr('height', pillHeight);
+
+    labelSel
+      .enter()
+      .append('text')
+      .attr('class', 'hull-label')
+      .merge(labelSel)
+      .attr('dy', null) // clear the legacy baseline nudge on merged elements
+      .attr(
+        'x',
+        (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
+      )
+      .attr('y', (d) => pillTop(d) + pillHeight / 2)
+      .attr('text-anchor', 'middle')
+      .attr('fill', pillTextColor)
+      .attr('font-family', monoFont)
+      .attr('dominant-baseline', 'central')
+      .attr('font-size', fontSize)
+      .text(labelToShow);
+  };
+
   useEffect(() => {
     const validHulls = hulls.filter((h) => h && h.length > 0);
     if (!xDomain || !yDomain || !validHulls.length) return;
 
-    // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
     // Compare a cheap signature of ALL hulls — sampling only the first N
     // missed changes in later hulls (stale outlines with many clusters).
     const hullSignature = (hs) =>
       `${hs.length}:` + hs.map((h) => `${h.length},${h[0]},${h[h.length - 1]}`).join('|');
     const hullsChanged =
       !prevHulls.current || hullSignature(hulls) !== hullSignature(prevHulls.current);
-    // const pointsChanged = !prevPoints.current || (JSON.stringify(points[0]) !== JSON.stringify(prevPoints.current[0]))
 
     if (!hullsChanged) return;
-    // if(!hullsChanged || !pointsChanged) {
-    //   return
-    // }
 
     const svg = select(svgRef.current);
     // Calculate scale factors
@@ -128,14 +205,7 @@ const HullPlot = ({
 
     let sel = g.selectAll('path.hull').data(hulls);
 
-    sel
-      .exit()
-      // .transition()
-      // .duration(duration)
-      // .delay(delay)
-      // .ease(easeExpOut)
-      // .style("opacity", 0)
-      .remove();
+    sel.exit().remove();
 
     sel
       .enter()
@@ -145,115 +215,15 @@ const HullPlot = ({
       .style('fill', fill)
       .style('stroke', stroke)
       .style('stroke-width', scaledStrokeWidth)
-      .style('opacity', 0)
-      // .transition()
-      //   .delay(delay + 100)
-      //   .duration(duration - 100)
-      //   .ease(easeExpOut)
       .style('opacity', opacity);
 
-    sel
-      // .transition()
-      // .duration(duration)
-      // .delay(delay)
-      // .ease(easeCubicInOut)
-      .style('opacity', opacity)
-      .attr('d', draw);
-    // .attrTween("d", function(d,i) {
-    //   // console.log("d,i", d, i)
-    //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
-    //   const prev = prevHulls.current ? prevHulls.current[i] : null
-    //   // console.log(d, prev)
-    //   if(!prev) return () => draw(d)
-    //   const inter = interpolate(
-    //     draw(prev),
-    //     draw(d)
-    //   );
-    //   return function(t) {
-    //     return inter(t)
-    //   }
-    // })
+    sel.style('opacity', opacity).attr('d', draw);
 
-    // Handle hull labels
-    let labelSel = svg.selectAll('text.hull-label').data(hulls);
-
-    labelSel.exit().remove();
-
-    // Add background rectangles for labels so that can be seen over the data points
-    let labelBgSel = svg.selectAll('rect.hull-label-bg').data(hulls);
-
-    labelBgSel.exit().remove();
-
-    if (label) {
-      // Add this helper function to calculate text width
-      const calculateTextWidth = (text, fontSize) => {
-        // Approximate width per character (assuming monospace font)
-        const charWidth = fontSize * 0.6; // Monospace fonts are typically ~60% as wide as they are tall
-        return text.length * charWidth + 2 * fontSize; // Add padding of 1 character width on each side
-      };
-
-      labelBgSel
-        .enter()
-        .append('rect')
-        .attr('class', 'hull-label-bg')
-        .merge(labelBgSel)
-        .attr('fill', '#7baf5a')
-        .attr('rx', 3)
-        .attr('ry', 3)
-        .attr('opacity', 0.85)
-        .attr('x', (d) => {
-          const centroid = hullToSvgCoordinate(
-            calculateCentroid(d),
-            xDomain,
-            yDomain,
-            width,
-            height
-          );
-          const fontSize = calculateScaledFontSize(width, height);
-          const textWidth = calculateTextWidth(labelToShow, fontSize);
-          return centroid.x - textWidth / 2; // Center the background
-        })
-        .attr('y', (d) => {
-          const highest = hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height);
-          return highest.y - 20; // Position above the highest point
-        })
-        .attr('width', () => {
-          const fontSize = calculateScaledFontSize(width, height);
-          return calculateTextWidth(labelToShow, fontSize);
-        })
-        .attr('height', () => {
-          const fontSize = calculateScaledFontSize(width, height);
-          return fontSize * 2; // Make height 1.5 times the font size for proper padding
-        });
-    }
-
-    if (label) {
-      labelSel
-        .enter()
-        .append('text')
-        .attr('class', 'hull-label')
-        .merge(labelSel)
-        .attr('dy', -5)
-        .attr(
-          'x',
-          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
-        )
-        .attr(
-          'y',
-          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
-        )
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .attr('font-family', 'monospace')
-        .attr('alignment-baseline', 'auto')
-        .attr('font-size', calculateScaledFontSize(width, height))
-        .text(label.label);
-    }
+    // Handle hull labels (pill + text together)
+    renderLabels(svg);
 
     setTimeout(() => {
       prevHulls.current = hulls;
-      // prevHulls.current = mod
-      // prevPoints.current = points
     }, duration);
   }, [hulls]);
 
@@ -275,44 +245,20 @@ const HullPlot = ({
     // Calculate a scaled stroke width
     const scaledStrokeWidth = strokeWidth / Math.sqrt(xScaleFactor * yScaleFactor);
 
-    // Handle hull labels
-    let labelSel = svg.selectAll('text.hull-label').data(hulls);
-
-    labelSel.exit().remove();
-
-    if (label) {
-      labelSel
-        .enter()
-        .append('text')
-        .attr('class', 'hull-label')
-        .merge(labelSel)
-        .attr('dy', -5)
-        .attr(
-          'x',
-          (d) => hullToSvgCoordinate(calculateCentroid(d), xDomain, yDomain, width, height).x
-        )
-        .attr(
-          'y',
-          (d) => hullToSvgCoordinate(findHighestPoint(d), xDomain, yDomain, width, height).y
-        )
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'white')
-        .attr('alignment-baseline', 'auto')
-        .attr('font-size', calculateScaledFontSize(width, height))
-        .text(label.label);
-    }
+    // Handle hull labels: reposition the pill AND the text on every zoom/pan
+    // (previously only the text moved, so the label background stayed behind
+    // at its old position while zooming).
+    renderLabels(svg);
 
     const g = svg.select('g.hull-container');
     g.attr(
       'transform',
-      // `translate(${xOffset}, ${yOffset})`
       `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
     );
 
     const draw = line()
       .x((d) => d?.[0])
       .y((d) => -d?.[1])
-      // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
     // Draw hulls
@@ -335,9 +281,7 @@ const HullPlot = ({
       .style('stroke', stroke)
       .attr('stroke-width', scaledStrokeWidth)
       .style('opacity', opacity);
-
-    // labelSel.exit().remove();
-  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height]);
+  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height, colorMode, labelFill, labelTextColor]);
 
   return (
     <svg ref={svgRef} className="hull-plot" width={width} height={height}>
@@ -347,68 +291,3 @@ const HullPlot = ({
 };
 
 export default HullPlot;
-
-
-
-// const HullPlotCanvas = ({ 
-//   points, 
-//   hulls,
-//   fill,
-//   stroke,
-//   strokeWidth,
-//   symbol,
-//   xDomain, 
-//   yDomain, 
-//   width, 
-//   height
-// }) => {
-//   const container = useRef();
-  
-//   useEffect(() => {
-//     if(xDomain && yDomain) {
-//       const xScale = scaleLinear()
-//         .domain(xDomain)
-//         .range([0, width])
-//       const yScale = scaleLinear()
-//         .domain(yDomain)
-//         .range([height, 0])
-
-//       const zScale = (t) => t/(.1 + xDomain[1] - xDomain[0])
-//       const canvas = container.current
-//       const ctx = canvas.getContext('2d')
-//       ctx.clearRect(0, 0, width, height)
-//       ctx.fillStyle = fill 
-//       ctx.strokeStyle = stroke
-//       ctx.font = `${zScale(strokeWidth)}px monospace`
-//       ctx.globalAlpha = 0.75
-//       let rw = zScale(strokeWidth)
-//       if(!hulls.length || !points.length) return
-//       hulls.forEach(hull => {
-//         // a hull is a list of indices into points
-//         if(!hull) return;
-//         ctx.beginPath()
-//         hull.forEach((index, i) => {
-//           if(i === 0) {
-//             ctx.moveTo(xScale(points[index][0]), yScale(points[index][1]))
-//           } else {
-//             ctx.lineTo(xScale(points[index][0]), yScale(points[index][1]))
-//           }
-//         })
-//         ctx.lineTo(xScale(points[hull[0]][0]), yScale(points[hull[0]][1]))
-//         if(fill)
-//           ctx.fill()
-//         if(stroke)
-//           ctx.stroke()
-//       })
-//     }
-
-//   }, [points, hulls, fill, stroke, strokeWidth, xDomain, yDomain, width, height])
-
-//   return <canvas 
-//     className="hull-plot"
-//     ref={container} 
-//     width={width} 
-//     height={height} />;
-// };
-
-// export default HullPlot;

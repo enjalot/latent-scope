@@ -1,12 +1,33 @@
-.modal {
-  width: 70vw !important;
-  min-width: 70vw !important;
+/* xl modal (DESIGN §5): doubled class outranks forge's hashed width class without !important */
+.modal.modal {
+  width: min(1100px, 90vw);
+  min-width: min(1100px, 90vw);
 }
+
 .modalContent {
   position: relative;
 }
+
 .modalClose {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: var(--ls-space-3);
+  right: var(--ls-space-3);
+}
+
+.tooltipTrigger {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--ls-space-1);
+  color: var(--text-color-text-subtle);
+  cursor: help;
+  transition: color var(--ls-dur-fast) var(--ls-ease-out);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--text-color-text-main);
+  }
 }
