@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import FilterActions from '../components/Explore/FilterActions';
 import VisualizationPane from '../components/Explore/VisualizationPane';
 import MobileFilterDataTable from '../components/Explore/MobileFilterDataTable';
+import PointDetail from '../components/Explore/PointDetail';
 import { useScope } from '../contexts/ScopeContext';
 import { useFilter } from '../contexts/FilterContext';
 import { Spinner } from '../components/ui';
@@ -24,6 +25,16 @@ function MobileExplore() {
 
   const [scatter, setScatter] = useState({});
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  // Touch has no hover: a tap selects a point and its detail opens in the
+  // drawer (the touch equivalent of the desktop hover tooltip).
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const handleSelect = useCallback(
+    (indices) => {
+      const i = indices?.[0];
+      setSelectedIndex(i === undefined || i === -1 || deletedIndices.includes(i) ? null : i);
+    },
+    [deletedIndices]
+  );
   const [hovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations] = useState([]);
@@ -95,7 +106,7 @@ function MobileExplore() {
               hovered={hovered}
               hoveredIndex={hoveredIndex}
               onHover={handleHover}
-              onSelect={() => {}}
+              onSelect={handleSelect}
               hoverAnnotations={hoverAnnotations}
               selectedAnnotations={[]}
               hoveredCluster={hoveredCluster}
@@ -103,6 +114,8 @@ function MobileExplore() {
               isSmallScreen={true}
             />
           ) : null}
+
+          <PointDetail selectedIndex={selectedIndex} onClose={() => setSelectedIndex(null)} />
 
           {filterLoading && (
             <div className="ls-scrim">

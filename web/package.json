@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "camera-controls": "^3.1.2",
     "compare-versions": "6.1.1",
     "d3-array": "^3.2.4",
     "d3-color": "^3.1.0",
@@ -35,7 +36,8 @@
     "react-select": "5.8.0",
     "react-tooltip": "5.26.3",
     "regl": "^2.1.1",
-    "regl-scatterplot": "1.8.5"
+    "regl-scatterplot": "1.8.5",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.9.1",

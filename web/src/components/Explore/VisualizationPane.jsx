@@ -24,6 +24,11 @@ import ColorLegend from './ColorLegend';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { useColorBy } from '../../hooks/useColorBy';
+import { useCellMembers } from '../../hooks/useCellMembers';
+import MembersTooltip from './MembersTooltip';
+import CellDetail from './CellDetail';
+import Scatter3D from './Scatter3D';
+import VoxelView from './VoxelView';
 import { Readout, Spinner } from '../ui';
 
 // Signature #1 — viewport reticle ticks: four corner L-marks that turn amber
@@ -46,6 +51,7 @@ function VisualizationPane({
   width,
   height,
   hovered,
+  hoveredIndex,
   onHover,
   onSelect,
   hoverAnnotations,
@@ -55,6 +61,16 @@ function VisualizationPane({
   isSmallScreen = false,
 }) {
   const { scopeRows, clusterLabels, scope, features, dataset } = useScope();
+
+  // 3D scopes (umap run with --dimensions 3) carry a z coordinate + voxel
+  // indices, unlocking a [2D · 3D · Voxels] view toggle. 2D scopes keep the
+  // classic ScatterGL projection untouched (zero regression).
+  const is3D = scope?.dimensions === 3;
+  const [viewMode, setViewMode] = useState('2d');
+  useEffect(() => {
+    // default 3D scopes to the 3D scatter; keep 2D scopes on the 2D map.
+    setViewMode(is3D ? '3d' : '2d');
+  }, [is3D, scope?.id]);
 
   // first binary image column (if any) for the hover thumbnail
   const hoverImageColumn = useMemo(() => {
@@ -250,6 +266,57 @@ function VisualizationPane({
   }, [scopeRows]);
 
   // ====================================================================================================
+  // Members-in-cell tooltip for the 2D heatmap. TilePlot is pointer-events:none
+  // (ScatterGL owns hover), so we derive the hovered cell from the existing
+  // point-hover: the hovered point's tile_index_64. The tooltip follows the
+  // cursor, whose position we track on the pane. Same reusable hook the voxel
+  // view uses (useCellMembers) -> one members-tooltip implementation.
+  // ====================================================================================================
+  const tileCellKeyOf = useCallback((row) => row.tile_index_64, []);
+  const {
+    setActiveCell: setTileActiveCell,
+    active: tileActive,
+    snippets: tileSnippets,
+    loadingSnippets: tileLoadingSnippets,
+  } = useCellMembers({ scopeRows, scope, cellKeyOf: tileCellKeyOf });
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const [tileTooltipPos, setTileTooltipPos] = useState(null);
+
+  // ====================================================================================================
+  // Cell detail drawer (#154): clicking a heatmap tile (2D) or a voxel (3D)
+  // opens a drawer listing every datapoint in that cell. { key, column } names
+  // the cell; CellDetail derives membership from scopeRows itself.
+  // ====================================================================================================
+  const [selectedCell, setSelectedCell] = useState(null);
+  // Voxel view -> open the cell drawer for a clicked voxel.
+  const onCellSelect = useCallback((key, column) => {
+    if (key === null || key === undefined) setSelectedCell(null);
+    else setSelectedCell({ key, column });
+  }, []);
+  // 2D map select: when the heatmap is showing, a click opens the tile's cell
+  // drawer (the tile under the clicked point); otherwise it opens PointDetail
+  // via the original onSelect (zero change to the non-heatmap flow).
+  const handleScatterSelect = useCallback(
+    (indices) => {
+      const idx = indices?.[0];
+      if (heatmapVisibleRef.current && idx !== undefined && idx !== -1 && scopeRows?.[idx]) {
+        setSelectedCell({ key: scopeRows[idx].tile_index_64, column: 'tile_index_64' });
+      } else {
+        onSelect(indices);
+      }
+    },
+    [scopeRows, onSelect]
+  );
+  // Deep-link a cell entry into the full PointDetail drawer.
+  const openPointFromCell = useCallback(
+    (pos) => {
+      setSelectedCell(null);
+      onSelect([pos]);
+    },
+    [onSelect]
+  );
+
+  // ====================================================================================================
   // Configuration Panel
   // ====================================================================================================
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -313,6 +380,33 @@ function VisualizationPane({
   );
   // Points drawn on top of the atlas: past the deepest grid, or always-on.
   const pointsVisible = imageMode && (lod.deepest || alwaysShowPoints);
+
+  // The 2D heatmap is showing when: image-mode zoomed out, or the manual
+  // toggle for non-image scopes. Members tooltip is only active then.
+  const heatmapVisible =
+    viewMode === '2d' &&
+    (imageMode ? !lod.active : vizConfig.showHeatMap) &&
+    tiles?.length > 1;
+  // Mirror into a ref so the (stable) select handler reads the live value
+  // without being torn down/recreated on every heatmap toggle.
+  const heatmapVisibleRef = useRef(heatmapVisible);
+  heatmapVisibleRef.current = heatmapVisible;
+
+  // Drive the tile members tooltip from the existing point-hover.
+  useEffect(() => {
+    if (
+      heatmapVisible &&
+      hoveredIndex !== null &&
+      hoveredIndex !== undefined &&
+      scopeRows?.[hoveredIndex]
+    ) {
+      setTileActiveCell(scopeRows[hoveredIndex].tile_index_64);
+      setTileTooltipPos({ x: mouseRef.current.x, y: mouseRef.current.y });
+    } else {
+      setTileActiveCell(null);
+      setTileTooltipPos(null);
+    }
+  }, [heatmapVisible, hoveredIndex, scopeRows, setTileActiveCell]);
 
   // Cluster hull layers, shared between the text-mode position (under the
   // atlas/heatmap) and the image-mode position (above them). In image mode
@@ -491,14 +585,85 @@ function VisualizationPane({
         </div>
       )}
 
-      <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
+      {/* 3D view toggle — only for 3D scopes (dimensions === 3). Floating HUD
+          panel with the ONE tab primitive as a segmented mode switch. */}
+      {is3D && (
+        <div
+          className="ls-panel ls-panel--floating"
+          role="tablist"
+          aria-label="View mode"
+          style={{
+            position: 'absolute',
+            top: 'var(--ls-space-2)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 'var(--ls-space-1)',
+            padding: 'var(--ls-space-1) var(--ls-space-2)',
+          }}
+        >
+          {[
+            ['2d', '2D'],
+            ['3d', '3D'],
+            ['voxels', 'Voxels'],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              role="tab"
+              aria-selected={viewMode === mode}
+              className="ls-tab"
+              onClick={() => setViewMode(mode)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
+        onMouseMove={(e) => {
+          mouseRef.current = { x: e.clientX, y: e.clientY };
+        }}
+      >
+        {/* 3D scatter (three.js soft splats) for 3D scopes */}
+        {viewMode === '3d' && scope && (
+          <Scatter3D
+            scopeRows={scopeRows}
+            width={width}
+            height={height}
+            scope={scope}
+            clusterLabels={clusterLabels}
+            selectedCluster={clusterFilter.cluster}
+            hoveredIndex={hoveredIndex}
+            onHover={onHover}
+            onSelect={onSelect}
+            pointScale={vizConfig.pointSize}
+            pointColors={scatterPointColors}
+          />
+        )}
+        {/* Voxel heatmap (aggregated cubes + slice plane) for 3D scopes */}
+        {viewMode === 'voxels' && scope && (
+          <VoxelView
+            scopeRows={scopeRows}
+            width={width}
+            height={height}
+            scope={scope}
+            clusterLabels={clusterLabels}
+            pointColors={scatterPointColors}
+            onCellSelect={onCellSelect}
+          />
+        )}
+        {viewMode === '2d' && (
+          <>
         {scope && (
           <Scatter
             points={drawingPoints}
             width={width}
             height={height}
             onView={handleView}
-            onSelect={onSelect}
+            onSelect={handleScatterSelect}
             onHover={onHover}
             featureIsSelected={featureIsSelected}
             maxZoom={maxZoom}
@@ -610,7 +775,28 @@ function VisualizationPane({
         {isSmallScreen && (
           <CrossHair xDomain={xDomain} yDomain={yDomain} width={width} height={height} />
         )}
+          </>
+        )}
       </div>
+
+      {/* Members-in-cell tooltip over the 2D heatmap (N datapoints · dominant
+          cluster + sampled snippets). Same hook/presentation as the voxel view. */}
+      {tileTooltipPos && tileActive && (
+        <MembersTooltip
+          x={tileTooltipPos.x}
+          y={tileTooltipPos.y}
+          summary={tileActive.summary}
+          snippets={tileSnippets}
+          loading={tileLoadingSnippets}
+        />
+      )}
+
+      {/* Cell detail drawer (#154): all datapoints in a clicked tile/voxel. */}
+      <CellDetail
+        selectedCell={selectedCell}
+        onClose={() => setSelectedCell(null)}
+        onOpenPoint={openPointFromCell}
+      />
 
       {/* Hover information display — a floating Panel pinned top-right */}
       {hovered && (

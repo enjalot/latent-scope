@@ -13,6 +13,7 @@ import Preview from './Preview';
 import EstimatePanel from './EstimatePanel';
 import ExperimentGallery from './ExperimentGallery';
 import CreationPanel from './CreationPanel';
+import { Badge } from '../ui';
 
 import styles from './Umap.module.scss';
 
@@ -28,6 +29,10 @@ function Umap() {
   );
 
   const [init] = useState('');
+  // UMAP output dimensionality: 2D (default, the classic map) or 3D (adds a z
+  // coordinate + voxel indices at scope time, unlocking the 3D scatter / voxel
+  // views in Explore).
+  const [dimensions, setDimensions] = useState(2);
 
   const [umap, setUmap] = useState(null);
   const [embedding, setEmbedding] = useState(null);
@@ -121,12 +126,13 @@ function Umap() {
         align,
         save: s,
         seed,
+        dimensions,
         name: name || '',
         description: description || '',
       };
       startUmapJob(job);
     },
-    [startUmapJob, embedding, init, save]
+    [startUmapJob, embedding, init, save, dimensions]
   );
 
   // Inline rename of an existing umap run (experiment gallery) without re-running.
@@ -189,7 +195,7 @@ function Umap() {
         >
           <div className={styles['umap-form']}>
             <div>
-              Project high-dimensional embeddings to 2D using{' '}
+              Project high-dimensional embeddings to 2D or 3D using{' '}
               <a href="https://umap-learn.readthedocs.io/en/latest/index.html">UMAP</a>
             </div>
             <form onSubmit={handleNewUmap}>
@@ -225,6 +231,31 @@ function Umap() {
                   Min dist is a measure of how close points must be in the original space to be
                   considered neighbors in the low-dimensional space. A smaller value will result in
                   a more clustered UMAP, while a larger value will result in a more spread out UMAP.
+                </Tooltip>
+              </label>
+              <label>
+                <span className={styles['umap-form-label']}>Dimensions: </span>
+                <select
+                  className="ls-select"
+                  name="dimensions"
+                  value={dimensions}
+                  onChange={(e) => setDimensions(Number(e.target.value))}
+                  disabled={!!umapJob}
+                >
+                  <option value={2}>2D</option>
+                  <option value={3}>3D</option>
+                </select>
+                <span className="tooltip" data-tooltip-id="dimensions">
+                  <Icon name="help-circle" size={14} />
+                </span>
+                <Tooltip
+                  id="dimensions"
+                  place="top"
+                  effect="solid"
+                  className={`${styles['tooltip']} tooltip-area`}
+                >
+                  Project to 2D (the classic map) or 3D. A 3D UMAP adds a z coordinate and voxel
+                  indices, unlocking the 3D scatter and voxel heatmap views in Explore.
                 </Tooltip>
               </label>
               <label>
@@ -371,6 +402,11 @@ function Umap() {
           onRename={handleRenameUmap}
           renderInfo={(um) => (
             <>
+              {um.dimensions === 3 && (
+                <Badge mono variant="neutral">
+                  3D
+                </Badge>
+              )}
               <span>Neighbors: {um.neighbors}</span>
               <span>Min Dist: {um.min_dist}</span>
               {clusters.filter((d) => d.umap_id == um.id).length > 0 ? (

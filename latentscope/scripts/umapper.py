@@ -15,6 +15,8 @@ def main():
     parser.add_argument('embedding_id', type=str, help='Name of embedding model to use')
     parser.add_argument('neighbors', type=int, nargs="?", help='Output file', default=25)
     parser.add_argument('min_dist', type=float, nargs="?", help='Output file', default=0.075)
+    parser.add_argument('--dimensions', type=int, help='Number of UMAP output dimensions (2 or 3)',
+                        default=2)
     parser.add_argument('--init', type=str, help='Initialize with UMAP', default=None)
     parser.add_argument('--align', type=str, help='Align UMAP with multiple embeddings', default=None)
     parser.add_argument('--save', action='store_true', help='Save the UMAP model')
@@ -50,11 +52,11 @@ def main():
             parser.error("--register-to is not supported with --sae_id")
         sparse_umapper(args.dataset_id, args.embedding_id, args.sae_id, args.neighbors, args.min_dist,
                        save=args.save, init=args.init, seed=seed, name=args.name,
-                       description=args.description)
+                       description=args.description, dimensions=args.dimensions)
     else:
         umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist, save=args.save,
                 init=args.init, align=args.align, seed=seed, register_to=args.register_to,
-                name=args.name, description=args.description)
+                name=args.name, description=args.description, dimensions=args.dimensions)
 
 
 # TODO move this into shared space
@@ -68,6 +70,67 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
         return max_size
     else:
         return min(min_size + min_size * np.log(num_points / base_num_points), max_size)
+
+def _save_umap_preview(umap_embeddings, out_path, dimensions=2):
+    """Render the gallery thumbnail PNG for a umap run.
+
+    2D umaps get the classic flat scatter (unchanged). 3D umaps (``dimensions``
+    >= 3, with a z column) get a matplotlib 3D scatter with subtle depth cueing:
+    points are drawn back-to-front and their size / opacity / lightness fall off
+    with distance from the camera so the projection reads as a volume rather than
+    a flat blob. Output is 1024x1024 at 72 dpi, axis-free, filling the frame.
+    """
+    import math
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    point_size = calculate_point_size(umap_embeddings.shape[0])
+
+    if dimensions >= 3 and umap_embeddings.shape[1] >= 3:
+        x = umap_embeddings[:, 0]
+        y = umap_embeddings[:, 1]
+        z = umap_embeddings[:, 2]
+        fig = plt.figure(figsize=(14.22, 14.22))  # 1024px at 72 dpi
+        ax = fig.add_subplot(111, projection='3d')
+        elev, azim = 22, -60
+        ax.view_init(elev=elev, azim=azim)
+        # Unit vector from the scene toward the camera (matplotlib elev/azim
+        # convention) -> a per-point depth scalar for the cueing ramp.
+        e, a = math.radians(elev), math.radians(azim)
+        cam = np.array([math.cos(e) * math.cos(a),
+                        math.cos(e) * math.sin(a),
+                        math.sin(e)])
+        depth = x * cam[0] + y * cam[1] + z * cam[2]
+        dmin, dmax = float(depth.min()), float(depth.max())
+        t = (depth - dmin) / (dmax - dmin) if dmax > dmin else np.zeros_like(depth)
+        order = np.argsort(depth)  # far first, near points drawn on top
+        base = float(np.clip(point_size, 4, 16))
+        sizes = base * (0.4 + 0.9 * t)
+        colors = plt.cm.viridis(0.12 + 0.72 * t)
+        colors[:, 3] = 0.25 + 0.55 * t  # nearer points more opaque
+        ax.scatter(x[order], y[order], z[order], s=sizes[order], c=colors[order],
+                   edgecolors='none', depthshade=False)
+        ax.set_axis_off()
+        try:
+            ax.set_box_aspect((1, 1, 1))
+        except Exception:
+            pass
+        # Overscan the axes so the projected cloud fills the thumbnail instead
+        # of floating in the middle of the 3D axes' bounding cube.
+        ax.set_position([-0.18, -0.18, 1.36, 1.36])
+        fig.savefig(out_path, dpi=72)
+        plt.close(fig)
+        return
+
+    fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
+    print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
+    ax.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
+    ax.axis('off')  # remove axis
+    ax.set_position([0, 0, 1, 1])  # remove margins
+    fig.savefig(out_path)
+    plt.close(fig)
+
 
 def load_embeddings(dataset_id, embedding_id):
     import h5py
@@ -96,7 +159,7 @@ def load_embeddings(dataset_id, embedding_id):
         # Use LanceDB-backed store (with HDF5 fallback)
         return lance_load_embeddings(DATA_DIR, dataset_id, embedding_id)
 
-def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
+def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None, n_components=2):
     """Build a CPU umap-learn reducer with our canonical params."""
     import umap
 
@@ -105,7 +168,7 @@ def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
         min_dist=min_dist,
         metric='cosine',
         random_state=seed,
-        n_components=2,
+        n_components=n_components,
         verbose=True,
     )
     if init_array is not None:
@@ -113,7 +176,7 @@ def _make_cpu_reducer(neighbors, min_dist, seed, init_array=None):
     return umap.UMAP(**kwargs)
 
 
-def _make_cuml_reducer(neighbors, min_dist, seed):
+def _make_cuml_reducer(neighbors, min_dist, seed, n_components=2):
     """Build a cuML (GPU) reducer, mapping umap-learn params faithfully.
 
     Param mapping umap-learn -> cuml.manifold.UMAP:
@@ -133,7 +196,7 @@ def _make_cuml_reducer(neighbors, min_dist, seed):
         min_dist=min_dist,
         metric='cosine',
         random_state=seed,
-        n_components=2,
+        n_components=n_components,
         verbose=True,
     )
 
@@ -149,8 +212,8 @@ def _to_numpy(arr):
     return np.asarray(arr)
 
 
-def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=None):
-    """Fit-transform embeddings to 2D, preferring cuML when requested.
+def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=None, n_components=2):
+    """Fit-transform embeddings to ``n_components`` dims, preferring cuML when requested.
 
     Returns (umap_embeddings, reducer). On the GPU path the fitted cuML reducer
     is returned too (callers only pickle CPU reducers). If cuML construction or
@@ -159,7 +222,7 @@ def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=Non
     """
     if use_cuml and init_array is None:
         try:
-            reducer = _make_cuml_reducer(neighbors, min_dist, seed)
+            reducer = _make_cuml_reducer(neighbors, min_dist, seed, n_components=n_components)
             print("umapper: reducing with cuML GPU UMAP (metric=cosine)")
             sys.stdout.flush()
             umap_embeddings = _to_numpy(reducer.fit_transform(embeddings))
@@ -170,11 +233,22 @@ def _reduce_umap(embeddings, neighbors, min_dist, seed, use_cuml, init_array=Non
     elif use_cuml and init_array is not None:
         print("umapper: warm-start init has no cuML equivalent; using CPU umap-learn")
 
-    reducer = _make_cpu_reducer(neighbors, min_dist, seed, init_array)
+    reducer = _make_cpu_reducer(neighbors, min_dist, seed, init_array, n_components=n_components)
     print("umapper: reducing with CPU umap-learn UMAP (metric=cosine)")
     sys.stdout.flush()
     umap_embeddings = reducer.fit_transform(embeddings)
     return umap_embeddings, reducer
+
+
+def _umap_columns(dimensions):
+    """Canonical parquet column names for an ``n_components``-D UMAP.
+
+    2 -> [x, y]; 3 -> [x, y, z]. Higher dims fall back to x, y, z, d3, d4, ...
+    """
+    base = ['x', 'y', 'z']
+    if dimensions <= len(base):
+        return base[:dimensions]
+    return base + [f"d{i}" for i in range(len(base), dimensions)]
 
 
 def _next_umap_id(umap_dir):
@@ -237,7 +311,6 @@ def transform_umap(dataset_id, embedding_id, transform_from, name=None, descript
 
     import pickle
 
-    import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
 
@@ -298,21 +371,19 @@ def transform_umap(dataset_id, embedding_id, transform_from, name=None, descript
         print(f"{outside} new points fall outside [-1, 1]; leaving them "
               "(old points stay fixed)")
 
-    # old rows verbatim, new rows appended in the same dtype
-    coord_dtype = source_df["x"].dtype
-    new_df = pd.DataFrame(new_coords.astype(coord_dtype), columns=['x', 'y'])
-    df = pd.concat([source_df[['x', 'y']], new_df], ignore_index=True)
+    # old rows verbatim, new rows appended in the same dtype; the source umap's
+    # dimensionality is inherited (a 3D source yields a 3D result)
+    dimensions = source_meta.get("dimensions", 2)
+    columns = _umap_columns(dimensions)
+    coord_dtype = source_df[columns[0]].dtype
+    new_df = pd.DataFrame(new_coords.astype(coord_dtype), columns=columns)
+    df = pd.concat([source_df[columns], new_df], ignore_index=True)
     output_file = os.path.join(umap_dir, f"{umap_id}.parquet")
     df.to_parquet(output_file)
     print("wrote", output_file)
 
-    fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
-    point_size = calculate_point_size(len(df))
-    print("POINT SIZE", point_size, "for", len(df), "points")
-    plt.scatter(df['x'], df['y'], s=point_size, alpha=0.5)
-    plt.axis('off')  # remove axis
-    plt.gca().set_position([0, 0, 1, 1])  # remove margins
-    plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+    _save_umap_preview(df.to_numpy(), os.path.join(umap_dir, f"{umap_id}.png"),
+                       dimensions=dimensions)
 
     with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
         meta = {
@@ -322,6 +393,8 @@ def transform_umap(dataset_id, embedding_id, transform_from, name=None, descript
             # already encodes them
             "neighbors": source_meta.get("neighbors"),
             "min_dist": source_meta.get("min_dist"),
+            # inherited from the source: a transform can't change dimensionality
+            "dimensions": dimensions,
             # the source's frame is this umap's frame
             "min_values": min_values.tolist(),
             "max_values": max_values.tolist(),
@@ -341,7 +414,7 @@ def transform_umap(dataset_id, embedding_id, transform_from, name=None, descript
 
 
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None,
-            seed=None, register_to=None, name=None, description=None):
+            seed=None, register_to=None, name=None, description=None, dimensions=2):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -381,6 +454,15 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     if register_to is not None and register_to != "":
         print("registering onto", register_to)
         target_meta = _read_umap_meta(umap_dir, register_to)
+        target_dimensions = target_meta.get("dimensions", 2)
+        if target_dimensions != 2:
+            raise ValueError(
+                f"--register-to only supports 2D target umaps ({register_to} has "
+                f"dimensions={target_dimensions}); similarity registration is 2D-only")
+        if dimensions != target_dimensions:
+            print(f"--register-to {register_to}: inheriting the target's dimensionality "
+                  f"({target_dimensions}) instead of the requested {dimensions}")
+            dimensions = target_dimensions
         target_df = pd.read_parquet(os.path.join(umap_dir, f"{register_to}.parquet"))
         register_target = {
             "umap_id": register_to,
@@ -423,8 +505,8 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             umap_embeddings = 2 * umap_embeddings - 1
 
         print("writing normalized umap", umap_id)
-        # save umap embeddings to a parquet file with columns x,y
-        df = pd.DataFrame(umap_embeddings, columns=['x', 'y'])
+        # save umap embeddings to a parquet file with columns x,y[,z]
+        df = pd.DataFrame(umap_embeddings, columns=_umap_columns(dimensions))
 
         # TODO I moved this to scope.py it's cheap and it makes it backwards compatible
         # Calculate tile indices for a 64x64 grid from -1 to 1
@@ -451,14 +533,10 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         df.to_parquet(output_file)
         print("wrote", output_file)
 
-        # generate a scatterplot of the umap embeddings and save it to a file
-        fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
-        point_size = calculate_point_size(umap_embeddings.shape[0])
-        print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
-        plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
-        plt.axis('off')  # remove axis
-        plt.gca().set_position([0, 0, 1, 1])  # remove margins
-        plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+        # generate a scatterplot of the umap embeddings and save it to a file.
+        # 3D umaps get a depth-cued 3D projection thumbnail (see helper).
+        _save_umap_preview(umap_embeddings, os.path.join(umap_dir, f"{umap_id}.png"),
+                           dimensions=dimensions)
 
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
@@ -467,6 +545,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
                 "embedding_id": emb_id,
                 "neighbors": neighbors,
                 "min_dist": min_dist,
+                "dimensions": dimensions,
                 "min_values": min_values.tolist(),
                 "max_values": max_values.tolist(),
             }
@@ -518,7 +597,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             min_dist=min_dist,
             metric='cosine',
             random_state=seed,
-            n_components=2,
+            n_components=dimensions,
             verbose=True,
         )
         # shared-prefix relations: for growing (append-only) windows the shared
@@ -569,10 +648,11 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     use_cuml = res.use_cuml and not save
     if res.use_cuml and save:
         print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
-    print("reducing", embeddings.shape[1], "embeddings to 2 dimensions")
+    print("reducing", embeddings.shape[1], "embeddings to", dimensions, "dimensions")
 
     umap_embeddings, reducer = _reduce_umap(
-        embeddings, neighbors, min_dist, seed, use_cuml, init_array=init_array
+        embeddings, neighbors, min_dist, seed, use_cuml, init_array=init_array,
+        n_components=dimensions
     )
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id)
 
@@ -584,7 +664,7 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
     print("done with", umap_id)
 
 def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False,
-                   init=None, seed=None, name=None, description=None):
+                   init=None, seed=None, name=None, description=None, dimensions=2):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -638,20 +718,16 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
         umap_embeddings = 2 * umap_embeddings - 1
 
         print("writing normalized umap", umap_id)
-        # save umap embeddings to a parquet file with columns x,y
-        df = pd.DataFrame(umap_embeddings, columns=['x', 'y'])
+        # save umap embeddings to a parquet file with columns x,y[,z]
+        df = pd.DataFrame(umap_embeddings, columns=_umap_columns(dimensions))
         output_file = os.path.join(umap_dir, f"{umap_id}.parquet")
         df.to_parquet(output_file)
         print("wrote", output_file)
 
-        # generate a scatterplot of the umap embeddings and save it to a file
-        fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
-        point_size = calculate_point_size(umap_embeddings.shape[0])
-        print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
-        plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
-        plt.axis('off')  # remove axis
-        plt.gca().set_position([0, 0, 1, 1])  # remove margins
-        plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+        # generate a scatterplot of the umap embeddings and save it to a file.
+        # 3D umaps get a depth-cued 3D projection thumbnail (see helper).
+        _save_umap_preview(umap_embeddings, os.path.join(umap_dir, f"{umap_id}.png"),
+                           dimensions=dimensions)
 
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
@@ -661,6 +737,7 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
                 "sae_id": sae_id,
                 "neighbors": neighbors,
                 "min_dist": min_dist,
+                "dimensions": dimensions,
             }
             if init is not None and init != "":
                 meta["init"] = init,
@@ -685,12 +762,13 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
     use_cuml = res.use_cuml and not save
     if res.use_cuml and save:
         print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
-    print("reducing", matrix.shape[0], "sparse features to 2 dimensions")
+    print("reducing", matrix.shape[0], "sparse features to", dimensions, "dimensions")
 
     import time
     time.sleep(1)  # Wait for a second before starting
     umap_embeddings, reducer = _reduce_umap(
-        matrix, neighbors, min_dist, seed, use_cuml, init_array=init_array
+        matrix, neighbors, min_dist, seed, use_cuml, init_array=init_array,
+        n_components=dimensions
     )
     process_umap_embeddings(umap_id, umap_embeddings, embedding_id, sae_id)
 

@@ -399,6 +399,23 @@ export const apiService = {
       return data.rows[0][scope.dataset.text_column];
     });
   },
+  // Text snippets for several rows at once (members-in-cell tooltip). Uses the
+  // same POST /api/query endpoint as getHoverText; returns an array of the text
+  // column for each requested index (aligned to `indices`).
+  getSnippets: async (scope, indices) => {
+    if (!indices || !indices.length) return [];
+    return fetchJson(
+      `${apiUrl}/query`,
+      postJsonOptions({
+        dataset: scope.dataset.id,
+        indices,
+        page: 0,
+      })
+    ).then((data) => {
+      const col = scope.dataset.text_column;
+      return (data.rows || []).map((r) => (col ? r[col] : Object.values(r)[0]));
+    });
+  },
   fetchTags: async (datasetId) => {
     return fetchJson(`${apiUrl}/tags?dataset=${datasetId}`);
   },

@@ -490,6 +490,9 @@ def run_umap():
     align = request.values.get('align')
     save = request.values.get('save')
     seed = request.values.get('seed')
+    # Number of UMAP output dimensions (2 or 3). 3D umaps also get z + voxel
+    # indices computed at scope time; consumed by ls-umap's --dimensions flag.
+    dimensions = request.values.get('dimensions')
     # Incremental / registered umaps (issue #142)
     transform_from = request.values.get('transform_from')
     register_to = request.values.get('register_to')
@@ -512,6 +515,8 @@ def run_umap():
     command = ['ls-umap', dataset, embedding_id]
     if neighbors is not None and min_dist is not None:
         command += [neighbors, min_dist]
+    if dimensions:
+        command.append(f'--dimensions={dimensions}')
     if transform_from:
         command.append(f'--transform-from={transform_from}')
     if register_to:

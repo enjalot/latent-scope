@@ -277,7 +277,20 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
             print(f"Loading embeddings from {embedding_id}")
             cluster_input = _load_embeddings(dataset_id, embedding_id)
         else:
-            cluster_input = umap_embeddings
+            # Cluster on ALL umap axes present in the projection. A 3D umap
+            # (--dimensions 3) has an extra z column, so it must be clustered
+            # in 3D or the labels won't match the 3D geometry (voxel views,
+            # 3D scatter). A 2D umap has only x, y, so cluster_input is exactly
+            # the 2D `umap_embeddings` array — byte-identical to the prior
+            # behavior. Higher-dim umaps (d3, d4, ...) fold in automatically.
+            if 'z' in umap_embeddings_df.columns:
+                axis_cols = [c for c in ('x', 'y', 'z') if c in umap_embeddings_df.columns]
+                axis_cols += [c for c in umap_embeddings_df.columns
+                              if re.fullmatch(r'd\d+', c)]
+                cluster_input = np.column_stack(
+                    [umap_embeddings_df[c] for c in axis_cols])
+            else:
+                cluster_input = umap_embeddings
 
         if method == 'evoc':
             cluster_labels = _run_evoc(cluster_input, samples, min_samples=min_samples,

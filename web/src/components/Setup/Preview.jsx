@@ -11,6 +11,7 @@ import { apiService } from '../../lib/apiService';
 import { useColorMode } from '@/hooks/useColorMode';
 import FilterDataTable from '../Explore/FilterDataTable';
 import Scatter from '../Scatter';
+import Scatter3D from '../Explore/Scatter3D';
 import HullPlot from '../HullPlot';
 import PreviewPointDetail from './PreviewPointDetail';
 import {
@@ -169,6 +170,11 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const [xDomain, setXDomain] = useState([-1, 1]);
   const [yDomain, setYDomain] = useState([-1, 1]);
 
+  // Points for the lightweight 3D preview ({x, y, z} rows), populated only for
+  // 3D umaps so the Setup preview panel can show an interactive mini 3D view.
+  const [umap3dRows, setUmap3dRows] = useState(null);
+  const is3DUmap = umap?.dimensions === 3;
+
   // grab the x,y coordinates from the umap
   useEffect(() => {
     if (umap) {
@@ -177,6 +183,11 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
         if (stale) return;
         let pts = data.map((d) => [d.x, d.y, mapSelectionKey.normal]);
         setDrawPoints(pts);
+        setUmap3dRows(
+          umap.dimensions === 3
+            ? data.map((d) => ({ x: d.x, y: d.y, z: d.z ?? 0, cluster: 0, deleted: false }))
+            : null
+        );
         // signal downstream effects (cluster recolor) that a fresh set of
         // points landed, even when the length is unchanged
         setPointsVersion((v) => v + 1);
@@ -413,25 +424,33 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
       </div>
 
       {drawPoints.length && umapHeight > 0 ? (
-        <div className={styles['scatter-container']} style={{ width: width, height: umapHeight }}>
-          <Scatter
-            points={drawPoints}
-            width={width}
-            height={umapHeight}
-            duration={1000}
-            colorScaleType="categorical"
-            colorInterpolator={cluster && !hasHulls ? interpolateSpectral : undefined}
-            colorRange={cluster && !hasHulls ? undefined : selectionColors}
-            colorDomain={cluster && !hasHulls ? undefined : mapSelectionDomain}
-            opacityRange={cluster && !hasHulls ? undefined : mapSelectionOpacity}
-            pointSizeRange={cluster && !hasHulls ? undefined : pointSizeRange}
-            opacityBy={cluster && !hasHulls ? undefined : 'valueA'}
-            onScatter={setScatter}
-            onView={handleView}
-            onSelect={handleSelected}
-            onHover={handleHovered}
-          />
-          {hulls.length ? (
+        <div
+          className={styles['scatter-container']}
+          style={{ width: width, height: umapHeight, position: 'relative' }}
+        >
+          {is3DUmap && umap3dRows ? (
+            // Lightweight 3D preview: points + orbit only (no picking/tooltip).
+            <Scatter3D scopeRows={umap3dRows} width={width} height={umapHeight} lightweight />
+          ) : (
+            <Scatter
+              points={drawPoints}
+              width={width}
+              height={umapHeight}
+              duration={1000}
+              colorScaleType="categorical"
+              colorInterpolator={cluster && !hasHulls ? interpolateSpectral : undefined}
+              colorRange={cluster && !hasHulls ? undefined : selectionColors}
+              colorDomain={cluster && !hasHulls ? undefined : mapSelectionDomain}
+              opacityRange={cluster && !hasHulls ? undefined : mapSelectionOpacity}
+              pointSizeRange={cluster && !hasHulls ? undefined : pointSizeRange}
+              opacityBy={cluster && !hasHulls ? undefined : 'valueA'}
+              onScatter={setScatter}
+              onView={handleView}
+              onSelect={handleSelected}
+              onHover={handleHovered}
+            />
+          )}
+          {!is3DUmap && hulls.length ? (
             <HullPlot
               hulls={hulls}
               stroke={hullStroke}
