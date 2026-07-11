@@ -1,6 +1,7 @@
 import { Modal, Button } from 'react-element-forge';
 import { useCallback } from 'react';
 import styles from './FeatureModal.module.scss';
+import { useScope } from '../../contexts/ScopeContext';
 
 function FeatureModal({
   isOpen,
@@ -15,7 +16,11 @@ function FeatureModal({
 }) {
   const TO_SHOW = 15;
 
-  const baseUrl = 'https://enjalot.github.io/latent-taxonomy#model=NOMIC_FWEDU_25k&feature=';
+  // Deep-link into the latent-taxonomy browser for whichever SAE this
+  // scope's embedding model uses (the registry label is the taxonomy name).
+  const { saeEntry } = useScope();
+  const taxonomyName = saeEntry?.label || 'NOMIC_FWEDU_25k';
+  const baseUrl = `https://enjalot.github.io/latent-taxonomy#model=${taxonomyName}&feature=`;
   const maxAct = Math.max(...topActs);
   const getWidth = (act) => {
     return `${(act / maxAct) * 100}%`;

@@ -6,7 +6,7 @@ vi.mock('hyparquet', () => ({
   asyncBufferFromUrl: vi.fn(),
   parquetRead: vi.fn(),
 }));
-vi.mock('../lib/SAE', () => ({ saeAvailable: {} }));
+vi.mock('../lib/SAE', () => ({ saeAvailable: {}, getSaeForModel: () => null }));
 vi.stubEnv('VITE_API_URL', 'http://localhost:5001/api');
 
 // Shared mock scope rows used across tests

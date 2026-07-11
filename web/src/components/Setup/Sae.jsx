@@ -26,31 +26,43 @@ function Sae({ embedding, model, onSAE = () => {} }) {
   );
   const { startJob: rerunSaeJob } = useStartJobPolling(dataset, setSaeJob, `${apiUrl}/jobs/rerun`);
 
+  // A dataset can hold SAE runs for several embeddings (and, now that the
+  // registry has more than one entry, several SAE models). Only surface runs
+  // computed for THIS embedding with THIS SAE model — otherwise a nomic run
+  // could get attached to a MiniLM scope.
+  const relevantSaes = useCallback(
+    (saes) =>
+      saes.filter(
+        (s) => s.embedding_id === embedding?.id && s.model_id === model?.model_id
+      ),
+    [embedding, model]
+  );
+
   useEffect(() => {
     apiService.fetchSaes(dataset.id).then((saes) => {
-      setSaes(saes);
-      if (saes.length) {
-        setSae(saes[0]);
-        onSAE(saes[0]);
-      }
+      const relevant = relevantSaes(saes);
+      setSaes(relevant);
+      setSae(relevant.length ? relevant[0] : null);
+      onSAE(relevant.length ? relevant[0] : null);
     });
-  }, [dataset, setSaes]);
+  }, [dataset, setSaes, relevantSaes]);
 
   useEffect(() => {
     if (saeJob?.status === 'completed') {
       apiService.fetchSaes(dataset.id).then((saes) => {
-        setSaes(saes);
+        const relevant = relevantSaes(saes);
+        setSaes(relevant);
         let s;
         if (saeJob.job_name == 'sae') {
-          s = saes.find((d) => d.id == saeJob.run_id);
+          s = relevant.find((d) => d.id == saeJob.run_id);
         } else if (saeJob.job_name == 'rm') {
-          s = saes[saes.length - 1];
+          s = relevant[relevant.length - 1];
         }
-        setSae(s);
-        onSAE(s);
+        setSae(s || null);
+        onSAE(s || null);
       });
     }
-  }, [saeJob, dataset, setSaes, setSae]);
+  }, [saeJob, dataset, setSaes, setSae, relevantSaes]);
 
   const handleNewSae = useCallback(
     (e) => {
