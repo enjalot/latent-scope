@@ -585,6 +585,32 @@ def run_sae():
     return jsonify({"job_id": job_id})
 
 
+@jobs_write_bp.route('/basemap', methods=['GET', 'POST'])
+def run_basemap():
+    data_dir = _data_dir()
+    dataset = _safe_dataset(request.values.get('dataset'))
+    embedding_id = request.values.get('embedding_id')
+    basemap_id = request.values.get('basemap_id')
+    frame = request.values.get('frame')
+    name = request.values.get('name')
+    description = request.values.get('description')
+
+    err = _require_params(dataset=dataset, embedding_id=embedding_id, basemap_id=basemap_id)
+    if err:
+        return err
+
+    job_id = str(uuid.uuid4())
+    command = ['ls-basemap', dataset, embedding_id, basemap_id]
+    if frame:
+        command.append(f'--frame={frame}')
+    if name:
+        command.append(f'--name={name}')
+    if description:
+        command.append(f'--description={description}')
+    threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
 @jobs_write_bp.route('/delete/sae', methods=['GET', 'POST'])
 def delete_sae_request():
     data_dir = _data_dir()

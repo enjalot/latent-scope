@@ -27,6 +27,22 @@ def get_embedding_models():
     return jsonify(models)
 
 
+@models_bp.route('/basemap_models', methods=['GET'])
+def get_basemap_models():
+    """Pretrained basemap (parametric UMAP) projectors; each entry names the
+    embedding model it is compatible with and whether its checkpoint is
+    present on this machine."""
+    basemap_path = files('latentscope.models').joinpath('basemap_models.json')
+    with basemap_path.open('r', encoding='utf-8') as file:
+        models = json.load(file)
+    for model in models:
+        checkpoint = model.get("checkpoint", "")
+        if not os.path.isabs(checkpoint):
+            checkpoint = os.path.join(os.environ.get("LATENT_SCOPE_BASEMAP_DIR", ""), checkpoint)
+        model["available"] = os.path.exists(checkpoint)
+    return jsonify(models)
+
+
 @models_bp.route('/chat_models', methods=['GET'])
 def get_chat_models():
     chat_path = files('latentscope.models').joinpath('chat_models.json')

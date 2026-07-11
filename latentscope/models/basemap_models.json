@@ -1,0 +1,173 @@
+[
+  {
+    "id": "basemap-minilm-ded-30m-bigger",
+    "name": "MiniLM ded-30M bigger (h1024)",
+    "checkpoint": "/data/checkpoints/pumap/model_ded_ded-30m-bigger-model.pt",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -5497.59912109375,
+        -5269.00537109375
+      ],
+      "max_values": [
+        5513.54345703125,
+        5262.48828125
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 300000,
+      "reference": "100k each: fineweb-edu/redpajama/pile chunked-120 MiniLM shards"
+    },
+    "description": "LEGACY (April 2026, pre-atlas-program: before collapse fix, mid-near pairs, fuzzy edges). Only option for MiniLM-384 embeddings. Parametric UMAP trained on 30M deduped fineweb/redpajama/pile MiniLM-384 chunks, hidden_dim=1024"
+  },
+  {
+    "id": "basemap-minilm-ded-15m-bigger",
+    "name": "MiniLM ded-15M bigger (h1024)",
+    "checkpoint": "/data/checkpoints/pumap/model_ded_ded-15m-bigger-model.pt",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -5375.30810546875,
+        -4746.6923828125
+      ],
+      "max_values": [
+        4999.57421875,
+        4818.0458984375
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 300000,
+      "reference": "100k each: fineweb-edu/redpajama/pile chunked-120 MiniLM shards"
+    },
+    "description": "LEGACY (April 2026, pre-atlas-program: before collapse fix, mid-near pairs, fuzzy edges). Only option for MiniLM-384 embeddings. Parametric UMAP trained on 15M deduped fineweb/redpajama/pile MiniLM-384 chunks, hidden_dim=1024"
+  },
+  {
+    "id": "basemap-minilm-ded-30m-global",
+    "name": "MiniLM ded-30M more-global (h512)",
+    "checkpoint": "/data/checkpoints/pumap/model_ded_ded-30m-more-global.pt",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -2933.06103515625,
+        -2907.0947265625
+      ],
+      "max_values": [
+        3042.25537109375,
+        3074.55078125
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 300000,
+      "reference": "100k each: fineweb-edu/redpajama/pile chunked-120 MiniLM shards"
+    },
+    "description": "LEGACY (April 2026, pre-atlas-program: before collapse fix, mid-near pairs, fuzzy edges). Only option for MiniLM-384 embeddings. Parametric UMAP trained on 30M deduped chunks with stronger global loss weighting, hidden_dim=512"
+  },
+  {
+    "id": "basemap-minilm-v3-bigger-1024",
+    "name": "MiniLM v3 bigger (h1024)",
+    "checkpoint": "/data/checkpoints/pumap/model_v3_v3-bigger-model-1024.pt",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -9845.669921875,
+        -8895.0830078125
+      ],
+      "max_values": [
+        11325.2412109375,
+        12454.1484375
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 300000,
+      "reference": "100k each: fineweb-edu/redpajama/pile chunked-120 MiniLM shards"
+    },
+    "description": "LEGACY (April 2026, pre-atlas-program: before collapse fix, mid-near pairs, fuzzy edges). Only option for MiniLM-384 embeddings. Parametric UMAP v3 sweep winner, hidden_dim=1024, 3M chunks"
+  },
+  {
+    "id": "basemap-jina-nano-2m-track1-h2048",
+    "name": "jina-v5-nano 2M track1 (h2048 residual bottleneck)",
+    "checkpoint": "/home/enjalot/code/latent-basemap/experiments/results/jina_en_2m_track1_e2_h2048_20260710_065559_d28f2bf7/model.pt",
+    "embedding_model": "jinaai/jina-embeddings-v5-text-nano-retrieval",
+    "dimensions": 768,
+    "extent": {
+      "min_values": [
+        -7.713869094848633,
+        -8.87692642211914
+      ],
+      "max_values": [
+        9.697543144226074,
+        7.505667686462402
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 200000,
+      "reference": "200k rows from fineweb-edu chunked-500 jina-v5-nano shards 0-7"
+    },
+    "description": "Best scaling-track model: residual_bottleneck h2048 on 2M jina-v5-nano fineweb-edu chunks",
+    "embedding_prompt": "raw"
+  },
+  {
+    "id": "basemap-jina-nano-8m-nested-nomn",
+    "name": "jina-v5-nano 8M nested atlas (no mid-near)",
+    "checkpoint": "/home/enjalot/code/latent-basemap/experiments/results/jina_en_8m_nested-fuzzyW_pr05_nomn_20260709_043029_b63ca1a8/model.pt",
+    "embedding_model": "jinaai/jina-embeddings-v5-text-nano-retrieval",
+    "dimensions": 768,
+    "extent": {
+      "min_values": [
+        -225.5983123779297,
+        -220.9765167236328
+      ],
+      "max_values": [
+        156.01564025878906,
+        76.1922607421875
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 200000,
+      "reference": "200k rows from fineweb-edu chunked-500 jina-v5-nano shards 0-7"
+    },
+    "description": "Current-gen 8M fineweb-edu atlas (Track 1 law rung, fuzzy k50 edges, pr05, no mid-near): ffr 0.57 at 8M. Embed WITHOUT the 'Document: ' prompt for parity with the training corpus.",
+    "embedding_prompt": "raw"
+  },
+  {
+    "id": "basemap-jina-nano-8m-nested-mn4",
+    "name": "jina-v5-nano 8M nested atlas (mid-near 4)",
+    "checkpoint": "/home/enjalot/code/latent-basemap/experiments/results/jina_en_8m_nested-mn4_20260709_132310_8f48fd08/model.pt",
+    "embedding_model": "jinaai/jina-embeddings-v5-text-nano-retrieval",
+    "dimensions": 768,
+    "extent": {
+      "min_values": [
+        -7.113757133483887,
+        -8.763715744018555
+      ],
+      "max_values": [
+        8.93033504486084,
+        7.577073574066162
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "n_reference": 200000,
+      "reference": "200k rows from fineweb-edu chunked-500 jina-v5-nano shards 0-7"
+    },
+    "description": "Current-gen 8M fineweb-edu atlas with mid-near-4 pairs (ffr 0.51, stronger global cohesion). Embed WITHOUT the 'Document: ' prompt.",
+    "embedding_prompt": "raw"
+  }
+]
