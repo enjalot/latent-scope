@@ -10,6 +10,7 @@ vi.mock('hyparquet', () => ({
 
 vi.mock('../lib/SAE', () => ({
   saeAvailable: {},
+  getSaeForModel: () => null,
 }));
 
 vi.stubEnv('VITE_API_URL', 'http://localhost:5001/api');

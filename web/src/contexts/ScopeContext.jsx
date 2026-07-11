@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { useParams } from 'react-router-dom';
 
 import { apiService } from '../lib/apiService';
-import { saeAvailable } from '../lib/SAE';
+import { getSaeForModel } from '../lib/SAE';
 
 const ScopeContext = createContext(null);
 
@@ -24,7 +24,7 @@ export function ScopeProvider({ children }) {
     apiService
       .fetchScope(datasetId, scopeId)
       .then((scope) => {
-        if (saeAvailable[scope.embedding?.model_id]) {
+        if (getSaeForModel(scope.embedding?.model_id)) {
           setSae(scope.sae);
         } else {
           delete scope.sae;
@@ -65,8 +65,9 @@ export function ScopeProvider({ children }) {
   useEffect(() => {
     if (sae && embeddings && scope) {
       let embedding = embeddings.find((e) => e.id == scope.embedding_id);
-      if (embedding && saeAvailable[embedding.model_id]) {
-        apiService.getFeatures(saeAvailable[embedding.model_id]?.url).then((fts) => {
+      const saeEntry = getSaeForModel(embedding?.model_id);
+      if (embedding && saeEntry) {
+        apiService.getFeatures(saeEntry.url).then((fts) => {
           apiService.getDatasetFeatures(datasetId, sae?.id).then((dsfts) => {
             dsfts.forEach((ft, i) => {
               fts[i].dataset_max = ft.max_activation;
@@ -129,12 +130,17 @@ export function ScopeProvider({ children }) {
     if (scope) fetchScopeRows();
   }, [scope, fetchScopeRows]);
 
+  // The pretrained-SAE registry entry for this scope's embedding model
+  // (label carries the latent-taxonomy model name for deep links).
+  const saeEntry = useMemo(() => getSaeForModel(scope?.embedding?.model_id), [scope]);
+
   const value = {
     datasetId,
     scopeId,
     dataset,
     scope,
     sae,
+    saeEntry,
     scopeLoaded,
     error,
     clusterMap,

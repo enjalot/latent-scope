@@ -53,7 +53,7 @@ dependencies = [
     # ML misc
     "outlines>=0.1,<1",
     "nltk>=3.8,<4",
-    "latentsae>=0.1.3,<1",
+    "latentsae>=0.2.0,<1",
     "datamapplot>=0.5,<1",
     "matplotlib>=3.8,<4",
     # Hugging Face
