@@ -19,7 +19,7 @@ import useDebounce from '../hooks/useDebounce';
 import { useSmallScreen } from '../hooks/useSmallScreen';
 import MobileExplore from './MobileExplore';
 
-import { filterConstants } from '../components/Explore/Search/utils';
+import { filterConstants, applyFilterToUrlParams } from '../components/Explore/Search/utils';
 import { Spinner } from '../components/ui';
 
 // Create a new component that wraps the main content
@@ -54,6 +54,7 @@ function ExploreContent() {
     setFilterQuery,
     featureFilter,
     searchFilter,
+    clusterFilter,
     setFilterConfig,
     setFilterActive,
     setUrlParams,
@@ -317,16 +318,30 @@ function ExploreContent() {
 
   const handleFeatureClick = useCallback(
     (featIdx, activation, label) => {
+      // Filters are single-select: selecting a feature replaces whatever
+      // filter was active (e.g. an open cluster) in both hook state and the
+      // URL, so the active-filter chip shows the feature and clearing it
+      // doesn't take a hidden cluster filter down with it.
+      if (clusterFilter.cluster) clusterFilter.clear();
       setFilterQuery(label);
       setFilterConfig({ type: filterConstants.FEATURE, value: featIdx, label });
       featureFilter.setFeature(featIdx);
       setFilterActive(true);
-      setUrlParams((prev) => {
-        prev.set('feature', featIdx);
-        return new URLSearchParams(prev);
-      });
+      setUrlParams((prev) =>
+        applyFilterToUrlParams(new URLSearchParams(prev), {
+          type: filterConstants.FEATURE,
+          value: featIdx,
+        })
+      );
     },
-    [featureFilter.setFeature, setFilterQuery, setFilterConfig, setFilterActive, setUrlParams]
+    [
+      featureFilter.setFeature,
+      clusterFilter,
+      setFilterQuery,
+      setFilterConfig,
+      setFilterActive,
+      setUrlParams,
+    ]
   );
 
   if (scopeError)

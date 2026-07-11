@@ -33,6 +33,10 @@ export const saeLabels = {
     label: 'COLBERT_JINA_64K',
     url: 'https://enjalot.github.io/latent-taxonomy/models/COLBERT_JINA_64K/features.parquet?cachebust=1',
   },
+  'enjalot/sae-all-MiniLM-L6-v2-stagej-49K': {
+    label: 'MINILM_STAGEJ_49K',
+    url: 'https://enjalot.github.io/latent-taxonomy/models/MINILM_STAGEJ_49K/features.parquet?cachebust=1',
+  },
 };
 
 export function getLabelsForSaeModel(saeModelId) {

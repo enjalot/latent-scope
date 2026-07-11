@@ -201,6 +201,9 @@ export function FilterProvider({ children }) {
     scope,
     scopeLoaded,
     isTokenScope,
+    // the FEATURE case resolves the label from `features`; a feature filter
+    // applied before labels finish loading must re-run once they arrive
+    features,
   ]);
 
   // When centeredIndices change on mobile, update filteredIndices only if no filter is active.

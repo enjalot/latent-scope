@@ -68,3 +68,24 @@ export const filterConstants = {
   FEATURE: 'feature',
   COLUMN: 'column',
 };
+
+// Filters are single-select: setting one must clear the others from the URL,
+// otherwise stale params linger (e.g. selecting a feature while a cluster is
+// open left both in the URL — the restore effect reads the first param, so
+// the active-filter chip kept showing the cluster and "clear" wiped both).
+// Mutates and returns `prev` (the URLSearchParams from a setUrlParams updater).
+export function applyFilterToUrlParams(prev, selection) {
+  prev.delete('cluster');
+  prev.delete('feature');
+  prev.delete('search');
+  prev.delete('column');
+  prev.delete('value');
+  const { type, value, column } = selection;
+  if (type === filterConstants.COLUMN) {
+    prev.set('column', column);
+    prev.set('value', value);
+  } else {
+    prev.set(type, value);
+  }
+  return prev;
+}
