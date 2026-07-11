@@ -159,7 +159,9 @@ function AtlasOverlay({
         pointerEvents: 'none',
         // Target tiles fade in over the backdrop as they decode (smooths the
         // content change between levels); the backdrop shows immediately.
-        ...(fade ? { opacity: 0, transition: 'opacity 150ms ease' } : null),
+        ...(fade
+          ? { opacity: 0, transition: 'opacity var(--ls-dur-fast) var(--ls-ease-out)' }
+          : null),
       }}
     />
   );
@@ -183,7 +185,9 @@ function AtlasOverlay({
             // Visible while loading; fades out once the target is ready. No
             // transition on the way in so it provides continuity immediately.
             opacity: targetReady ? 0 : 1,
-            transition: targetReady ? 'opacity 250ms ease' : 'none',
+            transition: targetReady
+              ? 'opacity var(--ls-dur-slow) var(--ls-ease-out)'
+              : 'none',
           }}
         >
           {backdropTiles.map((t) => renderTile(t, false))}

@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { scaleOrdinal } from 'd3-scale';
 import { schemeTableau10 } from 'd3-scale-chromatic';
+import { Button } from 'react-element-forge';
 import IndexDataTable from '../IndexDataTable';
+import { Readout } from '../ui';
 import styles from './Compare.module.css';
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -12,6 +14,22 @@ const tabs = [
 ];
 
 const neighborColorScale = scaleOrdinal(schemeTableau10);
+
+// 16px feather "x" for the clear icon-buttons
+const XIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
 
 function CompareDataPanel({
   dataset,
@@ -31,6 +49,7 @@ function CompareDataPanel({
   onClick,
 }) {
   const [activeTab, setActiveTab] = useState(0);
+  const searchInputRef = useRef(null);
 
   // Auto-switch to Selected tab when neighbors are selected
   useEffect(() => {
@@ -42,7 +61,7 @@ function CompareDataPanel({
   const handleSearchSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      const query = e.target.elements.searchBox.value;
+      const query = searchInputRef.current?.value;
       onSearch(query);
       setActiveTab(1);
     },
@@ -53,15 +72,19 @@ function CompareDataPanel({
 
   return (
     <div className={styles['data-panel']}>
-      <div className={styles['tab-header']}>
+      <div className={styles['tab-header']} role="tablist">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={tab.id === activeTab ? styles['tab-active'] : styles['tab-inactive']}
+            className="ls-tab"
+            role="tab"
+            aria-selected={tab.id === activeTab}
           >
             {tab.name}
-            {tab.id === 0 && isNeighborMode && ` (${1 + neighborIndices.length})`}
+            {tab.id === 0 && isNeighborMode && (
+              <span className="ls-tab__count">{1 + neighborIndices.length}</span>
+            )}
           </button>
         ))}
       </div>
@@ -74,8 +97,12 @@ function CompareDataPanel({
                 <span>
                   Selected point + {neighborIndices.length} neighbors
                 </span>
-                <button className={styles['deselect']} onClick={onClearSelection}>
-                  X
+                <button
+                  className="ls-icon-btn"
+                  aria-label="Clear selection"
+                  onClick={onClearSelection}
+                >
+                  {XIcon}
                 </button>
               </div>
               {/* Selected point */}
@@ -103,11 +130,15 @@ function CompareDataPanel({
             </div>
           ) : (
             <>
-              <span>
-                Selected: {selectedIndices?.length || 0}
+              <span className={styles['selection-summary']}>
+                <Readout label="SELECTED" value={selectedIndices?.length || 0} />
                 {selectedIndices?.length > 0 && (
-                  <button className={styles['deselect']} onClick={onClearSelection}>
-                    X
+                  <button
+                    className="ls-icon-btn"
+                    aria-label="Clear selection"
+                    onClick={onClearSelection}
+                  >
+                    {XIcon}
                   </button>
                 )}
               </span>
@@ -129,10 +160,20 @@ function CompareDataPanel({
         <div className={styles['tab-content']}>
           <div className={styles['search-box']}>
             <form onSubmit={handleSearchSubmit}>
-              <input type="text" id="searchBox" placeholder="Search by similarity..." />
-              <button type="submit">Search</button>
+              <input
+                type="text"
+                ref={searchInputRef}
+                placeholder="Search by similarity..."
+              />
+              <Button
+                type="submit"
+                size="small"
+                text="Search"
+                className={styles['search-submit']}
+              />
               <br />
               <select
+                className="ls-select"
                 onChange={(e) => onSearchModelChange(e.target.value)}
                 value={searchModel?.id || ''}
               >
@@ -144,20 +185,20 @@ function CompareDataPanel({
               </select>
             </form>
           </div>
-          <span>
+          <span className={styles['selection-summary']}>
             {searchIndices.length > 0 && (
               <span>Nearest Neighbors: {searchIndices.length} (capped at 150) </span>
             )}
             {searchIndices.length > 0 && (
               <button
-                className={styles['deselect']}
+                className="ls-icon-btn"
+                aria-label="Clear search"
                 onClick={() => {
                   onClearSearch();
-                  const searchBox = document.getElementById('searchBox');
-                  if (searchBox) searchBox.value = '';
+                  if (searchInputRef.current) searchInputRef.current.value = '';
                 }}
               >
-                X
+                {XIcon}
               </button>
             )}
           </span>
@@ -197,7 +238,9 @@ function NeighborRow({ index, rank, dataset, datasetId, onHover, onClick, isSele
       .catch(() => setText(null));
   }, [index, datasetId, dataset]);
 
-  const color = isSelected ? '#4488ff' : neighborColorScale(rank);
+  // Selected point uses the chrome selection token; neighbor ranks keep the
+  // data-viz categorical scale (matches the NeighborPlot circles on the map).
+  const color = isSelected ? 'var(--ls-color-selection)' : neighborColorScale(rank);
 
   return (
     <div

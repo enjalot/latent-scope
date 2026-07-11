@@ -1,19 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { groups } from 'd3-array';
-// import Scatter from '../Scatter';
-// import Scatter from '../ScatterCanvas';
 import Scatter from './ScatterGL';
 import AnnotationPlot from '../AnnotationPlot';
 import HullPlot from '../HullPlot';
 import TilePlot from '../TilePlot';
-import { Tooltip } from 'react-tooltip';
 import CrossHair from './Crosshair';
 import { processHulls } from './util';
 import FilteredPointsOverlay from './FilteredPointsOverlay';
 import PointLabel from './PointLabel';
 import { filterConstants } from './Search/utils';
-
-// import { useColorMode } from '../../hooks/useColorMode';
 
 import { useScope } from '../../contexts/ScopeContext';
 import { useFilter } from '../../contexts/FilterContext';
@@ -29,25 +24,34 @@ import ColorLegend from './ColorLegend';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { useColorBy } from '../../hooks/useColorBy';
-import { Button } from 'react-element-forge';
-// VisualizationPane.propTypes = {
-//   hoverAnnotations: PropTypes.array.isRequired,
-//   hoveredCluster: PropTypes.object,
-//   cluster: PropTypes.object,
-//   scope: PropTypes.object,
-//   selectedAnnotations: PropTypes.array.isRequired,
-//   onScatter: PropTypes.func.isRequired,
-//   onSelect: PropTypes.func.isRequired,
-//   onHover: PropTypes.func.isRequired,
-//   hovered: PropTypes.object,
-//   dataset: PropTypes.object.isRequired,
-//   containerRef: PropTypes.object.isRequired,
-// };
+import { useCellMembers } from '../../hooks/useCellMembers';
+import MembersTooltip from './MembersTooltip';
+import CellDetail from './CellDetail';
+import Scatter3D from './Scatter3D';
+import VoxelView from './VoxelView';
+import { Readout, Spinner } from '../ui';
+
+// Signature #1 — viewport reticle ticks: four corner L-marks that turn amber
+// while a selection/filter is active. Pure chrome: pointer-events none.
+function ViewportReticle({ active }) {
+  return (
+    <div
+      className={`${styles.reticle} ${active ? styles.reticleActive : ''}`}
+      aria-hidden="true"
+    >
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
 
 function VisualizationPane({
   width,
   height,
   hovered,
+  hoveredIndex,
   onHover,
   onSelect,
   hoverAnnotations,
@@ -56,6 +60,16 @@ function VisualizationPane({
   isSmallScreen = false,
 }) {
   const { scopeRows, clusterLabels, scope, features, dataset } = useScope();
+
+  // 3D scopes (umap run with --dimensions 3) carry a z coordinate + voxel
+  // indices, unlocking a [2D · 3D · Voxels] view toggle. 2D scopes keep the
+  // classic ScatterGL projection untouched (zero regression).
+  const is3D = scope?.dimensions === 3;
+  const [viewMode, setViewMode] = useState('2d');
+  useEffect(() => {
+    // default 3D scopes to the 3D scatter; keep 2D scopes on the 2D map.
+    setViewMode(is3D ? '3d' : '2d');
+  }, [is3D, scope?.id]);
 
   // first binary image column (if any) for the hover thumbnail
   const hoverImageColumn = useMemo(() => {
@@ -227,30 +241,6 @@ function VisualizationPane({
     return colorByColors;
   }, [colorByColumn, colorByColors, drawingPoints.length]);
 
-  // const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  // useEffect(() => {
-  //   console.log('==== hovered ==== ', hovered);
-  //   if (hovered) {
-  //     // console.log("hovered", hovered, scopeRows[hovered.index])
-  //     const point = scopeRows[hovered.index];
-  //     if (point && xDomain && yDomain) {
-  //       let px = point.x;
-  //       if (px < xDomain[0]) px = xDomain[0];
-  //       if (px > xDomain[1]) px = xDomain[1];
-  //       let py = point.y;
-  //       if (py < yDomain[0]) py = yDomain[0];
-  //       if (py > yDomain[1]) py = yDomain[1];
-  //       const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
-  //       const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * size[1] + umapOffset - 28;
-  //       // console.log("xPos", xPos, "yPos", yPos)
-  //       setTooltipPosition({
-  //         x: xPos,
-  //         y: yPos,
-  //       });
-  //     }
-  //   }
-  // }, [hovered, scopeRows, xDomain, yDomain, width, height, umapOffset]);
-
   const hulls = useMemo(() => {
     return processHulls(clusterLabels, scopeRows, (d) => (d.deleted ? null : [d.x, d.y]));
   }, [scopeRows, clusterLabels]);
@@ -281,6 +271,57 @@ function VisualizationPane({
       };
     });
   }, [scopeRows]);
+
+  // ====================================================================================================
+  // Members-in-cell tooltip for the 2D heatmap. TilePlot is pointer-events:none
+  // (ScatterGL owns hover), so we derive the hovered cell from the existing
+  // point-hover: the hovered point's tile_index_64. The tooltip follows the
+  // cursor, whose position we track on the pane. Same reusable hook the voxel
+  // view uses (useCellMembers) -> one members-tooltip implementation.
+  // ====================================================================================================
+  const tileCellKeyOf = useCallback((row) => row.tile_index_64, []);
+  const {
+    setActiveCell: setTileActiveCell,
+    active: tileActive,
+    snippets: tileSnippets,
+    loadingSnippets: tileLoadingSnippets,
+  } = useCellMembers({ scopeRows, scope, cellKeyOf: tileCellKeyOf });
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const [tileTooltipPos, setTileTooltipPos] = useState(null);
+
+  // ====================================================================================================
+  // Cell detail drawer (#154): clicking a heatmap tile (2D) or a voxel (3D)
+  // opens a drawer listing every datapoint in that cell. { key, column } names
+  // the cell; CellDetail derives membership from scopeRows itself.
+  // ====================================================================================================
+  const [selectedCell, setSelectedCell] = useState(null);
+  // Voxel view -> open the cell drawer for a clicked voxel.
+  const onCellSelect = useCallback((key, column) => {
+    if (key === null || key === undefined) setSelectedCell(null);
+    else setSelectedCell({ key, column });
+  }, []);
+  // 2D map select: when the heatmap is showing, a click opens the tile's cell
+  // drawer (the tile under the clicked point); otherwise it opens PointDetail
+  // via the original onSelect (zero change to the non-heatmap flow).
+  const handleScatterSelect = useCallback(
+    (indices) => {
+      const idx = indices?.[0];
+      if (heatmapVisibleRef.current && idx !== undefined && idx !== -1 && scopeRows?.[idx]) {
+        setSelectedCell({ key: scopeRows[idx].tile_index_64, column: 'tile_index_64' });
+      } else {
+        onSelect(indices);
+      }
+    },
+    [scopeRows, onSelect]
+  );
+  // Deep-link a cell entry into the full PointDetail drawer.
+  const openPointFromCell = useCallback(
+    (pos) => {
+      setSelectedCell(null);
+      onSelect([pos]);
+    },
+    [onSelect]
+  );
 
   // ====================================================================================================
   // Configuration Panel
@@ -346,6 +387,33 @@ function VisualizationPane({
   );
   // Points drawn on top of the atlas: past the deepest grid, or always-on.
   const pointsVisible = imageMode && (lod.deepest || alwaysShowPoints);
+
+  // The 2D heatmap is showing when: image-mode zoomed out, or the manual
+  // toggle for non-image scopes. Members tooltip is only active then.
+  const heatmapVisible =
+    viewMode === '2d' &&
+    (imageMode ? !lod.active : vizConfig.showHeatMap) &&
+    tiles?.length > 1;
+  // Mirror into a ref so the (stable) select handler reads the live value
+  // without being torn down/recreated on every heatmap toggle.
+  const heatmapVisibleRef = useRef(heatmapVisible);
+  heatmapVisibleRef.current = heatmapVisible;
+
+  // Drive the tile members tooltip from the existing point-hover.
+  useEffect(() => {
+    if (
+      heatmapVisible &&
+      hoveredIndex !== null &&
+      hoveredIndex !== undefined &&
+      scopeRows?.[hoveredIndex]
+    ) {
+      setTileActiveCell(scopeRows[hoveredIndex].tile_index_64);
+      setTileTooltipPos({ x: mouseRef.current.x, y: mouseRef.current.y });
+    } else {
+      setTileActiveCell(null);
+      setTileTooltipPos(null);
+    }
+  }, [heatmapVisible, hoveredIndex, scopeRows, setTileActiveCell]);
 
   // Cluster hull layers, shared between the text-mode position (under the
   // atlas/heatmap) and the image-mode position (above them). In image mode
@@ -428,28 +496,61 @@ function VisualizationPane({
       .filter((point) => point !== null);
   }, [shownIndices, scopeRows]);
 
-  // console.log({
-  //   shownIndices,
-  //   selectedPoints: selectedPoints.map((p) => {
-  //     return {
-  //       index: p.index,
-  //       ls_index: p.ls_index,
-  //     };
-  //   }),
-  // });
+  // Signature #2 — mono telemetry: shown/total point counts + zoom factor.
+  const totalPoints = scopeRows?.length || 0;
+  const shownCount = shownIndices?.length;
+  const ptsValue =
+    shownCount != null && shownCount > 0 && shownCount !== totalPoints
+      ? `${shownCount.toLocaleString()}/${totalPoints.toLocaleString()}`
+      : totalPoints.toLocaleString();
+  const zoomValue = `${(transform?.k || 1).toFixed(1)}×`;
+
+  const selectionActive = filterActive || selectedAnnotations?.length > 0;
 
   return (
-    // <div style={{ width, height }} ref={umapRef}>
-    <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={umapRef} className={styles.visualizationPane}>
+      {!scopeRows?.length && (
+        <div className="ls-scrim">
+          <Spinner label="LOADING MAP…" />
+        </div>
+      )}
+      <ViewportReticle active={selectionActive} />
       <div className={styles.configToggleContainer}>
-        <Button
-          className={styles['configToggle']}
+        <button
+          type="button"
+          className={`ls-icon-btn ${styles.configToggle}`}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          aria-label="Toggle configuration panel"
-          icon={'settings'}
-          size="small"
-          // color="#333"
-        />
+          aria-label="Chart settings"
+          title="Chart settings"
+          aria-expanded={isPanelOpen}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="4" y1="21" x2="4" y2="14" />
+            <line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" />
+            <line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" />
+            <line x1="9" y1="8" x2="15" y2="8" />
+            <line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+        </button>
+
+        <div className={styles.telemetry}>
+          <Readout label="PTS" value={ptsValue} />
+          <Readout label="ZOOM" value={zoomValue} />
+        </div>
 
         <ConfigurationPanel
           isOpen={isPanelOpen}
@@ -474,9 +575,10 @@ function VisualizationPane({
           exposes colorable columns and we're not in the image map. */}
       {colorableColumns.length > 0 && !imageMode && (
         <div className={styles.colorByContainer}>
-          <label className={styles.colorByPicker}>
+          <label className={`${styles.colorByPicker} ls-panel ls-panel--floating`}>
             <span className={styles.colorByLabel}>Color by</span>
             <select
+              className="ls-select"
               value={colorByColumn || ''}
               onChange={(e) => setColorByColumn(e.target.value || null)}
             >
@@ -492,14 +594,85 @@ function VisualizationPane({
         </div>
       )}
 
-      <div className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}>
+      {/* 3D view toggle — only for 3D scopes (dimensions === 3). Floating HUD
+          panel with the ONE tab primitive as a segmented mode switch. */}
+      {is3D && (
+        <div
+          className="ls-panel ls-panel--floating"
+          role="tablist"
+          aria-label="View mode"
+          style={{
+            position: 'absolute',
+            top: 'var(--ls-space-2)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: 'var(--ls-space-1)',
+            padding: 'var(--ls-space-1) var(--ls-space-2)',
+          }}
+        >
+          {[
+            ['2d', '2D'],
+            ['3d', '3D'],
+            ['voxels', 'Voxels'],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              role="tab"
+              aria-selected={viewMode === mode}
+              className="ls-tab"
+              onClick={() => setViewMode(mode)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        className={styles.scatters + ' ' + (isFullScreen ? styles.fullScreen : '')}
+        onMouseMove={(e) => {
+          mouseRef.current = { x: e.clientX, y: e.clientY };
+        }}
+      >
+        {/* 3D scatter (three.js soft splats) for 3D scopes */}
+        {viewMode === '3d' && scope && (
+          <Scatter3D
+            scopeRows={scopeRows}
+            width={width}
+            height={height}
+            scope={scope}
+            clusterLabels={clusterLabels}
+            selectedCluster={clusterFilter.cluster}
+            hoveredIndex={hoveredIndex}
+            onHover={onHover}
+            onSelect={onSelect}
+            pointScale={vizConfig.pointSize}
+            pointColors={scatterPointColors}
+          />
+        )}
+        {/* Voxel heatmap (aggregated cubes + slice plane) for 3D scopes */}
+        {viewMode === 'voxels' && scope && (
+          <VoxelView
+            scopeRows={scopeRows}
+            width={width}
+            height={height}
+            scope={scope}
+            clusterLabels={clusterLabels}
+            pointColors={scatterPointColors}
+            onCellSelect={onCellSelect}
+          />
+        )}
+        {viewMode === '2d' && (
+          <>
         {scope && (
           <Scatter
             points={drawingPoints}
             width={width}
             height={height}
             onView={handleView}
-            onSelect={onSelect}
+            onSelect={handleScatterSelect}
             onHover={onHover}
             featureIsSelected={featureIsSelected}
             maxZoom={maxZoom}
@@ -611,122 +784,68 @@ function VisualizationPane({
         {isSmallScreen && (
           <CrossHair xDomain={xDomain} yDomain={yDomain} width={width} height={height} />
         )}
+          </>
+        )}
       </div>
 
-      {/* Hover information display */}
-      {hovered && (
-        <div
-          data-tooltip-id="featureTooltip"
-          style={{
-            position: 'absolute',
-            right: 225,
-            top: 0,
-            pointerEvents: 'none',
-          }}
-        ></div>
-      )}
-      {hovered && (
-        <Tooltip
-          id="featureTooltip"
-          isOpen={hovered !== null}
-          delayShow={0}
-          delayHide={0}
-          delayUpdate={0}
-          noArrow={true}
-          className="tooltip-area"
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            pointerEvents: 'none',
-            width: '400px',
-            backgroundColor: '#D3965E',
-          }}
-        >
-          <div className="tooltip-content">
-            {/* Token scopes: the hovered point is a token — show its cleaned
-                surface string prominently (resolved locally from scopeRows). */}
-            {hovered.token !== undefined && hovered.token !== null && (
-              <>
-                <span style={{ fontSize: '1.25em', fontWeight: 'bold', fontFamily: 'monospace' }}>
-                  {hovered.token}
-                </span>
-                <br></br>
-              </>
-            )}
-            {hoveredCluster && (
-              <span>
-                <span className="key">Cluster {hoveredCluster.cluster}: </span>
-                <span className="value">{hoveredCluster.label}</span>
-              </span>
-            )}
-            <br></br>
-            <span>Index: {hovered.index}</span>
-            {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
-              <HoverThumbnail
-                src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
-                alt={`${hoverImageColumn} ${hovered.index}`}
-                size={150}
-              />
-            )}
-            <p className="tooltip-text">
-              {hovered.loading && !hovered.text ? <em>loading…</em> : hovered.text}
-            </p>
-          </div>
-        </Tooltip>
+      {/* Members-in-cell tooltip over the 2D heatmap (N datapoints · dominant
+          cluster + sampled snippets). Same hook/presentation as the voxel view. */}
+      {tileTooltipPos && tileActive && (
+        <MembersTooltip
+          x={tileTooltipPos.x}
+          y={tileTooltipPos.y}
+          summary={tileActive.summary}
+          snippets={tileSnippets}
+          loading={tileLoadingSnippets}
+        />
       )}
 
-      {/* {!isMobileDevice() && (
-              <div className="hovered-point">
-                  {hoveredCluster && (
-                      <span>
-                          <span className="key">Cluster {hoveredCluster.cluster}:</span>
-                          <span className="value">{hoveredCluster.label}</span>
-                      </span>
-                  )}
-                  {hovered &&
-                      Object.keys(hovered).map((key, idx) => {
-                          let d = hovered[key];
-                if (typeof d === "object" && !Array.isArray(d)) {
-                    d = JSON.stringify(d);
-                }
-                let meta =
-                    dataset.column_metadata && dataset.column_metadata[key];
-                let value;
-                if (meta && meta.image) {
-                  value = (
-                      <span className="value" key={idx}>
-                          <img src={d} alt={key} height={64} />
-                      </span>
-                  );
-              } else if (meta && meta.url) {
-                  value = (
-                      <span className="value" key={idx}>
-                          <a href={d}>url</a>
-                      </span>
-                  );
-              } else if (meta && meta.type == "array") {
-                  value = (
-                      <span className="value" key={idx}>
-                          [{d.length}]
-                      </span>
-                  );
-              } else {
-                    value = (
-                        <span className="value" key={idx}>
-                            {d}
-                        </span>
-                    );
-                }
-                return (
-                    <span key={key}>
-                        <span className="key">{key}:</span>
-                        {value}
-                    </span>
-                );
-            })}
-              </div>
-          )} */}
+      {/* Cell detail drawer (#154): all datapoints in a clicked tile/voxel. */}
+      <CellDetail
+        selectedCell={selectedCell}
+        onClose={() => setSelectedCell(null)}
+        onOpenPoint={openPointFromCell}
+      />
+
+      {/* Hover information display — a floating Panel pinned top-right */}
+      {hovered && (
+        <div className={`${styles.hoverCard} ls-panel ls-panel--floating`}>
+          {/* Token scopes: the hovered point is a token — show its cleaned
+              surface string prominently, above the cluster line. */}
+          {hovered.token !== undefined && hovered.token !== null && (
+            <span className={styles.hoverCardToken}>{hovered.token}</span>
+          )}
+          {hoveredCluster && (
+            <span className={styles.hoverCardCluster}>
+              Cluster {hoveredCluster.cluster}: {hoveredCluster.label}
+            </span>
+          )}
+          <Readout label="INDEX" value={hovered.index} />
+          {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
+            <HoverThumbnail
+              src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
+              alt={`${hoverImageColumn} ${hovered.index}`}
+              size={150}
+            />
+          )}
+          <p className={styles.hoverCardText}>
+            {hovered.loading && !hovered.text ? (
+              <em>loading…</em>
+            ) : hovered.tokenSnippet ? (
+              /* Token scopes: passage context with the token highlighted */
+              <>
+                {hovered.tokenSnippet.truncatedStart ? '…' : ''}
+                {hovered.tokenSnippet.before}
+                <mark className={styles.hoverCardTokenMark}>{hovered.tokenSnippet.match}</mark>
+                {hovered.tokenSnippet.after}
+                {hovered.tokenSnippet.truncatedEnd ? '…' : ''}
+              </>
+            ) : (
+              hovered.text
+            )}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

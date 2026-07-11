@@ -1,78 +1,75 @@
 import { useState, useEffect, useCallback } from 'react';
-const apiUrl = import.meta.env.VITE_API_URL
+import { Button } from 'react-element-forge';
+
+import styles from './Bulk.module.css';
+
+const apiUrl = import.meta.env.VITE_API_URL;
 
 function Tagging({ dataset, indices, onSuccess }) {
   const [tagset, setTagset] = useState({});
   useEffect(() => {
     fetch(`${apiUrl}/tags?dataset=${dataset?.id}`)
-      .then(response => response.json())
-      .then(data => setTagset(data));
-  }, [dataset])
+      .then((response) => response.json())
+      .then((data) => setTagset(data));
+  }, [dataset]);
 
-  const [tags, setTags] = useState([])
+  const [tags, setTags] = useState([]);
   useEffect(() => {
-    console.log("TAGSET", tagset, dataset)
-    const tags = []
-    for (const tag in tagset) {
-      tags.push(tag)
-    }
-    // console.log("tagset", tagset, tags)
-    setTags(tags)
-  }, [dataset, tagset])
+    setTags(Object.keys(tagset));
+  }, [dataset, tagset]);
 
   const [tag, setTag] = useState('');
 
   const handleAdd = useCallback(() => {
-    console.log("add", tag, indices)
     fetch(`${apiUrl}/tags/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({dataset: dataset.id, indices, tag}),
+      body: JSON.stringify({ dataset: dataset.id, indices, tag }),
     })
-    .then(response => response.json())
-    .then(data => onSuccess(data))
-    .catch(error => console.error('error', error))
-    
-  }, [dataset, tag, indices])
+      .then((response) => response.json())
+      .then((data) => onSuccess(data))
+      .catch((error) => console.error('error', error));
+  }, [dataset, tag, indices]);
 
   const handleRemove = useCallback(() => {
-    console.log("remove", tag, indices)
     fetch(`${apiUrl}/tags/remove`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({dataset: dataset.id, indices, tag}),
+      body: JSON.stringify({ dataset: dataset.id, indices, tag }),
     })
-    .then(response => response.json())
-    .then(data => onSuccess(data))
-    .catch(error => console.error('error', error))
+      .then((response) => response.json())
+      .then((data) => onSuccess(data))
+      .catch((error) => console.error('error', error));
+  }, [dataset, tag, indices]);
 
-  }, [dataset, tag, indices])
-
-  return <div style={{display: 'flex', flexDirection: 'row', gap: '6px'}}>
-    <div className="tags" style={{display: 'flex', flexDirection: 'row', gap: '6px'}}>
-      {tags.map(t => <div 
-        key={t} 
-        className="tag" 
-        style={{
-          cursor: 'pointer',
-          padding: '2px 6px',
-          border: t == tag ? '2px solid black' : '1px solid gray',
-        }}
-        onClick={() => t == tag ? setTag('') : setTag(t)}>
-        {t}
+  return (
+    <div className={styles.bulkRow}>
+      <div className={`tags ${styles.tags}`}>
+        {tags.map((t) => (
+          <button
+            type="button"
+            key={t}
+            className={`ls-badge ${styles.tagButton} ${
+              t === tag ? 'ls-badge--selected' : styles.tagButtonIdle
+            }`}
+            onClick={() => (t === tag ? setTag('') : setTag(t))}
+          >
+            {t}
+          </button>
+        ))}
       </div>
+      {tag && (
+        <div className={`action ${styles.actions}`}>
+          <Button size="small" color="primary" text="Add" onClick={handleAdd} />
+          <Button size="small" color="secondary" text="Remove" onClick={handleRemove} />
+        </div>
       )}
     </div>
-    {tag && <div className="action">
-      <button onClick={handleAdd}>Add</button>
-      <button onClick={handleRemove}>Remove</button>
-    </div>}
-  </div>;
+  );
 }
 
 export default Tagging;
-

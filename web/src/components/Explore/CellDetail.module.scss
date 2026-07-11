@@ -1,0 +1,204 @@
+// Cell-detail drawer — same visual language as the PointDetail drawer.
+// All values are tokens; see DESIGN.md §5 (modals/drawers).
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--ls-drawer-width);
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ls-surface-panel);
+  border-left: 1px solid var(--borders-color-border-2);
+  box-shadow: var(--ls-shadow-3);
+  z-index: var(--ls-z-drawer);
+  transform: translateX(105%);
+  visibility: hidden;
+  transition:
+    transform var(--ls-dur-slow) var(--ls-ease-in-out),
+    visibility var(--ls-dur-slow);
+
+  &.open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-3) var(--ls-space-4);
+  border-bottom: 1px solid var(--borders-color-border-1);
+  flex-shrink: 0;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
+  color: var(--text-color-text-main);
+}
+
+// the member count is a machine fact
+.titleCount {
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-1);
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-subtle);
+  overflow-wrap: anywhere;
+}
+
+// dominant-cluster swatch: background color is data-driven (cluster palette)
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--ls-radius-round);
+  flex-shrink: 0;
+}
+
+.closeButton {
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ls-space-1) 0;
+}
+
+.entry {
+  padding: var(--ls-space-2) var(--ls-space-4);
+  border-bottom: 1px solid var(--borders-color-border-1);
+}
+
+.entryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ls-space-2);
+}
+
+.entryToggle {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-1);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+
+  &:focus-visible {
+    outline: var(--ls-focus-ring);
+    outline-offset: var(--ls-focus-ring-offset);
+  }
+}
+
+.caret {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-color-text-subtle);
+  transition: transform var(--ls-dur-fast) var(--ls-ease-out);
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.caretOpen {
+  transform: rotate(90deg);
+}
+
+// the row id is a machine fact
+.entryIndex {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-main);
+  flex-shrink: 0;
+}
+
+.entryCluster {
+  font-size: var(--ls-text-2xs);
+  color: var(--text-color-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.openLink {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-primary);
+  flex-shrink: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: var(--ls-focus-ring);
+    outline-offset: var(--ls-focus-ring-offset);
+  }
+}
+
+.entryText {
+  margin-top: var(--ls-space-1);
+  font-size: var(--ls-text-sm);
+  line-height: var(--ls-leading-body);
+  color: var(--text-color-text-main);
+  overflow-wrap: anywhere;
+
+  &.expanded {
+    white-space: pre-wrap;
+    max-width: 60ch;
+  }
+}
+
+.muted {
+  color: var(--text-color-text-subtle);
+  font-style: italic;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ls-space-2) var(--ls-space-4);
+  border-top: 1px solid var(--borders-color-border-1);
+  flex-shrink: 0;
+}
+
+// Narrow screens: full-width drawer so the cell list is readable on a phone.
+@media (max-width: 640px) {
+  .drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+}

@@ -21,7 +21,9 @@ export function FilterProvider({ children }) {
   const [filterConfig, setFilterConfig] = useState(null);
   const [filteredIndices, setFilteredIndices] = useState([]);
   const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
+  // starts true: the first applyFilter only runs once the scope has loaded,
+  // and until then the table is genuinely still loading
+  const [loading, setLoading] = useState(true);
   const [filterQuery, setFilterQuery] = useState(''); // Optional query string for UI
   const [filterActive, setFilterActive] = useState(false);
   const [centeredIndices, setCenteredIndices] = useState([]);

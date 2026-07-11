@@ -9,11 +9,21 @@ import TransitionView from '../components/Compare/TransitionView';
 import SideBySideView from '../components/Compare/SideBySideView';
 import CompareDataPanel from '../components/Compare/CompareDataPanel';
 import { buildColorByConfig } from '../components/Compare/colorBy';
+import { Spinner } from '../components/ui';
 
 import styles from './Compare.module.css';
 
 // Still used for the /search/compare* endpoints that have no apiService method.
 const apiUrl = import.meta.env.VITE_API_URL;
+
+// Slack subtracted from the measured container so the pane frames
+// (.scatter-container border + padding) never overflow it. The frames are
+// content-box, so each adds 10px of chrome (2×4px padding + 2×1px border)
+// per axis on top of the inline width/height. Y also covers the view toolbar
+// row (~36px worst case) rendered above the frames in both views; X covers
+// two frame chromes plus rounding in the side-by-side layout.
+const SIZE_SLACK_X = 22;
+const SIZE_SLACK_Y = 48;
 
 const viewModes = [
   { id: 'transition', name: 'Transition' },
@@ -86,7 +96,7 @@ function Compare() {
     function updateSize() {
       if (!containerRef.current) return;
       const { height, width } = containerRef.current.getBoundingClientRect();
-      setContainerSize([width - 15, height - 25]);
+      setContainerSize([width - SIZE_SLACK_X, height - SIZE_SLACK_Y]);
     }
     window.addEventListener('resize', updateSize);
     updateSize();
@@ -337,7 +347,12 @@ function Compare() {
     document.addEventListener('mouseup', handleDragEnd);
   }, [panelHeight]);
 
-  if (!dataset) return <div>Loading...</div>;
+  if (!dataset)
+    return (
+      <div className={styles['page-loading']}>
+        <Spinner label="LOADING DATASET…" />
+      </div>
+    );
 
   return (
     <div className={styles['container']}>
@@ -364,14 +379,14 @@ function Compare() {
       />
 
       <div className={styles['visualization']}>
-        <div className={styles['view-tabs']}>
+        <div className={styles['view-tabs']} role="tablist">
           {viewModes.map((mode) => (
             <button
               key={mode.id}
               onClick={() => setViewMode(mode.id)}
-              className={
-                mode.id === viewMode ? styles['view-tab-active'] : styles['view-tab-inactive']
-              }
+              className="ls-tab"
+              role="tab"
+              aria-selected={mode.id === viewMode}
             >
               {mode.name}
             </button>

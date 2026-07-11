@@ -1,14 +1,9 @@
-
 .scatter {
   position: absolute;
   top: 0;
   left: 0;
-  background-color: #fefefe;
+  /* single source of truth for the map surface — the WebGL clear color reads
+     the same token in ScatterGL.jsx */
+  background-color: var(--ls-surface-map);
   user-select: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .scatter {
-    background-color: #111;
-  }
 }

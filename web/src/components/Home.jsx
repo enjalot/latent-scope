@@ -113,7 +113,12 @@ function Home() {
       {readonly ? null : (
         <div className="new section">
           <div className="new-dataset">
-            <form onSubmit={handleNewDataset} onDragOver={handleDragOver} onDrop={handleDrop}>
+            <form
+              className="ls-panel"
+              onSubmit={handleNewDataset}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
               <h3>Create new dataset</h3>
               <label htmlFor="upload-button">
                 <span>Import a CSV/Parquet/JSON/JSONL/XLSX file to create a new dataset</span>
@@ -133,7 +138,7 @@ function Home() {
             </form>
             <JobProgress job={ingestJob} clearJob={() => setIngestJob(null)} />
           </div>
-          <div className="hf-downloader">
+          <div className="hf-downloader ls-panel">
             <h3>Download a scoped dataset from Hugging Face</h3>
             <HFDownload
               onComplete={() => {
@@ -148,18 +153,18 @@ function Home() {
         <h3>Datasets</h3>
         <div className="datasets-content">
           {datasets.map((dataset) => (
-            <div className="dataset" key={dataset.id}>
+            <div className="dataset ls-panel" key={dataset.id}>
               <h3>
                 {' '}
                 {dataset.id} &nbsp;
                 {readonly ? null : <Link to={`/datasets/${dataset.id}/setup`}>Setup</Link>}
               </h3>
-              <span>{dataset.length} rows</span>
+              <span className="dataset-rows">{dataset.length?.toLocaleString()} rows</span>
               <div className="scope-links">
                 {scopes[dataset.id] &&
                   scopes[dataset.id].map &&
                   scopes[dataset.id]?.map((scope, i) => (
-                    <div className="scope-link" key={i}>
+                    <div className="scope-link ls-panel" key={i}>
                       <Link to={`/datasets/${dataset.id}/explore/${scope.id}`}>
                         {scope.label || scope.id}
                         <br />

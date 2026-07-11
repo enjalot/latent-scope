@@ -13,30 +13,14 @@ import ClusterLabelsPanel from '../components/Explore/ClusterLabelsPanel';
 import PointDetail from '../components/Explore/PointDetail';
 
 import { ScopeProvider, useScope } from '../contexts/ScopeContext';
-import { cleanTokenString } from '../lib/tokenSnippet';
+import { cleanTokenString, tokenSnippet } from '../lib/tokenSnippet';
 import { FilterProvider, useFilter } from '../contexts/FilterContext';
 import useDebounce from '../hooks/useDebounce';
 import { useSmallScreen } from '../hooks/useSmallScreen';
 import MobileExplore from './MobileExplore';
 
 import { filterConstants } from '../components/Explore/Search/utils';
-
-const styles = {
-  dragHandle: {
-    position: 'absolute',
-    right: -15,
-    top: 0,
-    bottom: 0,
-    width: 30,
-    cursor: 'ew-resize',
-    backgroundColor: 'transparent',
-    transition: 'background-color 0.2s',
-    '&:hover': {
-      backgroundColor: '#e0e0e0',
-    },
-    zIndex: 10,
-  },
-};
+import { Spinner } from '../components/ui';
 
 // Create a new component that wraps the main content
 function ExploreContent() {
@@ -111,6 +95,27 @@ function ExploreContent() {
 
   const debouncedHydrateHoverText = useDebounce(hydrateHoverText, 5);
 
+  // Token scopes: hydrate the hovered token's passage context (parent text +
+  // char span) so the hover card can show the token highlighted in place.
+  const hydrateTokenHover = useCallback(
+    (index, setter) => {
+      latestHoverIndexRef.current = index;
+      const embeddingId = scope?.embedding_id || scope?.embedding?.id;
+      const textColumn = scope?.embedding?.text_column;
+      apiService.fetchTokensFromIndices(datasetId, [index], embeddingId).then((rows) => {
+        if (latestHoverIndexRef.current !== index || !rows?.length) return;
+        const row = rows[0];
+        setter({
+          text: row[textColumn],
+          snippet: tokenSnippet(row[textColumn], row.char_start, row.char_end, 120),
+        });
+      });
+    },
+    [datasetId, scope]
+  );
+
+  const debouncedHydrateTokenHover = useDebounce(hydrateTokenHover, 5);
+
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndicesSet.has(hoveredIndex)) {
       // Invalidate any in-flight hydration for the previous point before we
@@ -119,14 +124,26 @@ function ExploreContent() {
       // late response for the old point could overwrite the new tooltip/image.
       latestHoverIndexRef.current = hoveredIndex;
       if (isTokenScope) {
-        // Token scopes resolve hover locally: scopeRows carry token_str, so
-        // no getHoverText roundtrip is needed. scopeRows[i].ls_index === i.
+        // Token scopes: the token string renders instantly from scopeRows
+        // (scopeRows[i].ls_index === i); the passage context (token
+        // highlighted in the parent text) hydrates behind it.
+        const token = cleanTokenString(scopeRows[hoveredIndex]?.token_str);
         setHovered({
           text: null,
-          token: cleanTokenString(scopeRows[hoveredIndex]?.token_str),
-          loading: false,
+          token,
+          loading: true,
           index: hoveredIndex,
           cluster: clusterMap[hoveredIndex],
+        });
+        debouncedHydrateTokenHover(hoveredIndex, ({ text, snippet }) => {
+          setHovered({
+            text,
+            tokenSnippet: snippet,
+            token,
+            loading: false,
+            index: hoveredIndex,
+            cluster: clusterMap[hoveredIndex],
+          });
         });
         return;
       }
@@ -151,7 +168,15 @@ function ExploreContent() {
       setHovered(null);
       latestHoverIndexRef.current = null; // Reset the ref when hover is cleared
     }
-  }, [hoveredIndex, deletedIndicesSet, clusterMap, debouncedHydrateHoverText, isTokenScope, scopeRows]);
+  }, [
+    hoveredIndex,
+    deletedIndicesSet,
+    clusterMap,
+    debouncedHydrateHoverText,
+    debouncedHydrateTokenHover,
+    isTokenScope,
+    scopeRows,
+  ]);
 
   // Update hover annotations
   useEffect(() => {
@@ -290,8 +315,6 @@ function ExploreContent() {
     document.removeEventListener('mouseup', stopDragging);
   };
 
-  // Add this CSS-in-JS style object near the top of the component
-
   const handleFeatureClick = useCallback(
     (featIdx, activation, label) => {
       setFilterQuery(label);
@@ -310,7 +333,7 @@ function ExploreContent() {
     return (
       <>
         <SubNav dataset={dataset} scope={scope} scopes={scopes} />
-        <div style={{ padding: '1rem' }}>
+        <div style={{ padding: 'var(--ls-space-4)' }}>
           <p>
             Failed to load scope {scopeId} for dataset {datasetId}.
           </p>
@@ -324,7 +347,9 @@ function ExploreContent() {
     return (
       <>
         <SubNav dataset={dataset} scope={scope} scopes={scopes} />
-        <div>Loading...</div>
+        <div className="explore-loading">
+          <Spinner label="LOADING SCOPE…" />
+        </div>
       </>
     );
 
@@ -350,11 +375,8 @@ function ExploreContent() {
           className="full-screen-explore-container"
           style={{ gridTemplateColumns: gridTemplate }}
         >
-          <div
-            className="filter-table-container"
-            style={{ position: 'relative', overflowX: 'hidden' }}
-          >
-            <div style={styles.dragHandle} onMouseDown={startDragging} />
+          <div className="filter-table-container">
+            <div className="drag-handle" onMouseDown={startDragging} />
             {showClusters && (
               <div className="cluster-accordion">
                 <ClusterLabelsPanel />

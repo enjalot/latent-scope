@@ -1,20 +1,23 @@
 .page {
   display: flex;
   flex-direction: column;
-  height: calc(100% + 40px);
+  height: 100%;
 }
+
 .header {
   display: flex;
   flex-direction: column;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 6px;
+  background: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-3);
+  padding: var(--ls-space-3);
 }
-.header a {
-  padding: 6px;
-  display: inline-block;
-  width: fit-content
 
+.header a {
+  padding: var(--ls-space-2);
+  display: inline-block;
+  width: fit-content;
 }
 
 .content {
@@ -23,69 +26,77 @@
   overflow-y: auto;
 }
 
-.new-export {
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 6px;
-}
-
+.new-export,
 .plots {
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 6px;
-
+  background: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-3);
+  padding: var(--ls-space-3);
 }
+
 .plot-list {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ls-space-2);
+}
+
+.page h2 {
+  font-size: var(--ls-text-xl);
+  font-weight: 600;
+  margin: 0;
+  padding: var(--ls-space-2) var(--ls-space-3);
 }
 
 .page h3 {
-  font-size: 1.2em;
-  font-weight: bold;
+  font-size: var(--ls-text-lg);
+  font-weight: 600;
   margin: 0;
-  padding: 6px 12px;
+  padding: var(--ls-space-2) var(--ls-space-3);
 }
+
 .page ul {
   list-style: none;
   margin: 0;
-  padding: 0px 24px;
-  padding-bottom: 12px;
+  padding: 0 var(--ls-space-5);
+  padding-bottom: var(--ls-space-3);
 }
 
 .description {
-  padding: 0 12px;
+  padding: 0 var(--ls-space-3);
 }
 
-.path {
-  font-family: 'Courier New', monospace;
-  margin-left: 6px;
-  font-size: 0.7em;
-}
-.size {
-  font-family: 'Courier New', monospace;
-  margin-left: 6px;
-  /* font-size: 0.7em; */
-}
+/* machine facts: paths, byte sizes, config manifests */
+.path,
+.size,
 .config-link {
-  font-family: 'Courier New', monospace;
-  margin-left: 6px;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  margin-left: var(--ls-space-2);
 }
 
 .config-form {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
 
 .label-group {
-  margin: 6px;
+  margin: var(--ls-space-2);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ls-space-2);
+}
+
+.config-form label {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+  font-size: var(--input-label-font-size);
+  font-weight: var(--input-label-font-weight);
 }
 
 .config-form label span {
@@ -94,31 +105,47 @@
   min-width: 200px;
 }
 
+.config-form input[type='text'],
+.config-form input[type='number'] {
+  background: var(--ls-surface-input);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding);
+  font-size: var(--ls-text-sm);
+  font-weight: var(--font-body-regular-weight);
+  color: var(--text-color-text-main);
+}
+
+/* numeric inputs are machine facts */
+.config-form input[type='number'] {
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.config-form input[type='checkbox'] {
+  accent-color: var(--color-interaction-primary);
+  /* let the UA draw a dark-mode box so the unchecked state reads on the panel */
+  color-scheme: light dark;
+}
+
 .create-button {
   display: flex;
   flex-basis: 100%;
-}
-.create-button button {
-  font-size: 1.4em;
-  padding: 6px;
-  margin: 6px;
-  border: 1px solid #000;
-  border-radius: 4px;
-  color: #000;
+  padding: var(--ls-space-2);
 }
 
 .file-link {
-  margin-left: 6px;
+  margin-left: var(--ls-space-2);
   list-style-type: none;
-  padding: 12px;
+  padding: var(--ls-space-3);
   width: fit-content;
-  border: 1px solid lightgray;
-  border-radius: 4px;
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  background: var(--ls-surface-panel);
 }
 
 .warning {
-  font-weight: bold;
-  color: salmon;
+  font-weight: 500;
+  color: var(--text-color-text-warning);
 }
-
-

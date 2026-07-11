@@ -1,0 +1,69 @@
+// Voxel HUD (slice + resolution controls) — positioning + internals only.
+// Surface chrome (95% panel, border-2, shadow-2, radius-3, z-hud) comes from
+// .ls-panel .ls-panel--floating in JSX; padding is tightened for a compact HUD.
+.hud {
+  position: absolute;
+  left: var(--ls-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-2);
+  width: min(260px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: var(--ls-space-2) var(--ls-space-3);
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-main);
+}
+
+.hudBottom {
+  // clear the bottom-left HUD strip (config toggle + PTS/ZOOM telemetry)
+  bottom: calc(var(--ls-space-3) + 40px);
+}
+
+// Touch/small screens: the bottom is occupied by the data-table sheet, so the
+// HUD anchors just below the top overlay chrome.
+.hudTop {
+  top: calc(var(--ls-nav-height) + var(--ls-space-2));
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+}
+
+// mono micro-label overline: SLICE / RES are instrument labels
+.rowLabel {
+  width: 44px;
+  flex-shrink: 0;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
+.slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-interaction-primary);
+}
+
+// resolution values are machine facts: mono chips, amber-washed when selected
+.chipBtn {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: var(--ls-focus-ring);
+    outline-offset: var(--ls-focus-ring-offset);
+  }
+}
+
+.cellCount {
+  margin-left: auto;
+}
+
+.hint {
+  font-size: var(--ls-text-2xs);
+  color: var(--text-color-text-subtle);
+}

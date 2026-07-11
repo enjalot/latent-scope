@@ -1,4 +1,3 @@
-// NewEmbedding.jsx
 import { useState, useEffect, useCallback } from 'react';
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
@@ -9,19 +8,6 @@ import { apiService, apiUrl } from '../../lib/apiService';
 import { useSetup } from '../../contexts/SetupContext';
 
 import styles from './Sae.module.scss';
-
-// const kexpansionStyle= {
-//   backgroundColor: '#EBECF0',
-//   borderRadius: '2em',
-//   color: '#172B4D',
-//   display: 'inline-block',
-//   fontSize: 12,
-//   fontWeight: 'normal',
-//   lineHeight: '1',
-//   minWidth: 1,
-//   padding: '0.16666666666667em 0.5em',
-//   textAlign: 'center',
-// };
 
 // TODO: this component will for now just assume a single SAE for an embedding
 // We only have one SAE model currently available really
@@ -39,66 +25,6 @@ function Sae({ embedding, model, onSAE = () => {} }) {
     `${apiUrl}/jobs/delete/sae`
   );
   const { startJob: rerunSaeJob } = useStartJobPolling(dataset, setSaeJob, `${apiUrl}/jobs/rerun`);
-
-  // const [presetModels, setPresetModels] = useState([
-  // {
-  //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
-  //   "k_expansion": "64_32"
-  // },
-  // {
-  //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
-  //   "k_expansion": "64_128"
-  // },
-  // {
-  //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
-  //   "k_expansion": "128_32"
-  // },
-  // {
-  //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT",
-  //   "k_expansion": "128_128"
-  // },
-  // {
-  //   "model_id": "enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT",
-  //   "k_expansion": "64_128"
-  // },
-  // ]);
-
-  // const [inputValue, setInputValue] = useState('');
-  // const handleInputChange = (newValue) => {
-  //   setInputValue(newValue);
-  //   return newValue
-  // }
-  // const formatOptionLabel = useCallback((option) => {
-  //   return (
-  //     <div>
-  //       <span>{option.model_id} </span>
-  //       {<span style={kexpansionStyle}>{option.k_expansion}</span>}
-  //     </div>
-  //   );
-  // }, []);
-
-  // const [allModels, setAllModels] = useState([])
-  // const [allOptionsGrouped, setAllOptionsGrouped] = useState([])
-  // useEffect(() => {
-  //   const am = presetModels
-  //   let allOptions = am.map(m => {
-  //     return {
-  //       ...m,
-  //       group: m.group || m.provider,
-  //     }
-  //   }).filter(f => !!f)
-
-  //   const grouped = groups(allOptions, f => f.group)
-  //     .map(d => ({ label: d[0], options: d[1] }))
-  //     .filter(d => d.options.length)
-
-  //   console.log("all options grouped", grouped)
-  //   setAllOptionsGrouped(grouped)
-  //   setAllModels(am)
-
-  // }, [presetModels])
-
-  // const [model, setModel] = useState(presetModels[0]);
 
   useEffect(() => {
     apiService.fetchSaes(dataset.id).then((saes) => {
@@ -143,9 +69,6 @@ function Sae({ embedding, model, onSAE = () => {} }) {
     rerunSaeJob({ job_id: job?.id });
   };
 
-  // const handleModelSelectChange = (selectedOption) => {
-  //   setModel(selectedOption);
-  // };
   useEffect(() => {
     console.log('SAE', sae);
     console.log('SAES', saes);
@@ -154,16 +77,7 @@ function Sae({ embedding, model, onSAE = () => {} }) {
   return (
     <div className={styles['sae']}>
       <div className={styles['saes-form']}>
-        {/* <Select 
-            placeholder="Select model..."
-            options={allOptionsGrouped} 
-            formatOptionLabel={formatOptionLabel} 
-            onInputChange={handleInputChange}
-            value={model}
-            onChange={handleModelSelectChange}
-          /> */}
-
-        {/* The form for creating a new embedding */}
+        {/* The form for creating a new SAE */}
         {!sae && !saeJob ? (
           <form onSubmit={handleNewSae}>
             <Button type="submit" color="secondary" disabled={!!saeJob} text="Process SAE" />
@@ -171,8 +85,8 @@ function Sae({ embedding, model, onSAE = () => {} }) {
         ) : null}
       </div>
 
-      {/* 
-      Render the progress for the current job 
+      {/*
+      Render the progress for the current job
       TODO: automatically dismiss if successful
       */}
       <JobProgress
@@ -183,44 +97,30 @@ function Sae({ embedding, model, onSAE = () => {} }) {
         killJob={(job) => apiService.killJob(dataset.id, job.id).then(setSaeJob).catch(console.error)}
         rerunJob={handleRerunSae}
       />
-      {/* 
-      TODO: have a lastEmbeddingsJob with the info from previous run. 
-      if job was successful user can click a button to display the logs. 
-      */}
 
-      {/* Render the list of existing embeddings */}
+      {/* Render the existing SAE */}
       <div className={styles['saes-list']}>
-        {/* {saes && saes.map((sae, index) => { */}
-        {/* // let umps = umaps.filter(d => d.sae_id == sae.id)
-        // let cls = clusters.filter(d => umps.map(d => d.id).indexOf(d.umap_id) >= 0) */}
-
-        {/* return ( */}
         {sae ? (
-          // <div className={styles["item"]} key={index}>
           <div className={styles['item']} key={sae.id}>
-            {/* <input type="radio" id={`sae${index}`} name="sae" value={sae.id} checked={sae.id === sae?.id} onChange={() => setSae(sae)} /> */}
             <label htmlFor={`sae${sae.id}`}>
               <span>
-                <span>
+                <span className={styles['run-id']}>
                   {sae.id} - {sae.num_features} features
                 </span>
-                {/* <span>{sae.id} - {sae.num_features} features, {sae.model_id} {sae.k_expansion} </span> */}
-                {/* <span>[ {sae.dead_features} / {sae.num_features} dead features ]</span> */}
-                {/* <span>[ {umps.length} umaps,&nbsp; {cls.length} clusters ]</span> */}
               </span>
             </label>
             <Button
-              color="secondary"
+              color="delete"
+              variant="outline"
+              size="small"
+              icon="trash"
+              label="Delete SAE"
               className={styles['delete']}
               onClick={() => deleteSaeJob({ sae_id: sae.id })}
               disabled={saeJob && saeJob.status !== 'completed'}
-              text="🗑️"
             />
           </div>
-        ) : // )}
-        null}
-        {/* )} */}
-        <br></br>
+        ) : null}
       </div>
     </div>
   );

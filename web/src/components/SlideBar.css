@@ -1,30 +1,55 @@
 .slide-bar {
   display: flex;
   flex-direction: column;
-  /* justify-content: space-between; */
-  /* border: 1px solid lightgray; */
-  /* border-radius: 5px; */
-  /* padding: 5px; */
-  /* margin: 10px 0; */
-  /* max-height: 50px; */
-  /* height: 50px; */
   overflow-y: hidden;
-  /* flex-basis: 650px; not sure why this is the number */
 }
+
+.slide-bar .slide-bar-header {
+  padding: var(--ls-space-1) var(--ls-space-2);
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
 .slide-bar .slide-bar-body {
   max-height: 100%;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .slide-bar .slide-bar-item {
+  appearance: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--ls-radius-1);
+  padding: var(--ls-space-1) var(--ls-space-2);
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  line-height: var(--ls-leading-ui);
+  color: var(--text-color-text-main);
   cursor: pointer;
-  background-color: white;
+  transition:
+    background-color var(--ls-dur-fast) var(--ls-ease-out),
+    color var(--ls-dur-fast) var(--ls-ease-out);
 }
+
 .slide-bar .slide-bar-item:hover {
-  background-color: lightgray;
+  background-color: var(--neutrals-color-neutral-2);
 }
+
+.slide-bar .slide-bar-item:focus-visible {
+  outline: var(--ls-focus-ring);
+  outline-offset: -2px;
+}
+
 .slide-bar .slide-active {
-  color: darkred;
-  font-weight: bold;
-  /* background-color: lightgray; */
+  background-color: var(--ls-accent-surface);
+  color: var(--text-color-text-primary);
+  font-weight: 500;
 }

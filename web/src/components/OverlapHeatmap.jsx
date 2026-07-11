@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { scaleSequential } from 'd3-scale';
 import { interpolateBlues } from 'd3-scale-chromatic';
+import { useColorMode } from '@/hooks/useColorMode';
 
 import './OverlapHeatmap.css';
 
@@ -9,6 +10,10 @@ const MARGIN = { top: 40, right: 10, bottom: 10, left: 50 };
 function OverlapHeatmap({ matrix, leftLabels, rightLabels, width, height, onCellClick }) {
   const canvasRef = useRef(null);
   const hoveredCellRef = useRef(null);
+  // Chrome colors (empty cells, labels, hover ring) are read from tokens at
+  // draw time; colorMode in the deps re-draws when the theme flips. The
+  // interpolateBlues cell ramp is DATA and stays theme-independent.
+  const { colorMode } = useColorMode();
 
   const maxVal = matrix.reduce(
     (max, row) => Math.max(max, ...row),
@@ -35,6 +40,16 @@ function OverlapHeatmap({ matrix, leftLabels, rightLabels, width, height, onCell
 
       if (!matrix.length || !leftLabels.length || !rightLabels.length) return;
 
+      const rootStyle = getComputedStyle(document.documentElement);
+      const emptyCellColor =
+        rootStyle.getPropertyValue('--neutrals-color-neutral-2').trim() || '#eae6e0';
+      const labelColor = rootStyle.getPropertyValue('--text-color-text-subtle').trim() || '#5c574f';
+      const hoverColor =
+        rootStyle.getPropertyValue('--interactions---primary-color-interaction-primary').trim() ||
+        '#a35c14';
+      const uiFont = rootStyle.getPropertyValue('--ls-font-ui').trim() || 'sans-serif';
+      const monoFont = rootStyle.getPropertyValue('--ls-font-mono').trim() || 'monospace';
+
       // Draw cells
       for (let i = 0; i < leftLabels.length; i++) {
         for (let j = 0; j < rightLabels.length; j++) {
@@ -42,20 +57,22 @@ function OverlapHeatmap({ matrix, leftLabels, rightLabels, width, height, onCell
           const y = MARGIN.top + i * cellHeight;
           const val = matrix[i][j];
 
-          ctx.fillStyle = val > 0 ? colorScale(val) : '#f8f8f8';
+          ctx.fillStyle = val > 0 ? colorScale(val) : emptyCellColor;
           ctx.fillRect(x, y, cellWidth - 1, cellHeight - 1);
 
           // Highlight hovered cell
           if (i === hoveredRow && j === hoveredCol) {
-            ctx.strokeStyle = '#ff6600';
+            ctx.strokeStyle = hoverColor;
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, cellWidth - 1, cellHeight - 1);
           }
 
-          // Draw count in cell if cells are large enough
+          // Draw count in cell if cells are large enough. These two colors
+          // contrast against the interpolateBlues DATA ramp (dark-blue high
+          // cells vs light-blue low cells), not the theme — keep them literal.
           if (cellWidth > 25 && cellHeight > 15 && val > 0) {
             ctx.fillStyle = val > maxVal * 0.6 ? '#fff' : '#333';
-            ctx.font = `${Math.min(cellHeight * 0.5, 11)}px sans-serif`;
+            ctx.font = `${Math.min(cellHeight * 0.5, 11)}px ${monoFont}`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(val, x + cellWidth / 2, y + cellHeight / 2);
@@ -64,8 +81,8 @@ function OverlapHeatmap({ matrix, leftLabels, rightLabels, width, height, onCell
       }
 
       // Column labels (right clusters) — top
-      ctx.fillStyle = '#666';
-      ctx.font = `${Math.min(cellWidth * 0.6, 10)}px sans-serif`;
+      ctx.fillStyle = labelColor;
+      ctx.font = `${Math.min(cellWidth * 0.6, 10)}px ${uiFont}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       for (let j = 0; j < rightLabels.length; j++) {
@@ -80,13 +97,24 @@ function OverlapHeatmap({ matrix, leftLabels, rightLabels, width, height, onCell
       // Row labels (left clusters) — left
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.font = `${Math.min(cellHeight * 0.6, 10)}px sans-serif`;
+      ctx.font = `${Math.min(cellHeight * 0.6, 10)}px ${uiFont}`;
       for (let i = 0; i < leftLabels.length; i++) {
         const y = MARGIN.top + i * cellHeight + cellHeight / 2;
         ctx.fillText(leftLabels[i], MARGIN.left - 4, y);
       }
     },
-    [matrix, leftLabels, rightLabels, width, height, cellWidth, cellHeight, colorScale, maxVal]
+    [
+      matrix,
+      leftLabels,
+      rightLabels,
+      width,
+      height,
+      cellWidth,
+      cellHeight,
+      colorScale,
+      maxVal,
+      colorMode,
+    ]
   );
 
   useEffect(() => {

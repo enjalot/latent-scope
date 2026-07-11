@@ -1161,3 +1161,126 @@ def test_embed_records_token_stats(pipeline_env, monkeypatch):
     assert ts["count"] == len(df)
     assert ts["total"] == sum(len(t.split()) for t in df["text"])
     assert ts["max"] >= ts["mean"] >= ts["min"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# 3D UMAP + voxel scope (feature/3d)
+# ---------------------------------------------------------------------------
+
+def test_make_voxels_frozen_convention():
+    """Lock the frozen 3D cell-index convention (ARCHITECTURE.md §2.4):
+    row-major, x fastest, cubic grid; idx = (z_bin*n + y_bin)*n + x_bin with
+    bin(c,n) = clip(floor((c+1)/2*n), 0, n-1). These constants must never drift
+    or voxel<->minecraft<->city alignment breaks."""
+    from latentscope.scripts.scope import make_tiles, make_voxels
+
+    x = np.array([-1.0, 1.0, 0.0, 0.757], dtype=np.float64)
+    y = np.array([-1.0, 1.0, 0.0, -0.298], dtype=np.float64)
+    z = np.array([-1.0, 1.0, 0.0, 0.624], dtype=np.float64)
+
+    v32 = make_voxels(x, y, z, 32)
+    # corners and center, hand-computed:
+    #   (-1,-1,-1) -> bins (0,0,0)      -> 0
+    #   ( 1, 1, 1) -> bins clipped(31)  -> (31*32+31)*32+31 = 32767
+    #   ( 0, 0, 0) -> bins (16,16,16)   -> (16*32+16)*32+16 = 16912
+    #   (0.757,-0.298,0.624) -> (28,11,25) -> (25*32+11)*32+28 = 25980
+    assert v32.tolist() == [0, 32767, 16912, 25980]
+
+    # bounds: every index in [0, n^3)
+    assert v32.min() >= 0 and v32.max() < 32 ** 3
+
+    # 2D make_tiles is the projection of make_voxels onto (x, y):
+    #   voxel x_bin/y_bin at n == tile col/row at n, so idx % (n*n) == tile_index
+    tiles = make_tiles(x, y, 32)
+    assert (v32 % (32 * 32)).tolist() == tiles.tolist()
+
+
+def test_umap_3d_and_voxel_scope(pipeline_env):
+    """A --dimensions 3 umap emits x,y,z in [-1,1] with a 3-entry min/max and
+    dimensions=3; the scope built on it gains z + voxel_index_32/64 matching the
+    frozen formula, records dimensions=3, and z flows into the -input parquet."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-test"
+    n_total = N_PER_TOPIC * len(TOPICS)
+    run_ingest_and_embed(data_dir, dataset_id)
+
+    from latentscope.scripts.cluster import clusterer
+    from latentscope.scripts.scope import make_voxels, scope
+    from latentscope.scripts.umapper import umapper
+
+    # --- 3D umap ---
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1, dimensions=3)
+    umap_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "umaps", "umap-001.parquet"))
+    assert list(umap_df.columns) == ["x", "y", "z"]
+    assert len(umap_df) == n_total
+    for col in ("x", "y", "z"):
+        assert umap_df[col].between(-1, 1).all()
+    with open(os.path.join(data_dir, dataset_id, "umaps", "umap-001.json")) as f:
+        umap_meta = json.load(f)
+    assert umap_meta["dimensions"] == 3
+    assert len(umap_meta["min_values"]) == 3
+    assert len(umap_meta["max_values"]) == 3
+
+    # --- cluster + 3D scope ---
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "3D scope", "voxel test")
+
+    scope_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "scopes", "scopes-001.parquet"))
+    assert "z" in scope_df.columns
+    assert "voxel_index_32" in scope_df.columns
+    assert "voxel_index_64" in scope_df.columns
+    # tile indices stay 2D
+    assert "tile_index_64" in scope_df.columns and "tile_index_128" in scope_df.columns
+
+    # production voxel columns match the frozen formula recomputed independently
+    for n, col in ((32, "voxel_index_32"), (64, "voxel_index_64")):
+        expected = make_voxels(scope_df["x"].to_numpy(), scope_df["y"].to_numpy(),
+                               scope_df["z"].to_numpy(), n)
+        assert (expected == scope_df[col].to_numpy()).all()
+        assert scope_df[col].min() >= 0 and scope_df[col].max() < n ** 3
+
+    with open(os.path.join(data_dir, dataset_id, "scopes", "scopes-001.json")) as f:
+        scope_meta = json.load(f)
+    assert scope_meta["dimensions"] == 3
+    assert "z" in scope_meta["columns"]
+
+    # z + voxel columns flow into the joined -input parquet automatically
+    scope_input = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "scopes", "scopes-001-input.parquet"))
+    assert "z" in scope_input.columns
+    assert "voxel_index_32" in scope_input.columns
+
+
+def test_umap_2d_default_has_no_z_or_voxels(pipeline_env):
+    """Regression guard: the default (2D) path is behavior-preserving — no z
+    column, no voxel columns, dimensions=2, tile indices unchanged."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-test"
+    run_ingest_and_embed(data_dir, dataset_id)
+
+    from latentscope.scripts.cluster import clusterer
+    from latentscope.scripts.scope import scope
+    from latentscope.scripts.umapper import umapper
+
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1)
+    umap_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "umaps", "umap-001.parquet"))
+    assert list(umap_df.columns) == ["x", "y"]
+    with open(os.path.join(data_dir, dataset_id, "umaps", "umap-001.json")) as f:
+        assert json.load(f)["dimensions"] == 2
+
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "2D scope", "regression")
+    scope_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "scopes", "scopes-001.parquet"))
+    assert "z" not in scope_df.columns
+    assert not any("voxel" in c for c in scope_df.columns)
+    assert {"tile_index_64", "tile_index_128"} <= set(scope_df.columns)
+    with open(os.path.join(data_dir, dataset_id, "scopes", "scopes-001.json")) as f:
+        assert json.load(f)["dimensions"] == 2

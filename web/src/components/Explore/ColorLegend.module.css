@@ -1,18 +1,20 @@
+/* Floating-over-map HUD panel (Amber Console floating panel recipe). */
 .legend {
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 11px;
-  color: #333;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: color-mix(in srgb, var(--neutrals-color-neutral-0) 95%, transparent);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-3);
+  padding: var(--ls-space-2);
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-2xs);
+  color: var(--text-color-text-main);
+  box-shadow: var(--ls-shadow-2);
   max-width: 220px;
   pointer-events: auto;
 }
 
 .title {
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: var(--ls-space-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -21,14 +23,18 @@
 .ramp {
   width: 180px;
   height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--ls-radius-1);
+  border: 1px solid var(--borders-color-border-3);
 }
 
+/* min/max extent — machine facts */
 .extent {
   display: flex;
   justify-content: space-between;
   margin-top: 2px;
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
 }
 
 .swatches {
@@ -42,14 +48,14 @@
 .swatchRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
 
 .swatch {
   width: 12px;
   height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--ls-radius-1);
+  border: 1px solid var(--borders-color-border-3);
   flex-shrink: 0;
 }
 
@@ -60,18 +66,10 @@
   flex: 1;
 }
 
+/* category counts — machine facts */
 .swatchCount {
-  color: #888;
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
   flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .legend {
-    background-color: rgba(30, 30, 30, 0.9);
-    border-color: #555;
-    color: #e0e0e0;
-  }
-  .swatchCount {
-    color: #aaa;
-  }
 }

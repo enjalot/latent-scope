@@ -1,0 +1,101 @@
+.job-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-2);
+  margin: var(--ls-space-2) 0;
+  padding: var(--ls-space-3);
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+  min-width: 0;
+}
+
+.job-name {
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
+  color: var(--text-color-text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command {
+  display: block;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
+  word-break: break-word;
+}
+
+/* consoles are <pre> elements — strip the UA margin, spacing comes from the flex gap */
+.job-progress pre {
+  margin: 0;
+}
+
+/* Job log: collapsed shows just the latest line; expanded scrolls.
+   Both states are static max-height caps (never animated). */
+.log-collapsed {
+  max-height: calc(1.6em + 2 * var(--ls-space-3));
+  overflow: hidden;
+}
+
+.log-expanded {
+  max-height: 16em;
+  overflow-y: auto;
+}
+
+.log-toggle {
+  align-self: flex-start;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-xs);
+  font-weight: 500;
+  color: var(--text-color-text-subtle);
+  background: none;
+  border: none;
+  border-radius: var(--ls-radius-1);
+  padding: 0 var(--ls-space-1);
+  cursor: pointer;
+  transition:
+    color var(--ls-dur-fast) var(--ls-ease-out),
+    background-color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.log-toggle:hover {
+  color: var(--text-color-text-main);
+  background-color: var(--neutrals-color-neutral-2);
+}
+
+.job-progress-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-2);
+}
+
+.error-message {
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
+  color: var(--text-color-text-critical);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ls-space-3);
+  flex-wrap: wrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+}

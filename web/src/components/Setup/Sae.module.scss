@@ -1,45 +1,24 @@
-@import "./_shared";
+@use "./_shared" as *;
 
 .sae {
   @include setup-container;
 }
-.sae-setup {
-  @include setup-left;
-}
-.sae-preview {
-  @include setup-right;
-}
-.preview {
-  @include setup-preview;
-}
-.navigate {
-  @include setup-navigate;
-}
-.step {
-  @include setup-step;
-}
-.sae-form {
+.saes-form {
   @include setup-form;
 }
-.sae-list {
+.saes-list {
   @include item-list;
-  
 }
 .item {
   @include setup-item;
+
   label {
-    cursor: default !important;
+    cursor: default;
   }
-}
-.selected {
-  @include selected;
-}
-.item-info {
-  @include setup-item-info;
-}
-.item-deps {
-  @include setup-item-deps;
 }
 .delete {
   @include setup-delete;
+}
+.run-id {
+  @include mono-fact;
 }

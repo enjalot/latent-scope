@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
+import { Button } from 'react-element-forge';
 import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
+import Reticle from './Reticle';
 import { buildColorPoints } from './colorBy';
+import { useColorMode } from '../../hooks/useColorMode';
 import styles from './Compare.module.css';
 
 // unfortunately regl-scatter doesn't even render in iOS
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Chrome colors live in the token layer; canvas annotation markers read them
+// at render time and re-read when the color mode flips.
+const readToken = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 function TransitionView({
   leftPoints,
@@ -31,6 +39,17 @@ function TransitionView({
 }) {
   // Build the displayed points based on direction
   const [displayPoints, setDisplayPoints] = useState([]);
+
+  const { colorMode } = useColorMode();
+  const annotationColors = useMemo(
+    () => ({
+      stroke: readToken('--text-color-text-main'),
+      search: readToken('--ls-color-selection'),
+      hover: readToken('--ls-color-hover-halo'),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [colorMode]
+  );
 
   useEffect(() => {
     const sourcePoints = direction === 'left' ? leftPoints : rightPoints;
@@ -87,10 +106,13 @@ function TransitionView({
   return (
     <div className={styles['transition-view']}>
       <div className={styles['view-toolbar']}>
-        <button className={styles['swap-button']} onClick={handleSwap}>
-          {direction === 'left' ? '← Showing Left' : 'Showing Right →'}
-          {' · Click to swap'}
-        </button>
+        <Button
+          size="small"
+          color="secondary"
+          variant="outline"
+          onClick={handleSwap}
+          text={`${direction === 'left' ? '← Showing Left' : 'Showing Right →'} · Click to swap`}
+        />
       </div>
       <div className={styles['scatter-container']} style={{ width, height }}>
         {displayPoints.length > 0 && (
@@ -109,7 +131,7 @@ function TransitionView({
                   colorInterpolator={scatterColorProps.colorInterpolator}
                   colorRange={scatterColorProps.colorRange}
                   colorDomain={scatterColorProps.colorDomain}
-                      missingColor={scatterColorProps.missingColor}
+                  missingColor={scatterColorProps.missingColor}
                   opacityBy={scatterColorProps.opacityBy}
                   enableLasso
                   selectedIndices={selectedIndices}
@@ -132,8 +154,8 @@ function TransitionView({
             </div>
             <AnnotationPlot
               points={searchAnnotations}
-              stroke="black"
-              fill="steelblue"
+              stroke={annotationColors.stroke}
+              fill={annotationColors.search}
               size="8"
               xDomain={xDomain}
               yDomain={yDomain}
@@ -142,14 +164,15 @@ function TransitionView({
             />
             <AnnotationPlot
               points={hoverAnnotations}
-              stroke="black"
-              fill="orange"
+              stroke={annotationColors.stroke}
+              fill={annotationColors.hover}
               size="16"
               xDomain={xDomain}
               yDomain={yDomain}
               width={width}
               height={height}
             />
+            <Reticle active={selectedIndices?.length > 0} />
           </>
         )}
       </div>

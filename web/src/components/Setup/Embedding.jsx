@@ -1,7 +1,7 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tooltip } from 'react-tooltip';
-import { Select, Button } from 'react-element-forge';
+import { Select, Button, Icon } from 'react-element-forge';
 
 import { groups } from 'd3-array';
 
@@ -22,6 +22,8 @@ import SettingsModal from '../SettingsModal';
 import Sae from './Sae';
 import Preview from './Preview';
 import EstimatePanel from './EstimatePanel';
+import CreationPanel from './CreationPanel';
+import { Badge } from '../ui';
 
 import styles from './Embedding.module.scss';
 
@@ -46,6 +48,10 @@ function Embedding() {
 
   const [embeddingFormats, setEmbeddingFormats] = useState({});
   const [migratingId, setMigratingId] = useState(null);
+
+  // creation form collapse: null until the first embeddings fetch resolves,
+  // then collapsed when user-generated embeddings already exist
+  const [formOpen, setFormOpen] = useState(null);
 
   const [modelId, setModelId] = useState(null);
   // for the models that support choosing the size of dimensions
@@ -104,6 +110,7 @@ function Embedding() {
     if (dataset) {
       apiService.fetchEmbeddings(dataset?.id).then((embs) => {
         setEmbeddings(embs);
+        setFormOpen((open) => (open === null ? embs.length === 0 : open));
         // Fetch format for each embedding
         embs.forEach((emb) => {
           apiService.fetchEmbeddingFormat(dataset.id, emb.id).then((data) => {
@@ -256,7 +263,9 @@ function Embedding() {
     setTask(null);
     const m = allModels.find((mm) => mm.id === modelId);
     const isHF =
-      m && m.name && (m.provider === 'huggingface' || String(m.id || '').startsWith('huggingface-'));
+      m &&
+      m.name &&
+      (m.provider === 'huggingface' || String(m.id || '').startsWith('huggingface-'));
     if (!isHF) return;
     let cancelled = false;
     fetch(`https://huggingface.co/${m.name}/resolve/main/config.json`)
@@ -392,7 +401,17 @@ function Embedding() {
       if (task && taskNames.length) job.task = task;
       startEmbeddingsJob(job);
     },
-    [startEmbeddingsJob, textColumn, dimensions, batchSize, modelId, maxSeqLength, imageColumn, task, taskNames]
+    [
+      startEmbeddingsJob,
+      textColumn,
+      dimensions,
+      batchSize,
+      modelId,
+      maxSeqLength,
+      imageColumn,
+      task,
+      taskNames,
+    ]
   );
 
   const handleRerunEmbedding = (job) => {
@@ -449,174 +468,184 @@ function Embedding() {
     goToNextStep();
   }, [updateScope, goToNextStep, embedding, savedScope, sae]);
 
+  // keep the form expanded while a job is running so JobProgress stays visible
+  const formExpanded = formOpen === true || !!embeddingsJob;
+
   return (
     <div className={styles['embeddings']}>
       <div className={styles['embeddings-setup']}>
-        <div className={styles['embeddings-form']}>
-          {/* Render the list of potential embeddings from the dataset columns */}
-          {potentialEmbeddings.length ? (
-            <div className={styles['potential-embeddings']}>
-              {potentialEmbeddings.map((pe) => {
-                return (
-                  <form key={pe} className={styles['potential-embedding']}>
-                    <span>
-                      Create embedding from column <b>{pe}</b>?
-                    </span>
-                    <label htmlFor="column">
-                      Embedded text column:
-                      <select id="column" name="column">
-                        {dataset?.columns
-                          .filter((c) => dataset?.column_metadata[c].type == 'string')
-                          .map((column, index) => {
-                            return (
-                              <option key={index} value={column}>
-                                {column}
-                              </option>
-                            );
-                          })}
-                      </select>
-                    </label>
-                    <label htmlFor="model">
-                      Embedded with model:
-                      <select id="model" name="model">
-                        <option value="">Not listed</option>
-                        {allModels.map((model, index) => {
+        {/* Render the list of potential embeddings from the dataset columns
+            (these HF image-column suggestions stay outside the collapse) */}
+        {potentialEmbeddings.length ? (
+          <div className={styles['potential-embeddings']}>
+            {potentialEmbeddings.map((pe) => {
+              return (
+                <form key={pe} className={styles['potential-embedding']}>
+                  <span>
+                    Create embedding from column <span className={styles['run-id']}>{pe}</span>?
+                  </span>
+                  <label htmlFor="column">
+                    Embedded text column:
+                    <select className="ls-select" id="column" name="column">
+                      {dataset?.columns
+                        .filter((c) => dataset?.column_metadata[c].type == 'string')
+                        .map((column, index) => {
                           return (
-                            <option key={index} value={model.id}>
-                              {model.provider}: {model.name}
+                            <option key={index} value={column}>
+                              {column}
                             </option>
                           );
                         })}
-                      </select>
-                    </label>
-                    <div className={styles['pe-buttons']}>
-                      <Button
-                        className={`${styles['button']} button`}
-                        color="secondary"
-                        onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}
-                        text="✅ Yes"
-                      />
-                      <Button
-                        className={`${styles['button']} button`}
-                        color="secondary"
-                        onClick={(e) => handleDenyPotentialEmbedding(e, pe)}
-                        text="❌ No thanks"
-                      />
-                    </div>
-                  </form>
-                );
-              })}
-            </div>
-          ) : null}
-
-          <div className={styles.step}>
-            1. Embed on column:
-            {dataset?.columns.length ? (
-              <Select
-                value={textColumn}
-                options={dataset?.columns.map((column) => ({
-                  label: isImageColumn(dataset?.column_metadata?.[column])
-                    ? `${column} (image)`
-                    : column,
-                  value: column,
-                }))}
-                onChange={handleTextColumnChange}
-              />
-            ) : null}
+                    </select>
+                  </label>
+                  <label htmlFor="model">
+                    Embedded with model:
+                    <select className="ls-select" id="model" name="model">
+                      <option value="">Not listed</option>
+                      {allModels.map((model, index) => {
+                        return (
+                          <option key={index} value={model.id}>
+                            {model.provider}: {model.name}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                  <div className={styles['pe-buttons']}>
+                    <Button
+                      color="secondary"
+                      icon="check"
+                      onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}
+                      text="Yes"
+                    />
+                    <Button
+                      color="secondary"
+                      icon="x"
+                      onClick={(e) => handleDenyPotentialEmbedding(e, pe)}
+                      text="No thanks"
+                    />
+                  </div>
+                </form>
+              );
+            })}
           </div>
+        ) : null}
 
-          <div className={styles.step}>
-            2. Select embedding model:
-            <ModelSelect
-              options={allOptionsGrouped}
-              defaultValue={defaultModel}
-              onChange={handleModelSelectChange}
-              onInputChange={searchHFModels}
-            />
-          </div>
-          <SettingsModal
-            tooltip="Configure API keys for 3rd party models"
-            onClose={fetchCustomEmbeddingModels}
-          />
-
-          {/* The form for creating a new embedding */}
-          <form onSubmit={handleNewEmbedding}>
+        <CreationPanel
+          title="New embedding"
+          isOpen={formExpanded}
+          onToggle={() => setFormOpen(!formExpanded)}
+        >
+          <div className={styles['embeddings-form']}>
             <div className={styles.step}>
-              {/* Task picker for task-conditioned models (jina-v3/v5). */}
-              {!imageColumn && taskNames.length > 0 && (
-                <label className={styles.taskSelect}>
-                  Task:{' '}
-                  <select
-                    value={task || ''}
-                    onChange={(e) => setTask(e.target.value)}
-                    disabled={!!embeddingsJob}
-                  >
-                    {taskNames.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {/* prefix doesn't apply to image columns */}
-              {!imageColumn && (
-                <textarea
-                  name="prefix"
-                  className={styles.prefix}
-                  placeholder={`Optional prefix to prepend to each ${textColumn}`}
-                  disabled={!!embeddingsJob}
-                ></textarea>
-              )}
-
-              <span className={styles['options']}>
-                <label>
-                  {' '}
-                  Batch Size:
-                  <input
-                    className={styles['batch-size']}
-                    type="number"
-                    min="1"
-                    name="batch_size"
-                    value={batchSize}
-                    onChange={(e) => setBatchSize(e.target.value)}
-                    disabled={!!embeddingsJob}
-                  />
-                  <span className="tooltip" data-tooltip-id="batchsize">
-                    🤔
-                  </span>
-                  <Tooltip className="tooltip-area" id="batchsize" place="top" effect="solid">
-                    Reduce this number if you run out of memory. <br></br>
-                    It determines how many items are processed at once.
-                  </Tooltip>
-                </label>
-
-                <label>
-                  {' '}
-                  Max Sequence Length:
-                  <input
-                    className={styles['max-seq-length']}
-                    type="number"
-                    min="1"
-                    name="max_seq_length"
-                    value={maxSeqLength}
-                    onChange={(e) => setMaxSeqLength(e.target.value)}
-                    disabled={!!embeddingsJob}
-                  />
-                  <span className="tooltip" data-tooltip-id="maxseqlength">
-                    🤔
-                  </span>
-                  <Tooltip className="tooltip-area" id="maxseqlength" place="top" effect="solid">
-                    This controls the maximum number of tokens to embed for each item. <br></br>
-                    You can increase this number to the model&apos;s context length, and reduce it to
-                    save memory. <br></br>
-                    If an item is too long, it will be truncated.
-                  </Tooltip>
-                </label>
-              </span>
+              1. Embed on column:
+              {dataset?.columns.length ? (
+                <Select
+                  value={textColumn}
+                  options={dataset?.columns.map((column) => ({
+                    label: isImageColumn(dataset?.column_metadata?.[column])
+                      ? `${column} (image)`
+                      : column,
+                    value: column,
+                  }))}
+                  onChange={handleTextColumnChange}
+                />
+              ) : null}
             </div>
 
-            {/* {model && model.params.dimensions ?
+            <div className={styles.step}>
+              2. Select embedding model:
+              <ModelSelect
+                options={allOptionsGrouped}
+                defaultValue={defaultModel}
+                onChange={handleModelSelectChange}
+                onInputChange={searchHFModels}
+              />
+            </div>
+            <SettingsModal
+              tooltip="Configure API keys for 3rd party models"
+              onClose={fetchCustomEmbeddingModels}
+            />
+
+            {/* The form for creating a new embedding */}
+            <form onSubmit={handleNewEmbedding}>
+              <div className={styles.step}>
+                {/* Task picker for task-conditioned models (jina-v3/v5). */}
+                {!imageColumn && taskNames.length > 0 && (
+                  <label className={styles.taskSelect}>
+                    Task:{' '}
+                    <select
+                      className="ls-select"
+                      value={task || ''}
+                      onChange={(e) => setTask(e.target.value)}
+                      disabled={!!embeddingsJob}
+                    >
+                      {taskNames.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {/* prefix doesn't apply to image columns */}
+                {!imageColumn && (
+                  <textarea
+                    name="prefix"
+                    className={styles.prefix}
+                    placeholder={`Optional prefix to prepend to each ${textColumn}`}
+                    disabled={!!embeddingsJob}
+                  ></textarea>
+                )}
+
+                <span className={styles['options']}>
+                  <label>
+                    {' '}
+                    Batch Size:
+                    <input
+                      className={styles['batch-size']}
+                      type="number"
+                      min="1"
+                      name="batch_size"
+                      value={batchSize}
+                      onChange={(e) => setBatchSize(e.target.value)}
+                      disabled={!!embeddingsJob}
+                    />
+                    <span className="tooltip" data-tooltip-id="batchsize">
+                      <Icon name="help-circle" size={14} />
+                    </span>
+                    <Tooltip className="tooltip-area" id="batchsize" place="top" effect="solid">
+                      Reduce this number if you run out of memory. <br></br>
+                      It determines how many items are processed at once.
+                    </Tooltip>
+                  </label>
+
+                  <label>
+                    {' '}
+                    Max Sequence Length:
+                    <input
+                      className={styles['max-seq-length']}
+                      type="number"
+                      min="1"
+                      name="max_seq_length"
+                      value={maxSeqLength}
+                      onChange={(e) => setMaxSeqLength(e.target.value)}
+                      disabled={!!embeddingsJob}
+                    />
+                    <span className="tooltip" data-tooltip-id="maxseqlength">
+                      <Icon name="help-circle" size={14} />
+                    </span>
+                    <Tooltip className="tooltip-area" id="maxseqlength" place="top" effect="solid">
+                      This controls the maximum number of tokens to embed for each item. <br></br>
+                      You can increase this number to the model&apos;s context length, and reduce it
+                      to save memory. <br></br>
+                      If an item is too long, it will be truncated.
+                    </Tooltip>
+                  </label>
+                </span>
+              </div>
+
+              {/* {model && model.params.dimensions ?
                 <select onChange={handleDimensionsChange}>
                   {model.params.dimensions.map((dim, index) => {
                     return <option key={index} value={dim}>{dim}</option>
@@ -624,49 +653,50 @@ function Embedding() {
                 </select>
               : null} */}
 
-            {modelId && textColumn && (
-              <EstimatePanel
-                estimate={embedEstimate}
-                onEstimate={handleEstimate}
-                onBenchmark={handleBenchmark}
-                benchmarkResult={embedBenchmark}
-                loading={estimateLoading}
-                step="embed"
-              />
-            )}
+              {modelId && textColumn && (
+                <EstimatePanel
+                  estimate={embedEstimate}
+                  onEstimate={handleEstimate}
+                  onBenchmark={handleBenchmark}
+                  benchmarkResult={embedBenchmark}
+                  loading={estimateLoading}
+                  step="embed"
+                />
+              )}
 
-            {imageModelMismatch && (
-              <div className={styles['model-mismatch']}>
-                {selectedModel?.name || modelId} can&apos;t embed images. Select an image-capable
-                model (CLIP, SigLIP, ViT, DINOv2) for column {textColumn}.
-              </div>
-            )}
-            <Button
-              type="submit"
-              color={embedding ? 'secondary' : 'primary'}
-              disabled={!!embeddingsJob || !modelId || imageModelMismatch}
-              text="New Embedding"
-            />
-            {/* 
+              {imageModelMismatch && (
+                <div className={styles['model-mismatch']}>
+                  {selectedModel?.name || modelId} can&apos;t embed images. Select an image-capable
+                  model (CLIP, SigLIP, ViT, DINOv2) for column {textColumn}.
+                </div>
+              )}
+              <Button
+                type="submit"
+                color="primary"
+                disabled={!!embeddingsJob || !modelId || imageModelMismatch}
+                text="New Embedding"
+              />
+              {/* 
             Render the progress for the current job 
             TODO: automatically dismiss if successful
             */}
-            <JobProgress
-              job={embeddingsJob}
-              clearJob={() => {
-                setEmbeddingsJob(null);
-              }}
-              killJob={(job) =>
-                apiService.killJob(dataset.id, job.id).then(setEmbeddingsJob).catch(console.error)
-              }
-              rerunJob={handleRerunEmbedding}
-            />
-            {/* 
+              <JobProgress
+                job={embeddingsJob}
+                clearJob={() => {
+                  setEmbeddingsJob(null);
+                }}
+                killJob={(job) =>
+                  apiService.killJob(dataset.id, job.id).then(setEmbeddingsJob).catch(console.error)
+                }
+                rerunJob={handleRerunEmbedding}
+              />
+              {/* 
             TODO: have a lastEmbeddingsJob with the info from previous run. 
             if job was successful user can click a button to display the logs. 
             */}
-          </form>
-        </div>
+            </form>
+          </div>
+        </CreationPanel>
 
         {/* Render the list of existing embeddings */}
         <div className={styles['embeddings-list']}>
@@ -700,26 +730,34 @@ function Embedding() {
                         checked={emb.id === embedding?.id}
                         onChange={() => setEmbedding(emb)}
                       />
-                      {emb.id}{' '}
+                      <span className={styles['run-id']}>{emb.id}</span>{' '}
                       {savedScope?.embedding_id == emb.id ? (
-                        <span className="tooltip" data-tooltip-id="saved">
-                          💾
+                        <span data-tooltip-id="saved">
+                          <Badge mono variant="neutral">
+                            SAVED
+                          </Badge>
                         </span>
                       ) : null}
                     </span>
                     <span>
                       {emb.model_id?.replace('___', '/')}
                       {emb.input_type === 'image' && (
-                        <span className={styles['format-badge-image']}>image</span>
+                        <Badge mono variant="info">
+                          IMAGE
+                        </Badge>
                       )}
                     </span>
                     <span>
                       {emb.dimensions} dimensions
                       {embeddingFormats[emb.id] === 'hdf5' && (
                         <>
-                          <span className={styles['format-badge-hdf5']}>HDF5</span>
-                          <button
-                            className={styles['migrate-button']}
+                          <Badge mono variant="warning">
+                            HDF5
+                          </Badge>
+                          <Button
+                            size="small"
+                            color="secondary"
+                            variant="outline"
                             disabled={migratingId === emb.id}
                             onClick={(e) => {
                               e.preventDefault();
@@ -729,19 +767,20 @@ function Embedding() {
                                 setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: 'lancedb' }));
                               });
                             }}
-                          >
-                            {migratingId === emb.id ? 'Migrating...' : 'Migrate to LanceDB'}
-                          </button>
+                            text={migratingId === emb.id ? 'Migrating…' : 'Migrate to LanceDB'}
+                          />
                         </>
                       )}
                       {embeddingFormats[emb.id] === 'lancedb' && (
-                        <span className={styles['format-badge-lance']}>LanceDB</span>
+                        <Badge mono variant="success">
+                          LANCE
+                        </Badge>
                       )}
                     </span>
                     {emb.token_stats?.total ? (
                       <span className={styles['token-info']}>
-                        {emb.token_stats.total.toLocaleString()} tokens · ~
-                        {emb.token_stats.mean} per doc (max {emb.token_stats.max})
+                        {emb.token_stats.total.toLocaleString()} tokens · ~{emb.token_stats.mean}{' '}
+                        per doc (max {emb.token_stats.max})
                       </span>
                     ) : null}
                     {umps.length || cls.length ? (
@@ -753,12 +792,13 @@ function Embedding() {
                     <span>text column: {emb.text_column}</span>
                     {emb.prefix ? (
                       <span>
-                        Prefix: &quot;<code>{emb.prefix}</code>&quot;<br />
+                        Prefix: &quot;<code>{emb.prefix}</code>&quot;
+                        <br />
                       </span>
                     ) : null}
                     {dims.length ? (
                       <div className={styles['truncate']}>
-                        <select id={'truncate-' + emb.id}>
+                        <select className="ls-select" id={'truncate-' + emb.id}>
                           {dims.map((d, i) => {
                             return (
                               <option key={'dimension-' + i} value={d}>
@@ -773,7 +813,7 @@ function Embedding() {
                           text="Truncate"
                         />
                         <span className="tooltip" data-tooltip-id="truncate">
-                          🤔
+                          <Icon name="help-circle" size={14} />
                         </span>
                         <Tooltip id="truncate" place="top" effect="solid">
                           This model supports Matroyshka embeddings. <br></br>
@@ -793,6 +833,7 @@ function Embedding() {
                   <div className={styles['navigate']}>
                     <Button
                       disabled={!embedding}
+                      size="small"
                       onClick={handleNextStep}
                       text={`Proceed with ${embedding?.id}`}
                     ></Button>
@@ -801,9 +842,12 @@ function Embedding() {
                 <Button
                   className={styles['delete']}
                   onClick={() => deleteEmbeddingsJob({ embedding_id: emb.id })}
-                  color="secondary"
+                  color="delete"
+                  variant="outline"
+                  size="small"
+                  icon="trash"
+                  label="Delete embedding"
                   disabled={embeddingsJob && embeddingsJob.status !== 'completed'}
-                  text="🗑️"
                 />
               </div>
             );

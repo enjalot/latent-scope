@@ -1,80 +1,109 @@
 .page {
   display: flex;
   flex-direction: column;
-  height: calc(100% + 40px);
+  height: 100%;
 }
+
 .header {
   display: flex;
   flex-direction: column;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 8px;
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-3);
+  padding: var(--ls-space-2);
 }
-.header a {
-  padding: 8px;
-  display: inline-block;
-  width: fit-content
 
+.header a {
+  padding: var(--ls-space-2);
+  display: inline-block;
+  width: fit-content;
 }
+
 .content {
   flex: 1;
-  height: 100%;
+  min-height: 0;
   overflow-y: auto;
 }
 
 .scope-files {
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 8px;
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-3);
+  padding: var(--ls-space-2);
 }
 
 .dataset-files {
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 8px;
-
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-3);
+  padding: var(--ls-space-2);
 }
 
 .page h3 {
-  font-size: 1.2em;
-  font-weight: bold;
+  /* section headers sit below the page h2 in the hierarchy */
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
   margin: 0;
-  padding: 8px 12px;
+  padding: var(--ls-space-2) var(--ls-space-3);
 }
+
 .page ul {
   list-style: none;
   margin: 0;
-  padding: 0px 24px;
-  padding-bottom: 12px;
+  padding: 0 var(--ls-space-5);
+  padding-bottom: var(--ls-space-3);
+}
+
+/* name | size | path — grid so the mono telemetry forms aligned columns */
+.page ul li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+  column-gap: var(--ls-space-3);
+  align-items: baseline;
+  padding: 2px 0;
+}
+
+/* file names are machine facts */
+.page ul a {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
 }
 
 .description {
-  padding: 0 12px;
+  padding: 0 var(--ls-space-3);
 }
 
 .path {
-  font-family: 'Courier New', monospace;
-  margin-left: 8px;
-  font-size: 0.7em;
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ls-text-2xs);
+  color: var(--text-color-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
 .size {
-  font-family: 'Courier New', monospace;
-  margin-left: 8px;
-  font-size: 0.7em;
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ls-text-2xs);
+  color: var(--text-color-text-subtle);
+  text-align: right;
 }
 
 .code-snippets {
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
-  margin: 12px;
-  padding: 8px;
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-3);
+  padding: var(--ls-space-2);
 }
+
+/* the console primitive (.ls-console in JSX) handles surface/type; just place it */
 .code-snippets code {
-  font-family: 'Courier New', monospace;
-  font-weight: 500;
-  /* font-size: 0.7em; */
-  margin: 8px;
-  padding: 8px;
   display: block;
-  background-color: #111;
-  color: springgreen;
+  margin: var(--ls-space-2) var(--ls-space-3);
 }

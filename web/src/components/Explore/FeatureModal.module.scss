@@ -1,68 +1,110 @@
-.featureModal {
-  width: 80vw !important;
+// Doubled class beats forge's single-class modal container (width/padding/
+// radius) without !important, regardless of stylesheet order.
+.featureModal.featureModal {
+  width: min(1100px, 90vw);
+  min-width: 0;
   padding: 0;
+  background: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-3);
+  box-shadow: var(--ls-shadow-3);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #eee;
+  align-items: flex-start;
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-4);
+  border-bottom: 1px solid var(--borders-color-border-1);
 }
 
 .headerText {
-  font-size: 1.1rem;
-  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-1);
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ls-text-md);
+  font-weight: 600;
+  color: var(--text-color-text-main);
 }
 
 .content {
-  padding: 16px;
+  padding: var(--ls-space-4);
   max-height: 70vh;
   overflow-y: auto;
 }
 
 .item {
   position: relative;
-  margin-bottom: 12px;
+  margin-bottom: var(--ls-space-3);
   padding: 2px;
-  border-radius: 4px;
-  
+  border-radius: var(--ls-radius-1);
+
   &:last-child {
     margin-bottom: 0;
   }
 }
 
+.itemSelected {
+  font-weight: 600;
+}
+
+// activation-magnitude bar behind each row (width set inline from data)
 .itemBackground {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  opacity: 0.2;
-  border-radius: 4px;
+  border-radius: var(--ls-radius-1);
   z-index: 0;
+  background: var(--text-color-text-subtle);
+  opacity: 0.15;
+  transition:
+    background-color var(--ls-dur-fast) var(--ls-ease-out),
+    opacity var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.itemBackgroundHovered {
+  background: var(--interactions---primary-color-interaction-primary);
+  opacity: 0.3;
 }
 
 .featureLabel {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--ls-space-1);
   z-index: 1;
 }
 
+// feature id — a machine fact
 .filterLink {
   cursor: pointer;
-  color: #666;
-  
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
+
   &:hover {
+    color: var(--text-color-text-primary);
     text-decoration: underline;
   }
 }
 
 .filterLabel {
-  color: #333;
+  font-size: var(--ls-text-sm);
+  color: var(--text-color-text-main);
 }
 
-
-
+// activation / max / count readout — machine facts
+.filterMeta {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
+  white-space: nowrap;
+}

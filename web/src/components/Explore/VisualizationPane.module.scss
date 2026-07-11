@@ -6,121 +6,189 @@
 
 .scatters {
   position: relative;
-  // border: 1px solid gray;
-  // border-radius: 5px;
-  // padding: 6px;
-  // box-sizing: border-box;
-}
-.fullScreen {
-  // position: fixed;
-  // top: 93px;
-  // left: 12px;
-  z-index: 10;
-  width: 100%;
-  // background-color: white;
 }
 
+.fullScreen {
+  z-index: var(--ls-z-raised);
+  width: 100%;
+}
+
+/* Bottom-left HUD strip: config toggle + mono telemetry readouts.
+   The ConfigurationPanel positions itself above this container. */
 .configToggleContainer {
   position: absolute;
-  bottom: 0px;
-  left: 12px;
+  bottom: var(--ls-space-3);
+  left: var(--ls-space-3);
+  z-index: var(--ls-z-hud);
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-3);
+}
+
+/* chart-settings trigger: floating-HUD treatment so it reads as a control
+   over the map, not a stray glyph */
+.configToggle {
+  width: 32px;
+  height: 32px;
+  background-color: color-mix(in srgb, var(--neutrals-color-neutral-0) 95%, transparent);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-2);
+  box-shadow: var(--ls-shadow-1);
+  color: var(--text-color-text-main);
+}
+
+.configToggle:hover {
+  background-color: var(--neutrals-color-neutral-2);
+}
+
+.configToggle[aria-expanded='true'] {
+  border-color: var(--color-interaction-primary);
+  color: var(--color-interaction-primary);
+}
+
+/* Signature #2 — mono telemetry readout (text-swap only) */
+.telemetry {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ls-space-3);
+  pointer-events: none;
+}
+
+/* Signature #1 — viewport reticle ticks: four corner L-marks, amber when a
+   selection is active. pointer-events: none; purely decorative chrome. */
+.reticle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--ls-z-hud);
+
+  span {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 0 solid var(--ls-color-crosshair);
+    transition: border-color var(--ls-dur-fast) var(--ls-ease-out);
+  }
+
+  span:nth-child(1) {
+    top: var(--ls-space-2);
+    left: var(--ls-space-2);
+    border-top-width: 1px;
+    border-left-width: 1px;
+  }
+
+  span:nth-child(2) {
+    top: var(--ls-space-2);
+    right: var(--ls-space-2);
+    border-top-width: 1px;
+    border-right-width: 1px;
+  }
+
+  span:nth-child(3) {
+    bottom: var(--ls-space-2);
+    left: var(--ls-space-2);
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+  }
+
+  span:nth-child(4) {
+    bottom: var(--ls-space-2);
+    right: var(--ls-space-2);
+    border-bottom-width: 1px;
+    border-right-width: 1px;
+  }
+}
+
+.reticleActive span {
+  border-color: var(--interactions---primary-color-interaction-primary);
 }
 
 .colorByContainer {
   position: absolute;
-  top: 10px;
-  left: 12px;
-  z-index: 1001;
+  top: var(--ls-space-3);
+  left: var(--ls-space-3);
+  z-index: var(--ls-z-hud);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ls-space-2);
   align-items: flex-start;
   pointer-events: none;
 }
 
+/* Floating HUD chip (combined with .ls-panel .ls-panel--floating in JSX) */
 .colorByPicker {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #333;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-1) var(--ls-space-2);
+  font-size: var(--ls-text-xs);
   pointer-events: auto;
 
   select {
-    font-size: 12px;
+    font-size: var(--ls-text-xs);
+    padding-block: var(--ls-space-1);
     max-width: 180px;
   }
 }
 
 .colorByLabel {
+  font-size: var(--ls-text-xs);
   font-weight: 600;
+  color: var(--text-color-text-subtle);
   white-space: nowrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .colorByPicker {
-    background-color: rgba(30, 30, 30, 0.9);
-    border-color: #555;
-    color: #e0e0e0;
+/* Fixed hover card, top-right of the viewport (a Panel, not a tooltip) */
+.hoverCard {
+  position: absolute;
+  top: var(--ls-space-3);
+  right: var(--ls-space-3);
+  width: var(--ls-pane-config-width);
+  max-height: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-1);
+  font-size: var(--ls-text-sm);
+}
 
-    select {
-      background-color: #2a2a2a;
-      color: #e0e0e0;
-      border: 1px solid #555;
-    }
-  }
+.hoverCardCluster {
+  font-weight: 600;
+  color: var(--text-color-text-main);
+}
+
+.hoverCardText {
+  margin: 0;
+  color: var(--text-color-text-main);
+  line-height: var(--ls-leading-ui);
+  overflow: hidden;
+}
+
+/* Token scopes: hovered token's surface string, above the cluster line */
+.hoverCardToken {
+  font-family: var(--ls-font-mono, monospace);
+  font-size: var(--ls-text-md);
+  font-weight: 700;
+  color: var(--text-color-text-main);
+}
+
+/* Token scopes: the token highlighted inside its passage context */
+.hoverCardTokenMark {
+  background-color: var(--ls-accent-surface);
+  box-shadow: inset 0 -2px 0 var(--ls-accent-line);
+  border-radius: 2px;
+  color: inherit;
+  font-weight: 600;
+  padding: 0 1px;
 }
 
 @media screen and (max-width: 1024px) {
   .colorByContainer {
     display: none;
   }
-}
 
-@media screen and (max-width: 1024px) {
   .configToggleContainer {
     display: none;
-  }
-}
-
-@mixin configToggle {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  padding: 2px !important;
-  font-size: 12px !important;
-  background-color: #333 !important;
-  border-radius: 4px !important;
-  border: 1px solid #5e5d5d !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1001;
-  transition: transform 0.2s ease;
-}
-.configToggle {
-  @include configToggle;
-  bottom: 10px;
-}
-.fullscreenToggle {
-  @include configToggle;
-  bottom: 10px;
-  left: 40px;
-}
-
-
-
-@media (prefers-color-scheme: light) {
-  .configToggle,
-  .fullscreenToggle {
-    background-color: #f9f9f9 !important;
-    color: #525151 !important;
   }
 }

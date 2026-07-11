@@ -1,5 +1,4 @@
 import { useMemo, useState, useCallback } from 'react';
-import { Button } from 'react-element-forge';
 import { useScope } from '../../contexts/ScopeContext';
 import { useFilter } from '../../contexts/FilterContext';
 import { filterConstants } from './Search/utils';
@@ -229,7 +228,7 @@ const ClusterLabelsPanel = () => {
           <label htmlFor="cluster-sort-order">Sort:</label>
           <select
             id="cluster-sort-order"
-            className={styles.sortSelect}
+            className="ls-select"
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
             data-testid="cluster-sort-select"
@@ -248,7 +247,25 @@ const ClusterLabelsPanel = () => {
           <span>
             Filtering: <strong>{filterConfig?.label}</strong>
           </span>
-          <Button variant="outline" size="small" onClick={handleClearFilter} icon="x" />
+          <button
+            type="button"
+            className="ls-icon-btn"
+            onClick={handleClearFilter}
+            aria-label="Clear cluster filter"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       )}
 
@@ -266,7 +283,7 @@ const ClusterLabelsPanel = () => {
               <div className={styles.clusterItemHeader}>
                 <ClusterIcon width={14} height={14} />
                 <span className={styles.clusterLabel}>{item.label}</span>
-                <span className={styles.clusterCount}>{item.count.toLocaleString()}</span>
+                <span className="ls-chip">{item.count.toLocaleString()}</span>
               </div>
             </button>
           );

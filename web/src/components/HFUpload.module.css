@@ -1,19 +1,30 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
+  gap: var(--ls-space-3);
+  padding: var(--ls-space-3);
   max-width: 640px;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--ls-space-2);
 }
 
 .form label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--ls-space-2);
+  font-size: var(--ls-text-sm);
+}
+
+.form input[type='checkbox'] {
+  accent-color: var(--color-interaction-primary);
+  color-scheme: light dark;
+}
+
+/* primary action sized to its label, not the column width */
+.uploadButton {
+  align-self: flex-start;
 }

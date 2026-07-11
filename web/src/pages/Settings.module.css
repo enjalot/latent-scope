@@ -1,47 +1,85 @@
-
 .settings {
-
+  padding: var(--ls-space-2) var(--ls-space-4) var(--ls-space-5);
 }
+
 .header {
-  padding: 12px 12px;
+  padding: var(--ls-space-3) 0;
   margin: 0;
 }
 
 .settings code {
-  font-size: 1.2em;
-  padding: 4px;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  background-color: var(--neutrals-color-neutral-2);
+  border-radius: var(--ls-radius-1);
+  padding: 0 var(--ls-space-1);
 }
+
 .dot-env {
-  padding: 12px;
+  padding: var(--ls-space-3) 0;
 }
+
 .data-dir {
-  padding: 12px;
+  padding: var(--ls-space-3) 0;
 }
 
 .api-keys {
-  padding: 12px;
+  padding: var(--ls-space-3) 0;
   display: flex;
   flex-direction: column;
+  gap: var(--ls-space-2);
+}
+
+.api-keys-title {
+  font-weight: 600;
 }
 
 .api-key {
-
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
 }
+
 .api-key form {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ls-space-2);
 }
 
 .key-text {
   display: inline-block;
   width: 170px;
-  font-family: 'Courier', sans-serif;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
 }
+
 .api-key-input {
   width: 300px;
-  padding: 2px;
-  margin: 8px 0;
+  padding: var(--input-padding, 8px 10px);
   display: inline-block;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  background-color: var(--ls-surface-input);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-2);
   box-sizing: border-box;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-sm);
+  color: var(--text-color-text-main);
+  transition: border-color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.api-key-input:hover {
+  border-color: var(--neutrals-color-neutral-3);
+}
+
+.api-key-input:focus-visible {
+  border-color: var(--color-interaction-primary);
+}
+
+.custom-models {
+  padding: var(--ls-space-3) 0;
+}
+
+.custom-models h3 {
+  margin: 0 0 var(--ls-space-2);
 }

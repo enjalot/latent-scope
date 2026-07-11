@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'react-tooltip';
 import { useFilter } from '../../contexts/FilterContext';
@@ -9,17 +9,29 @@ import 'react-data-grid/lib/styles.css';
 
 import DataGrid, { Row } from 'react-data-grid';
 import FeaturePlot from './FeaturePlot';
+import { Spinner, Pagination } from '../ui';
 import { imageUrlFor } from '../../lib/imageUrl';
 
 import styles from './FilterDataTable.module.css';
+import './FilterDataTableGlobal.css';
+
+const apiUrl = import.meta.env.VITE_API_URL;
 
 FilterDataTable.propTypes = {
-  height: PropTypes.string,
   dataset: PropTypes.object.isRequired,
   distances: PropTypes.array,
   clusterMap: PropTypes.object,
   onHover: PropTypes.func,
   onClick: PropTypes.func,
+  // Standalone mode (no FilterContext, e.g. Setup/Preview): pass the indices
+  // to display and the table fetches its own rows from the API.
+  filteredIndices: PropTypes.array,
+  defaultIndices: PropTypes.array,
+  deletedIndices: PropTypes.array,
+  page: PropTypes.number,
+  setPage: PropTypes.func,
+  showNavigation: PropTypes.bool,
+  showIndexColumn: PropTypes.bool,
 };
 
 // Token-scope text cell: window the parent document's text around the token's
@@ -74,20 +86,60 @@ function RowWithHover({ props, onHover, onClick }) {
   );
 }
 
-function FilterDataTable({
+const IndexCircleCell = ({ row }) => {
+  return (
+    <div className={styles.indexCircleContainer}>
+      <span className="ls-chip ls-chip--index">{row.idx + 1}</span>
+    </div>
+  );
+};
+
+// feather "info" icon — tooltip trigger for the SAE features column header
+const InfoIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+
+// Presentational table shared by the context-connected (Explore) and
+// standalone (Setup/Preview) variants.
+function FilterDataTableBody({
   handleFeatureClick,
   dataset,
+  rows,
+  page,
+  setPage,
+  totalPages,
+  loading = false,
   distances = [],
   clusterMap = {},
   sae_id = null,
   feature = -1,
   features = [],
+  showEmbeddings = null,
+  showNavigation = true,
+  showIndexColumn = true,
+  standalone = false,
   onHover = () => {},
   onClick = () => {},
+  // Token scopes (granularity: "tokens"): rows are tokens; the text column is
+  // rendered as a snippet with the token highlighted. Passed down by the
+  // connected variant; standalone (Setup/Preview) tables are always row-level.
+  scope = null,
+  isTokenScope = false,
 }) {
-  const { dataTableRows, page, setPage, totalPages, loading } = useFilter();
-  const { scope, isTokenScope } = useScope();
-
   // feature tooltip content
   const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
 
@@ -118,6 +170,7 @@ function FilterDataTable({
     columns.push(textColumn);
 
     if (distances && distances.length) columns.push('ls_similarity');
+    if (showEmbeddings) columns.push('ls_embedding');
     if (sae_id) columns.push(ls_features_column);
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
     // if (tagset && Object.keys(tagset).length) columns.push('tags');
@@ -131,7 +184,6 @@ function FilterDataTable({
         key: col,
         name: col,
         resizable: true,
-        className: styles.filterDataTableRow,
       };
 
       // dropping tag support for now.
@@ -213,7 +265,6 @@ function FilterDataTable({
         return {
           ...baseCol,
           width: 500,
-          renderHeaderCell: () => <div className={styles.textColumn}>{textColumn}</div>,
           renderCell: ({ row }) => {
             if (isTokenScope) {
               return <TokenSnippetCell row={row} column={col} />;
@@ -236,12 +287,11 @@ function FilterDataTable({
                 data-tooltip-id="feature-column-info-tooltip"
                 className={styles.featureColumnInfoTooltipIcon}
               >
-                🤔
+                <InfoIcon />
               </span>
             </div>
           ),
           renderCell: ({ row }) => {
-            // console.log('=== row ===', row);
             return (
               row.sae_indices && (
                 <FeaturePlot
@@ -278,17 +328,31 @@ function FilterDataTable({
         return <span title={row[col]}>{row[col]}</span>;
       };
 
+      // machine-measured numerics get the mono tabular treatment
+      const isNumericCol = col === 'ls_index' || col === 'ls_similarity';
+
       return {
         ...baseCol,
         width: col == 'ls_index' ? 60 : 150,
+        cellClass: isNumericCol ? 'ls-rdg-cell--num' : undefined,
         renderCell,
       };
     });
 
     // Add index column as first column
-    return [indexColumn, ...columnDefs];
-    // return columnDefs;
-  }, [dataset, scope, isTokenScope, clusterMap, distances, features, feature, sae_id]);
+    return showIndexColumn ? [indexColumn, ...columnDefs] : columnDefs;
+  }, [
+    dataset,
+    scope,
+    isTokenScope,
+    clusterMap,
+    distances,
+    features,
+    feature,
+    sae_id,
+    showEmbeddings,
+    showIndexColumn,
+  ]);
 
   const renderRowWithHover = useCallback(
     (key, props) => {
@@ -299,59 +363,37 @@ function FilterDataTable({
 
   return (
     <div
-      className={`${styles.filterDataTable} ${loading ? styles.loading : ''}`}
+      className={`ls-rdg ${styles.filterDataTable} ${standalone ? styles.standalone : ''}`}
       // style={{ visibility: indices.length ? 'visible' : 'hidden' }}
     >
       {loading && (
-        <div className={styles.loadingOverlay}>
-          <div className={styles.loadingContainer}>
-            <div className={styles.loadingSpinner}></div>
-            <div>Loading</div>
-          </div>
+        <div className="ls-scrim">
+          <Spinner label="LOADING ROWS…" />
         </div>
       )}
-      <div className={`${styles.filterTableScrollableBody} ${styles.tableBody}`}>
+      <div className={styles.filterTableScrollableBody}>
         <Tooltip
           id="feature-tooltip"
           place="bottom"
           effect="solid"
           content={featureTooltipContent?.content || ''}
-          className={styles.featureTooltip}
+          className="ls-tooltip"
           float={true}
           isOpen={!!featureTooltipContent}
-          // float={true}
-          position="fixed"
-          style={{
-            zIndex: 9999,
-            maxWidth: 'none',
-            whiteSpace: 'nowrap',
-            backgroundColor: '#D3965E',
-            position: 'fixed',
-            marginTop: 10,
-            top: -200,
-            // left: featureTooltipContent?.x || 0,
-            // top: (featureTooltipContent?.y || 0) - 30,
-          }}
         />
         <DataGrid
-          rows={dataTableRows}
+          rows={rows}
           columns={formattedColumns}
-          rowClass={(row) => {
-            if (row.ls_index === 0) {
-              return 'test';
-            }
-            return '';
-          }}
-          rowGetter={(i) => dataTableRows[i]}
-          rowHeight={sae_id ? 50 : hasBinaryImageColumns ? 48 : 35}
-          style={{ height: '100%', color: 'var(--text-color-main-neutral)' }}
+          rowGetter={(i) => rows[i]}
+          headerRowHeight={32}
+          rowHeight={sae_id || hasBinaryImageColumns ? 48 : 32}
+          style={{ height: '100%' }}
           renderers={{ renderRow: renderRowWithHover }}
-          className={styles.dataGrid}
         />
 
         <Tooltip
           id="feature-column-info-tooltip"
-          className={styles.featureColumnInfoTooltip}
+          className={`ls-tooltip ${styles.featureInfoTooltip}`}
           place="top"
           effect="solid"
           clickable={true}
@@ -375,38 +417,119 @@ function FilterDataTable({
           </div>
         </Tooltip>
       </div>
-      {page >= 0 && (
+      {showNavigation && page >= 0 && (
         <div className={styles.filterDataTablePageControls}>
-          <button onClick={() => setPage(0)} disabled={page === 0}>
-            First
-          </button>
-          <button onClick={() => setPage((old) => Math.max(0, old - 1))} disabled={page === 0}>
-            ←
-          </button>
-          <span>
-            Page {page + 1} of {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((old) => Math.min(totalPages - 1, old + 1))}
-            disabled={page === totalPages - 1}
-          >
-            →
-          </button>
-          <button onClick={() => setPage(totalPages - 1)} disabled={page === totalPages - 1}>
-            Last
-          </button>
+          <Pagination
+            page={page + 1}
+            totalPages={totalPages || 1}
+            onPage={(p) => setPage(p - 1)}
+          />
         </div>
       )}
     </div>
   );
 }
 
-const IndexCircleCell = ({ row }) => {
+// Explore variant: rows, pagination and loading state come from FilterContext;
+// token-scope awareness (snippet highlighting, token column) from ScopeContext.
+function ConnectedFilterDataTable(props) {
+  const { dataTableRows, page, setPage, totalPages, loading } = useFilter();
+  const { scope, isTokenScope } = useScope();
   return (
-    <div className={styles.indexCircleContainer}>
-      <div className={styles.indexCircle}>{row.idx + 1}</div>
-    </div>
+    <FilterDataTableBody
+      {...props}
+      rows={dataTableRows}
+      page={page}
+      setPage={setPage}
+      totalPages={totalPages}
+      loading={loading}
+      scope={scope}
+      isTokenScope={isTokenScope}
+    />
   );
-};
+}
+
+// Standalone variant (e.g. Setup/Preview): fetches its own rows for the
+// indices passed in as props, matching the legacy components/FilterDataTable
+// behavior (server-side pagination via the /query endpoint).
+function StandaloneFilterDataTable({
+  filteredIndices = [],
+  defaultIndices = [],
+  deletedIndices = [],
+  onDataTableRows,
+  page = 0,
+  setPage = () => {},
+  showIndexColumn = false,
+  ...rest
+}) {
+  const { dataset, showEmbeddings = null, sae_id = null } = rest;
+
+  const [rows, setRows] = useState([]);
+  // page count is the total number of pages available
+  const [pageCount, setPageCount] = useState(0);
+
+  const hydrateIndices = useCallback(
+    (indices) => {
+      if (dataset && indices.length) {
+        fetch(`${apiUrl}/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            dataset: dataset.id,
+            indices: indices,
+            embedding_id: showEmbeddings,
+            page,
+            sae_id: sae_id,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            let { rows, totalPages } = data;
+            setPageCount(totalPages);
+            setRows(rows.map((row, idx) => ({ ...row, idx })));
+            if (onDataTableRows) onDataTableRows(rows);
+          });
+      } else {
+        setRows([]);
+        onDataTableRows && onDataTableRows([]);
+      }
+    },
+    [dataset, page, showEmbeddings, sae_id, onDataTableRows]
+  );
+
+  useEffect(() => {
+    let indicesToUse = [];
+    if (filteredIndices.length) {
+      indicesToUse = filteredIndices.filter((i) => !deletedIndices.includes(i));
+    } else {
+      indicesToUse = defaultIndices;
+    }
+    hydrateIndices(indicesToUse);
+  }, [filteredIndices, page, defaultIndices, deletedIndices, hydrateIndices]);
+
+  return (
+    <FilterDataTableBody
+      {...rest}
+      rows={rows}
+      page={page}
+      setPage={setPage}
+      totalPages={pageCount}
+      loading={false}
+      showIndexColumn={showIndexColumn}
+      standalone={true}
+    />
+  );
+}
+
+function FilterDataTable(props) {
+  // Callers that pass their own indices (Setup/Preview) get the standalone,
+  // self-fetching table; everything else reads from FilterContext.
+  if (props.filteredIndices || props.defaultIndices) {
+    return <StandaloneFilterDataTable {...props} />;
+  }
+  return <ConnectedFilterDataTable {...props} />;
+}
 
 export default memo(FilterDataTable);
