@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Button } from 'react-element-forge';
 
+import { Pagination } from '../ui';
 import { apiService } from '../../lib/apiService';
 import { useScope } from '../../contexts/ScopeContext';
 import { clusterColorHex } from '../../lib/clusterColor';
@@ -116,15 +116,18 @@ function CellDetail({ selectedCell, onClose, onOpenPoint }) {
     });
   }, []);
 
-  const headerColor = summary ? clusterColorHex(summary.dominantCluster, numClusters) : '#999';
+  // data-driven swatch: dominant-cluster hue from the shared palette
+  const headerColor = summary ? clusterColorHex(summary.dominantCluster, numClusters) : null;
 
   return (
     <div className={`${styles.drawer} ${isOpen ? styles.open : ''}`}>
       <div className={styles.header}>
         <div className={styles.headerText}>
           <span className={styles.title}>
-            {summary ? summary.count.toLocaleString() : 0} datapoint
-            {summary && summary.count === 1 ? '' : 's'} in cell
+            <span className={styles.titleCount}>
+              {summary ? summary.count.toLocaleString() : 0}
+            </span>{' '}
+            datapoint{summary && summary.count === 1 ? '' : 's'} in cell
           </span>
           {summary && (
             <span className={styles.cluster}>
@@ -133,14 +136,25 @@ function CellDetail({ selectedCell, onClose, onOpenPoint }) {
             </span>
           )}
         </div>
-        <Button
-          className={styles.closeButton}
+        <button
+          type="button"
+          className={`ls-icon-btn ${styles.closeButton}`}
           onClick={onClose}
           aria-label="Close cell detail"
-          icon="x"
-          variant="outline"
-          size="small"
-        />
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
 
       <div className={styles.content}>
@@ -164,7 +178,19 @@ function CellDetail({ selectedCell, onClose, onOpenPoint }) {
                   onClick={() => toggle(pos)}
                   aria-expanded={isExp}
                 >
-                  <span className={styles.caret}>{isExp ? '▾' : '▸'}</span>
+                  <span className={`${styles.caret} ${isExp ? styles.caretOpen : ''}`}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </span>
                   <span className={styles.entryIndex}>Row {row?.ls_index ?? pos}</span>
                   {cl?.label && <span className={styles.entryCluster}>{cl.label}</span>}
                 </button>
@@ -192,26 +218,7 @@ function CellDetail({ selectedCell, onClose, onOpenPoint }) {
 
       {pageCount > 1 && (
         <div className={styles.pager}>
-          <Button
-            size="small"
-            variant="outline"
-            icon="chevron-left"
-            disabled={page === 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            aria-label="Previous page"
-          />
-          <span className={styles.pagerLabel}>
-            {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, members.length)} of{' '}
-            {members.length.toLocaleString()}
-          </span>
-          <Button
-            size="small"
-            variant="outline"
-            icon="chevron-right"
-            disabled={page >= pageCount - 1}
-            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-            aria-label="Next page"
-          />
+          <Pagination page={page + 1} totalPages={pageCount} onPage={(p) => setPage(p - 1)} />
         </div>
       )}
     </div>

@@ -1,5 +1,7 @@
 import { createPortal } from 'react-dom';
 
+import styles from './MembersTooltip.module.scss';
+
 // Presentation for the members-in-cell tooltip (2D heatmap + 3D voxels).
 // Controlled: given a viewport position + the active cell summary/snippets from
 // useCellMembers, renders a floating card "N datapoints · dominant label" plus a
@@ -15,45 +17,19 @@ function MembersTooltip({ x, y, summary, snippets, loading }) {
   const top = Math.max(8, y - 12);
 
   return createPortal(
-    <div
-      className="members-tooltip"
-      style={{
-        position: 'fixed',
-        left,
-        top,
-        width,
-        maxWidth: '90vw',
-        pointerEvents: 'none',
-        zIndex: 10000,
-        background: '#D3965E',
-        color: '#1c1204',
-        borderRadius: 6,
-        padding: '8px 10px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-        fontSize: 12,
-        lineHeight: 1.35,
-      }}
-    >
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>
-        {summary.count.toLocaleString()} datapoint{summary.count === 1 ? '' : 's'}
-        <span style={{ fontWeight: 400 }}> · {summary.label}</span>
+    <div className={styles.tooltip} style={{ left, top, width }}>
+      <div className={styles.header}>
+        <span className={styles.count}>{summary.count.toLocaleString()}</span> datapoint
+        {summary.count === 1 ? '' : 's'}
+        <span className={styles.label}> · {summary.label}</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <div className={styles.snippets}>
         {loading && snippets.length === 0 && (
-          <em style={{ opacity: 0.75 }}>loading snippets…</em>
+          <span className={styles.muted}>loading snippets…</span>
         )}
         {snippets.map((t, i) => (
-          <div
-            key={i}
-            style={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.12)',
-              paddingTop: i === 0 ? 0 : 3,
-            }}
-          >
-            {t == null || t === '' ? <span style={{ opacity: 0.5 }}>(empty)</span> : String(t)}
+          <div key={i} className={styles.snippet}>
+            {t == null || t === '' ? <span className={styles.muted}>(empty)</span> : String(t)}
           </div>
         ))}
       </div>

@@ -1,12 +1,21 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
+import { Button } from 'react-element-forge';
 import { clusterColorHex } from '../../lib/clusterColor';
 import { useColorMode } from '../../hooks/useColorMode';
 import { useCellMembers } from '../../hooks/useCellMembers';
 import MembersTooltip from './MembersTooltip';
+import { Readout } from '../ui';
+import styles from './VoxelView.module.scss';
 
 CameraControls.install({ THREE });
+
+// Chrome colors live in the token layer; the WebGL clear color is read at
+// build time and the scene rebuilds when the color mode flips (CrosshairPlot
+// pattern). Voxel/point colors themselves are data-driven and stay in JS.
+const readToken = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 // Scale a color's luminance by cell density so denser cells glow brighter,
 // keeping a floor so sparse cells still read on a dark bg.
@@ -24,6 +33,7 @@ function voxelColor(hex, density) {
 }
 
 function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors = null, onCellSelect }) {
+  // useColorMode re-renders on theme flips, which re-reads the chrome tokens.
   const { isDark } = useColorMode();
   const [resolution, setResolution] = useState(64); // voxel_index_64 default
   const [sliceT, setSliceT] = useState(0.5); // 0..1 depth along the FIXED view axis
@@ -127,7 +137,9 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
   const cellColorsRef = useRef(cellColors);
   cellColorsRef.current = cellColors;
 
-  const bg = isDark ? 0x0a0c12 : 0xf2f2f4;
+  // Map surface token (the darkest surface in dark mode). A primitive string,
+  // so the build effect below only re-runs when the theme actually changes.
+  const bg = readToken('--ls-surface-map');
 
   // Build the scene (renderer, lights, instanced cubes, camera, controls).
   useEffect(() => {
@@ -419,39 +431,18 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
     stateRef.current?.recomputePlaneAxis();
   }, []);
 
-  const btn = (active) => ({
-    background: active ? '#5a4fcf' : 'transparent',
-    color: '#eee',
-    border: '1px solid #666',
-    borderRadius: 4,
-    padding: '1px 8px',
-    cursor: 'pointer',
-  });
-
   return (
     <div style={{ position: 'absolute', inset: 0, width, height }}>
       <div ref={mountRef} style={{ position: 'absolute', inset: 0 }} />
       {/* slice + resolution controls. On touch/small screens the bottom is
           occupied by the data-table sheet, so the controls anchor to the top. */}
       <div
-        style={{
-          position: 'absolute',
-          left: 12,
-          ...(isTouch ? { top: 56 } : { bottom: 12 }),
-          background: 'rgba(20,22,30,0.72)',
-          color: '#eee',
-          padding: '8px 12px',
-          borderRadius: 8,
-          fontSize: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          width: 'min(260px, calc(100vw - 24px))',
-          boxSizing: 'border-box',
-        }}
+        className={`ls-panel ls-panel--floating ${styles.hud} ${
+          isTouch ? styles.hudTop : styles.hudBottom
+        }`}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 44 }}>Slice</span>
+        <div className={styles.row}>
+          <span className={styles.rowLabel}>Slice</span>
           <input
             type="range"
             min={0}
@@ -459,24 +450,44 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
             step={0.005}
             value={sliceT}
             onChange={(e) => setSliceT(Number(e.target.value))}
-            style={{ flex: 1 }}
+            className={styles.slider}
+            aria-label="Slice depth"
           />
-          <button onClick={alignToView} style={btn(false)} title="Re-align the slice plane to the current view">
-            Align to view
-          </button>
+          <Button
+            size="small"
+            variant="outline"
+            color="secondary"
+            text="Align"
+            onClick={alignToView}
+            title="Re-align the slice plane to the current view"
+          />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 44 }}>Res</span>
-          <button onClick={() => setResolution(32)} style={btn(resolution === 32)}>
+        <div className={styles.row}>
+          <span className={styles.rowLabel}>Res</span>
+          <button
+            type="button"
+            className={`ls-chip ${styles.chipBtn} ${resolution === 32 ? 'ls-badge--selected' : ''}`}
+            aria-pressed={resolution === 32}
+            onClick={() => setResolution(32)}
+          >
             32
           </button>
-          <button onClick={() => setResolution(64)} style={btn(resolution === 64)}>
+          <button
+            type="button"
+            className={`ls-chip ${styles.chipBtn} ${resolution === 64 ? 'ls-badge--selected' : ''}`}
+            aria-pressed={resolution === 64}
+            onClick={() => setResolution(64)}
+          >
             64
           </button>
-          <span style={{ opacity: 0.6, marginLeft: 'auto' }}>{cells.length} cells</span>
+          <span className={styles.cellCount}>
+            <Readout label="Cells" value={cells.length.toLocaleString()} />
+          </span>
         </div>
-        <div style={{ opacity: 0.55, fontSize: 11 }}>
-          {isTouch ? 'tap a cell for its contents' : 'shift + wheel to move slice · click a cell for its contents'}
+        <div className={styles.hint}>
+          {isTouch
+            ? 'tap a cell for its contents'
+            : 'shift + wheel to move slice · click a cell for its contents'}
         </div>
       </div>
       {!isTouch && tooltipPos && active && (
