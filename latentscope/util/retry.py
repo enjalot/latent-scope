@@ -45,11 +45,12 @@ def is_transient_error(exc):
     # Built-in network errors (requests.ConnectionError subclasses OSError too)
     if isinstance(exc, (ConnectionError, TimeoutError, OSError)):
         return True
-    # Duck-typed match for SDK timeout/connection errors that don't subclass
-    # the builtins (e.g. httpx.TimeoutException, openai.APIConnectionError)
+    # Duck-typed match for SDK timeout/connection/network errors that don't
+    # subclass the builtins (e.g. httpx.TimeoutException, httpx.ConnectError,
+    # httpx.NetworkError, openai.APIConnectionError)
     for klass in type(exc).__mro__:
         name = klass.__name__.lower()
-        if "timeout" in name or "connectionerror" in name:
+        if "timeout" in name or "connect" in name or "network" in name:
             return True
     return False
 

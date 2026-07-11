@@ -166,6 +166,31 @@ class TestIsTransientError:
         assert is_transient_error(ReadTimeout())
         assert is_transient_error(APIConnectionError())
 
+    def test_duck_typed_httpx_style_network_errors(self):
+        # httpx raises ConnectError/NetworkError (not builtin OSError, and not
+        # named "connectionerror") for DNS failures, refused connections, and
+        # proxy resets — all transient at the provider boundary
+        class NetworkError(Exception):
+            pass
+
+        class ConnectError(NetworkError):
+            pass
+
+        class RemoteProtocolError(NetworkError):
+            pass
+
+        assert is_transient_error(ConnectError("dns failure"))
+        assert is_transient_error(NetworkError("proxy reset"))
+        assert is_transient_error(RemoteProtocolError("server disconnected"))
+
+    def test_status_beats_class_name(self):
+        # a 4xx carried on a connection-ish class name is still non-transient
+        class ConnectError(Exception):
+            def __init__(self, status_code):
+                self.status_code = status_code
+
+        assert not is_transient_error(ConnectError(401))
+
     def test_plain_exception_not_transient(self):
         assert not is_transient_error(ValueError("bad input"))
         assert not is_transient_error(KeyError("missing"))
