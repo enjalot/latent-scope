@@ -5,6 +5,7 @@ import { compareVersions } from 'compare-versions';
 
 import { apiService } from '../../lib/apiService';
 import { isMobileDevice } from '../../utils';
+import { Readout } from '../ui';
 
 function DatasetHeader({ dataset, scope, tags, deletedIndices }) {
   // Hooks must run unconditionally on every render, so they come before the
@@ -17,33 +18,16 @@ function DatasetHeader({ dataset, scope, tags, deletedIndices }) {
 
   if (!dataset) return null;
 
+  const totalRows = dataset?.length;
+  const activeRows = totalRows - (deletedIndices?.length || 0);
+  const rowsValue =
+    deletedIndices?.length > 0
+      ? `${activeRows?.toLocaleString()}/${totalRows?.toLocaleString()} (${deletedIndices.length.toLocaleString()} deleted)`
+      : `${totalRows?.toLocaleString()}`;
+
   return (
     <div className="summary">
       <div className="scope-card">
-        {/* <div className="heading">
-          <span>{dataset?.id} &gt; </span>
-          <select
-            className="scope-selector"
-            onChange={(e) => onScopeChange(e.target.value)}
-            value={scope?.id}
-          >
-            {scopes.map((scopeOption) => (
-              <option key={scopeOption.id} value={scopeOption.id}>
-                {scopeOption.label} ({scopeOption.id})
-              </option>
-            ))}
-          </select>
-
-          {/* {!readonly && (
-            <>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-              <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`}>Configure</Link>
-              <Link to={`/datasets/${dataset?.id}/export/${scope?.id}`}>Export</Link>
-              </div>
-            </>
-          )}
-        </div> */}
-
         {isMobileDevice() && <i>Use a desktop browser for full interactivity!</i>}
 
         {lsVersion && compareVersions(scope?.ls_version, lsVersion) < 0 ? (
@@ -72,40 +56,15 @@ function DatasetHeader({ dataset, scope, tags, deletedIndices }) {
             </span>
           </div>
         ) : null}
-        <span>
-          <span className="metadata-label">Dataset</span> {dataset?.id}
-        </span>
-        <span>
-          <span className="metadata-label">Scope</span> {scope?.id}
-        </span>
-        <span>
-          <span className="metadata-label">Description</span> {scope?.description}
-        </span>
-        <span>
-          <span className="metadata-label">Embedding</span> {scope?.embedding?.model_id}
-        </span>
-        <span>
-          <span className="metadata-label">Version</span> {scope?.ls_version}
-        </span>
-        <span>
-          {dataset?.length - deletedIndices?.length}/{dataset?.length} rows
-          {deletedIndices?.length > 0 && (
-            <span className="metadata-label"> ({deletedIndices?.length} deleted)</span>
-          )}
-        </span>
-        <span>
-          <span>{scope?.cluster_labels_lookup?.length} clusters</span>
-        </span>
-        <span>
-          <span>{tags.length} tags</span>
-        </span>
+        <Readout label="Dataset" value={dataset?.id} />
+        <Readout label="Scope" value={scope?.id} />
+        {scope?.description && <span className="scope-description">{scope.description}</span>}
+        <Readout label="Embedding" value={scope?.embedding?.model_id} />
+        <Readout label="Version" value={scope?.ls_version} />
+        <Readout label="Rows" value={rowsValue} />
+        <Readout label="Clusters" value={scope?.cluster_labels_lookup?.length} />
+        <Readout label="Tags" value={tags.length} />
       </div>
-
-      {/* <div className="dataset-card">
-        <span>
-          <b>{dataset.id}</b> {scope?.rows}/{dataset?.length} rows
-        </span>
-      </div> */}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useStartJobPolling, useJobPolling } from '../components/Job/Run';
 import JobProgress from '../components/Job/Progress';
 
 import { apiUrl } from '../lib/apiService';
+import styles from './Job.module.css';
 
 function Job({ datasetId, jobId }) {
   const [dataset, setDataset] = useState(null);
@@ -71,22 +72,17 @@ function Job({ datasetId, jobId }) {
   }
 
   return (
-    <div className="jobs-page">
-      <h3>
-        {dataset?.id} job {job?.id}
+    <div className={styles.page}>
+      <h3 className={styles.title}>
+        {dataset?.id} job <span className={styles['job-id']}>{job?.id}</span>
       </h3>
       {job ? (
-        <div>
-          <span className="job-status" style={{ fontWeight: 'bold', padding: '5px' }}>
-            {job.status}
-          </span>
-          <JobProgress
-            job={job}
-            rerunJob={handleRerun}
-            killJob={handleKill}
-            overrideOnlyLast={false}
-          />
-        </div>
+        <JobProgress
+          job={job}
+          rerunJob={handleRerun}
+          killJob={handleKill}
+          overrideOnlyLast={false}
+        />
       ) : null}
     </div>
   );

@@ -19,23 +19,7 @@ import { useSmallScreen } from '../hooks/useSmallScreen';
 import MobileExplore from './MobileExplore';
 
 import { filterConstants } from '../components/Explore/Search/utils';
-
-const styles = {
-  dragHandle: {
-    position: 'absolute',
-    right: -15,
-    top: 0,
-    bottom: 0,
-    width: 30,
-    cursor: 'ew-resize',
-    backgroundColor: 'transparent',
-    transition: 'background-color 0.2s',
-    '&:hover': {
-      backgroundColor: '#e0e0e0',
-    },
-    zIndex: 10,
-  },
-};
+import { Spinner } from '../components/ui';
 
 // Create a new component that wraps the main content
 function ExploreContent() {
@@ -279,8 +263,6 @@ function ExploreContent() {
     document.removeEventListener('mouseup', stopDragging);
   };
 
-  // Add this CSS-in-JS style object near the top of the component
-
   const handleFeatureClick = useCallback(
     (featIdx, activation, label) => {
       setFilterQuery(label);
@@ -299,7 +281,7 @@ function ExploreContent() {
     return (
       <>
         <SubNav dataset={dataset} scope={scope} scopes={scopes} />
-        <div style={{ padding: '1rem' }}>
+        <div style={{ padding: 'var(--ls-space-4)' }}>
           <p>
             Failed to load scope {scopeId} for dataset {datasetId}.
           </p>
@@ -313,7 +295,9 @@ function ExploreContent() {
     return (
       <>
         <SubNav dataset={dataset} scope={scope} scopes={scopes} />
-        <div>Loading...</div>
+        <div className="explore-loading">
+          <Spinner label="LOADING SCOPE…" />
+        </div>
       </>
     );
 
@@ -339,11 +323,8 @@ function ExploreContent() {
           className="full-screen-explore-container"
           style={{ gridTemplateColumns: gridTemplate }}
         >
-          <div
-            className="filter-table-container"
-            style={{ position: 'relative', overflowX: 'hidden' }}
-          >
-            <div style={styles.dragHandle} onMouseDown={startDragging} />
+          <div className="filter-table-container">
+            <div className="drag-handle" onMouseDown={startDragging} />
             {showClusters && (
               <div className="cluster-accordion">
                 <ClusterLabelsPanel />

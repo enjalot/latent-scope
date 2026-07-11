@@ -90,11 +90,13 @@ function CustomModels() {
               </div>
 
               <Button
-                className={styles['delete']}
-                color="secondary"
+                color="delete"
+                variant="outline"
+                size="small"
+                icon="trash"
+                label="Delete model"
                 onClick={() => handleDeleteModel(model.id)}
                 disabled={isSubmitting}
-                text="🗑️"
               />
             </div>
           ))}

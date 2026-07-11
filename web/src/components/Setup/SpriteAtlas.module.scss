@@ -1,4 +1,4 @@
-@import "./_shared";
+@use "./_shared" as *;
 
 // Two-column layout like the other steps: scrollable form on the left,
 // action cards (Explore) on the right under the "Preview:" header.
@@ -16,36 +16,23 @@
   .scope-actions {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 6px;
+    gap: var(--ls-space-3);
+    padding: var(--ls-space-2);
   }
 
+  // layout only — chrome comes from the global .ls-panel class on the same node
   .action-card {
-    background: var(--background);
-    padding: 1.5rem;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-
-    h3 {
-      margin: 0;
-      color: var(--text-primary);
-    }
-
-    p {
-      color: var(--text-secondary);
-      margin: 0;
-    }
+    @include action-card;
   }
 
   .action-card-explore {
-    border: 2px solid var(--semantic-color-semantic-success);
+    @include action-card-highlight;
   }
 
   .action-link {
     margin-top: auto;
     text-decoration: none;
+    color: var(--text-color-text-primary);
     font-weight: 500;
 
     &:hover {
@@ -55,50 +42,55 @@
 }
 
 .atlas-empty {
-  padding: 16px;
+  padding: var(--ls-space-4);
 }
 
 .atlas-setup {
   @include setup-left;
-  padding: 16px;
+  padding: var(--ls-space-4);
 
   h3 {
-    margin: 0 0 8px;
+    margin: 0 0 var(--ls-space-2);
+    font-size: var(--ls-text-md);
+    font-weight: 600;
   }
 
   .help {
-    color: var(--text-color-secondary, #666);
-    font-size: 14px;
-    line-height: 1.4;
+    color: var(--text-color-text-subtle);
+    font-size: var(--ls-text-sm);
+    line-height: var(--ls-leading-ui);
 
     code {
+      // theme-neutral glassy grey works over both surfaces
       background: rgba(127, 127, 127, 0.15);
-      padding: 1px 4px;
-      border-radius: 3px;
+      padding: 1px var(--ls-space-1);
+      border-radius: var(--ls-radius-1);
+      font-family: var(--ls-font-mono);
     }
   }
 
   .controls {
     display: flex;
-    gap: 24px;
-    margin: 16px 0;
+    gap: var(--ls-space-5);
+    margin: var(--ls-space-4) 0;
 
     label {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      font-size: 13px;
+      gap: var(--ls-space-1);
+      font-size: var(--ls-text-xs);
 
-      select,
       input {
-        padding: 4px 6px;
+        padding: var(--ls-space-1) var(--ls-space-2);
+        width: 84px;
+        @include numeric-input;
       }
     }
   }
 
   .planRow {
     display: flex;
-    gap: 20px;
+    gap: var(--ls-space-5);
     align-items: flex-start;
     flex-wrap: wrap;
   }
@@ -106,77 +98,91 @@
   .previewCol {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--ls-space-1);
   }
 
   .previewCaption {
-    font-size: 11px;
-    color: var(--text-color-secondary, #888);
+    font-size: var(--ls-text-2xs);
+    color: var(--text-color-text-subtle);
   }
 
   .stats {
     border-collapse: collapse;
-    font-size: 13px;
     flex: 1;
     min-width: 320px;
 
     th,
     td {
       text-align: left;
-      padding: 4px 12px 4px 0;
+      padding: var(--ls-space-1) var(--ls-space-3) var(--ls-space-1) 0;
     }
 
     thead th {
-      border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+      border-bottom: 1px solid var(--borders-color-border-2);
+      font-size: var(--ls-text-xs);
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-color-text-subtle);
+    }
+
+    tbody td,
+    tfoot td {
+      @include mono-fact;
     }
 
     tbody tr {
       cursor: pointer;
+      border-bottom: 1px solid var(--borders-color-border-1);
     }
 
     tbody tr:hover {
-      background: rgba(40, 90, 200, 0.06);
+      background: color-mix(in srgb, var(--neutrals-color-neutral-2) 55%, transparent);
     }
 
-    tr.selected {
-      background: rgba(40, 90, 200, 0.12);
+    // selection = amber wash (matches the app-wide selected-row language)
+    tr.selected,
+    tr.selected:hover {
+      background: var(--ls-accent-surface);
     }
 
     .muted {
-      color: var(--text-color-secondary, #999);
+      color: var(--text-color-text-subtle);
     }
 
     tfoot .totalRow td {
-      border-top: 1px solid rgba(127, 127, 127, 0.25);
+      border-top: 1px solid var(--borders-color-border-2);
       font-weight: 600;
-      padding-top: 6px;
+      padding-top: var(--ls-space-2);
     }
   }
 
   .totals {
-    font-size: 12px;
-    color: var(--text-color-secondary, #888);
-    margin: 8px 0 0;
+    font-size: var(--ls-text-xs);
+    color: var(--text-color-text-subtle);
+    margin: var(--ls-space-2) 0 0;
   }
 
   .actions {
-    margin: 12px 0;
+    margin: var(--ls-space-3) 0;
   }
 
   .summary {
-    margin-top: 16px;
-    border-top: 1px solid rgba(127, 127, 127, 0.2);
-    padding-top: 12px;
+    margin-top: var(--ls-space-4);
+    border-top: 1px solid var(--borders-color-border-1);
+    padding-top: var(--ls-space-3);
 
     h4 {
-      margin: 0 0 6px;
+      margin: 0 0 var(--ls-space-2);
+      font-size: var(--ls-text-sm);
+      font-weight: 600;
     }
 
     ul {
-      margin: 0 0 10px;
-      padding-left: 18px;
-      font-size: 13px;
+      margin: 0 0 var(--ls-space-2);
+      padding-left: var(--ls-space-4);
+      font-size: var(--ls-text-xs);
+      @include mono-fact;
     }
   }
 }

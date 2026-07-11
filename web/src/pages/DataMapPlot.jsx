@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from 'react-element-forge';
 import JobProgress from '../components/Job/Progress';
 import { useStartJobPolling } from '../components/Job/Run';
 import SubNav from '../components/SubNav';
@@ -362,6 +363,7 @@ function DataMapPlot() {
               <label>
                 <span>Kernel:</span>
                 <select
+                  className="ls-select"
                   name="glow_keywords.kernel"
                   value={config.glow_keywords.kernel}
                   onChange={handleChange}
@@ -395,7 +397,7 @@ function DataMapPlot() {
               </label>
             </div>
             <div className={styles['create-button']}>
-              <button type="submit">Create Plot</button>
+              <Button type="submit" color="primary" text="Create Plot" />
             </div>
           </form>
 

@@ -1,7 +1,7 @@
 @mixin setup-container {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ls-space-3);
   height: 100%;
 }
 
@@ -24,30 +24,29 @@
 }
 
 @mixin setup-navigate {
-  padding: 12px;
+  padding: var(--ls-space-3);
   flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
-  max-height: 40px;
 }
 
 @mixin setup-step {
-  margin: 6px 0;
+  margin: var(--ls-space-2) 0;
 }
 
 @mixin setup-form {
-  margin: 6px;
-  padding: 6px 12px;
-  padding-bottom: 12px;
+  margin: var(--ls-space-2);
+  padding: var(--ls-space-2) var(--ls-space-3);
+  padding-bottom: var(--ls-space-3);
   border: 1px solid var(--borders-color-border-1);
-  border-radius: 5px;
+  border-radius: var(--ls-radius-2);
   flex-shrink: 0;
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 12px;
+    gap: var(--ls-space-3);
+    margin-top: var(--ls-space-3);
   }
 }
 
@@ -55,58 +54,122 @@
   max-width: 340px;
 }
 
+// one label column width for every setup form (was 90/100/125px)
+@mixin setup-form-label {
+  width: 125px;
+  display: inline-block;
+  font-size: var(--ls-text-sm);
+}
+
+// machine facts: run IDs, counts, metrics, byte sizes
+@mixin mono-fact {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+// numeric/ID inputs read as instrument readouts
+@mixin numeric-input {
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+// the ONE compare-link treatment (replaces the old inline/scss green variants)
+@mixin compare-link {
+  padding: var(--ls-space-2) 0;
+  text-align: center;
+
+  a {
+    color: var(--text-color-text-primary);
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// layout-only card body; chrome comes from the global .ls-panel class
+@mixin action-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-2);
+
+  h3 {
+    margin: 0;
+    font-size: var(--ls-text-md);
+    font-weight: 600;
+    color: var(--text-color-text-main);
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--ls-text-sm);
+    color: var(--text-color-text-subtle);
+  }
+}
+
+// the featured action card gets the amber selection language
+@mixin action-card-highlight {
+  border-color: var(--ls-accent-line);
+  background: var(--ls-accent-surface);
+}
+
 @mixin item-list {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   overflow-y: auto;
-  // flex-grow: 1;
   min-height: 0;
+
   input {
     cursor: pointer;
   }
+
   label {
     cursor: pointer;
   }
 }
 
 @mixin setup-item {
-  background-color: var(--neutrals-color-neutral-1);
-  border-radius: 5px;
-  margin: 6px;
-  padding: 6px;
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  margin: var(--ls-space-2);
+  padding: var(--ls-space-2);
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ls-space-3);
   width: 100%;
   height: fit-content;
   justify-content: space-between;
-
-  select {
-    height: 2em;
-  }
-
 }
+
+// selection = amber wash + amber line (never a border-width shift)
 @mixin selected {
-  background-color: var(--neutrals-color-neutral-2);
+  background-color: var(--ls-accent-surface);
+  border-color: var(--ls-accent-line);
 }
 
 @mixin setup-item-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ls-space-1);
+
   span {
-    line-height: 1.25em;
+    line-height: var(--ls-leading-tight);
   }
 }
 
 @mixin setup-item-deps {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: var(--ls-space-1);
 }
 
 @mixin setup-delete {
-  max-height: 33px;
+  align-self: flex-start;
   margin-left: auto;
 }

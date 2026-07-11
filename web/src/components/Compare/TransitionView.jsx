@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
+import { Button } from 'react-element-forge';
 import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
+import Reticle from './Reticle';
 import { buildColorPoints } from './colorBy';
 import styles from './Compare.module.css';
 
@@ -87,10 +89,13 @@ function TransitionView({
   return (
     <div className={styles['transition-view']}>
       <div className={styles['view-toolbar']}>
-        <button className={styles['swap-button']} onClick={handleSwap}>
-          {direction === 'left' ? '← Showing Left' : 'Showing Right →'}
-          {' · Click to swap'}
-        </button>
+        <Button
+          size="small"
+          color="secondary"
+          variant="outline"
+          onClick={handleSwap}
+          text={`${direction === 'left' ? '← Showing Left' : 'Showing Right →'} · Click to swap`}
+        />
       </div>
       <div className={styles['scatter-container']} style={{ width, height }}>
         {displayPoints.length > 0 && (
@@ -109,7 +114,7 @@ function TransitionView({
                   colorInterpolator={scatterColorProps.colorInterpolator}
                   colorRange={scatterColorProps.colorRange}
                   colorDomain={scatterColorProps.colorDomain}
-                      missingColor={scatterColorProps.missingColor}
+                  missingColor={scatterColorProps.missingColor}
                   opacityBy={scatterColorProps.opacityBy}
                   enableLasso
                   selectedIndices={selectedIndices}
@@ -150,6 +155,7 @@ function TransitionView({
               width={width}
               height={height}
             />
+            <Reticle active={selectedIndices?.length > 0} />
           </>
         )}
       </div>

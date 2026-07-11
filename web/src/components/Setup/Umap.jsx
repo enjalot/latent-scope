@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
-import { Button, Switch } from 'react-element-forge';
+import { Button, Switch, Icon } from 'react-element-forge';
 
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
@@ -181,7 +181,7 @@ function Umap() {
               <span className={styles['umap-form-label']}>Neighbors: </span>
               <input type="number" name="neighbors" defaultValue="25" disabled={!!umapJob} />
               <span className="tooltip" data-tooltip-id="neighbors">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip
                 id="neighbors"
@@ -198,7 +198,7 @@ function Umap() {
               <span className={styles['umap-form-label']}>Min Dist: </span>
               <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
               <span className="tooltip" data-tooltip-id="min-dist">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip
                 id="min-dist"
@@ -215,7 +215,7 @@ function Umap() {
               <span className={styles['umap-form-label']}>Seed: </span>
               <input type="text" name="seed" defaultValue="42" disabled={!!umapJob} />
               <span className="tooltip" data-tooltip-id="seed">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip
                 id="seed"
@@ -252,7 +252,7 @@ function Umap() {
             <div className={styles['umap-form-align']}>
               <Switch onChange={toggleShowAlign} color="secondary" label="Align UMAP" />
               <span className="tooltip" data-tooltip-id="align-umap">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip
                 id="align-umap"
@@ -296,7 +296,7 @@ function Umap() {
               <div className={styles['umap-form-save']}>
                 <Switch onChange={toggleSave} color="secondary" label="Save UMAP model" />
                 <span className="tooltip" data-tooltip-id="save-umap">
-                  🤔
+                  <Icon name="help-circle" size={14} />
                 </span>
                 <Tooltip
                   id="save-umap"
@@ -336,10 +336,8 @@ function Umap() {
         </div>
         {/* The list of available UMAPS */}
         {umaps.filter((d) => d.embedding_id == embedding?.id).length >= 2 && (
-          <div style={{ padding: '4px 0', textAlign: 'center' }}>
-            <Link to={`/datasets/${dataset?.id}/compare`} style={{ color: 'seagreen', fontWeight: 600, textDecoration: 'none' }}>
-              ↗ Compare UMAPs
-            </Link>
+          <div className={styles['compare-link']}>
+            <Link to={`/datasets/${dataset?.id}/compare`}>↗ Compare UMAPs</Link>
           </div>
         )}
         <ExperimentGallery

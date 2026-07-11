@@ -95,7 +95,9 @@ function DataTable({ data, tagset, dataset, maxRows, onTagset, onHover, onClick 
                     e.stopPropagation()
 
                   }}
-                  className={tagset[tag].includes(row.index) ? 'tag-active' : 'tag-inactive'}>
+                  className={
+                    tagset[tag].includes(row.index) ? 'ls-badge ls-badge--selected' : 'ls-badge'
+                  }>
                   {tag}
                 </button>
               ))}

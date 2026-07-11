@@ -2,17 +2,27 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { interpolateSpectral } from 'd3-scale-chromatic';
+import { Button } from 'react-element-forge';
 
 import Scatter from '../components/Scatter';
 import AnnotationPlot from '../components/AnnotationPlot';
 import OverlapHeatmap from '../components/OverlapHeatmap';
 import IndexDataTable from '../components/IndexDataTable';
+import Reticle from '../components/Compare/Reticle';
+import { Readout, Spinner } from '../components/ui';
 
 import { apiService, apiUrl } from '../lib/apiService';
 
 import styles from './CompareClusters.module.css';
+// Rules shared verbatim with the Compare views (controls header, scatter
+// frame, bottom-panel tabs) live in the Compare module; this file's own
+// module keeps only the CompareClusters-specific layout rules.
+import sharedStyles from '../components/Compare/Compare.module.css';
 
 const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Must match the --ls-space-3 gap on .scatter-area.
+const PANE_GAP = 12;
 
 function CompareClusters() {
   const { dataset: datasetId } = useParams();
@@ -233,27 +243,33 @@ function CompareClusters() {
       ? [umapPoints[hoveredIndex]]
       : [];
 
-  const halfWidth = Math.floor((containerSize[0] - 12) / 2);
+  const halfWidth = Math.floor((containerSize[0] - PANE_GAP) / 2);
   const scatterHeight = containerSize[1];
 
   // Determine which points to show for the diff scatter
   const activeLeftPoints = showChangedOnly ? diffDrawPoints : leftDrawPoints;
   const activeRightPoints = showChangedOnly ? diffDrawPoints : rightDrawPoints;
 
-  if (!dataset) return <div>Loading...</div>;
+  if (!dataset)
+    return (
+      <div className={styles['page-loading']}>
+        <Spinner label="LOADING DATASET…" />
+      </div>
+    );
 
   return (
     <div className={styles['container']}>
       {/* Controls */}
-      <div className={styles['controls']}>
-        <div className={styles['controls-header']}>
-          <b>{datasetId}</b>
-          <span>{dataset?.length} rows</span>
+      <div className={sharedStyles['controls']}>
+        <div className={sharedStyles['controls-header']}>
+          <span className={sharedStyles['dataset-name']}>{datasetId}</span>
+          <Readout label="ROWS" value={dataset?.length} />
         </div>
         <div className={styles['selectors']}>
           <div className={styles['selector']}>
             <label>UMAP</label>
             <select
+              className="ls-select"
               value={selectedUmap?.id || ''}
               onChange={(e) => setSelectedUmap(umaps.find((u) => u.id === e.target.value))}
             >
@@ -269,6 +285,7 @@ function CompareClusters() {
           <div className={styles['selector']}>
             <label>Left Cluster</label>
             <select
+              className="ls-select"
               value={leftCluster?.id || ''}
               onChange={(e) =>
                 setLeftCluster(filteredClusters.find((c) => c.id === e.target.value))
@@ -284,6 +301,7 @@ function CompareClusters() {
           <div className={styles['selector']}>
             <label>Right Cluster</label>
             <select
+              className="ls-select"
               value={rightCluster?.id || ''}
               onChange={(e) =>
                 setRightCluster(filteredClusters.find((c) => c.id === e.target.value))
@@ -301,16 +319,16 @@ function CompareClusters() {
         {/* Metrics */}
         {comparison && (
           <div className={styles['metrics']}>
-            <div className={styles['metric-card']}>
-              <span className={styles['metric-label']}>ARI</span>
+            <div className={`ls-panel ${styles['metric-card']}`}>
+              <span className="ls-overline">ARI</span>
               <span className={styles['metric-value']}>{comparison.ari}</span>
             </div>
-            <div className={styles['metric-card']}>
-              <span className={styles['metric-label']}>NMI</span>
+            <div className={`ls-panel ${styles['metric-card']}`}>
+              <span className="ls-overline">NMI</span>
               <span className={styles['metric-value']}>{comparison.nmi}</span>
             </div>
-            <div className={styles['metric-card']}>
-              <span className={styles['metric-label']}>Changed</span>
+            <div className={`ls-panel ${styles['metric-card']}`}>
+              <span className="ls-overline">Changed</span>
               <span className={styles['metric-value']}>
                 {comparison.n_changed} / {comparison.n_total}
               </span>
@@ -325,7 +343,7 @@ function CompareClusters() {
             </label>
           </div>
         )}
-        {comparisonLoading && <span className={styles['loading']}>Computing comparison...</span>}
+        {comparisonLoading && <span className={styles['loading']}>Computing comparison…</span>}
       </div>
 
       {/* Side-by-side scatters */}
@@ -335,8 +353,8 @@ function CompareClusters() {
             <div className={styles['scatter-label']}>
               {leftCluster?.id} ({leftCluster?.method || 'hdbscan'})
             </div>
-            <div className={styles['scatter-container']} style={{ width: halfWidth, height: scatterHeight }}>
-              <div className={styles['scatter']}>
+            <div className={sharedStyles['scatter-container']} style={{ width: halfWidth, height: scatterHeight }}>
+              <div className={sharedStyles['scatter']}>
                 {!isIOS() ? (
                   <Scatter
                     points={activeLeftPoints}
@@ -376,6 +394,7 @@ function CompareClusters() {
                 width={halfWidth}
                 height={scatterHeight}
               />
+              <Reticle active={selectedIndices.length > 0} />
             </div>
           </div>
         )}
@@ -384,8 +403,8 @@ function CompareClusters() {
             <div className={styles['scatter-label']}>
               {rightCluster?.id} ({rightCluster?.method || 'hdbscan'})
             </div>
-            <div className={styles['scatter-container']} style={{ width: halfWidth, height: scatterHeight }}>
-              <div className={styles['scatter']}>
+            <div className={sharedStyles['scatter-container']} style={{ width: halfWidth, height: scatterHeight }}>
+              <div className={sharedStyles['scatter']}>
                 {!isIOS() ? (
                   <Scatter
                     points={activeRightPoints}
@@ -425,6 +444,7 @@ function CompareClusters() {
                 width={halfWidth}
                 height={scatterHeight}
               />
+              <Reticle active={selectedIndices.length > 0} />
             </div>
           </div>
         )}
@@ -432,18 +452,25 @@ function CompareClusters() {
 
       {/* Bottom panel */}
       <div className={styles['bottom-panel']}>
-        <div className={styles['tab-header']}>
+        <div className={sharedStyles['tab-header']} role="tablist">
           <button
             onClick={() => setBottomTab('overlap')}
-            className={bottomTab === 'overlap' ? styles['tab-active'] : styles['tab-inactive']}
+            className="ls-tab"
+            role="tab"
+            aria-selected={bottomTab === 'overlap'}
           >
             Overlap Matrix
           </button>
           <button
             onClick={() => setBottomTab('points')}
-            className={bottomTab === 'points' ? styles['tab-active'] : styles['tab-inactive']}
+            className="ls-tab"
+            role="tab"
+            aria-selected={bottomTab === 'points'}
           >
-            Points {selectedIndices.length > 0 && `(${selectedIndices.length})`}
+            Points
+            {selectedIndices.length > 0 && (
+              <span className="ls-tab__count">{selectedIndices.length}</span>
+            )}
           </button>
         </div>
 
@@ -481,16 +508,17 @@ function CompareClusters() {
                       : `${comparison.n_changed} points changed clusters (${((comparison.n_changed / comparison.n_total) * 100).toFixed(1)}%)`}
                   </span>
                   {selectedIndices.length > 0 && (
-                    <button
-                      className={styles['clear-button']}
+                    <Button
+                      size="small"
+                      color="secondary"
+                      variant="outline"
+                      text="Clear"
                       onClick={() => {
                         setSelectedIndices([]);
                         leftScatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
                         rightScatter?.zoomToOrigin({ transition: true, transitionDuration: 1500 });
                       }}
-                    >
-                      Clear
-                    </button>
+                    />
                   )}
                 </div>
               )}

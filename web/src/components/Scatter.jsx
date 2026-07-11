@@ -4,6 +4,8 @@ import { scaleSequential, scaleLinear, scaleLog } from 'd3-scale';
 import { range, groups, extent } from 'd3-array';
 import { rgb } from 'd3-color';
 import { interpolateOranges } from 'd3-scale-chromatic';
+import { useColorMode } from '@/hooks/useColorMode';
+import { mapSelectionColorsLight, mapSelectionKey } from '../lib/colors';
 
 import styles from './Scatter.module.css';
 
@@ -43,10 +45,23 @@ ScatterPlot.propTypes = {
 // Selected points keep full opacity; everything else dims to this scale so a
 // brush selection reads the same way as elsewhere in the app.
 const SELECTED_OPACITY_INACTIVE_SCALE = 0.2;
-// #5cb85c (colors.js "selected" green) as an rgba triple; only visible when
-// colorBy is uniform (Compare always drives colorBy, so the dimming carries
-// the signal), but set for correctness / other Scatter consumers.
-const SELECTED_COLOR = [92 / 255, 184 / 255, 92 / 255, 1];
+// colors.js "selected" green as a normalized rgba tuple (single source of
+// truth); only visible when colorBy is uniform (Compare always drives colorBy,
+// so the dimming carries the signal), but set for correctness / other
+// Scatter consumers.
+const selectedRgb = rgb(mapSelectionColorsLight[mapSelectionKey.selected]);
+const SELECTED_COLOR = [selectedRgb.r / 255, selectedRgb.g / 255, selectedRgb.b / 255, 1];
+
+// Hover halo from the theme (--ls-color-hover-halo): a dark wash in light
+// mode, a light wash in dark mode — the old hardcoded [0.1,0.1,0.1,0.5]
+// was invisible against the dark map surface.
+const readHoverHalo = () => {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue('--ls-color-hover-halo')
+    .trim();
+  const c = rgb(value || '#26221c33');
+  return [c.r / 255, c.g / 255, c.b / 255, c.opacity];
+};
 
 const calculatePointSize = (numPoints) => {
   const minPoints = 100;
@@ -94,6 +109,7 @@ function ScatterPlot({
   const xDomain = useRef([-1, 1]);
   const yDomain = useRef([-1, 1]);
   const scatterplotRef = useRef(null);
+  const { colorMode } = useColorMode();
 
   // Store callbacks in refs so they never trigger effect re-runs.
   // Recreating the scatterplot destroys the WebGL context and causes
@@ -121,7 +137,7 @@ function ScatterPlot({
       canvas: container.current,
       width,
       height,
-      pointColorHover: [0.1, 0.1, 0.1, 0.5],
+      pointColorHover: readHoverHalo(),
       // regl-scatterplot maps SHIFT -> lasso by default; keep it explicit when
       // lasso is requested so a shift+drag brushes points and fires `select`.
       ...(enableLasso ? { keyMap: { shift: 'lasso', alt: 'rotate' } } : {}),
@@ -166,6 +182,15 @@ function ScatterPlot({
       scatterplot.destroy();
     };
   }, [width, height, activeFilterTab, enableLasso]);
+
+  // Theme flips re-read the halo token via set() — deliberately NOT a dep of
+  // the setup effect above (recreating the scatterplot on theme change would
+  // race cleanup and destroy textures twice).
+  useEffect(() => {
+    const scatterplot = scatterplotRef.current;
+    if (!scatterplot) return;
+    scatterplot.set({ pointColorHover: readHoverHalo() });
+  }, [colorMode]);
 
   const prevPointsRef = useRef();
   useEffect(() => {

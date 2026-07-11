@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-// import { scaleLinear } from 'd3-scale';
 import { line, curveLinearClosed } from 'd3-shape';
 import { select } from 'd3-selection';
-// import { interpolate } from 'flubber';
+import { useColorMode } from '@/hooks/useColorMode';
 
 import './HullPlot.css';
 
@@ -47,9 +46,16 @@ const HullPlot = ({
   width,
   height,
   label = undefined,
+  // Label pill chrome. When not provided, the values are read from the theme
+  // tokens (inverse "badge" surface) at render time so they flip with the
+  // color scheme. Pass explicit values to override per call site.
+  labelFill = undefined,
+  labelTextColor = undefined,
 }) => {
   const svgRef = useRef();
   const prevHulls = useRef();
+  // re-render the token-colored labels when the theme flips
+  const { colorMode } = useColorMode();
 
   const hasLabel = label !== undefined;
   let labelToShow = label;
@@ -99,6 +105,17 @@ const HullPlot = ({
     labelSel.exit().remove();
     if (!label) return;
 
+    // Chrome colors + mono stack come from the theme tokens unless the caller
+    // passed explicit values (fallbacks match the light-mode token values).
+    const rootStyle = getComputedStyle(document.documentElement);
+    const pillFill =
+      labelFill || rootStyle.getPropertyValue('--color-badge-primary-bg').trim() || '#26221c';
+    const pillTextColor =
+      labelTextColor ||
+      rootStyle.getPropertyValue('--color-badge-primary-text').trim() ||
+      '#f6f4f1';
+    const monoFont = rootStyle.getPropertyValue('--ls-font-mono').trim() || 'monospace';
+
     const fontSize = calculateScaledFontSize(width, height);
     const textWidth = calculateTextWidth(labelToShow, fontSize);
     const pillHeight = fontSize * 2;
@@ -117,7 +134,7 @@ const HullPlot = ({
       .append('rect')
       .attr('class', 'hull-label-bg')
       .merge(labelBgSel)
-      .attr('fill', '#7baf5a')
+      .attr('fill', pillFill)
       .attr('rx', 3)
       .attr('ry', 3)
       .attr('opacity', 0.85)
@@ -141,8 +158,8 @@ const HullPlot = ({
       )
       .attr('y', (d) => pillTop(d) + pillHeight / 2)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'white')
-      .attr('font-family', 'monospace')
+      .attr('fill', pillTextColor)
+      .attr('font-family', monoFont)
       .attr('dominant-baseline', 'central')
       .attr('font-size', fontSize)
       .text(labelToShow);
@@ -152,19 +169,14 @@ const HullPlot = ({
     const validHulls = hulls.filter((h) => h && h.length > 0);
     if (!xDomain || !yDomain || !validHulls.length) return;
 
-    // console.log("NO PRE HULLS CURRENT", !prevHulls.current)
     // Compare a cheap signature of ALL hulls — sampling only the first N
     // missed changes in later hulls (stale outlines with many clusters).
     const hullSignature = (hs) =>
       `${hs.length}:` + hs.map((h) => `${h.length},${h[0]},${h[h.length - 1]}`).join('|');
     const hullsChanged =
       !prevHulls.current || hullSignature(hulls) !== hullSignature(prevHulls.current);
-    // const pointsChanged = !prevPoints.current || (JSON.stringify(points[0]) !== JSON.stringify(prevPoints.current[0]))
 
     if (!hullsChanged) return;
-    // if(!hullsChanged || !pointsChanged) {
-    //   return
-    // }
 
     const svg = select(svgRef.current);
     // Calculate scale factors
@@ -193,14 +205,7 @@ const HullPlot = ({
 
     let sel = g.selectAll('path.hull').data(hulls);
 
-    sel
-      .exit()
-      // .transition()
-      // .duration(duration)
-      // .delay(delay)
-      // .ease(easeExpOut)
-      // .style("opacity", 0)
-      .remove();
+    sel.exit().remove();
 
     sel
       .enter()
@@ -210,42 +215,15 @@ const HullPlot = ({
       .style('fill', fill)
       .style('stroke', stroke)
       .style('stroke-width', scaledStrokeWidth)
-      .style('opacity', 0)
-      // .transition()
-      //   .delay(delay + 100)
-      //   .duration(duration - 100)
-      //   .ease(easeExpOut)
       .style('opacity', opacity);
 
-    sel
-      // .transition()
-      // .duration(duration)
-      // .delay(delay)
-      // .ease(easeCubicInOut)
-      .style('opacity', opacity)
-      .attr('d', draw);
-    // .attrTween("d", function(d,i) {
-    //   // console.log("d,i", d, i)
-    //   // console.log(d.hull, prevHulls.current.find(h => h.index == d.index).hull)
-    //   const prev = prevHulls.current ? prevHulls.current[i] : null
-    //   // console.log(d, prev)
-    //   if(!prev) return () => draw(d)
-    //   const inter = interpolate(
-    //     draw(prev),
-    //     draw(d)
-    //   );
-    //   return function(t) {
-    //     return inter(t)
-    //   }
-    // })
+    sel.style('opacity', opacity).attr('d', draw);
 
     // Handle hull labels (pill + text together)
     renderLabels(svg);
 
     setTimeout(() => {
       prevHulls.current = hulls;
-      // prevHulls.current = mod
-      // prevPoints.current = points
     }, duration);
   }, [hulls]);
 
@@ -275,14 +253,12 @@ const HullPlot = ({
     const g = svg.select('g.hull-container');
     g.attr(
       'transform',
-      // `translate(${xOffset}, ${yOffset})`
       `translate(${xOffset}, ${yOffset}) scale(${xScaleFactor}, ${yScaleFactor})`
     );
 
     const draw = line()
       .x((d) => d?.[0])
       .y((d) => -d?.[1])
-      // .curve(curveCatmullRomClosed);
       .curve(curveLinearClosed);
 
     // Draw hulls
@@ -305,9 +281,7 @@ const HullPlot = ({
       .style('stroke', stroke)
       .attr('stroke-width', scaledStrokeWidth)
       .style('opacity', opacity);
-
-    // labelSel.exit().remove();
-  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height]);
+  }, [fill, stroke, strokeWidth, xDomain, yDomain, width, height, colorMode, labelFill, labelTextColor]);
 
   return (
     <svg ref={svgRef} className="hull-plot" width={width} height={height}>
@@ -317,66 +291,3 @@ const HullPlot = ({
 };
 
 export default HullPlot;
-
-// const HullPlotCanvas = ({
-//   points,
-//   hulls,
-//   fill,
-//   stroke,
-//   strokeWidth,
-//   symbol,
-//   xDomain,
-//   yDomain,
-//   width,
-//   height
-// }) => {
-//   const container = useRef();
-
-//   useEffect(() => {
-//     if(xDomain && yDomain) {
-//       const xScale = scaleLinear()
-//         .domain(xDomain)
-//         .range([0, width])
-//       const yScale = scaleLinear()
-//         .domain(yDomain)
-//         .range([height, 0])
-
-//       const zScale = (t) => t/(.1 + xDomain[1] - xDomain[0])
-//       const canvas = container.current
-//       const ctx = canvas.getContext('2d')
-//       ctx.clearRect(0, 0, width, height)
-//       ctx.fillStyle = fill
-//       ctx.strokeStyle = stroke
-//       ctx.font = `${zScale(strokeWidth)}px monospace`
-//       ctx.globalAlpha = 0.75
-//       let rw = zScale(strokeWidth)
-//       if(!hulls.length || !points.length) return
-//       hulls.forEach(hull => {
-//         // a hull is a list of indices into points
-//         if(!hull) return;
-//         ctx.beginPath()
-//         hull.forEach((index, i) => {
-//           if(i === 0) {
-//             ctx.moveTo(xScale(points[index][0]), yScale(points[index][1]))
-//           } else {
-//             ctx.lineTo(xScale(points[index][0]), yScale(points[index][1]))
-//           }
-//         })
-//         ctx.lineTo(xScale(points[hull[0]][0]), yScale(points[hull[0]][1]))
-//         if(fill)
-//           ctx.fill()
-//         if(stroke)
-//           ctx.stroke()
-//       })
-//     }
-
-//   }, [points, hulls, fill, stroke, strokeWidth, xDomain, yDomain, width, height])
-
-//   return <canvas
-//     className="hull-plot"
-//     ref={container}
-//     width={width}
-//     height={height} />;
-// };
-
-// export default HullPlot;

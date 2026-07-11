@@ -2,10 +2,14 @@ import { Link, useLocation } from 'react-router-dom';
 import styles from './SubNav.module.css';
 import { Select } from 'react-element-forge';
 
+const tabClass = (extra = '') => `ls-tab ${styles.tab}${extra ? ` ${extra}` : ''}`;
+
 const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
   const location = useLocation();
 
-  // console.log({ dataset, scope, scopes });
+  const disabledTab = tabClass(styles.disabledTab);
+  const activeTab = (match) =>
+    tabClass(location.pathname.includes(match) ? 'ls-tab--active' : '');
 
   // If no dataset, show ghost version
   if (!dataset) {
@@ -23,13 +27,13 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
               />
             </div>
             <div className={styles.divider} />
-            <span className={`${styles.tab} ${styles.disabledTab}`}>Setup</span>
-            <span className={`${styles.tab} ${styles.disabledTab}`}>Explore</span>
+            <span className={disabledTab}>Setup</span>
+            <span className={disabledTab}>Explore</span>
           </div>
           <div className={styles.rightTabs}>
-            <span className={`${styles.tab} ${styles.disabledTab}`}>Export Data</span>
-            <span className={`${styles.tab} ${styles.disabledTab}`}>Export Plot</span>
-            <span className={`${styles.tab} ${styles.disabledTab}`}>Job History</span>
+            <span className={disabledTab}>Export Data</span>
+            <span className={disabledTab}>Export Plot</span>
+            <span className={disabledTab}>Job History</span>
           </div>
         </div>
       </div>
@@ -56,20 +60,17 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
             />
           </div>
           <div className={styles.divider} />
-          <Link
-            to={`/datasets/${dataset?.id}/setup/${scope?.id}`}
-            className={`${styles.tab} ${location.pathname.includes('/setup') ? styles.activeTab : ''}`}
-          >
+          <Link to={`/datasets/${dataset?.id}/setup/${scope?.id}`} className={activeTab('/setup')}>
             Setup
           </Link>
           {!scope ? (
-            <span className={`${styles.tab} ${styles.disabledTab}`} title="Finish setup to explore">
+            <span className={disabledTab} title="Finish setup to explore">
               Explore
             </span>
           ) : (
             <Link
               to={`/datasets/${dataset?.id}/explore/${scope?.id}`}
-              className={`${styles.tab} ${location.pathname.includes('/explore') ? styles.activeTab : ''} `}
+              className={activeTab('/explore')}
             >
               Explore
             </Link>
@@ -82,22 +83,16 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
                 ? `/datasets/${dataset?.id}/export/${scope?.id}`
                 : `/datasets/${dataset?.id}/export`
             }
-            className={`${styles.tab} ${location.pathname.includes('/export') ? styles.activeTab : ''}`}
+            className={activeTab('/export')}
           >
             Export Data
           </Link>
           {!scope ? (
-            <span
-              className={`${styles.tab} ${styles.disabledTab}`}
-              title="Finish setup to export plot"
-            >
+            <span className={disabledTab} title="Finish setup to export plot">
               Export Plot
             </span>
           ) : (
-            <Link
-              to={`/datasets/${dataset?.id}/plot/${scope?.id}`}
-              className={`${styles.tab} ${location.pathname.includes('/plot') ? styles.activeTab : ''} `}
-            >
+            <Link to={`/datasets/${dataset?.id}/plot/${scope?.id}`} className={activeTab('/plot')}>
               Export Plot
             </Link>
           )}
@@ -105,7 +100,7 @@ const SubNav = ({ dataset, scope, scopes, onScopeChange }) => {
             to={
               scope ? `/datasets/${dataset?.id}/jobs/${scope?.id}` : `/datasets/${dataset?.id}/jobs`
             }
-            className={`${styles.tab} ${location.pathname.includes('/jobs') ? styles.activeTab : ''}`}
+            className={activeTab('/jobs')}
           >
             Job History
           </Link>

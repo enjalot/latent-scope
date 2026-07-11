@@ -1,4 +1,4 @@
-@import "./_shared";
+@use "./_shared" as *;
 
 .embeddings {
   @include setup-container;
@@ -30,20 +30,22 @@
 .truncate {
   display: flex;
   flex-direction: row;
-  gap: 4px;
-  margin: 6px 0;
+  gap: var(--ls-space-1);
+  margin: var(--ls-space-2) 0;
 }
 .options {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: var(--ls-space-1);
   justify-content: space-between;
 }
 .batch-size {
   width: 45px;
+  @include numeric-input;
 }
 .max-seq-length {
   width: 55px;
+  @include numeric-input;
 }
 .prefix {
   width: 100%;
@@ -65,81 +67,42 @@
 .delete {
   @include setup-delete;
 }
+.run-id {
+  @include mono-fact;
+}
 
 .potential-embedding {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background-color: #efefef;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 6px;
+  gap: var(--ls-space-1);
+  background-color: var(--color-background-subtle-callout);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  padding: var(--ls-space-2);
 }
 
 .model-mismatch {
-  font-size: 0.85em;
-  padding: 6px 8px;
-  margin: 4px 0;
-  border-radius: 3px;
-  background: #f8d7da;
-  color: #721c24;
+  font-size: var(--ls-text-sm);
+  padding: var(--ls-space-2) var(--ls-space-3);
+  margin: var(--ls-space-1) 0;
+  border-radius: var(--ls-radius-2);
+  background: var(--color-background-critical);
+  color: var(--text-color-text-critical);
 }
 
 .pe-buttons {
   display: flex;
   flex-direction: row;
-  gap: 4px;
+  gap: var(--ls-space-1);
 }
 
-.format-badge-hdf5 {
-  font-size: 0.65em;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: #fff3cd;
-  color: #856404;
-  margin-left: 6px;
-}
-.format-badge-image {
-  font-size: 0.65em;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: #d1ecf1;
-  color: #0c5460;
-  margin-left: 6px;
-}
-.format-badge-lance {
-  font-size: 0.65em;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: #d4edda;
-  color: #155724;
-  margin-left: 6px;
-}
 .token-info {
-  font-size: 0.75em;
-  color: var(--text-color-secondary, #666);
+  @include mono-fact;
+  color: var(--text-color-text-subtle);
 }
-.migrate-button {
-  font-size: 0.7em;
-  padding: 1px 6px;
-  border: 1px solid #856404;
-  border-radius: 3px;
-  background: #fff3cd;
-  color: #856404;
-  cursor: pointer;
-  margin-left: 4px;
-}
-.migrate-button:hover {
-  background: #ffe69c;
-}
-.migrate-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-
 
 .taskSelect {
   display: block;
-  margin-bottom: 8px;
-  font-size: 0.9em;
+  margin-bottom: var(--ls-space-2);
+  font-size: var(--ls-text-sm);
 }

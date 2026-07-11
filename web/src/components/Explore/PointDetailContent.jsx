@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Modal, Button } from 'react-element-forge';
+import { Modal } from 'react-element-forge';
 
 import { imageUrlFor } from '../../lib/imageUrl';
 import {
@@ -138,7 +138,13 @@ function PointDetailContent({ row, index, imageSize = DEFAULT_IMAGE_SIZE }) {
       )}
 
       {lightbox && (
-        <Modal className={styles.lightbox} isVisible={!!lightbox} onClose={() => setLightbox(null)}>
+        <Modal
+          className={styles.lightbox}
+          isVisible={!!lightbox}
+          onClose={() => setLightbox(null)}
+          // --ls-z-modal: sits above the point detail drawer (--ls-z-drawer)
+          zIndex={510}
+        >
           <div className={styles.lightboxContent}>
             <img
               className={styles.lightboxImage}
@@ -147,19 +153,31 @@ function PointDetailContent({ row, index, imageSize = DEFAULT_IMAGE_SIZE }) {
               onClick={() => setLightbox(null)}
             />
             <div className={styles.lightboxCaption}>
-              <span>{lightbox.alt}</span>
+              <span className={styles.lightboxName}>{lightbox.alt}</span>
               {lightbox.href && (
                 <a href={lightbox.href} target="_blank" rel="noreferrer">
                   open original ↗
                 </a>
               )}
-              <Button
+              <button
+                type="button"
+                className="ls-icon-btn"
                 onClick={() => setLightbox(null)}
                 aria-label="Close full size image"
-                icon="x"
-                variant="outline"
-                size="small"
-              />
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           </div>
         </Modal>

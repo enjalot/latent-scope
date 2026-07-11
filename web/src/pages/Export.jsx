@@ -98,17 +98,13 @@ function Export() {
           <h2>
             Export Data for {dataset?.id} {scopeId}
           </h2>
-          <p>
+          <div>
             {hasHFKey ? (
-              <div>
-                <HFUpload dataset={dataset} scope={scope} />
-              </div>
+              <HFUpload dataset={dataset} scope={scope} />
             ) : (
-              <div>
-                <Link to="/settings">Setup Hugging Face API Key</Link>
-              </div>
+              <Link to="/settings">Setup Hugging Face API Key</Link>
             )}
-          </p>
+          </div>
         </div>
         <div className={styles['scope-files']}>
           <h3>Scope {scopeId}</h3>
@@ -123,7 +119,7 @@ function Export() {
             <h3>Python code snippets</h3>
             <p className={styles['description']}>Load the data and embeddings in python.</p>
             {/* prettier-ignore */}
-            <code>
+            <code className="ls-console">
             import h5py<br/>
             import numpy as np<br/>
             import pandas as pd<br/>
@@ -136,7 +132,7 @@ function Export() {
             {hasLance ? (
               <div className={styles['code-snippet']}>
                 <p className={styles['description']}>Query using LanceDB</p>
-                <code>
+                <code className="ls-console">
                   import lancedb
                   <br />
                   db = lancedb.connect(&quot;{hasLance[3].split('/scopes')[0]}&quot;)

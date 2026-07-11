@@ -117,6 +117,8 @@ const Container = () => {
     });
   };
 
+  const menuIsOpen = dropdownIsOpen || (isInputFocused && filterQuery === '');
+
   return (
     <div className={styles.searchContainer}>
       <div className={styles.searchBarContainer}>
@@ -151,13 +153,16 @@ const Container = () => {
         </div>
 
         {/* When a query exists, show the NN search result and filter options */}
-        <div className={styles.searchResults} ref={selectRef}>
+        <div
+          className={`${styles.searchResults} ${menuIsOpen ? styles.searchResultsOpen : ''}`}
+          ref={selectRef}
+        >
           <div className={styles.searchResultsHeader}>
             <SearchResults
               query={filterQuery}
               setFilterQuery={setFilterQuery}
               onSelect={handleSelect}
-              menuIsOpen={dropdownIsOpen || (isInputFocused && filterQuery === '')}
+              menuIsOpen={menuIsOpen}
             />
           </div>
         </div>

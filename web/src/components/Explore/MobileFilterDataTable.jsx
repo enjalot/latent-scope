@@ -5,6 +5,46 @@ import { useFilter } from '@/contexts/FilterContext';
 import { useScope } from '@/contexts/ScopeContext';
 import ClusterIcon from './Search/ClusterIcon';
 import PointDetailContent from './PointDetailContent';
+import { Spinner } from '../ui';
+
+const chevronProps = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': 'true',
+};
+
+const PrevIcon = () => (
+  <svg {...chevronProps}>
+    <polyline points="15 18 9 12 15 6" />
+  </svg>
+);
+
+const NextIcon = () => (
+  <svg {...chevronProps}>
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+// row disclosure chevrons (14px, match the pagination icon language)
+const disclosureProps = { ...chevronProps, width: 14, height: 14 };
+
+const ChevronRightIcon = () => (
+  <svg {...disclosureProps}>
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg {...disclosureProps}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
 
 const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index, onExpanded }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -26,7 +66,7 @@ const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index
           same per-datatype view as the desktop drawer. */}
       <div className={styles.rowHeader} onClick={toggle}>
         <div className={styles.rowIndex}>
-          <div className={styles.indexCircle}>{index + 1}</div>
+          <span className="ls-chip ls-chip--index">{index + 1}</span>
         </div>
         <div className={styles.rowPreview}>
           <div className={styles.rowText}>{row[dataset.text_column]}</div>
@@ -37,7 +77,9 @@ const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index
             </p>
           </div>
         </div>
-        <div className={styles.rowChevron}>{isExpanded ? '▾' : '▸'}</div>
+        <div className={styles.rowChevron}>
+          {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        </div>
       </div>
       {isExpanded && (
         <div className={styles.rowDetail} onClick={(e) => e.stopPropagation()}>
@@ -97,24 +139,35 @@ function MobileFilterDataTable({ dataset, onHover = () => {}, onClick }) {
       >
         <div className={styles.dragIndicator}>
           <button
+            type="button"
+            className="ls-icon-btn"
+            aria-label="Previous page"
             onClick={() => setPage((prevPage) => Math.max(0, prevPage - 1))}
             disabled={page === 0}
           >
-            ← {page - 1 >= 0 ? page : ''}
+            <PrevIcon />
           </button>
           <div className={styles.dragPill}></div>
+          <span className="ls-pagination__readout">
+            {page + 1} / {totalPages || 1}
+          </span>
           <button
+            type="button"
+            className="ls-icon-btn"
+            aria-label="Next page"
             onClick={() => setPage((prevPage) => Math.min(totalPages - 1, prevPage + 1))}
             disabled={page === totalPages - 1}
           >
-            → {page + 1 < totalPages ? page + 2 : ''}
+            <NextIcon />
           </button>
         </div>
       </div>
 
       <div className={styles.filterDataTable}>
         {loading ? (
-          <div className={styles.loadingContainer}>Loading...</div>
+          <div className={styles.loadingContainer}>
+            <Spinner size="sm" label="LOADING…" />
+          </div>
         ) : (
           <div className={styles.rowsContainer}>
             {dataTableRows.map((row, index) => (

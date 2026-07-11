@@ -78,7 +78,7 @@ function HFUpload({ dataset, scope }) {
           variant="outline"
           onClick={handleUpload}
           disabled={!!uploadJob}
-          text="Upload to Hugging Face 🤗"
+          text="Upload to Hugging Face"
         />
       </div>
 
@@ -92,7 +92,7 @@ function HFUpload({ dataset, scope }) {
       {hfRepo ? (
         <div>
           <p>
-            Uploaded to 🤗
+            Uploaded to{' '}
             <a href={`https://huggingface.co/datasets/${hfRepo}`} target="_blank" rel="noreferrer">
               {hfRepo}
             </a>

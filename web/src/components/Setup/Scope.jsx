@@ -422,7 +422,11 @@ function Scope() {
         <div className={styles['setup-scope-preview']}>
           <div className={styles['preview']}>
             <div className={styles['scope-actions']}>
-              <div className={styles['action-card'] + ' ' + styles['action-card-explore']}>
+              <div
+                className={
+                  'ls-panel ' + styles['action-card'] + ' ' + styles['action-card-explore']
+                }
+              >
                 <h3>
                   <Link
                     to={`/datasets/${dataset?.id}/explore/${scope?.id}`}
@@ -436,7 +440,7 @@ function Scope() {
                 </p>
               </div>
 
-              <div className={styles['action-card']}>
+              <div className={'ls-panel ' + styles['action-card']}>
                 <h3>
                   <Link
                     to={`/datasets/${dataset?.id}/export/${scope?.id}`}
@@ -448,7 +452,7 @@ function Scope() {
                 <p>Download your data in various formats.</p>
               </div>
 
-              <div className={styles['action-card']}>
+              <div className={'ls-panel ' + styles['action-card']}>
                 <h3>
                   <Link
                     to={`/datasets/${dataset?.id}/plot/${scope?.id}`}
@@ -460,7 +464,7 @@ function Scope() {
                 <p>Generate publication-ready visualizations.</p>
               </div>
 
-              <div className={styles['action-card']}>
+              <div className={'ls-panel ' + styles['action-card']}>
                 <h3>Delete Scope</h3>
                 <p>Remove this scope. Underlying data will not be deleted.</p>
                 <Button

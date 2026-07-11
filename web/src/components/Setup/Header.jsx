@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
+import { Button } from 'react-element-forge';
 import { apiUrl } from '../../lib/apiService';
 import SubNav from '../SubNav';
+import { Spinner } from '../ui';
 
 import { useSetup } from '../../contexts/SetupContext';
 import { useStartJobPolling } from '../Job/Run';
@@ -37,7 +39,9 @@ function Header() {
           scopes={scopesToShow}
           onScopeChange={onScopeChange}
         />
-        <div>Loading...</div>
+        <div className={styles.loading}>
+          <Spinner label="LOADING DATASET…" />
+        </div>
       </>
     );
   }
@@ -48,14 +52,15 @@ function Header() {
       <div className={styles.dataset}>
         {!dataset.ls_version ? (
           <div className={styles.reimport}>
-            <span className="warning-header">WARNING: outdated dataset!</span>
-            <button
+            <span className={styles.warning}>Outdated dataset</span>
+            <Button
+              size="small"
+              color="secondary"
               onClick={() => {
                 startReingestJob({ text_column: dataset.text_column });
               }}
-            >
-              Reimport
-            </button>
+              text="Reimport"
+            />
           </div>
         ) : null}
 

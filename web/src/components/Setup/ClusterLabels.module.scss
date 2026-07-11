@@ -1,4 +1,4 @@
-@import "./_shared";
+@use "./_shared" as *;
 
 .cluster-labels {
   @include setup-container;
@@ -12,13 +12,6 @@
 .preview {
   @include setup-preview;
   position: relative;
-
-  .preview-header {
-    position: absolute;
-    top: -70px;
-    left: 0;
-    right: 0;
-  }
 }
 .navigate {
   @include setup-navigate;
@@ -47,17 +40,19 @@
 .delete {
   @include setup-delete;
 }
+.run-id {
+  @include mono-fact;
+}
 .cluster-labels-form-label {
-  width: 100px;
-  display: inline-block;
+  @include setup-form-label;
 }
 .cluster-labels-form input {
   width: 84px;
+  @include numeric-input;
 }
 .cluster-labels-table {
-  height: 98%;
-  overflow: scroll;
+  height: 100%;
+  overflow: auto;
   flex-grow: 1;
-  padding: 6px;
+  padding: var(--ls-space-2);
 }
-

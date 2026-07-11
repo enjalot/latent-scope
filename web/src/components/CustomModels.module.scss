@@ -1,38 +1,57 @@
 .custom-models {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 1rem;
+  gap: var(--ls-space-5);
+  padding: var(--ls-space-3) 0;
 
   &-setup {
     display: flex;
-    gap: 2rem;
+    gap: var(--ls-space-5);
   }
 
   &-form {
     flex: 1;
-    
+
     form {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-      margin-top: 1rem;
+      gap: var(--ls-space-3);
+      margin-top: var(--ls-space-3);
       max-width: 400px;
 
       label {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--ls-space-1);
       }
 
       input {
-        padding: 0.5rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        background-color: var(--ls-surface-input);
+        border: 1px solid var(--borders-color-border-2);
+        border-radius: var(--ls-radius-2);
+        padding: 8px 10px;
+        /* model names and URLs are machine facts */
+        font-family: var(--ls-font-mono);
+        font-size: var(--ls-text-sm);
+        color: var(--text-color-text-main);
+        transition: border-color var(--ls-dur-fast) var(--ls-ease-out);
+
+        &::placeholder {
+          color: var(--text-color-text-disabled);
+        }
+
+        &:hover {
+          border-color: var(--neutrals-color-neutral-3);
+        }
+
+        &:focus-visible {
+          border-color: var(--color-interaction-primary);
+        }
       }
 
       .form-label {
-        font-weight: 500;
+        font-size: var(--ls-text-xs);
+        font-weight: 600;
       }
     }
   }
@@ -41,33 +60,36 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--ls-space-3);
 
     .item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      gap: var(--ls-space-3);
+      padding: var(--ls-space-3);
+      background-color: var(--ls-surface-panel);
+      border: 1px solid var(--borders-color-border-1);
+      border-radius: var(--ls-radius-2);
 
       &-info {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: var(--ls-space-1);
+        min-width: 0;
       }
 
       &-name {
-        font-weight: 500;
+        font-size: var(--ls-text-sm);
+        font-weight: 600;
       }
 
-      &-url, &-model {
-        font-size: 0.9rem;
-        color: #666;
-      }
-
-      .delete {
-        padding: 0.5rem;
+      &-url,
+      &-model {
+        font-family: var(--ls-font-mono);
+        font-size: var(--ls-text-xs);
+        color: var(--text-color-text-subtle);
+        word-break: break-all;
       }
     }
   }

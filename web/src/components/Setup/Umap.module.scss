@@ -1,4 +1,4 @@
-@import "./_shared";
+@use "./_shared" as *;
 
 .umap {
   @include setup-container;
@@ -27,44 +27,48 @@
 }
 
 .umap-form-label {
-  width: 90px;
-  display: inline-block;
+  @include setup-form-label;
 }
 .umap-form input {
   width: 84px;
+  @include numeric-input;
 }
 .umap-form input.umap-form-text {
   width: 220px;
+  font-family: var(--ls-font-ui);
+  text-align: left;
 }
 .umap-form-align {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
 .umaps-align {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
 .umaps-align-info {
   font-style: italic;
-  margin: 6px;
+  margin: var(--ls-space-2);
 }
 .umaps-align label {
   cursor: pointer;
-  padding: 4px;
-  border: 1px solid #f1f1f1;
-  background-color: #f1f1f1;
-  border-radius: 5px;
+  padding: var(--ls-space-1);
+  background-color: var(--neutrals-color-neutral-2);
+  border-radius: var(--ls-radius-1);
 }
 .umap-form-save {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
 
+.compare-link {
+  @include compare-link;
+}
 
 .umap-list {
   @include item-list;
@@ -95,8 +99,8 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
+  gap: var(--ls-space-1);
+  margin-top: var(--ls-space-2);
 }
 
 .umap-align-list img {

@@ -1,6 +1,12 @@
 .pointLabelPlot {
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+
+  // numbered beacons are machine facts — mono, tabular
+  :global(text.point-label) {
+    font-family: var(--ls-font-mono);
+    font-variant-numeric: tabular-nums;
   }
+}

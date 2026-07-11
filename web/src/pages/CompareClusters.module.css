@@ -1,105 +1,107 @@
+/*
+  CompareClusters-specific rules only. The rules this page shares verbatim
+  with the Compare views (.controls, .controls-header, .scatter-container,
+  .scatter canvas, .tab-header, the reticle) live in
+  ../components/Compare/Compare.module.css and are consumed in
+  CompareClusters.jsx via a second `sharedStyles` module import.
+  All chrome values are Amber Console tokens; dark mode flips automatically.
+*/
+
 .container {
   display: grid;
   grid-template-rows: auto 1fr 1fr;
-  gap: 6px;
+  gap: var(--ls-space-2);
   height: 100%;
   overflow: hidden;
-  padding: 6px;
+  padding: var(--ls-space-2);
+}
+
+/* Centered loading state before the dataset arrives */
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
 /* Controls */
-.controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid lightgray;
-  border-radius: 5px;
-}
-
-.controls-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1.1em;
-}
-
 .selectors {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ls-space-3);
   flex-wrap: wrap;
 }
 
 .selector {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ls-space-1);
   flex: 1;
   min-width: 180px;
 }
 
 .selector label {
-  font-size: 0.85em;
+  font-size: var(--ls-text-xs);
   font-weight: 600;
-  color: #666;
+  color: var(--text-color-text-subtle);
 }
 
 .selector select {
   width: 100%;
-  padding: 4px 6px;
 }
 
 .metrics {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ls-space-3);
   align-items: center;
 }
 
+/* stat tile — composes with the global .ls-panel chrome */
 .metric-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px 16px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background: #f9f9f9;
-}
-
-.metric-label {
-  font-size: 0.75em;
-  color: #888;
-  font-weight: 600;
-  text-transform: uppercase;
+  gap: 2px;
+  padding: var(--ls-space-2) var(--ls-space-4);
 }
 
 .metric-value {
-  font-size: 1.2em;
-  font-weight: bold;
-  color: #333;
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ls-text-lg);
+  font-weight: 500;
+  color: var(--text-color-text-main);
 }
 
 .diff-toggle {
-  font-size: 0.85em;
+  font-size: var(--ls-text-sm);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--ls-space-1);
   cursor: pointer;
   margin-left: auto;
 }
 
-.loading {
-  font-style: italic;
-  color: #999;
-  font-size: 0.85em;
+.diff-toggle input[type='checkbox'] {
+  accent-color: var(--color-interaction-primary);
 }
 
-/* Scatter area */
+/* mono micro status line while the comparison computes */
+.loading {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
+/* Scatter area — gap must match PANE_GAP in CompareClusters.jsx */
 .scatter-area {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--ls-space-3);
   min-height: 0;
   overflow: hidden;
 }
@@ -111,23 +113,16 @@
   flex-direction: column;
 }
 
+/* pane eyebrow: cluster run IDs are machine facts */
 .scatter-label {
-  font-size: 0.8em;
-  font-weight: 600;
-  color: #666;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
   text-align: center;
   padding: 2px 0;
-}
-
-.scatter-container {
-  position: relative;
-  border: 1px solid gray;
-  border-radius: 5px;
-  padding: 6px;
-}
-
-.scatter canvas {
-  background-color: #111;
 }
 
 /* Bottom panel */
@@ -138,124 +133,37 @@
   min-height: 0;
 }
 
-.tab-header {
-  height: 32px;
-  background-color: #f1f1f1;
-  border: 1px solid #ccc;
-  border-bottom: none;
-}
-
-.tab-header button {
-  height: 32px;
-  display: inline-block;
-  border: none;
-  border-radius: 0;
-  margin: 0;
-  padding: 6px 24px;
-  cursor: pointer;
-}
-
-.tab-header button:hover {
-  background-color: #ddd;
-}
-
-.tab-header button:focus,
-.tab-header button:focus-visible {
-  outline: none;
-}
-
-.tab-active {
-  background-color: white;
-  border-top: 2px solid seagreen;
-  font-weight: bold;
-}
-
 .tab-content {
   flex: 1;
   overflow-y: auto;
-  border: 1px solid lightgray;
-  padding: 12px;
+  padding: var(--ls-space-3);
   min-height: 0;
 }
 
 .overlap-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ls-space-2);
 }
 
 .overlap-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8em;
-  color: #888;
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-subtle);
 }
 
 .points-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--ls-space-2);
 }
 
 .points-summary {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9em;
-}
-
-.clear-button {
-  padding: 2px 10px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  background: #f5f5f5;
-  cursor: pointer;
-  font-size: 0.85em;
-}
-
-.clear-button:hover {
-  background: #e0e0e0;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .controls {
-    border-color: #555;
-  }
-
-  .selector label,
-  .scatter-label {
-    color: #aaa;
-  }
-
-  .metric-card {
-    background: #333;
-    border-color: #555;
-  }
-
-  .metric-value {
-    color: #ddd;
-  }
-
-  .tab-header {
-    background-color: #333;
-  }
-
-  .tab-header button:hover {
-    background-color: #444;
-  }
-
-  .tab-active {
-    background-color: #444;
-  }
-
-  .tab-content {
-    border-color: #555;
-  }
-
-  .scatter-container {
-    border-color: #555;
-  }
+  gap: var(--ls-space-2);
+  font-size: var(--ls-text-sm);
 }
 
 /* Responsive */

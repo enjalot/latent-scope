@@ -6,8 +6,9 @@ import { useStartJobPolling } from '../Job/Run';
 import { apiService, apiUrl } from '../../lib/apiService';
 import { debounce } from '../../utils';
 import { useSetup } from '../../contexts/SetupContext';
-import { Button } from 'react-element-forge';
+import { Button, Icon } from 'react-element-forge';
 import { Tooltip } from 'react-tooltip';
+import { Badge } from '../ui';
 
 import ModelSelect from '../ModelSelect';
 import JobProgress from '../Job/Progress';
@@ -355,6 +356,7 @@ function ClusterLabels() {
               <label>
                 <span className={styles['cluster-labels-form-label']}>Label using column:</span>
                 <select
+                  className="ls-select"
                   value={labelColumn || ''}
                   onChange={(e) => setLabelColumn(e.target.value)}
                   disabled={!!clusterLabelsJob || !cluster}
@@ -366,7 +368,7 @@ function ClusterLabels() {
                   ))}
                 </select>
                 <span className="tooltip" data-tooltip-id="label-column">
-                  🤔
+                  <Icon name="help-circle" size={14} />
                 </span>
                 <Tooltip id="label-column" place="top" effect="solid" className="tooltip-area">
                   The embedding was built on an image column, which can&apos;t be sent to the chat
@@ -384,7 +386,7 @@ function ClusterLabels() {
                 disabled={!!clusterLabelsJob || !cluster}
               />
               <span className="tooltip" data-tooltip-id="samples">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
                 The number of items to use from each cluster for summarization. Set to 0 to use all
@@ -401,7 +403,7 @@ function ClusterLabels() {
                 disabled={!!clusterLabelsJob || !cluster}
               />
               <span className="tooltip" data-tooltip-id="max_tokens_per_sample">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip
                 id="max_tokens_per_sample"
@@ -423,7 +425,7 @@ function ClusterLabels() {
                 disabled={!!clusterLabelsJob || !cluster}
               />
               <span className="tooltip" data-tooltip-id="max_tokens_total">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip id="max_tokens_total" place="top" effect="solid" className="tooltip-area">
                 The maximum number of tokens to use for across all samples. Set to -1 to ignore
@@ -471,8 +473,8 @@ function ClusterLabels() {
                     <span>
                       {labelName(cl.id)}{' '}
                       {cl.id == savedScope?.cluster_labels_id && (
-                        <span className="tooltip" data-tooltip-id="saved">
-                          💾
+                        <span data-tooltip-id="saved">
+                          <Badge mono variant="neutral">SAVED</Badge>
                         </span>
                       )}
                     </span>
@@ -502,9 +504,12 @@ function ClusterLabels() {
                   {cl?.id != 'default' && (
                     <Button
                       className={styles['delete']}
-                      color="secondary"
+                      color="delete"
+                      variant="outline"
+                      size="small"
+                      icon="trash"
+                      label="Delete labels"
                       onClick={() => deleteClusterLabelsJob({ cluster_labels_id: cl.id })}
-                      text="🗑️"
                     />
                   )}
                 </div>
@@ -514,9 +519,6 @@ function ClusterLabels() {
       {cluster && (
         <div className={styles['cluster-labels-preview']}>
           <div className={styles['preview']}>
-            {/* <div className={styles["preview-header"]}>
-                  <h3>Preview: {labelName(selected)}</h3>
-              </div> */}
             <div className={styles['cluster-labels-table']}>
               <DataTable
                 data={clusterLabelData.map((d, i) => ({

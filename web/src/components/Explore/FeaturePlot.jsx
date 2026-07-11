@@ -1,7 +1,22 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { max } from 'd3-array';
 import { scalePow } from 'd3-scale';
+import { useColorMode } from '@/hooks/useColorMode';
 import FeatureModal from './FeatureModal';
+
+// Chrome colors live in CSS tokens; canvas code reads them at draw time and
+// re-renders on theme change (same pattern as ScatterGL).
+const readChromeTokens = () => {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const read = (name) => rootStyle.getPropertyValue(name).trim();
+  return {
+    accent: read('--interactions---primary-color-interaction-primary'),
+    dimmed: read('--borders-color-border-2'),
+    faint: read('--neutrals-color-neutral-2'),
+    tick: read('--text-color-text-subtle'),
+    mono: read('--ls-font-mono'),
+  };
+};
 
 function FeaturePlot({
   row,
@@ -13,21 +28,29 @@ function FeaturePlot({
 }) {
   const { idx } = row;
   const showTicks = idx !== undefined;
+  const { isDark } = useColorMode();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   const canvasRef = useRef(null);
 
   const height = 45;
-  const padding = { left: 10, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 };
+  const padding = useMemo(
+    () => ({ left: 10, right: 20, top: 2.5, bottom: showTicks ? 15 : 1.5 }),
+    [showTicks]
+  );
 
   // const activations = row.sae_acts || [];
   const dataset_max = useMemo(() => max(features, (f) => f.dataset_max), [features]);
 
-  const logScale = scalePow()
-    .exponent(2.5)
-    .domain([0, dataset_max])
-    .range([padding.left, width - padding.right]);
+  const logScale = useMemo(
+    () =>
+      scalePow()
+        .exponent(2.5)
+        .domain([0, dataset_max])
+        .range([padding.left, width - padding.right]),
+    [dataset_max, padding, width]
+  );
 
   // Prepare feature data
   const featuresToActivations = useMemo(() => {
@@ -58,6 +81,8 @@ function FeaturePlot({
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
+    const tokens = readChromeTokens();
+
     // Draw lines
     featuresToActivations.forEach(({ feature: feat_idx, activation }, idx) => {
       const x = logScale(activation);
@@ -66,7 +91,7 @@ function FeaturePlot({
       ctx.moveTo(x, height - padding.bottom);
       ctx.lineTo(x, padding.top);
 
-      const featureColor = '#d9a778';
+      const featureColor = tokens.accent;
 
       // Set line style based on hover/feature state
       if (hoveredIdx !== null) {
@@ -75,7 +100,7 @@ function FeaturePlot({
           ctx.lineWidth = 2;
           ctx.globalAlpha = 0.8;
         } else {
-          ctx.strokeStyle = '#ccc';
+          ctx.strokeStyle = tokens.dimmed;
           ctx.lineWidth = 2;
           ctx.globalAlpha = 0.25;
         }
@@ -88,7 +113,7 @@ function FeaturePlot({
         ctx.lineWidth = 2;
         ctx.globalAlpha = 0.8;
       } else {
-        ctx.strokeStyle = '#f5f5f5';
+        ctx.strokeStyle = tokens.faint;
         ctx.lineWidth = 2;
         ctx.globalAlpha = 0.5;
       }
@@ -96,10 +121,10 @@ function FeaturePlot({
       ctx.stroke();
     });
 
-    // Draw ticks
+    // Draw ticks (numeric readouts — mono)
     if (showTicks) {
-      ctx.font = '8px sans-serif';
-      ctx.fillStyle = '#666';
+      ctx.font = `8px ${tokens.mono || 'monospace'}`;
+      ctx.fillStyle = tokens.tick;
       ctx.textAlign = 'center';
 
       [0, dataset_max].forEach((tick) => {
@@ -117,6 +142,7 @@ function FeaturePlot({
     showTicks,
     padding,
     dataset_max,
+    isDark,
   ]);
 
   // Handle mouse interactions
@@ -145,8 +171,10 @@ function FeaturePlot({
       if (closestIdx !== null) {
         const { feature: feat_idx, activation } = featuresToActivations[closestIdx];
         const rect = canvas.getBoundingClientRect();
-        const tooltipX = rect.left + logScale(activation) - padding.left;
-        const tooltipY = rect.bottom + 25;
+        // Honest anchor: the hovered line's screen position at the canvas's
+        // bottom edge. The tooltip consumer applies its own offset.
+        const tooltipX = rect.left + logScale(activation);
+        const tooltipY = rect.bottom;
 
         // Update tooltip state in a single setState call
         setFeatureTooltipContent({
@@ -158,7 +186,7 @@ function FeaturePlot({
         setFeatureTooltipContent(null);
       }
     },
-    [featuresToActivations, logScale, features, setFeatureTooltipContent, padding]
+    [featuresToActivations, logScale, features, setFeatureTooltipContent]
   );
 
   const handleMouseLeave = useCallback(() => {

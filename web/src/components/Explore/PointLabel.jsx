@@ -101,7 +101,7 @@ function PointLabel({
       })
       .attr('text-anchor', 'middle')
       .attr('fill', textColor)
-      .attr('font-family', 'monospace')
+      // font-family comes from the stylesheet (--ls-font-mono via the module)
       .attr('dominant-baseline', 'middle')
       .attr('font-size', fontSize)
       .attr('fill-opacity', (d) =>

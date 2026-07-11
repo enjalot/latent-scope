@@ -2,12 +2,17 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { interpolateReds } from 'd3-scale-chromatic';
 import { extent } from 'd3-array';
 import { Tooltip } from 'react-tooltip';
+import { Button } from 'react-element-forge';
 import Scatter from '../Scatter';
 import AnnotationPlot from '../AnnotationPlot';
 import CrosshairPlot from './CrosshairPlot';
 import NeighborPlot from './NeighborPlot';
+import Reticle from './Reticle';
 import { buildColorPoints } from './colorBy';
 import styles from './Compare.module.css';
+
+// Must match the --ls-space-3 gap on .side-by-side-container.
+const PANE_GAP = 12;
 
 // Spread stat: diagonal of the bounding box of the given indices in a point
 // set, giving a quick sense of how dispersed a brush selection is per pane.
@@ -343,7 +348,8 @@ function SideBySideView({
       ? displacementData[hoveredIndex].toFixed(3)
       : null;
 
-  const halfWidth = Math.floor((width - 12) / 2);
+  const halfWidth = Math.floor((width - PANE_GAP) / 2);
+  const selectionActive = clickedIndex != null || selectedIndices?.length > 0;
 
   return (
     <div className={styles['side-by-side-view']}>
@@ -359,12 +365,13 @@ function SideBySideView({
         {clickedIndex != null && (
           <span className={styles['neighbor-info']}>
             Showing k={metricK} neighbors from {clickedSide} map (point {clickedIndex})
-            <button
-              className={styles['clear-neighbors']}
+            <Button
+              size="small"
+              color="secondary"
+              variant="outline"
+              text="Clear"
               onClick={clearNeighbors}
-            >
-              Clear
-            </button>
+            />
           </span>
         )}
         {clickedIndex == null && selectedIndices?.length > 0 && (
@@ -372,9 +379,13 @@ function SideBySideView({
             {selectedIndices.length} selected
             {leftSpread != null && ` · spread L ${leftSpread.toFixed(2)}`}
             {rightSpread != null && ` / R ${rightSpread.toFixed(2)}`}
-            <button className={styles['clear-neighbors']} onClick={handleClearBrush}>
-              Clear
-            </button>
+            <Button
+              size="small"
+              color="secondary"
+              variant="outline"
+              text="Clear"
+              onClick={handleClearBrush}
+            />
           </span>
         )}
         {clickedIndex == null && !selectedIndices?.length && (
@@ -447,6 +458,7 @@ function SideBySideView({
                     height={height}
                   />
                 )}
+                <Reticle active={selectionActive} />
               </>
             )}
           </div>
@@ -515,6 +527,7 @@ function SideBySideView({
                     height={height}
                   />
                 )}
+                <Reticle active={selectionActive} />
               </>
             )}
           </div>
@@ -526,7 +539,7 @@ function SideBySideView({
         isOpen={hoveredIndex != null && clickedIndex == null}
         float={true}
         offset={15}
-        className={styles['hover-tooltip']}
+        className="ls-tooltip"
         noArrow
       >
         {hoverLoading && !hoverText && (

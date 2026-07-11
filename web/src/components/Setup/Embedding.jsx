@@ -1,7 +1,7 @@
 // NewEmbedding.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tooltip } from 'react-tooltip';
-import { Select, Button } from 'react-element-forge';
+import { Select, Button, Icon } from 'react-element-forge';
 
 import { groups } from 'd3-array';
 
@@ -22,6 +22,7 @@ import SettingsModal from '../SettingsModal';
 import Sae from './Sae';
 import Preview from './Preview';
 import EstimatePanel from './EstimatePanel';
+import { Badge } from '../ui';
 
 import styles from './Embedding.module.scss';
 
@@ -460,11 +461,11 @@ function Embedding() {
                 return (
                   <form key={pe} className={styles['potential-embedding']}>
                     <span>
-                      Create embedding from column <b>{pe}</b>?
+                      Create embedding from column <span className={styles['run-id']}>{pe}</span>?
                     </span>
                     <label htmlFor="column">
                       Embedded text column:
-                      <select id="column" name="column">
+                      <select className="ls-select" id="column" name="column">
                         {dataset?.columns
                           .filter((c) => dataset?.column_metadata[c].type == 'string')
                           .map((column, index) => {
@@ -478,7 +479,7 @@ function Embedding() {
                     </label>
                     <label htmlFor="model">
                       Embedded with model:
-                      <select id="model" name="model">
+                      <select className="ls-select" id="model" name="model">
                         <option value="">Not listed</option>
                         {allModels.map((model, index) => {
                           return (
@@ -491,16 +492,16 @@ function Embedding() {
                     </label>
                     <div className={styles['pe-buttons']}>
                       <Button
-                        className={`${styles['button']} button`}
                         color="secondary"
+                        icon="check"
                         onClick={(e) => handleConfirmPotentialEmbedding(e, pe)}
-                        text="✅ Yes"
+                        text="Yes"
                       />
                       <Button
-                        className={`${styles['button']} button`}
                         color="secondary"
+                        icon="x"
                         onClick={(e) => handleDenyPotentialEmbedding(e, pe)}
-                        text="❌ No thanks"
+                        text="No thanks"
                       />
                     </div>
                   </form>
@@ -547,6 +548,7 @@ function Embedding() {
                 <label className={styles.taskSelect}>
                   Task:{' '}
                   <select
+                    className="ls-select"
                     value={task || ''}
                     onChange={(e) => setTask(e.target.value)}
                     disabled={!!embeddingsJob}
@@ -583,7 +585,7 @@ function Embedding() {
                     disabled={!!embeddingsJob}
                   />
                   <span className="tooltip" data-tooltip-id="batchsize">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip className="tooltip-area" id="batchsize" place="top" effect="solid">
                     Reduce this number if you run out of memory. <br></br>
@@ -604,7 +606,7 @@ function Embedding() {
                     disabled={!!embeddingsJob}
                   />
                   <span className="tooltip" data-tooltip-id="maxseqlength">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip className="tooltip-area" id="maxseqlength" place="top" effect="solid">
                     This controls the maximum number of tokens to embed for each item. <br></br>
@@ -700,26 +702,28 @@ function Embedding() {
                         checked={emb.id === embedding?.id}
                         onChange={() => setEmbedding(emb)}
                       />
-                      {emb.id}{' '}
+                      <span className={styles['run-id']}>{emb.id}</span>{' '}
                       {savedScope?.embedding_id == emb.id ? (
-                        <span className="tooltip" data-tooltip-id="saved">
-                          💾
+                        <span data-tooltip-id="saved">
+                          <Badge mono variant="neutral">SAVED</Badge>
                         </span>
                       ) : null}
                     </span>
                     <span>
                       {emb.model_id?.replace('___', '/')}
                       {emb.input_type === 'image' && (
-                        <span className={styles['format-badge-image']}>image</span>
+                        <Badge mono variant="info">IMAGE</Badge>
                       )}
                     </span>
                     <span>
                       {emb.dimensions} dimensions
                       {embeddingFormats[emb.id] === 'hdf5' && (
                         <>
-                          <span className={styles['format-badge-hdf5']}>HDF5</span>
-                          <button
-                            className={styles['migrate-button']}
+                          <Badge mono variant="warning">HDF5</Badge>
+                          <Button
+                            size="small"
+                            color="secondary"
+                            variant="outline"
                             disabled={migratingId === emb.id}
                             onClick={(e) => {
                               e.preventDefault();
@@ -729,13 +733,12 @@ function Embedding() {
                                 setEmbeddingFormats((prev) => ({ ...prev, [emb.id]: 'lancedb' }));
                               });
                             }}
-                          >
-                            {migratingId === emb.id ? 'Migrating...' : 'Migrate to LanceDB'}
-                          </button>
+                            text={migratingId === emb.id ? 'Migrating…' : 'Migrate to LanceDB'}
+                          />
                         </>
                       )}
                       {embeddingFormats[emb.id] === 'lancedb' && (
-                        <span className={styles['format-badge-lance']}>LanceDB</span>
+                        <Badge mono variant="success">LANCE</Badge>
                       )}
                     </span>
                     {emb.token_stats?.total ? (
@@ -758,7 +761,7 @@ function Embedding() {
                     ) : null}
                     {dims.length ? (
                       <div className={styles['truncate']}>
-                        <select id={'truncate-' + emb.id}>
+                        <select className="ls-select" id={'truncate-' + emb.id}>
                           {dims.map((d, i) => {
                             return (
                               <option key={'dimension-' + i} value={d}>
@@ -773,7 +776,7 @@ function Embedding() {
                           text="Truncate"
                         />
                         <span className="tooltip" data-tooltip-id="truncate">
-                          🤔
+                          <Icon name="help-circle" size={14} />
                         </span>
                         <Tooltip id="truncate" place="top" effect="solid">
                           This model supports Matroyshka embeddings. <br></br>
@@ -801,9 +804,12 @@ function Embedding() {
                 <Button
                   className={styles['delete']}
                   onClick={() => deleteEmbeddingsJob({ embedding_id: emb.id })}
-                  color="secondary"
+                  color="delete"
+                  variant="outline"
+                  size="small"
+                  icon="trash"
+                  label="Delete embedding"
                   disabled={embeddingsJob && embeddingsJob.status !== 'completed'}
-                  text="🗑️"
                 />
               </div>
             );

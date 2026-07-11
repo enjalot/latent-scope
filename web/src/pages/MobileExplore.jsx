@@ -4,7 +4,11 @@ import VisualizationPane from '../components/Explore/VisualizationPane';
 import MobileFilterDataTable from '../components/Explore/MobileFilterDataTable';
 import { useScope } from '../contexts/ScopeContext';
 import { useFilter } from '../contexts/FilterContext';
+import { Spinner } from '../components/ui';
 import styles from './MobileExplore.module.css';
+
+// Height reserved for the bottom-sheet table under the map (px)
+const BOTTOM_SHEET_RESERVE = 150;
 
 function MobileExplore() {
   const {
@@ -24,7 +28,10 @@ function MobileExplore() {
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations] = useState([]);
 
-  const [size, setSize] = useState([window.innerWidth, window.innerHeight - 200]);
+  const [size, setSize] = useState([
+    window.innerWidth,
+    window.innerHeight - BOTTOM_SHEET_RESERVE,
+  ]);
   const vizContainerRef = useRef(null);
 
   useEffect(() => {
@@ -33,8 +40,7 @@ function MobileExplore() {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        // Reserve 150px for the bottom sheet
-        setSize([width, height - 150]);
+        setSize([width, height - BOTTOM_SHEET_RESERVE]);
       }
     });
     observer.observe(vizContainerRef.current);
@@ -62,7 +68,12 @@ function MobileExplore() {
     );
   }
 
-  if (!dataset) return <div>Loading...</div>;
+  if (!dataset)
+    return (
+      <div className={styles.pageLoading}>
+        <Spinner label="LOADING SCOPE…" />
+      </div>
+    );
 
   return (
     <div className={styles.mobileExploreLayout}>
@@ -94,11 +105,8 @@ function MobileExplore() {
           ) : null}
 
           {filterLoading && (
-            <div className={styles.loadingOverlay}>
-              <div className={styles.loadingContainer}>
-                <div className={styles.loadingSpinner}></div>
-                <div>Loading...</div>
-              </div>
+            <div className="ls-scrim">
+              <Spinner label="LOADING…" />
             </div>
           )}
         </div>

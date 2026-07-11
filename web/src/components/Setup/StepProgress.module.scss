@@ -1,4 +1,3 @@
-
 .stepProgressContainer {
   display: flex;
   flex-direction: row;
@@ -9,49 +8,59 @@
 .stepProgress {
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: var(--ls-space-1);
   width: 45%;
 }
 
 .step {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ls-space-2);
   padding: 6px 12px;
-  background-color: var(--neutrals-color-neutral-0);
-  border: 1px solid var(--borders-color-border-1);
-  color: var(--text-color-text-neutral);
+  background: transparent;
+  border: none;
+  border-radius: var(--ls-radius-2);
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 500;
+  line-height: var(--ls-leading-ui);
+  color: var(--text-color-text-subtle);
+  cursor: default;
+  transition:
+    color var(--ls-dur-fast) var(--ls-ease-out),
+    background-color var(--ls-dur-fast) var(--ls-ease-out);
 }
 
 .active {
-  // background-color: var(--neutrals-color-neutral-1);
-  background-color: var(--semantic-color-semantic-neutral);
-  border-color: var(--borders-color-border-2);
-  // color: var(--text-color-text-main);
-  color: var(--neutrals-color-neutral-0);
-  &::before {
-    content: '👉';
-    margin-right: 5px;
-  }
+  color: var(--text-color-text-main);
 }
 
 .completed {
-  // background-color: var(--semantic-color-semantic-neutral);
-  background-color: var(--neutrals-color-neutral-1);
-  border-color: var(--semantic-color-semantic-neutral);
-  // color: var(--neutrals-color-neutral-0);
   color: var(--text-color-text-main);
   cursor: pointer;
-  &::before {
-    content: '✅';
-    margin-right: 5px;
+
+  &:hover {
+    background-color: var(--neutrals-color-neutral-2);
   }
 }
 
 .previewHeader {
   width: 48%;
-  h3 {
-    padding: 6px 12px;
-    background-color: var(--neutrals-color-neutral-0);
-    // border: 1px solid $borders-color-border-1;
-    color: var(--text-color-text-main);
 
+  h3 {
+    margin: 0;
+    padding: 6px 12px;
+    font-size: var(--ls-text-sm);
+    font-weight: 600;
+    color: var(--text-color-text-main);
   }
+}
+
+.previewId {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
 }

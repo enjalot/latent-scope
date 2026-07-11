@@ -1,22 +1,19 @@
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import SettingsModal from './SettingsModal';
+import { StatusDiode } from './ui';
 import './Nav.css';
 
 const Nav = () => {
   return (
-    <>
-      <nav>
-        <ul>
-          <li>
-            <Link to="/">Latent Scope</Link>
-          </li>
-          <li className="settings">
-            <SettingsModal tooltip={false} color="secondary" variant="clear" />
-          </li>
-        </ul>
-      </nav>
-      {/* <SubNav /> */}
-    </>
+    <nav className="main-nav">
+      <NavLink to="/" end className="wordmark">
+        <StatusDiode status="ready" />
+        Latent Scope
+      </NavLink>
+      <div className="settings">
+        <SettingsModal tooltip={false} color="secondary" variant="clear" />
+      </div>
+    </nav>
   );
 };
 

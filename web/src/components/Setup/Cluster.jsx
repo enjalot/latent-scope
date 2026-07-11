@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
-import { Button } from 'react-element-forge';
+import { Button, Icon } from 'react-element-forge';
 
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
@@ -10,6 +10,7 @@ import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
 import EstimatePanel from './EstimatePanel';
 import ExperimentGallery from './ExperimentGallery';
+import { Badge } from '../ui';
 
 import Preview from './Preview';
 
@@ -236,7 +237,12 @@ function Cluster() {
           <form onSubmit={handleNewCluster}>
             <label>
               <span className={styles['cluster-form-label']}>Method:</span>
-              <select value={method} onChange={handleMethodChange} disabled={!!clusterJob || !umap}>
+              <select
+                className="ls-select"
+                value={method}
+                onChange={handleMethodChange}
+                disabled={!!clusterJob || !umap}
+              >
                 <option value="evoc">EVoC</option>
                 <option value="hdbscan">HDBSCAN</option>
                 <option value="kmeans">KMeans</option>
@@ -246,6 +252,7 @@ function Cluster() {
             <label>
               <span className={styles['cluster-form-label']}>Cluster on:</span>
               <select
+                className="ls-select"
                 value={clusterOn}
                 onChange={(e) => setClusterOn(e.target.value)}
                 disabled={!!clusterJob || !umap}
@@ -254,7 +261,7 @@ function Cluster() {
                 <option value="embedding">Embeddings hi-dim</option>
               </select>
               <span className="tooltip" data-tooltip-id="cluster_on">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip id="cluster_on" place="top" effect="solid" className="tooltip-area">
                 Which space to cluster in: the 2D UMAP projection or the original high-dimensional
@@ -272,7 +279,7 @@ function Cluster() {
                 disabled={!!clusterJob || !umap}
               />
               <span className="tooltip" data-tooltip-id="samples">
-                🤔
+                <Icon name="help-circle" size={14} />
               </span>
               <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
                 {isCentroidMethod(method)
@@ -291,7 +298,7 @@ function Cluster() {
                     disabled={!!clusterJob || !umap}
                   />
                   <span className="tooltip" data-tooltip-id="n_neighbors">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip id="n_neighbors" place="top" effect="solid" className="tooltip-area">
                     Number of neighbors for the kNN graph. Higher values capture broader structure.
@@ -309,7 +316,7 @@ function Cluster() {
                     disabled={!!clusterJob || !umap}
                   />
                   <span className="tooltip" data-tooltip-id="noise_level">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip id="noise_level" place="top" effect="solid" className="tooltip-area">
                     Controls the noise threshold (0.0-1.0). Lower values cluster more data points;
@@ -326,7 +333,7 @@ function Cluster() {
                     disabled={!!clusterJob || !umap}
                   />
                   <span className="tooltip" data-tooltip-id="approx_n_clusters">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip id="approx_n_clusters" place="top" effect="solid" className="tooltip-area">
                     Aim for approximately this many clusters: EVoC builds a hierarchy of cluster
@@ -346,7 +353,7 @@ function Cluster() {
                     disabled={!!clusterJob || !umap}
                   />
                   <span className="tooltip" data-tooltip-id="min_samples">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip id="min_samples" place="top" effect="solid" className="tooltip-area">
                     The number of samples in a neighborhood for a point to be considered a core
@@ -363,7 +370,7 @@ function Cluster() {
                     disabled={!!clusterJob || !umap}
                   />
                   <span className="tooltip" data-tooltip-id="cluster_selection_epsilon">
-                    🤔
+                    <Icon name="help-circle" size={14} />
                   </span>
                   <Tooltip
                     id="cluster_selection_epsilon"
@@ -435,13 +442,11 @@ function Cluster() {
               renderInfo={(cl) => (
                 <>
                   <span>
-                    <span className={styles['method-badge']}>
-                      {METHOD_LABELS[cl.method] || 'EVoC'}
-                    </span>
+                    <Badge mono variant="neutral">{METHOD_LABELS[cl.method] || 'EVoC'}</Badge>
                     {cl.cluster_on ? (
-                      <span className={styles['method-badge']}>
+                      <Badge mono variant="neutral">
                         on {cl.cluster_on === 'embedding' ? 'hi-dim' : '2D'}
-                      </span>
+                      </Badge>
                     ) : null}
                   </span>
                   <span>
@@ -469,23 +474,18 @@ function Cluster() {
               renderMetrics={(cl) =>
                 qualityMetrics[cl.id] && qualityMetrics[cl.id].silhouette != null ? (
                   <div className={styles['quality-metrics']}>
-                    <span className={styles['metric-badge']}>
-                      Sil: {qualityMetrics[cl.id].silhouette}
-                      <span className="tooltip" data-tooltip-id={`sil-${cl.id}`}>
-                        🤔
-                      </span>
+                    <span data-tooltip-id={`sil-${cl.id}`}>
+                      <Badge mono variant="success">Sil: {qualityMetrics[cl.id].silhouette}</Badge>
                     </span>
-                    <span className={styles['metric-badge']}>
-                      CH: {Math.round(qualityMetrics[cl.id].calinski_harabasz)}
-                      <span className="tooltip" data-tooltip-id={`ch-${cl.id}`}>
-                        🤔
-                      </span>
+                    <span data-tooltip-id={`ch-${cl.id}`}>
+                      <Badge mono variant="success">
+                        CH: {Math.round(qualityMetrics[cl.id].calinski_harabasz)}
+                      </Badge>
                     </span>
-                    <span className={styles['metric-badge']}>
-                      DB: {qualityMetrics[cl.id].davies_bouldin}
-                      <span className="tooltip" data-tooltip-id={`db-${cl.id}`}>
-                        🤔
-                      </span>
+                    <span data-tooltip-id={`db-${cl.id}`}>
+                      <Badge mono variant="success">
+                        DB: {qualityMetrics[cl.id].davies_bouldin}
+                      </Badge>
                     </span>
                     <Tooltip id={`sil-${cl.id}`} place="top" effect="solid" className="tooltip-area">
                       Silhouette Score [-1,1]: higher means clusters are well-separated

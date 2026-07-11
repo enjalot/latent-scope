@@ -1,4 +1,4 @@
-@import "./_shared";
+@use "./_shared" as *;
 
 .scope {
   @include setup-container;
@@ -6,95 +6,76 @@
 .scope-setup {
   @include setup-left;
 }
-.scope-preview {
+// the right-hand column (JSX uses "setup-scope-preview")
+.setup-scope-preview {
   @include setup-right;
 }
 .preview {
   @include setup-preview;
   position: relative;
-
-  .preview-header {
-    position: absolute;
-    top: -70px;
-    left: 0;
-    right: 0;
-  }
-}
-.navigate {
-  @include setup-navigate;
-}
-.step {
-  @include setup-step;
 }
 .scope-form {
   @include setup-form;
 }
 .different {
-  font-weight: bold;
-  color: var(--semantic-color-semantic-critical);
+  font-weight: 600;
+  color: var(--text-color-text-critical);
 }
 
-.item {
-  @include setup-item;
-}
-.selected {
-  @include selected;
-}
-.item-info {
-  @include setup-item-info;
-}
-.item-deps {
-  @include setup-item-deps;
-}
-.delete {
-  @include setup-delete;
-}
 .scope-form-label {
-  width: 100px;
-  display: inline-block;
+  @include setup-form-label;
+}
+// run IDs + model IDs are machine facts
+.scope-form-value {
+  @include mono-fact;
 }
 .scope-form input {
-  width: calc(90% - 100px);
+  width: calc(90% - 125px);
 }
-.scope-table {
-  height: 98%;
-  overflow: scroll;
-  flex-grow: 1;
-  padding: 6px;
+
+.scope-setup-info,
+.previous-scope {
+  margin: var(--ls-space-2);
+  padding: var(--ls-space-2) var(--ls-space-3);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+
+  h4 {
+    margin: 0 0 var(--ls-space-2);
+    font-size: var(--ls-text-sm);
+    font-weight: 600;
+  }
+
+  span {
+    line-height: var(--ls-leading-ui);
+  }
 }
+
 .scope-setup-img img {
   width: 120px;
   height: 120px;
   user-select: none;
 }
 
-
-.action-card {
-  background: var(--background);
-  padding: 1.5rem;
-  border-radius: 8px;
+.scope-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--ls-space-3);
+  padding: var(--ls-space-2);
+}
 
-  h3 {
-    margin: 0;
-    color: var(--text-primary);
-  }
-
-  p {
-    color: var(--text-secondary);
-    margin: 0;
-  }
+// layout only — chrome comes from the global .ls-panel class on the same node
+.action-card {
+  @include action-card;
 }
 .action-card-explore {
-  border: 2px solid var(--semantic-color-semantic-success);
+  @include action-card-highlight;
 }
 
 .action-link {
   margin-top: auto;
   text-decoration: none;
-  // color: var(--primary);
+  color: var(--text-color-text-primary);
   font-weight: 500;
   &:hover {
     text-decoration: underline;
