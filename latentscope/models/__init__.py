@@ -1,5 +1,6 @@
 import json
 
+from .providers.anthropic import AnthropicChatProvider
 from .providers.cohereai import CohereAIEmbedProvider
 from .providers.image_embedding import CLIPEmbedProvider, VisionEncoderEmbedProvider
 from .providers.late_interaction import ColBERTEmbedProvider, ColPaliEmbedProvider
@@ -180,6 +181,8 @@ def get_chat_model(model_id):
         return OpenAIChatProvider(model['name'], model['params'], base_url=model['url'])
     if provider == "mistralai":
         return MistralAIChatProvider(model['name'], model['params'])
+    if provider == "anthropic":
+        return AnthropicChatProvider(model['name'], model['params'])
     if provider == "nltk":
         return NLTKChatProvider(model['name'], model['params'])
     raise ValueError(f"Unknown chat provider '{provider}' for model '{model_id}'")
