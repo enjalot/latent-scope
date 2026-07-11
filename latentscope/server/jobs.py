@@ -490,6 +490,9 @@ def run_umap():
     align = request.values.get('align')
     save = request.values.get('save')
     seed = request.values.get('seed')
+    # Number of UMAP output dimensions (2 or 3). 3D umaps also get z + voxel
+    # indices computed at scope time; consumed by ls-umap's --dimensions flag.
+    dimensions = request.values.get('dimensions')
     # Optional named-step metadata (issue: experiment gallery + named steps).
     # Consumed by ls-umap (WP-A) and written into umap-NNN.json.
     name = request.values.get('name')
@@ -502,6 +505,8 @@ def run_umap():
 
     job_id = str(uuid.uuid4())
     command = ['ls-umap', dataset, embedding_id, neighbors, min_dist]
+    if dimensions:
+        command.append(f'--dimensions={dimensions}')
     if init:
         command.append(f'--init={init}')
     if align:
