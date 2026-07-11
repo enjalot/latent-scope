@@ -714,8 +714,11 @@ def token_umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, seed=Non
     print("wrote", output_file)
 
     fig, ax = plt.subplots(figsize=(14.22, 14.22))
-    point_size = calculate_point_size(umap_embeddings.shape[0])
-    print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
+    # calculate_point_size is tuned for row counts; token maps are 100-300x
+    # denser, so scale the preview marker down or the PNG is a solid blob
+    n_points = umap_embeddings.shape[0]
+    point_size = 0.1 if n_points > 100_000 else calculate_point_size(n_points)
+    print("POINT SIZE", point_size, "for", n_points, "points")
     plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
     plt.axis('off')
     plt.gca().set_position([0, 0, 1, 1])
