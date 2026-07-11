@@ -91,6 +91,11 @@
         color: var(--text-color-text-subtle);
         word-break: break-all;
       }
+
+      /* ghost icon button whose intent turns critical on hover */
+      .item-delete:hover:not(:disabled) {
+        color: var(--text-color-text-critical);
+      }
     }
   }
 }

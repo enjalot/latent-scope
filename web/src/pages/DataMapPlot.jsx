@@ -413,8 +413,19 @@ function DataMapPlot() {
           ) : null}
         </div>
         <div className={styles['plots']}>
-          <h3>Plots ({plotFiles.length})</h3>
-          <div className={styles['plot-list']}>{plotFiles.map(fileLink)}</div>
+          <h3>
+            Plots <span className="ls-chip">{plotFiles.length}</span>
+          </h3>
+          {plotFiles.length ? (
+            <div className={styles['plot-list']}>{plotFiles.map(fileLink)}</div>
+          ) : (
+            <div className="ls-empty">
+              <span className="ls-overline">NO PLOTS</span>
+              <p className="ls-empty__text">
+                Configure a plot above and press Create Plot — finished renders appear here.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

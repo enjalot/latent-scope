@@ -37,10 +37,9 @@ const StepProgress = () => {
               isCompleted(index) && !isActive(index) ? styles.completed : ''
             }`}
           >
-            <StatusDiode
-              status={isActive(index) ? 'busy' : isCompleted(index) ? 'ready' : 'offline'}
-              pulse={isActive(index)}
-            />
+            {/* diode = completion state only (done=ready, pending=offline);
+                the selected step is conveyed by the label treatment, not light */}
+            <StatusDiode status={isCompleted(index) ? 'ready' : 'offline'} />
             <span>
               {index + 1 + '. '} {step}
             </span>

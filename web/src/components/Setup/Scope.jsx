@@ -432,7 +432,7 @@ function Scope() {
                     to={`/datasets/${dataset?.id}/explore/${scope?.id}`}
                     className={styles['action-link']}
                   >
-                    Explore {scope.label} ({scope.id})
+                    Explore {scope.label} <span className={styles['action-card-id']}>({scope.id})</span>
                   </Link>
                 </h3>
                 <p>
@@ -446,7 +446,7 @@ function Scope() {
                     to={`/datasets/${dataset?.id}/export/${scope?.id}`}
                     className={styles['action-link']}
                   >
-                    Export data ({scope.id})
+                    Export data <span className={styles['action-card-id']}>({scope.id})</span>
                   </Link>
                 </h3>
                 <p>Download your data in various formats.</p>
@@ -458,21 +458,23 @@ function Scope() {
                     to={`/datasets/${dataset?.id}/plot/${scope?.id}`}
                     className={styles['action-link']}
                   >
-                    Export plot ({scope.id})
+                    Export plot <span className={styles['action-card-id']}>({scope.id})</span>
                   </Link>
                 </h3>
                 <p>Generate publication-ready visualizations.</p>
               </div>
 
               <div className={'ls-panel ' + styles['action-card']}>
-                <h3>Delete Scope</h3>
+                <h3>
+                  Delete Scope <span className={styles['action-card-id']}>({scope.id})</span>
+                </h3>
                 <p>Remove this scope. Underlying data will not be deleted.</p>
                 <Button
                   onClick={() => startDeleteScopeJob({ dataset: dataset.id, scope_id: scope.id })}
                   icon="trash"
                   color="delete"
-                  variant="outline"
-                  text={`Delete ${scope.id}`}
+                  className={styles['action-card-delete-button']}
+                  text="Delete scope"
                 />
               </div>
             </div>

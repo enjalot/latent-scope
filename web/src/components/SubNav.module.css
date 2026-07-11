@@ -40,6 +40,14 @@
   padding-right: 40px; /* clearance for forge Select's chevron */
 }
 
+/* scope selector content is machine facts (dataset id, run ids) — mono readout voice;
+   doubled selector outranks forge Select's own font rules without !important */
+.scopeSelector.scopeSelector select {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-weight: 500;
+}
+
 /* anchor/span layout on top of the shared .ls-tab primitive */
 .tab {
   display: inline-flex;

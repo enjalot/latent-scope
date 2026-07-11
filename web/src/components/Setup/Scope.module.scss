@@ -81,3 +81,13 @@
     text-decoration: underline;
   }
 }
+
+// run IDs inside card titles/links stay in the mono voice (color inherits)
+.action-card-id {
+  @include mono-fact;
+}
+
+// destructive action sizes to content, never full card width
+.action-card-delete-button {
+  align-self: flex-start;
+}

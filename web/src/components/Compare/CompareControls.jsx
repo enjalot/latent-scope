@@ -71,7 +71,7 @@ function CompareControls({
     <div className={styles['controls']}>
       <div className={styles['controls-header']}>
         <span className={styles['dataset-name']}>{datasetId}</span>
-        <Readout label="ROWS" value={dataset?.length} />
+        <Readout label="ROWS" value={dataset?.length?.toLocaleString()} />
       </div>
       <div className={styles['umap-selectors']}>
         <div className={styles['umap-selector']}>
@@ -121,7 +121,9 @@ function CompareControls({
         </div>
         {metric !== 'displacement' && (
           <div className={styles['metric-k']}>
-            <label>k = {metricK}</label>
+            <label>
+              k <span className={styles['control-value']}>{metricK}</span>
+            </label>
             <input
               type="range"
               min="5"
@@ -134,7 +136,7 @@ function CompareControls({
         )}
         <div className={styles['threshold-control']}>
           <label>
-            Threshold: {threshold.toFixed(2)}
+            Threshold <span className={styles['control-value']}>{threshold.toFixed(2)}</span>
             {displacementLoading && <span className={styles['loading-indicator']}> computing...</span>}
           </label>
           <input
@@ -145,9 +147,7 @@ function CompareControls({
             value={threshold}
             onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
           />
-          <span className={styles['threshold-count']}>
-            {aboveThresholdCount} points above threshold
-          </span>
+          <Readout label="ABOVE THRESHOLD" value={aboveThresholdCount.toLocaleString()} />
         </div>
         <div className={styles['metric-selector']}>
           <label>Color by</label>

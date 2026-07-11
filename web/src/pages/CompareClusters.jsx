@@ -12,6 +12,7 @@ import Reticle from '../components/Compare/Reticle';
 import { Readout, Spinner } from '../components/ui';
 
 import { apiService, apiUrl } from '../lib/apiService';
+import { useColorMode } from '../hooks/useColorMode';
 
 import styles from './CompareClusters.module.css';
 // Rules shared verbatim with the Compare views (controls header, scatter
@@ -23,6 +24,19 @@ const isIOS = () => /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // Must match the --ls-space-3 gap on .scatter-area.
 const PANE_GAP = 12;
+
+// .scatter-container chrome per axis: 2×4px padding + 2×1px border
+// (content-box), on top of the inline width/height we pass it.
+const PANE_CHROME = 10;
+
+// Eyebrow label row (.scatter-label) rendered above each frame.
+const PANE_LABEL_ROW = 22;
+
+// Chrome colors live in the token layer; canvas hover markers read them at
+// render time and re-read when the color mode flips (same pattern as
+// CrosshairPlot on the Compare page).
+const readToken = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 function CompareClusters() {
   const { dataset: datasetId } = useParams();
@@ -51,6 +65,17 @@ function CompareClusters() {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [selectedIndices, setSelectedIndices] = useState([]);
   const [showChangedOnly, setShowChangedOnly] = useState(false);
+
+  // Token colors for the canvas hover marker, re-read when the theme flips.
+  const { colorMode } = useColorMode();
+  const hoverMarkerColors = useMemo(() => {
+    // colorMode only triggers the re-read; the values come from the CSS tokens.
+    void colorMode;
+    return {
+      stroke: readToken('--text-color-text-main'),
+      fill: readToken('--ls-color-hover-halo'),
+    };
+  }, [colorMode]);
 
   // Scatter state
   const [leftScatter, setLeftScatter] = useState(null);
@@ -140,7 +165,12 @@ function CompareClusters() {
   }, [datasetId, leftCluster]);
 
   useEffect(() => {
-    if (!rightCluster || !datasetId) return;
+    // Drop stale labels when the selection is cleared so the pane hides too.
+    if (!rightCluster) {
+      setRightLabels([]);
+      return;
+    }
+    if (!datasetId) return;
     apiService.fetchClusterIndices(datasetId, rightCluster.id).then((data) => {
       setRightLabels(data.map((d) => d.cluster));
     });
@@ -243,12 +273,19 @@ function CompareClusters() {
       ? [umapPoints[hoveredIndex]]
       : [];
 
-  const halfWidth = Math.floor((containerSize[0] - PANE_GAP) / 2);
-  const scatterHeight = containerSize[1];
-
   // Determine which points to show for the diff scatter
   const activeLeftPoints = showChangedOnly ? diffDrawPoints : leftDrawPoints;
   const activeRightPoints = showChangedOnly ? diffDrawPoints : rightDrawPoints;
+
+  // Pane width depends on how many panes actually render: a lone pane gets
+  // the full row instead of leaving the right half dead.
+  const visiblePanes =
+    (activeLeftPoints.length > 0 ? 1 : 0) + (activeRightPoints.length > 0 ? 1 : 0);
+  const paneWidth =
+    visiblePanes > 1
+      ? Math.floor((containerSize[0] - PANE_GAP) / 2) - PANE_CHROME
+      : containerSize[0] - PANE_CHROME;
+  const scatterHeight = containerSize[1] - PANE_LABEL_ROW - PANE_CHROME;
 
   if (!dataset)
     return (
@@ -263,7 +300,7 @@ function CompareClusters() {
       <div className={sharedStyles['controls']}>
         <div className={sharedStyles['controls-header']}>
           <span className={sharedStyles['dataset-name']}>{datasetId}</span>
-          <Readout label="ROWS" value={dataset?.length} />
+          <Readout label="ROWS" value={dataset?.length?.toLocaleString()} />
         </div>
         <div className={styles['selectors']}>
           <div className={styles['selector']}>
@@ -304,9 +341,11 @@ function CompareClusters() {
               className="ls-select"
               value={rightCluster?.id || ''}
               onChange={(e) =>
-                setRightCluster(filteredClusters.find((c) => c.id === e.target.value))
+                setRightCluster(filteredClusters.find((c) => c.id === e.target.value) || null)
               }
             >
+              {/* empty value mirrors the null state so the display never lies */}
+              <option value="">Select clustering…</option>
               {filteredClusters.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.id} ({c.method || 'hdbscan'}) - {c.n_clusters} clusters
@@ -353,14 +392,14 @@ function CompareClusters() {
             <div className={styles['scatter-label']}>
               {leftCluster?.id} ({leftCluster?.method || 'hdbscan'})
             </div>
-            <div className={sharedStyles['scatter-container']} style={{ width: halfWidth, height: scatterHeight }}>
+            <div className={sharedStyles['scatter-container']} style={{ width: paneWidth, height: scatterHeight }}>
               <div className={sharedStyles['scatter']}>
                 {!isIOS() ? (
                   <Scatter
                     points={activeLeftPoints}
                     duration={0}
                     pointScale={1}
-                    width={halfWidth}
+                    width={paneWidth}
                     height={scatterHeight}
                     colorScaleType="categorical"
                     colorInterpolator={interpolateSpectral}
@@ -379,19 +418,19 @@ function CompareClusters() {
                     size="8"
                     xDomain={leftXDomain}
                     yDomain={leftYDomain}
-                    width={halfWidth}
+                    width={paneWidth}
                     height={scatterHeight}
                   />
                 )}
               </div>
               <AnnotationPlot
                 points={hoverAnnotations}
-                stroke="black"
-                fill="orange"
+                stroke={hoverMarkerColors.stroke}
+                fill={hoverMarkerColors.fill}
                 size="16"
                 xDomain={leftXDomain}
                 yDomain={leftYDomain}
-                width={halfWidth}
+                width={paneWidth}
                 height={scatterHeight}
               />
               <Reticle active={selectedIndices.length > 0} />
@@ -403,14 +442,14 @@ function CompareClusters() {
             <div className={styles['scatter-label']}>
               {rightCluster?.id} ({rightCluster?.method || 'hdbscan'})
             </div>
-            <div className={sharedStyles['scatter-container']} style={{ width: halfWidth, height: scatterHeight }}>
+            <div className={sharedStyles['scatter-container']} style={{ width: paneWidth, height: scatterHeight }}>
               <div className={sharedStyles['scatter']}>
                 {!isIOS() ? (
                   <Scatter
                     points={activeRightPoints}
                     duration={0}
                     pointScale={1}
-                    width={halfWidth}
+                    width={paneWidth}
                     height={scatterHeight}
                     colorScaleType="categorical"
                     colorInterpolator={interpolateSpectral}
@@ -429,19 +468,19 @@ function CompareClusters() {
                     size="8"
                     xDomain={rightXDomain}
                     yDomain={rightYDomain}
-                    width={halfWidth}
+                    width={paneWidth}
                     height={scatterHeight}
                   />
                 )}
               </div>
               <AnnotationPlot
                 points={hoverAnnotations}
-                stroke="black"
-                fill="orange"
+                stroke={hoverMarkerColors.stroke}
+                fill={hoverMarkerColors.fill}
                 size="16"
                 xDomain={rightXDomain}
                 yDomain={rightYDomain}
-                width={halfWidth}
+                width={paneWidth}
                 height={scatterHeight}
               />
               <Reticle active={selectedIndices.length > 0} />
@@ -475,6 +514,16 @@ function CompareClusters() {
         </div>
 
         <div className={styles['tab-content']}>
+          {bottomTab === 'overlap' &&
+            !comparison &&
+            (comparisonLoading ? (
+              <Spinner label="COMPUTING COMPARISON…" />
+            ) : (
+              <div className="ls-empty">
+                <span className="ls-overline">NO COMPARISON</span>
+                <p className="ls-empty__text">Select two different clusterings to compare.</p>
+              </div>
+            ))}
           {bottomTab === 'overlap' && comparison && (
             <div className={styles['overlap-container']}>
               <div className={styles['overlap-labels']}>

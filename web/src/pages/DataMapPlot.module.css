@@ -95,7 +95,8 @@
   display: flex;
   align-items: center;
   gap: var(--ls-space-2);
-  font-size: var(--ls-text-sm);
+  font-size: var(--input-label-font-size);
+  font-weight: var(--input-label-font-weight);
 }
 
 .config-form label span {
@@ -108,9 +109,10 @@
 .config-form input[type='number'] {
   background: var(--ls-surface-input);
   border: 1px solid var(--borders-color-border-2);
-  border-radius: var(--ls-radius-2);
-  padding: var(--ls-space-1) var(--ls-space-2);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding);
   font-size: var(--ls-text-sm);
+  font-weight: var(--font-body-regular-weight);
   color: var(--text-color-text-main);
 }
 
@@ -123,6 +125,8 @@
 
 .config-form input[type='checkbox'] {
   accent-color: var(--color-interaction-primary);
+  /* let the UA draw a dark-mode box so the unchecked state reads on the panel */
+  color-scheme: light dark;
 }
 
 .create-button {

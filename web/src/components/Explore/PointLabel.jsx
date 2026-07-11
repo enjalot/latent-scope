@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { select } from 'd3-selection';
 import styles from './PointLabel.module.scss';
-import { contrastColor } from '../../lib/colors';
+import { useColorMode } from '@/hooks/useColorMode';
 
 function PointLabel({
   selectedPoints, // array of {x, y, index} objects
@@ -18,6 +18,7 @@ function PointLabel({
   muted = false,
 }) {
   const svgRef = useRef();
+  const { isDark } = useColorMode();
 
   // Reuse HullPlot's coordinate transformation helper
   const pointToSvgCoordinate = (point, xDomain, yDomain, width, height) => {
@@ -53,6 +54,12 @@ function PointLabel({
 
     if (!xDomain || !yDomain || !selectedPoints?.length) return;
 
+    // Selection chrome colors live in CSS tokens; re-read at draw time so a
+    // theme change (isDark dep below) repaints with the right values.
+    const rootStyle = getComputedStyle(document.documentElement);
+    const selectionColor = rootStyle.getPropertyValue('--ls-color-selection').trim() || '#2f7a8e';
+    const ringColor = rootStyle.getPropertyValue('--text-color-text-main').trim() || '#26221c';
+
     const fontSize = calculateScaledFontSize(width, height) * sf;
 
     // Add circles first (so they appear under text)
@@ -74,11 +81,11 @@ function PointLabel({
         return coord.y;
       })
       .attr('r', (d) => (hovered && d.ls_index === hovered.index ? 8 * sf : 6 * sf))
-      .attr('fill', contrastColor)
+      .attr('fill', selectionColor)
       .attr('fill-opacity', (d) =>
         muted ? (hovered && d.ls_index === hovered.index ? 0.95 : 0.55) : 1
       )
-      .attr('stroke', (d) => (hovered && d.ls_index === hovered.index ? '#111' : 'none'))
+      .attr('stroke', (d) => (hovered && d.ls_index === hovered.index ? ringColor : 'none'))
       .attr('stroke-width', 2);
 
     // Add text labels (same as before)
@@ -108,7 +115,7 @@ function PointLabel({
         muted ? (hovered && d.ls_index === hovered.index ? 1 : 0.85) : 1
       )
       .text((d) => d.index + 1);
-  }, [selectedPoints, xDomain, yDomain, width, height, textColor, hovered, muted]);
+  }, [selectedPoints, xDomain, yDomain, width, height, textColor, hovered, muted, isDark]);
 
   return (
     <svg ref={svgRef} className={styles.pointLabelPlot} width={width} height={height}>

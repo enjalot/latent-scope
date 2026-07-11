@@ -11,7 +11,7 @@ const Nav = () => {
         Latent Scope
       </NavLink>
       <div className="settings">
-        <SettingsModal tooltip={false} color="secondary" variant="clear" />
+        <SettingsModal tooltip={false} iconOnly />
       </div>
     </nav>
   );

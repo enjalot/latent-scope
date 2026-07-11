@@ -75,7 +75,8 @@ function HFUpload({ dataset, scope }) {
           Private Repository
         </label>
         <Button
-          variant="outline"
+          color="primary"
+          className={styles.uploadButton}
           onClick={handleUpload}
           disabled={!!uploadJob}
           text="Upload to Hugging Face"

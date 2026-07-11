@@ -106,8 +106,10 @@
   overflow: hidden;
 }
 
+/* shrink-wrap each pane column to its frame (the frame carries an explicit
+   width) so the eyebrow label centers over the map, not the full row */
 .scatter-panel {
-  flex: 1;
+  flex: 0 0 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;

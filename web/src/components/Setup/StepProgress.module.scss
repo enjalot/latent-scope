@@ -32,8 +32,10 @@
     background-color var(--ls-dur-fast) var(--ls-ease-out);
 }
 
+// selected/active step: label treatment carries the state (text-main + 600)
 .active {
   color: var(--text-color-text-main);
+  font-weight: 600;
 }
 
 .completed {

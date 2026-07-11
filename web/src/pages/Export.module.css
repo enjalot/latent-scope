@@ -43,7 +43,8 @@
 }
 
 .page h3 {
-  font-size: var(--ls-text-lg);
+  /* section headers sit below the page h2 in the hierarchy */
+  font-size: var(--ls-text-sm);
   font-weight: 600;
   margin: 0;
   padding: var(--ls-space-2) var(--ls-space-3);
@@ -54,6 +55,15 @@
   margin: 0;
   padding: 0 var(--ls-space-5);
   padding-bottom: var(--ls-space-3);
+}
+
+/* name | size | path — grid so the mono telemetry forms aligned columns */
+.page ul li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+  column-gap: var(--ls-space-3);
+  align-items: baseline;
+  padding: 2px 0;
 }
 
 /* file names are machine facts */
@@ -69,17 +79,19 @@
 .path {
   font-family: var(--ls-font-mono);
   font-variant-numeric: tabular-nums;
-  margin-left: var(--ls-space-2);
   font-size: var(--ls-text-2xs);
   color: var(--text-color-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .size {
   font-family: var(--ls-font-mono);
   font-variant-numeric: tabular-nums;
-  margin-left: var(--ls-space-2);
   font-size: var(--ls-text-2xs);
   color: var(--text-color-text-subtle);
+  text-align: right;
 }
 
 .code-snippets {

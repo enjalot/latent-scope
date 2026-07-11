@@ -78,6 +78,8 @@
   justify-content: space-between;
   align-items: center;
   margin-top: var(--ls-space-3);
+  /* match the data table's right inset so the count never sits on the pane edge */
+  padding-right: var(--ls-space-3);
 }
 
 .searchResultsMetadataItem {

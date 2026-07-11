@@ -181,12 +181,12 @@ const SearchResultsMetadata = ({ filterConfig }) => {
       <div className={styles.searchResultsMetadata}>
         <div className={styles.searchResultsMetadataItem}>
           <span className={styles.searchResultsMetadataLabel}>
-            Showing first {shownIndices.length} rows in dataset:
+            Showing first {shownIndices.length.toLocaleString()} rows in dataset:
           </span>
         </div>
         <div className={styles.searchResultsMetadataItem}>
           <span className={styles.searchResultsMetadataValue}>
-            {filteredIndices.length} results
+            {filteredIndices.length.toLocaleString()} results
           </span>
         </div>
       </div>
@@ -213,7 +213,7 @@ const SearchResultsMetadata = ({ filterConfig }) => {
       </div>
       <div className={styles.searchResultsMetadataItem}>
         <span className={styles.searchResultsMetadataLabel}>Total Rows: </span>
-        <span className={styles.searchResultsMetadataValue}>{totalResults}</span>
+        <span className={styles.searchResultsMetadataValue}>{totalResults.toLocaleString()}</span>
       </div>
     </div>
   );

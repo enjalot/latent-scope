@@ -56,7 +56,7 @@
 
 .api-key-input {
   width: 300px;
-  padding: var(--ls-space-1) 10px;
+  padding: var(--input-padding, 8px 10px);
   display: inline-block;
   background-color: var(--ls-surface-input);
   border: 1px solid var(--borders-color-border-2);

@@ -482,8 +482,9 @@
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
-/* glow lives on a pseudo so `--ls-glow-status: none` (light mode) stays valid */
-.ls-diode::after {
+/* glow lives on a pseudo so `--ls-glow-status: none` (light mode) stays valid;
+   only live (pulsing) diodes emit — steady diodes stay flat */
+.ls-diode--pulse::after {
   content: '';
   position: absolute;
   inset: 0;

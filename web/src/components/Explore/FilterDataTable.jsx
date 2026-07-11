@@ -209,7 +209,6 @@ function FilterDataTableBody({
         return {
           ...baseCol,
           width: 500,
-          renderHeaderCell: () => <div className={styles.textColumn}>{dataset.text_column}</div>,
           renderCell: ({ row }) => {
             return <span title={row[col]}>{row[col]}</span>;
           },

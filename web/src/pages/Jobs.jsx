@@ -76,7 +76,9 @@ function Jobs() {
                   {meta.chip}
                 </Badge>
                 <span className={styles['job-id']}>{job.id}</span>
-                <code className={styles['job-command']}>{job.command}</code>
+                <code className={styles['job-command']}>
+                  {Array.isArray(job.command) ? job.command.join(' ') : job.command}
+                </code>
               </button>
             );
           })}

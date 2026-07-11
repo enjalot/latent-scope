@@ -159,7 +159,7 @@ function Home() {
                 {dataset.id} &nbsp;
                 {readonly ? null : <Link to={`/datasets/${dataset.id}/setup`}>Setup</Link>}
               </h3>
-              <span className="dataset-rows">{dataset.length} rows</span>
+              <span className="dataset-rows">{dataset.length?.toLocaleString()} rows</span>
               <div className="scope-links">
                 {scopes[dataset.id] &&
                   scopes[dataset.id].map &&

@@ -58,7 +58,8 @@
 @mixin setup-form-label {
   width: 125px;
   display: inline-block;
-  font-size: var(--ls-text-sm);
+  font-size: var(--input-label-font-size);
+  font-weight: var(--input-label-font-weight);
 }
 
 // machine facts: run IDs, counts, metrics, byte sizes

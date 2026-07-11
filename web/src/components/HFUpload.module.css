@@ -21,4 +21,10 @@
 
 .form input[type='checkbox'] {
   accent-color: var(--color-interaction-primary);
+  color-scheme: light dark;
+}
+
+/* primary action sized to its label, not the column width */
+.uploadButton {
+  align-self: flex-start;
 }

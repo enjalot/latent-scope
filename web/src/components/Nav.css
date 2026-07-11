@@ -35,10 +35,17 @@
   color: var(--text-color-text-main);
 }
 
-/* active route: inset amber underline (react-router NavLink adds .active) */
-.main-nav a.active {
+/* active route: inset amber underline (react-router NavLink adds .active);
+   the wordmark is a NavLink too but the brand mark never carries route state */
+.main-nav a.active:not(.wordmark) {
   color: var(--text-color-text-main);
   box-shadow: inset 0 -2px 0 var(--color-interaction-primary);
+}
+
+/* wordmark diode runs at 6px per the wordmark spec */
+.main-nav .wordmark .ls-diode {
+  width: 6px;
+  height: 6px;
 }
 
 .main-nav .settings {

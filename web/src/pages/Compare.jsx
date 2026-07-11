@@ -17,9 +17,13 @@ import styles from './Compare.module.css';
 const apiUrl = import.meta.env.VITE_API_URL;
 
 // Slack subtracted from the measured container so the pane frames
-// (.scatter-container border + padding) never overflow it.
-const SIZE_SLACK_X = 15;
-const SIZE_SLACK_Y = 25;
+// (.scatter-container border + padding) never overflow it. The frames are
+// content-box, so each adds 10px of chrome (2×4px padding + 2×1px border)
+// per axis on top of the inline width/height. Y also covers the view toolbar
+// row (~36px worst case) rendered above the frames in both views; X covers
+// two frame chromes plus rounding in the side-by-side layout.
+const SIZE_SLACK_X = 22;
+const SIZE_SLACK_Y = 48;
 
 const viewModes = [
   { id: 'transition', name: 'Transition' },

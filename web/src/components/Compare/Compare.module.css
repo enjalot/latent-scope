@@ -52,11 +52,14 @@
   width: 100%;
 }
 
+/* top-aligned so the k and threshold slider tracks share a row: every control
+   is a one-line label + control column, extra lines (description, readout)
+   hang below without pushing the tracks apart */
 .metric-controls {
   display: flex;
   flex-direction: row;
   gap: var(--ls-space-3);
-  align-items: flex-end;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
@@ -96,12 +99,12 @@
   accent-color: var(--color-interaction-primary);
 }
 
-/* machine fact: point count */
-.threshold-count {
+/* machine value inside a Sans control label (k, threshold) */
+.control-value {
   font-family: var(--ls-font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: var(--ls-text-xs);
-  color: var(--text-color-text-subtle);
+  font-weight: 500;
+  color: var(--text-color-text-main);
 }
 
 /* mono micro status line while the metric computes */
@@ -189,6 +192,7 @@
 .color-legend-wrap {
   display: flex;
   align-items: flex-end;
+  align-self: stretch;
 }
 
 /* Hover tooltip content (chrome comes from the global .ls-tooltip theme) */

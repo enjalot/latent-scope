@@ -1,9 +1,12 @@
 .filterDataTable {
   position: relative; /* anchor for the .ls-scrim loading veil */
+  box-sizing: border-box;
   width: calc(100% - 2px);
   display: flex;
   flex-direction: column;
   padding-top: var(--ls-space-5);
+  /* keep the grid off the pane edge so cells don't clip mid-word */
+  padding-right: var(--ls-space-3);
   margin-top: var(--ls-space-2);
   height: 95%;
 }
@@ -29,12 +32,6 @@
 
 .filterTableScrollableBody {
   overflow-y: auto;
-}
-
-.textColumn {
-  background-color: var(--neutrals-color-neutral-2);
-  font-weight: 600;
-  text-align: center;
 }
 
 /* React-Data-Grid overrides live in FilterDataTableGlobal.css, scoped under

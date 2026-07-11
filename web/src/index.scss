@@ -335,6 +335,22 @@ button[class*='_button_secondary_clear']:focus {
   color: var(--text-color-text-main);
 }
 
+/* Same trap for the outline variant: text AND border painted with the
+   surface neutral. Re-anchor to the spec's secondary treatment. */
+button[class*='_button_secondary_outline'] {
+  color: var(--text-color-text-main);
+  border-color: var(--borders-color-border-2);
+}
+button[class*='_button_secondary_outline']:hover,
+button[class*='_button_secondary_outline']:focus {
+  color: var(--text-color-text-main);
+  border-color: var(--neutrals-color-neutral-3);
+}
+button[class*='_button_secondary_outline']:disabled {
+  color: var(--text-color-text-disabled);
+  border-color: var(--borders-color-border-1);
+}
+
 /* One focus ring everywhere */
 :focus-visible {
   outline: var(--ls-focus-ring);
