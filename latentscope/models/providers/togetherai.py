@@ -1,6 +1,8 @@
 import os
 import time
 
+from latentscope.util.retry import retry_transient
+
 from .base import EmbedModelProvider
 
 
@@ -10,6 +12,7 @@ class TogetherAIEmbedProvider(EmbedModelProvider):
         import together
 
         from latentscope.util import get_key
+
         api_key = get_key("TOGETHER_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Together")
@@ -19,14 +22,16 @@ class TogetherAIEmbedProvider(EmbedModelProvider):
         self.encoder = tiktoken.encoding_for_model("text-embedding-ada-002")
 
     def embed(self, inputs, dimensions=None):
-        time.sleep(0.2) # TODO proper rate limiting
+        time.sleep(0.2)  # TODO proper rate limiting
         enc = self.encoder
         max_tokens = self.params["max_tokens"]
         inputs = [b.replace("\n", " ") for b in inputs]
-        inputs = [enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b for b in inputs]
-        response = self.client.embeddings.create(
-            input=inputs,
-            model=self.name
-        )
+        inputs = [
+            enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b
+            for b in inputs
+        ]
+        response = retry_transient()(
+            lambda: self.client.embeddings.create(input=inputs, model=self.name)
+        )()
         embeddings = [response.data[i].embedding for i in range(len(inputs))]
         return embeddings
