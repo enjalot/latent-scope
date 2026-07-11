@@ -243,6 +243,60 @@ def create_app(data_dir=None, read_only=None):
 
         return _sanitize_bytes_for_json(rows).to_json(orient="records")
 
+    @app.route('/api/tokens/indexed', methods=['POST'])
+    def tokens_indexed():
+        """Token-scope table fetch: given global token indices, return one row
+        per token — the parent document's columns plus the token's string,
+        position, and char span (for snippet highlighting). The returned
+        'index' is the token index; 'parent_index' links back to the dataset
+        row.
+        """
+        import h5py
+        import numpy as np
+
+        req = request.get_json()
+        dataset = req['dataset']
+        embedding_id = req['embedding_id']
+        token_indices = req['indices']
+        columns = req.get('columns')
+        sae_id = req.get('sae_id')
+
+        from latentscope.util.embedding_store import load_token_metadata
+        if not token_indices:
+            return jsonify([])
+        tok_df = load_token_metadata(
+            data_dir, dataset, embedding_id, token_indices=token_indices)
+        # preserve request order (load_token_metadata sorts by token_index)
+        order = {t: i for i, t in enumerate(token_indices)}
+        tok_df = tok_df.sort_values(
+            by="token_index", key=lambda s: s.map(order)).reset_index(drop=True)
+
+        df = _load_dataset_dataframe(data_dir, dataset, app.config['DATAFRAMES'])
+        if columns:
+            df = df[[col for col in columns if col in df.columns]]
+
+        parent_indices = tok_df["ls_index"].tolist()
+        rows = df.iloc[parent_indices].copy().reset_index(drop=True)
+        rows['index'] = tok_df["token_index"].tolist()
+        rows['parent_index'] = parent_indices
+        rows['token_str'] = tok_df["token_str"].tolist()
+        rows['token_pos'] = tok_df["token_pos"].tolist()
+        rows['char_start'] = tok_df["char_start"].tolist()
+        rows['char_end'] = tok_df["char_end"].tolist()
+
+        if sae_id:
+            # token-granularity SAE: h5 rows are tokens, in token_index order
+            sae_path = os.path.join(data_dir, dataset, "saes", f"{sae_id}.h5")
+            npvi = np.array(tok_df["token_index"].tolist())
+            sorted_indices = np.argsort(npvi)
+            with h5py.File(sae_path, 'r') as f:
+                sorted_acts = np.array(f["top_acts"][npvi[sorted_indices]])
+                sorted_top_inds = np.array(f["top_indices"][npvi[sorted_indices]])
+            rows['sae_acts'] = sorted_acts[np.argsort(sorted_indices)].tolist()
+            rows['sae_indices'] = sorted_top_inds[np.argsort(sorted_indices)].tolist()
+
+        return _sanitize_bytes_for_json(rows).to_json(orient="records")
+
     @app.route('/api/column-filter', methods=['POST'])
     def column_filter():
         req = request.get_json()

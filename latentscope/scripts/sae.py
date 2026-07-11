@@ -1,5 +1,8 @@
-# Usage: python umapper.py <dataset_id> <model> <neighbors> <min_dist>
-# Example: python umapper.py dadabase-curated BAAI_bge-small-en-v1.5 50 0.075
+# Usage: ls-sae <dataset_id> <embedding_id> [model_id] [k_expansion] [device]
+# Encodes embeddings through a pretrained sparse autoencoder, storing the
+# top-k feature activations per row. With --granularity tokens the per-token
+# vectors of a late-interaction embedding are encoded instead (one h5 row per
+# token, aligned with ls-tokenize's global token_index order).
 import argparse
 import json
 import os
@@ -16,13 +19,34 @@ def main():
     parser.add_argument("model_id", type=str, nargs="?", help="HF id of model to use", default="enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT")
     parser.add_argument('k_expansion', type=str, nargs="?", help='Output file', default="64_32")
     parser.add_argument('device', type=str, nargs="?", help='Device to use')
+    parser.add_argument('--checkpoint', type=str, default=None,
+                        help='Load the SAE from a local checkpoint directory '
+                             '(cfg.json + sae.safetensors) instead of the HF hub')
+    parser.add_argument('--granularity', type=str, choices=['rows', 'tokens'], default='rows',
+                        help='Encode one mean vector per dataset row (default) or every '
+                             'token vector of a late-interaction embedding')
+    parser.add_argument('--batch_size', type=int, default=None,
+                        help='Vectors encoded per batch (default 128 for rows, 8192 for tokens)')
 
     # Parse arguments
     args = parser.parse_args()
-    saer(args.dataset_id, args.embedding_id, args.model_id, args.k_expansion, args.device)
+    saer(args.dataset_id, args.embedding_id, args.model_id, args.k_expansion, args.device,
+         checkpoint=args.checkpoint, granularity=args.granularity, batch_size=args.batch_size)
 
 
-def saer(dataset_id, embedding_id, model_id, k_expansion, device):
+def _load_sae(model_id, k_expansion, device, checkpoint=None):
+    from latentsae.sae import Sae
+    if checkpoint:
+        if not os.path.isdir(checkpoint):
+            print(f"checkpoint directory not found: {checkpoint}")
+            sys.exit(1)
+        print(f"loading SAE from local checkpoint {checkpoint}")
+        return Sae.load_from_disk(checkpoint, device=device)
+    return Sae.load_from_hub(model_id, k_expansion, device)
+
+
+def saer(dataset_id, embedding_id, model_id, k_expansion, device,
+         checkpoint=None, granularity="rows", batch_size=None):
     DATA_DIR = get_data_dir()
     # read in the embeddings
 
@@ -42,18 +66,13 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
 
     # make the sae name from the number, zero padded to 3 digits
     sae_id = f"sae-{next_sae_number:03d}"
-    print("RUNNING:", sae_id)
+    print("RUNNING:", sae_id, f"(granularity={granularity})")
 
     import h5py
     import numpy as np
     import pandas as pd
     import torch
-    from latentsae.sae import Sae
-
-    from latentscope.util.embedding_store import load_embeddings
-
-    print("loading embeddings")
-    embeddings = load_embeddings(DATA_DIR, dataset_id, embedding_id)
+    from tqdm import tqdm
 
     if device == "mps" or torch.backends.mps.is_available():
         device = torch.device("mps")
@@ -62,33 +81,74 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     else:
         device = torch.device("cpu")
 
-    # Keep the full matrix on CPU; only the active batch is moved to the
-    # device inside the loop (moving everything up front defeats batching).
-    all_embeddings = torch.from_numpy(embeddings).float()
-    model = Sae.load_from_hub(model_id, k_expansion, device)
+    model = _load_sae(model_id, k_expansion, device, checkpoint=checkpoint)
 
-    print("Encoding embeddings with SAE")
-    batch_size = 128  # Define your batch size
-    # all_features = []
     all_acts = []
     all_indices = []
+    total_rows = 0
 
-    from tqdm import tqdm  # Make sure to import tqdm at the top of your file
+    if granularity == "tokens":
+        from latentscope.util.embedding_store import (
+            has_token_vectors,
+            iter_token_vectors,
+        )
+        if not has_token_vectors(DATA_DIR, dataset_id, embedding_id):
+            print(f"{embedding_id} has no per-token vectors; --granularity tokens "
+                  "requires a late-interaction embedding")
+            sys.exit(1)
+        batch_size = batch_size or 8192
 
-    for i in tqdm(range(0, len(all_embeddings), batch_size), desc="Encoding batches"):
-        batch = all_embeddings[i:i + batch_size].to(device)
-        features = model.encode(batch)
-        all_acts.append(features.top_acts)
-        all_indices.append(features.top_indices)
+        print("Encoding token vectors with SAE (streaming)")
+        buffer = []
+        buffered = 0
 
-    all_acts = torch.cat(all_acts, dim=0).detach().cpu().numpy()
-    all_indices = torch.cat(all_indices, dim=0).detach().cpu().numpy()
+        def encode_flush():
+            nonlocal buffer, buffered
+            if not buffer:
+                return
+            batch = torch.from_numpy(np.concatenate(buffer)).float()
+            for i in range(0, len(batch), batch_size):
+                chunk = batch[i:i + batch_size].to(device)
+                with torch.no_grad():
+                    features = model.encode(chunk)
+                all_acts.append(features.top_acts.detach().cpu())
+                all_indices.append(features.top_indices.detach().cpu())
+            buffer = []
+            buffered = 0
 
-    # all_features = model.encode(all_embeddings)
+        for _, vec_list in tqdm(iter_token_vectors(DATA_DIR, dataset_id, embedding_id),
+                                desc="Encoding token batches"):
+            flat = np.concatenate(vec_list)
+            total_rows += len(flat)
+            buffer.append(flat)
+            buffered += len(flat)
+            if buffered >= batch_size:
+                encode_flush()
+        encode_flush()
+    else:
+        from latentscope.util.embedding_store import load_embeddings
+        batch_size = batch_size or 128
+
+        print("loading embeddings")
+        embeddings = load_embeddings(DATA_DIR, dataset_id, embedding_id)
+        total_rows = len(embeddings)
+        # Keep the full matrix on CPU; only the active batch is moved to the
+        # device inside the loop (moving everything up front defeats batching).
+        all_embeddings = torch.from_numpy(embeddings).float()
+
+        print("Encoding embeddings with SAE")
+        for i in tqdm(range(0, len(all_embeddings), batch_size), desc="Encoding batches"):
+            batch = all_embeddings[i:i + batch_size].to(device)
+            with torch.no_grad():
+                features = model.encode(batch)
+            all_acts.append(features.top_acts.detach().cpu())
+            all_indices.append(features.top_indices.detach().cpu())
+
+    all_acts = torch.cat(all_acts, dim=0).numpy()
+    all_indices = torch.cat(all_indices, dim=0).numpy()
+    assert len(all_acts) == total_rows
 
     print("encoding completed")
-    # all_acts = all_features.top_acts.detach().cpu().numpy()
-    # all_indices = all_features.top_indices.detach().cpu().numpy()
 
     print("saving to disk")
     # save the acts and indices to the sae directory
@@ -97,27 +157,28 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
         f.create_dataset("top_indices", data=all_indices)
 
     print("calculating summary statistics")
-
-    import scipy
     print("ALL ACTS SHAPE", all_acts.shape)
     print("ALL INDS SHAPE", all_indices.shape)
-    matrix = scipy.sparse.lil_matrix((all_acts.shape[0], model.num_latents), dtype=np.float32)
-    for i in range(all_acts.shape[0]):
-        matrix.rows[i] = all_indices[i].tolist()
-        matrix.data[i] = all_acts[i].tolist()
-    print("MATRIX", matrix.shape)
 
-    csr = matrix.tocsr()
-    max_activations = csr.max(axis=0).toarray().flatten()
-    feature_counts = np.bincount(all_indices.flatten(), minlength=model.num_latents)
-    avg_activations = np.array(csr.sum(axis=0)).flatten() / np.maximum(feature_counts, 1)  # Avoid division by zero
+    # Vectorized per-feature stats over the flat (row, k) top-k arrays; the
+    # previous per-row lil_matrix loop took minutes at token scale (millions
+    # of rows).
+    flat_indices = all_indices.reshape(-1).astype(np.int64)
+    flat_acts = all_acts.reshape(-1).astype(np.float32)
+    num_latents = model.num_latents
+    feature_counts = np.bincount(flat_indices, weights=(flat_acts > 0), minlength=num_latents)
+    act_sums = np.zeros(num_latents, dtype=np.float64)
+    np.add.at(act_sums, flat_indices, flat_acts)
+    max_activations = np.zeros(num_latents, dtype=np.float32)
+    np.maximum.at(max_activations, flat_indices, flat_acts)
+    avg_activations = act_sums / np.maximum(feature_counts, 1)
 
     # Create features DataFrame
     features_df = pd.DataFrame({
-        'feature_id': range(model.num_latents),
+        'feature_id': range(num_latents),
         'max_activation': max_activations,
-        'count': feature_counts,
-        'avg_activation': avg_activations
+        'count': feature_counts.astype(np.int64),
+        'avg_activation': avg_activations.astype(np.float32)
     })
 
     # Save features to parquet
@@ -129,17 +190,22 @@ def saer(dataset_id, embedding_id, model_id, k_expansion, device):
     print(f"Number of dead features: {num_dead_features}")
 
     # Update metadata json (removed max_activations)
+    meta = {
+        "id": sae_id,
+        "model_id": model_id,
+        "k_expansion": k_expansion,
+        "embedding_id": embedding_id,
+        "dataset_id": dataset_id,
+        "granularity": granularity,
+        "rows": int(total_rows),
+        "num_features": num_latents,
+        "dead_features": num_dead_features,
+        "alive_features": len(alive_features[0])
+    }
+    if checkpoint:
+        meta["checkpoint"] = checkpoint
     with open(os.path.join(sae_dir, f"{sae_id}.json"), 'w') as f:
-        json.dump({
-            "id": sae_id,
-            "model_id": model_id,
-            "k_expansion": k_expansion,
-            "embedding_id": embedding_id,
-            "dataset_id": dataset_id,
-            "num_features": model.num_latents,
-            "dead_features": num_dead_features,
-            "alive_features": len(alive_features[0])
-        }, f)
+        json.dump(meta, f)
 
     print("done with", sae_id)
 

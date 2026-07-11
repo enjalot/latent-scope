@@ -497,6 +497,9 @@ def run_umap():
     # Consumed by ls-umap (WP-A) and written into umap-NNN.json.
     name = request.values.get('name')
     description = request.values.get('description')
+    # Token-granularity maps (one point per late-interaction token)
+    granularity = request.values.get('granularity')
+    fit_sample = request.values.get('fit_sample')
 
     if transform_from:
         # neighbors/min_dist are ignored by the transform path (the saved
@@ -526,10 +529,30 @@ def run_umap():
         command.append(f'--sae_id={sae_id}')
     if seed:
         command.append(f'--seed={seed}')
+    if granularity:
+        command.append(f'--granularity={granularity}')
+    if fit_sample:
+        command.append(f'--fit_sample={fit_sample}')
     if name:
         command.append(f'--name={name}')
     if description:
         command.append(f'--description={description}')
+    threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
+    return jsonify({"job_id": job_id})
+
+
+@jobs_write_bp.route('/tokenize', methods=['GET', 'POST'])
+def run_tokenize():
+    data_dir = _data_dir()
+    dataset = _safe_dataset(request.values.get('dataset'))
+    embedding_id = request.values.get('embedding_id')
+
+    err = _require_params(dataset=dataset, embedding_id=embedding_id)
+    if err:
+        return err
+
+    job_id = str(uuid.uuid4())
+    command = ['ls-tokenize', dataset, embedding_id]
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 
@@ -573,6 +596,8 @@ def run_sae():
     embedding_id = request.values.get('embedding_id')
     model_id = request.values.get('model_id')
     k_expansion = request.values.get('k_expansion')
+    granularity = request.values.get('granularity')
+    checkpoint = request.values.get('checkpoint')
 
     err = _require_params(dataset=dataset, embedding_id=embedding_id,
                           model_id=model_id, k_expansion=k_expansion)
@@ -581,6 +606,10 @@ def run_sae():
 
     job_id = str(uuid.uuid4())
     command = ['ls-sae', dataset, embedding_id, model_id, k_expansion]
+    if granularity:
+        command.append(f'--granularity={granularity}')
+    if checkpoint:
+        command.append(f'--checkpoint={checkpoint}')
     threading.Thread(target=run_job, args=(data_dir, dataset, job_id, command)).start()
     return jsonify({"job_id": job_id})
 

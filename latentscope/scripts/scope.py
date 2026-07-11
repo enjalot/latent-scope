@@ -181,6 +181,29 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
         cluster = json.load(f)
         scope["cluster"] = cluster
 
+    # Token-granularity scopes: one point per token instead of per dataset row.
+    # Every component must agree on the granularity — mixing a token umap with
+    # a row-level cluster (or SAE) would misalign every downstream artifact.
+    granularity = umap.get("granularity", "rows")
+    scope["granularity"] = granularity
+    if granularity == "tokens":
+        if cluster.get("granularity", "rows") != "tokens":
+            raise ValueError(
+                f"umap {umap_id} is token-granularity but cluster {cluster_id} is not; "
+                "re-run ls-cluster on the token umap")
+        if sae_id and scope.get("sae", {}).get("granularity", "rows") != "tokens":
+            raise ValueError(
+                f"umap {umap_id} is token-granularity but sae {sae_id} is not; "
+                "re-run ls-sae with --granularity tokens")
+        tokens_meta_path = os.path.join(DATA_DIR, dataset_id, "embeddings",
+                                        embedding_id + "-tokens.json")
+        with open(tokens_meta_path) as f:
+            scope["tokens"] = json.load(f)
+    elif sae_id and scope.get("sae", {}).get("granularity", "rows") == "tokens":
+        raise ValueError(
+            f"sae {sae_id} is token-granularity but umap {umap_id} is not; "
+            "pair token SAEs with token umaps (ls-umap --granularity tokens)")
+
     if cluster_labels_id == "default":
         cluster_labels_id = cluster_id + "-labels-default"
         scope["cluster_labels"] = {"id": cluster_labels_id, "cluster_id": cluster_id}
@@ -251,6 +274,28 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
 
     # Add an ls_index column that is the index of each row in the dataframe
     scope_parquet['ls_index'] = scope_parquet.index
+
+    token_char_spans = None
+    if granularity == "tokens":
+        # For token scopes ls_index is the *global token index* (still equal to
+        # the positional index, preserving the scopeRows[i].ls_index == i
+        # invariant the frontend relies on). The link back to the dataset row
+        # lives in parent_index; token_str rides along so hover can name the
+        # point without a server roundtrip.
+        from latentscope.util.embedding_store import load_token_metadata
+        tok_df = load_token_metadata(
+            DATA_DIR, dataset_id, embedding_id,
+            columns=["token_index", "ls_index", "token_pos", "token_str",
+                     "char_start", "char_end"])
+        if len(tok_df) != len(scope_parquet):
+            raise ValueError(
+                f"token metadata has {len(tok_df)} rows but the umap/cluster have "
+                f"{len(scope_parquet)}; re-run ls-tokenize and the token umap")
+        scope_parquet["parent_index"] = tok_df["ls_index"].to_numpy()
+        scope_parquet["token_pos"] = tok_df["token_pos"].to_numpy()
+        scope_parquet["token_str"] = tok_df["token_str"].to_numpy()
+        token_char_spans = tok_df[["char_start", "char_end"]]
+
     print("scope columns", scope_parquet.columns)
     scope_parquet.to_parquet(os.path.join(directory, id + ".parquet"))
 
@@ -275,15 +320,31 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     # rewritten on every scope save. (A skip keyed on input.parquet alone
     # served stale labels/coordinates when the scope itself changed.)
     scope_input_path = os.path.join(directory, id + "-input.parquet")
-    print("creating combined scope-input parquet")
-    input_df = pd.read_parquet(input_parquet_path)
-    input_df.reset_index(inplace=True)
-    input_df = input_df[input_df['index'].isin(scope_parquet['ls_index'])]
-    combined_df = input_df.join(scope_parquet.set_index('ls_index'), on='index', rsuffix='_ls')
-    combined_df.to_parquet(scope_input_path)
+    if granularity == "tokens":
+        # Joining the document text onto every token would duplicate each
+        # document ~100x. The token-level "input" is the scope columns plus
+        # the char spans; document content is fetched per page through the
+        # parent_index at serve time.
+        print("creating token-level scope-input parquet")
+        combined_df = scope_parquet.copy()
+        combined_df["char_start"] = token_char_spans["char_start"].to_numpy()
+        combined_df["char_end"] = token_char_spans["char_end"].to_numpy()
+        combined_df.to_parquet(scope_input_path)
+        # export_lance builds the scoped ANN search table from one mean vector
+        # per row; a token-level equivalent (per-token vector search) is a
+        # separate piece of work. Global search endpoints work regardless.
+        print("token scope: skipping lancedb scope export (scoped vector "
+              "search not yet supported at token granularity)")
+    else:
+        print("creating combined scope-input parquet")
+        input_df = pd.read_parquet(input_parquet_path)
+        input_df.reset_index(inplace=True)
+        input_df = input_df[input_df['index'].isin(scope_parquet['ls_index'])]
+        combined_df = input_df.join(scope_parquet.set_index('ls_index'), on='index', rsuffix='_ls')
+        combined_df.to_parquet(scope_input_path)
 
-    print("exporting to lancedb")
-    export_lance(DATA_DIR, dataset_id, id)
+        print("exporting to lancedb")
+        export_lance(DATA_DIR, dataset_id, id)
 
     print("wrote scope", id)
 

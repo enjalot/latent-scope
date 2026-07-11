@@ -360,6 +360,27 @@ class FakeLateInteractionProvider(FakeEmbedProvider):
         mean_vectors, _ = self.embed_multi(batch, dimensions)
         return mean_vectors.tolist()
 
+    def tokenize_documents(self, inputs):
+        """Mirror embed_multi's token counts: CLS + words + (pad) + SEP,
+        with real char offsets for the word tokens."""
+        results = []
+        for text in inputs:
+            seed = int.from_bytes(hashlib.sha256(text.encode()).digest()[4:8], "little")
+            n_tokens = 3 + int(seed % 5)
+            words = []
+            cursor = 0
+            for word in text.split():
+                start = text.index(word, cursor)
+                words.append((word, start, start + len(word)))
+                cursor = start + len(word)
+            tokens = [("<cls>", -1, -1)]
+            tokens += words[:n_tokens - 2]
+            while len(tokens) < n_tokens - 1:
+                tokens.append(("<pad>", -1, -1))
+            tokens.append(("<sep>", -1, -1))
+            results.append(tokens)
+        return results
+
 
 def test_late_interaction_pipeline_and_maxsim_search(pipeline_env, monkeypatch):
     """embed with a late-interaction provider -> token vectors stored fp16,
@@ -409,6 +430,324 @@ def test_late_interaction_pipeline_and_maxsim_search(pipeline_env, monkeypatch):
         data_dir, dataset_id, "embedding-001", query_tokens, final_limit=5)
     assert indices[0] == rare_idx, (
         f"expected rare-token doc {rare_idx} first, got {indices[:5]}")
+
+
+def _setup_li_dataset(data_dir, dataset_id, monkeypatch):
+    """ingest + embed a small dataset with the fake late-interaction provider."""
+    from latentscope.scripts.ingest import ingest
+    df = make_input_df()
+    ingest(dataset_id, df, text_column="text")
+
+    import latentscope.scripts.embed as embed_mod
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeLateInteractionProvider())
+    embed_mod.embed(dataset_id, "text", "fake-li-model", prefix=None, rerun=None,
+                    dimensions=None, batch_size=50)
+    return df
+
+
+def test_tokenize_writes_aligned_token_metadata(pipeline_env, monkeypatch):
+    """ls-tokenize writes one metadata row per stored token vector, with
+    correct parent links, global indices, and char offsets."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tok"
+    df = _setup_li_dataset(data_dir, dataset_id, monkeypatch)
+
+    monkeypatch.setattr("latentscope.models.get_embedding_model",
+                        lambda model_id: FakeLateInteractionProvider())
+    from latentscope.scripts.tokens import tokenizer
+    tokenizer(dataset_id, "embedding-001", batch_size=30)
+
+    from latentscope.util.embedding_store import (
+        count_token_metadata,
+        has_token_metadata,
+        load_num_tokens,
+        load_token_metadata,
+    )
+    num_tokens = load_num_tokens(data_dir, dataset_id, "embedding-001")
+    assert has_token_metadata(data_dir, dataset_id, "embedding-001")
+    assert count_token_metadata(data_dir, dataset_id, "embedding-001") == num_tokens.sum()
+
+    # global token_index of a doc's first token == cumulative offset
+    offsets = np.concatenate([[0], np.cumsum(num_tokens)])
+    for ls_index in [0, 5, len(df) - 1]:
+        tok_df = load_token_metadata(data_dir, dataset_id, "embedding-001",
+                                     ls_indices=[ls_index])
+        assert len(tok_df) == num_tokens[ls_index]
+        assert tok_df["token_index"].iloc[0] == offsets[ls_index]
+        assert (tok_df["token_pos"].to_numpy() == np.arange(len(tok_df))).all()
+        assert (tok_df["ls_index"] == ls_index).all()
+        # surface tokens' char spans slice the original text back out
+        text = df["text"].iloc[ls_index]
+        for _, row in tok_df.iterrows():
+            if row["char_start"] >= 0:
+                assert text[row["char_start"]:row["char_end"]] == row["token_str"]
+
+    # lookup by global token index works too
+    tok_df = load_token_metadata(data_dir, dataset_id, "embedding-001",
+                                 token_indices=[0, 1, int(offsets[3])])
+    assert len(tok_df) == 3
+    assert tok_df["ls_index"].tolist() == [0, 0, 3]
+
+    # meta json written
+    with open(os.path.join(data_dir, dataset_id, "embeddings",
+                           "embedding-001-tokens.json")) as f:
+        meta = json.load(f)
+    assert meta["total_tokens"] == int(num_tokens.sum())
+
+
+def test_tokenize_mismatch_fails_loudly(pipeline_env, monkeypatch):
+    """A count mismatch between re-tokenization and stored vectors must abort
+    without leaving a partial (misaligned) token table behind."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tok-bad"
+    _setup_li_dataset(data_dir, dataset_id, monkeypatch)
+
+    class BrokenTokenizer(FakeLateInteractionProvider):
+        def tokenize_documents(self, inputs):
+            results = super().tokenize_documents(inputs)
+            return [tokens[:-1] for tokens in results]  # off by one everywhere
+
+    monkeypatch.setattr("latentscope.models.get_embedding_model",
+                        lambda model_id: BrokenTokenizer())
+    from latentscope.scripts.tokens import tokenizer
+    with pytest.raises(SystemExit):
+        tokenizer(dataset_id, "embedding-001", batch_size=30)
+
+    from latentscope.util.embedding_store import has_token_metadata
+    assert not has_token_metadata(data_dir, dataset_id, "embedding-001")
+
+
+def test_iter_token_vectors_streams_in_order(pipeline_env, monkeypatch):
+    """The streaming iterator yields every document's token vectors in
+    ls_index order, matching the bulk loader."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tok-stream"
+    _setup_li_dataset(data_dir, dataset_id, monkeypatch)
+
+    from latentscope.util.embedding_store import (
+        iter_token_vectors,
+        load_num_tokens,
+        load_token_vectors,
+    )
+    bulk = load_token_vectors(data_dir, dataset_id, "embedding-001")
+    num_tokens = load_num_tokens(data_dir, dataset_id, "embedding-001")
+
+    seen_ls = []
+    streamed = []
+    for ls_indices, vec_list in iter_token_vectors(
+            data_dir, dataset_id, "embedding-001", row_batch_size=17):
+        seen_ls.extend(ls_indices.tolist())
+        streamed.extend(vec_list)
+
+    assert seen_ls == list(range(len(bulk)))
+    assert [len(v) for v in streamed] == num_tokens.tolist()
+    for a, b in zip(streamed, bulk):
+        np.testing.assert_allclose(a, b, rtol=1e-6)
+
+
+def _setup_tokenized_dataset(data_dir, dataset_id, monkeypatch):
+    df = _setup_li_dataset(data_dir, dataset_id, monkeypatch)
+    monkeypatch.setattr("latentscope.models.get_embedding_model",
+                        lambda model_id: FakeLateInteractionProvider())
+    from latentscope.scripts.tokens import tokenizer
+    tokenizer(dataset_id, "embedding-001", batch_size=50)
+    return df
+
+
+def test_token_map_pipeline(pipeline_env, monkeypatch):
+    """tokenize -> token umap -> cluster -> token scope: one point per token,
+    parent links intact, token-frequency default labels."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tokmap"
+    df = _setup_tokenized_dataset(data_dir, dataset_id, monkeypatch)
+
+    from latentscope.util.embedding_store import count_token_metadata, load_num_tokens
+    num_tokens = load_num_tokens(data_dir, dataset_id, "embedding-001")
+    total_tokens = count_token_metadata(data_dir, dataset_id, "embedding-001")
+
+    from latentscope.scripts.umapper import token_umapper
+    umap_id = token_umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1, seed=42)
+    assert umap_id == "umap-001"
+    umap_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "umaps", "umap-001.parquet"))
+    assert len(umap_df) == total_tokens
+    with open(os.path.join(data_dir, dataset_id, "umaps", "umap-001.json")) as f:
+        umap_meta = json.load(f)
+    assert umap_meta["granularity"] == "tokens"
+    assert umap_meta["total_tokens"] == total_tokens
+
+    from latentscope.scripts.cluster import clusterer
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+    cluster_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "clusters", "cluster-001.parquet"))
+    assert len(cluster_df) == total_tokens
+    with open(os.path.join(data_dir, dataset_id, "clusters", "cluster-001.json")) as f:
+        assert json.load(f)["granularity"] == "tokens"
+
+    # default labels are built from real token strings, not "Cluster N"
+    labels_df = pd.read_parquet(os.path.join(
+        data_dir, dataset_id, "clusters", "cluster-001-labels-default.parquet"))
+    non_noise = labels_df[labels_df["label"] != "Unclustered"]
+    assert (~non_noise["label"].str.startswith("Cluster ")).any()
+
+    from latentscope.scripts.scope import scope
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001", "default",
+          "token map", "token scope test")
+    scope_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "scopes", "scopes-001.parquet"))
+    assert len(scope_df) == total_tokens
+    # positional invariant + parent linkage
+    assert (scope_df["ls_index"].to_numpy() == np.arange(total_tokens)).all()
+    assert "parent_index" in scope_df.columns
+    assert "token_str" in scope_df.columns
+    offsets = np.concatenate([[0], np.cumsum(num_tokens)])
+    for ls in [0, 7, len(df) - 1]:
+        rows = scope_df[scope_df["parent_index"] == ls]
+        assert len(rows) == num_tokens[ls]
+        assert rows["ls_index"].iloc[0] == offsets[ls]
+
+    with open(os.path.join(data_dir, dataset_id, "scopes", "scopes-001.json")) as f:
+        scope_meta = json.load(f)
+    assert scope_meta["granularity"] == "tokens"
+    assert scope_meta["tokens"]["total_tokens"] == total_tokens
+
+    # token-level input parquet has char spans and NOT the document text
+    input_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "scopes", "scopes-001-input.parquet"))
+    assert len(input_df) == total_tokens
+    assert "char_start" in input_df.columns
+    assert "text" not in input_df.columns
+
+
+def test_token_umapper_sample_fit_path(pipeline_env, monkeypatch):
+    """When total tokens exceed fit_sample, the reducer fits on a sample and
+    batch-transforms everything; output still covers every token."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tokfit"
+    _setup_tokenized_dataset(data_dir, dataset_id, monkeypatch)
+
+    from latentscope.util.embedding_store import count_token_metadata
+    total_tokens = count_token_metadata(data_dir, dataset_id, "embedding-001")
+
+    from latentscope.scripts.umapper import token_umapper
+    token_umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1,
+                  seed=42, fit_sample=total_tokens // 3,
+                  transform_batch_tokens=100)
+    umap_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "umaps", "umap-001.parquet"))
+    assert len(umap_df) == total_tokens
+    assert umap_df["x"].between(-1, 1).all()
+    with open(os.path.join(data_dir, dataset_id, "umaps", "umap-001.json")) as f:
+        assert json.load(f)["fit_sample"] == total_tokens // 3
+
+
+def test_token_cluster_rejects_row_level_input(pipeline_env, monkeypatch):
+    """Clustering a token umap on the (row-level) embedding matrix must fail
+    loudly instead of producing misaligned output."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tokguard"
+    _setup_tokenized_dataset(data_dir, dataset_id, monkeypatch)
+
+    from latentscope.scripts.umapper import token_umapper
+    token_umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1, seed=42)
+
+    from latentscope.scripts.cluster import clusterer
+    with pytest.raises(SystemExit):
+        clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+                  cluster_selection_epsilon=0.0, column=None, method="hdbscan",
+                  cluster_on="embedding")
+
+
+class FakeSae:
+    """Stand-in for latentsae.Sae: top-k on a fixed random projection."""
+
+    def __init__(self, d_in=DIM, num_latents=64, k=4):
+        import torch
+        rng = np.random.default_rng(3)
+        self.proj = torch.from_numpy(
+            rng.normal(size=(d_in, num_latents)).astype(np.float32))
+        self.num_latents = num_latents
+        self.k = k
+
+    def encode(self, x):
+        import torch
+        from collections import namedtuple
+        acts = torch.relu(x.cpu() @ self.proj)
+        top = torch.topk(acts, self.k, dim=-1)
+        Out = namedtuple("EncoderOutput", ["top_acts", "top_indices"])
+        return Out(top.values, top.indices)
+
+
+def test_token_sae_encodes_every_token(pipeline_env, monkeypatch):
+    """ls-sae --granularity tokens writes one h5 row per token."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-toksae"
+    _setup_tokenized_dataset(data_dir, dataset_id, monkeypatch)
+
+    from latentscope.util.embedding_store import count_token_metadata
+    total_tokens = count_token_metadata(data_dir, dataset_id, "embedding-001")
+
+    import latentscope.scripts.sae as sae_mod
+    fake = FakeSae()
+    monkeypatch.setattr(sae_mod, "_load_sae",
+                        lambda model_id, k_expansion, device, checkpoint=None: fake)
+    sae_mod.saer(dataset_id, "embedding-001", "fake-sae", "64_4", "cpu",
+                 granularity="tokens", batch_size=100)
+
+    import h5py
+    with h5py.File(os.path.join(data_dir, dataset_id, "saes", "sae-001.h5")) as f:
+        assert f["top_acts"].shape == (total_tokens, fake.k)
+        assert f["top_indices"].shape == (total_tokens, fake.k)
+    with open(os.path.join(data_dir, dataset_id, "saes", "sae-001.json")) as f:
+        meta = json.load(f)
+    assert meta["granularity"] == "tokens"
+    assert meta["rows"] == total_tokens
+    features_df = pd.read_parquet(
+        os.path.join(data_dir, dataset_id, "saes", "sae-001_features.parquet"))
+    assert len(features_df) == fake.num_latents
+    assert features_df["count"].sum() > 0
+
+
+def test_tokens_indexed_endpoint(pipeline_env, client, monkeypatch):
+    """POST /api/tokens/indexed returns one row per token: parent document
+    columns + token string/pos/char span, in request order."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-tokapi"
+    df = _setup_tokenized_dataset(data_dir, dataset_id, monkeypatch)
+
+    from latentscope.util.embedding_store import load_num_tokens
+    num_tokens = load_num_tokens(data_dir, dataset_id, "embedding-001")
+    offsets = np.concatenate([[0], np.cumsum(num_tokens)])
+
+    # second token of doc 4 (a surface word token in the fake tokenizer),
+    # then a token from doc 0 — out of order on purpose
+    t_doc4 = int(offsets[4]) + 1
+    t_doc0 = int(offsets[0]) + 1
+    resp = client.post('/api/tokens/indexed', json={
+        "dataset": dataset_id,
+        "embedding_id": "embedding-001",
+        "indices": [t_doc4, t_doc0],
+    })
+    assert resp.status_code == 200
+    rows = json.loads(resp.data)
+    assert len(rows) == 2
+    assert rows[0]["index"] == t_doc4
+    assert rows[0]["parent_index"] == 4
+    assert rows[1]["parent_index"] == 0
+    # char span slices the parent text to the token string
+    text = df["text"].iloc[4]
+    r = rows[0]
+    assert text[r["char_start"]:r["char_end"]] == r["token_str"]
+    # parent document columns come along
+    assert r["text"] == text
+
+    # empty request is a clean empty list
+    resp = client.post('/api/tokens/indexed', json={
+        "dataset": dataset_id, "embedding_id": "embedding-001", "indices": []})
+    assert resp.status_code == 200
+    assert json.loads(resp.data) == []
 
 
 # --------------------------------------------------------------------------
