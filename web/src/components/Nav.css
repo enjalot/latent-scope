@@ -4,6 +4,7 @@
   top: 0;
   left: 0;
   width: 100%;
+  box-sizing: border-box;
   z-index: var(--ls-z-nav);
   height: var(--ls-nav-height);
   display: flex;
@@ -43,4 +44,15 @@
 .main-nav .settings {
   display: flex;
   align-items: center;
+}
+
+/* forge's clear variant colors text with --color-interaction-secondary,
+   which in this theme is a surface neutral — unreadable on the nav.
+   Re-anchor the trigger to text tokens. */
+.main-nav .settings button {
+  color: var(--text-color-text-subtle);
+}
+.main-nav .settings button:hover,
+.main-nav .settings button:focus {
+  color: var(--text-color-text-main);
 }

@@ -276,6 +276,65 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/*
+ * Safety-net baseline for native text inputs and textareas: the .ls-select
+ * box treatment, so raw <input> fields not wrapped by forge still sit
+ * inside the system. Checkboxes/radios/ranges are untouched.
+ */
+input[type='text'],
+input[type='search'],
+input[type='number'],
+input[type='email'],
+input[type='password'],
+input[type='url'],
+input:not([type]),
+textarea {
+  font-family: var(--ls-font-ui);
+  font-size: var(--input-font-size);
+  color: var(--text-color-text-main);
+  background-color: var(--ls-input-bg);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--input-border-radius);
+  padding: var(--input-padding);
+  transition:
+    border-color var(--ls-dur-fast) var(--ls-ease-out),
+    background-color var(--ls-dur-fast) var(--ls-ease-out);
+}
+input[type='text']:hover,
+input[type='search']:hover,
+input[type='number']:hover,
+input[type='email']:hover,
+input[type='password']:hover,
+input[type='url']:hover,
+input:not([type]):hover,
+textarea:hover {
+  border-color: var(--neutrals-color-neutral-3);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-color-text-subtle);
+}
+input:disabled,
+textarea:disabled {
+  color: var(--text-color-text-disabled);
+  background-color: var(--neutrals-color-neutral-1);
+  cursor: not-allowed;
+}
+
+/*
+ * forge's clear variant reuses --color-interaction-secondary as TEXT color,
+ * but this theme assigns that token a surface neutral (correct for the
+ * filled variant's background) — leaving secondary-clear button text
+ * invisible. Re-anchor those buttons to text tokens.
+ */
+button[class*='_button_secondary_clear'] {
+  color: var(--text-color-text-subtle);
+}
+button[class*='_button_secondary_clear']:hover,
+button[class*='_button_secondary_clear']:focus {
+  color: var(--text-color-text-main);
+}
+
 /* One focus ring everywhere */
 :focus-visible {
   outline: var(--ls-focus-ring);
