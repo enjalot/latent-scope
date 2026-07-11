@@ -31,6 +31,7 @@ import ConfigurationPanel from './ConfigurationPanel';
 import { useColorBy } from '../../hooks/useColorBy';
 import { useCellMembers } from '../../hooks/useCellMembers';
 import MembersTooltip from './MembersTooltip';
+import CellDetail from './CellDetail';
 import Scatter3D from './Scatter3D';
 import VoxelView from './VoxelView';
 import { Button } from 'react-element-forge';
@@ -308,6 +309,40 @@ function VisualizationPane({
   const [tileTooltipPos, setTileTooltipPos] = useState(null);
 
   // ====================================================================================================
+  // Cell detail drawer (#154): clicking a heatmap tile (2D) or a voxel (3D)
+  // opens a drawer listing every datapoint in that cell. { key, column } names
+  // the cell; CellDetail derives membership from scopeRows itself.
+  // ====================================================================================================
+  const [selectedCell, setSelectedCell] = useState(null);
+  // Voxel view -> open the cell drawer for a clicked voxel.
+  const onCellSelect = useCallback((key, column) => {
+    if (key === null || key === undefined) setSelectedCell(null);
+    else setSelectedCell({ key, column });
+  }, []);
+  // 2D map select: when the heatmap is showing, a click opens the tile's cell
+  // drawer (the tile under the clicked point); otherwise it opens PointDetail
+  // via the original onSelect (zero change to the non-heatmap flow).
+  const handleScatterSelect = useCallback(
+    (indices) => {
+      const idx = indices?.[0];
+      if (heatmapVisibleRef.current && idx !== undefined && idx !== -1 && scopeRows?.[idx]) {
+        setSelectedCell({ key: scopeRows[idx].tile_index_64, column: 'tile_index_64' });
+      } else {
+        onSelect(indices);
+      }
+    },
+    [scopeRows, onSelect]
+  );
+  // Deep-link a cell entry into the full PointDetail drawer.
+  const openPointFromCell = useCallback(
+    (pos) => {
+      setSelectedCell(null);
+      onSelect([pos]);
+    },
+    [onSelect]
+  );
+
+  // ====================================================================================================
   // Configuration Panel
   // ====================================================================================================
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -378,6 +413,10 @@ function VisualizationPane({
     viewMode === '2d' &&
     (imageMode ? !lod.active : vizConfig.showHeatMap) &&
     tiles?.length > 1;
+  // Mirror into a ref so the (stable) select handler reads the live value
+  // without being torn down/recreated on every heatmap toggle.
+  const heatmapVisibleRef = useRef(heatmapVisible);
+  heatmapVisibleRef.current = heatmapVisible;
 
   // Drive the tile members tooltip from the existing point-hover.
   useEffect(() => {
@@ -546,7 +585,7 @@ function VisualizationPane({
             top: 8,
             left: '50%',
             transform: 'translateX(-50%)',
-            zIndex: 1002,
+            zIndex: 990,
             display: 'flex',
             gap: 2,
             background: 'rgba(20,22,30,0.72)',
@@ -598,6 +637,7 @@ function VisualizationPane({
             onHover={onHover}
             onSelect={onSelect}
             pointScale={vizConfig.pointSize}
+            pointColors={scatterPointColors}
           />
         )}
         {/* Voxel heatmap (aggregated cubes + slice plane) for 3D scopes */}
@@ -608,6 +648,8 @@ function VisualizationPane({
             height={height}
             scope={scope}
             clusterLabels={clusterLabels}
+            pointColors={scatterPointColors}
+            onCellSelect={onCellSelect}
           />
         )}
         {viewMode === '2d' && (
@@ -618,7 +660,7 @@ function VisualizationPane({
             width={width}
             height={height}
             onView={handleView}
-            onSelect={onSelect}
+            onSelect={handleScatterSelect}
             onHover={onHover}
             featureIsSelected={featureIsSelected}
             maxZoom={maxZoom}
@@ -745,6 +787,13 @@ function VisualizationPane({
           loading={tileLoadingSnippets}
         />
       )}
+
+      {/* Cell detail drawer (#154): all datapoints in a clicked tile/voxel. */}
+      <CellDetail
+        selectedCell={selectedCell}
+        onClose={() => setSelectedCell(null)}
+        onOpenPoint={openPointFromCell}
+      />
 
       {/* Hover information display */}
       {hovered && (

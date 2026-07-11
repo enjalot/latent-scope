@@ -8,32 +8,38 @@ import MembersTooltip from './MembersTooltip';
 
 CameraControls.install({ THREE });
 
-// Lift a cluster hue so low-density (dark) cells still read on a dark bg, then
-// scale luminance by density so denser cells glow brighter.
+// Scale a color's luminance by cell density so denser cells glow brighter,
+// keeping a floor so sparse cells still read on a dark bg.
 const _c = new THREE.Color();
 const _hsl = {};
+function shadeByDensity(color, density) {
+  color.getHSL(_hsl);
+  const l = 0.32 + 0.36 * density; // density 0..1 -> lightness 0.32..0.68
+  color.setHSL(_hsl.h, Math.min(1, _hsl.s * 1.05), l);
+  return color;
+}
 function voxelColor(hex, density) {
   _c.set(hex);
-  _c.getHSL(_hsl);
-  // density 0..1 -> lightness 0.32..0.68
-  const l = 0.32 + 0.36 * density;
-  _c.setHSL(_hsl.h, Math.min(1, _hsl.s * 1.05), l);
-  return _c.clone();
+  return shadeByDensity(_c, density).clone();
 }
 
-function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
+function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors = null, onCellSelect }) {
   const { isDark } = useColorMode();
   const [resolution, setResolution] = useState(64); // voxel_index_64 default
-  const [sliceT, setSliceT] = useState(0.5); // 0..1 depth along the view axis
+  const [sliceT, setSliceT] = useState(0.5); // 0..1 depth along the FIXED view axis
   const mountRef = useRef(null);
   const stateRef = useRef(null);
   const sliceTRef = useRef(0.5);
   sliceTRef.current = sliceT;
   const [tooltipPos, setTooltipPos] = useState(null); // {x, y} viewport
+  const isTouch = useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)')?.matches,
+    []
+  );
 
   const column = `voxel_index_${resolution}`;
   const cellKeyOf = useCallback((row) => row[column], [column]);
-  const { setActiveCell, active, snippets, loadingSnippets } = useCellMembers({
+  const { setActiveCell, active, snippets, loadingSnippets, membership } = useCellMembers({
     scopeRows,
     scope,
     cellKeyOf,
@@ -86,6 +92,40 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
     }
     return out;
   }, [scopeRows, column, resolution]);
+
+  // Per-cell color. With Color By active, average the member point hues (same
+  // useColorBy palette as the 2D map + 3D scatter) and shade by density; with
+  // Color By off, fall back to the dominant-cluster palette. Recomputed on
+  // colorby change without rebuilding the mesh.
+  const cellColors = useMemo(() => {
+    return cells.map((c) => {
+      if (pointColors) {
+        const mem = membership.get(c.idx) || [];
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let n = 0;
+        for (const i of mem) {
+          const pc = pointColors[i];
+          if (pc) {
+            r += pc[0];
+            g += pc[1];
+            b += pc[2];
+            n++;
+          }
+        }
+        const base = n
+          ? new THREE.Color(r / n, g / n, b / n)
+          : new THREE.Color(0.6, 0.63, 0.65);
+        return shadeByDensity(base, c.density).clone();
+      }
+      return voxelColor(clusterColorHex(c.cluster, numClusters), c.density);
+    });
+  }, [cells, pointColors, membership, numClusters]);
+
+  // Keep the latest cell colors reachable from the build closure + recolor.
+  const cellColorsRef = useRef(cellColors);
+  cellColorsRef.current = cellColors;
 
   const bg = isDark ? 0x0a0c12 : 0xf2f2f4;
 
@@ -158,7 +198,7 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
       const c = cells[k];
       mm.makeTranslation(c.x, c.y, c.z);
       mesh.setMatrixAt(k, mm);
-      const col = voxelColor(clusterColorHex(c.cluster, numClusters), c.density);
+      const col = (cellColorsRef.current[k] || voxelColor('#9aa0a6', c.density)).clone();
       baseColors.push(col);
       mesh.setColorAt(k, col);
       centerArr[k * 3] = c.x;
@@ -193,19 +233,37 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
     controls.minDistance = 0.05;
     controls.maxDistance = 40;
     controls.mouseButtons.right = CameraControls.ACTION.TRUCK;
+    // Touch gestures: one finger orbits, two fingers pinch-zoom + pan.
+    controls.touches.one = CameraControls.ACTION.TOUCH_ROTATE;
+    controls.touches.two = CameraControls.ACTION.TOUCH_DOLLY_TRUCK;
+    controls.touches.three = CameraControls.ACTION.TOUCH_TRUCK;
     const d = radius * 2.3;
     controls.setLookAt(cx + d * 0.5, cy + d * 0.35, cz + d, cx, cy, cz, false);
 
     const raycaster = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
 
-    // Slice plane derivation (perpendicular to view direction). Re-derived on
-    // controlend + slider input (NOT per-frame — that's nauseating while orbit).
+    // FIXED slice-plane derivation. The plane normal is derived ONCE from the
+    // current camera view direction and then held constant while orbiting, so
+    // the slice stays the static 2D plane of the initial view (not the moving
+    // camera). "Align to view" re-derives it on demand.
     const planeNormal = new THREE.Vector3();
     let projMin = -1;
     let projMax = 1;
-    const signed = new Float32Array(cells.length); // signed dist per cell (for hover gating)
+    const signed = new Float32Array(cells.length); // signed dist per cell (hover gating)
+    const applySlice = (t) => {
+      const cst = projMin + (projMax - projMin) * t;
+      uPlaneConstant.value = cst;
+      for (let k = 0; k < M; k++) {
+        signed[k] =
+          planeNormal.x * centerArr[k * 3] +
+          planeNormal.y * centerArr[k * 3 + 1] +
+          planeNormal.z * centerArr[k * 3 + 2] -
+          cst;
+      }
+    };
     const recomputePlaneAxis = () => {
+      camera.updateMatrixWorld(true);
       camera.getWorldDirection(planeNormal); // points away from camera into scene
       planeNormal.negate().normalize(); // normal toward camera
       uPlaneNormal.value.copy(planeNormal);
@@ -221,19 +279,6 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
       }
       applySlice(st.sliceT);
     };
-    const applySlice = (t) => {
-      const cst = projMin + (projMax - projMin) * t;
-      uPlaneConstant.value = cst;
-      for (let k = 0; k < M; k++) {
-        signed[k] =
-          planeNormal.x * centerArr[k * 3] +
-          planeNormal.y * centerArr[k * 3 + 1] +
-          planeNormal.z * centerArr[k * 3 + 2] -
-          cst;
-      }
-    };
-
-    controls.addEventListener('controlend', recomputePlaneAxis);
 
     const st = {
       renderer,
@@ -255,6 +300,10 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
       dpr,
     };
     stateRef.current = st;
+    // Apply the initial lookAt immediately so the plane is derived from the
+    // real starting view (not the camera's pre-update default orientation),
+    // then freeze that plane. NO controlend re-derivation — orbiting keeps it.
+    controls.update(0);
     recomputePlaneAxis();
 
     const animate = () => {
@@ -266,7 +315,6 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
 
     return () => {
       cancelAnimationFrame(st.raf);
-      controls.removeEventListener('controlend', recomputePlaneAxis);
       controls.dispose();
       geo.dispose();
       mat.dispose();
@@ -277,7 +325,22 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cells, width, height, numClusters, bg, resolution]);
 
-  // slider -> update slice constant (no rebuild)
+  // Color By live update: recolor instances in place (no rebuild).
+  useEffect(() => {
+    const st = stateRef.current;
+    if (!st) return;
+    for (let k = 0; k < cellColors.length && k < st.baseColors.length; k++) {
+      st.baseColors[k] = cellColors[k].clone();
+      if (k !== st.hovered) st.mesh.setColorAt(k, st.baseColors[k]);
+    }
+    if (st.hovered >= 0) {
+      _c.copy(st.baseColors[st.hovered]).lerp(new THREE.Color(1, 1, 1), 0.55);
+      st.mesh.setColorAt(st.hovered, _c);
+    }
+    if (st.mesh.instanceColor) st.mesh.instanceColor.needsUpdate = true;
+  }, [cellColors]);
+
+  // slider -> update slice constant along the FIXED normal (no rebuild)
   useEffect(() => {
     const st = stateRef.current;
     if (!st) return;
@@ -285,7 +348,8 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
     st.applySlice(sliceT);
   }, [sliceT]);
 
-  // hover: raycast instanceId; only in-plane (highlighted) voxels are hoverable.
+  // hover (desktop) + click/tap (both): raycast instanceId; only in-plane
+  // (highlighted) voxels are hoverable/selectable.
   useEffect(() => {
     const st = stateRef.current;
     if (!st) return;
@@ -300,22 +364,20 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
       if (st.mesh.instanceColor) st.mesh.instanceColor.needsUpdate = true;
       st.hovered = id;
     };
-    const onMove = (e) => {
+    const pickAt = (clientX, clientY) => {
       const rect = dom.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      st.ndc.x = (x / width) * 2 - 1;
-      st.ndc.y = -(y / height) * 2 + 1;
+      st.ndc.x = ((clientX - rect.left) / width) * 2 - 1;
+      st.ndc.y = -((clientY - rect.top) / height) * 2 + 1;
       st.raycaster.setFromCamera(st.ndc, st.camera);
       const hits = st.raycaster.intersectObject(st.mesh, false);
-      let picked = -1;
       for (const h of hits) {
         // only accept in-plane voxels (matches what's rendered at full opacity)
-        if (Math.abs(st.signed[h.instanceId]) <= st.uHalfVoxel.value) {
-          picked = h.instanceId;
-          break;
-        }
+        if (Math.abs(st.signed[h.instanceId]) <= st.uHalfVoxel.value) return h.instanceId;
       }
+      return -1;
+    };
+    const onMove = (e) => {
+      const picked = pickAt(e.clientX, e.clientY);
       setHighlight(picked);
       if (picked >= 0) {
         setActiveCell(cells[picked].idx);
@@ -330,6 +392,10 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
       setActiveCell(null);
       setTooltipPos(null);
     };
+    const onClick = (e) => {
+      const picked = pickAt(e.clientX, e.clientY);
+      if (picked >= 0 && onCellSelect) onCellSelect(cells[picked].idx, column);
+    };
     // shift+wheel -> nudge the slice depth (intercept before camera-controls).
     const onWheel = (e) => {
       if (!e.shiftKey) return;
@@ -337,25 +403,41 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
       e.stopImmediatePropagation();
       setSliceT((t) => Math.min(1, Math.max(0, t + (e.deltaY > 0 ? 0.02 : -0.02))));
     };
-    dom.addEventListener('mousemove', onMove);
+    if (!isTouch) dom.addEventListener('mousemove', onMove);
     dom.addEventListener('mouseleave', onLeave);
+    dom.addEventListener('click', onClick);
     dom.addEventListener('wheel', onWheel, { capture: true, passive: false });
     return () => {
       dom.removeEventListener('mousemove', onMove);
       dom.removeEventListener('mouseleave', onLeave);
+      dom.removeEventListener('click', onClick);
       dom.removeEventListener('wheel', onWheel, { capture: true });
     };
-  }, [cells, width, height, setActiveCell]);
+  }, [cells, width, height, setActiveCell, column, onCellSelect, isTouch]);
+
+  const alignToView = useCallback(() => {
+    stateRef.current?.recomputePlaneAxis();
+  }, []);
+
+  const btn = (active) => ({
+    background: active ? '#5a4fcf' : 'transparent',
+    color: '#eee',
+    border: '1px solid #666',
+    borderRadius: 4,
+    padding: '1px 8px',
+    cursor: 'pointer',
+  });
 
   return (
     <div style={{ position: 'absolute', inset: 0, width, height }}>
       <div ref={mountRef} style={{ position: 'absolute', inset: 0 }} />
-      {/* slice + resolution controls */}
+      {/* slice + resolution controls. On touch/small screens the bottom is
+          occupied by the data-table sheet, so the controls anchor to the top. */}
       <div
         style={{
           position: 'absolute',
           left: 12,
-          bottom: 12,
+          ...(isTouch ? { top: 56 } : { bottom: 12 }),
           background: 'rgba(20,22,30,0.72)',
           color: '#eee',
           padding: '8px 12px',
@@ -364,11 +446,12 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
           display: 'flex',
           flexDirection: 'column',
           gap: 6,
-          minWidth: 220,
+          width: 'min(260px, calc(100vw - 24px))',
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 64 }}>Slice</span>
+          <span style={{ width: 44 }}>Slice</span>
           <input
             type="range"
             min={0}
@@ -378,40 +461,25 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels }) {
             onChange={(e) => setSliceT(Number(e.target.value))}
             style={{ flex: 1 }}
           />
+          <button onClick={alignToView} style={btn(false)} title="Re-align the slice plane to the current view">
+            Align to view
+          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 64 }}>Resolution</span>
-          <button
-            onClick={() => setResolution(32)}
-            style={{
-              background: resolution === 32 ? '#5a4fcf' : 'transparent',
-              color: '#eee',
-              border: '1px solid #666',
-              borderRadius: 4,
-              padding: '1px 8px',
-              cursor: 'pointer',
-            }}
-          >
+          <span style={{ width: 44 }}>Res</span>
+          <button onClick={() => setResolution(32)} style={btn(resolution === 32)}>
             32
           </button>
-          <button
-            onClick={() => setResolution(64)}
-            style={{
-              background: resolution === 64 ? '#5a4fcf' : 'transparent',
-              color: '#eee',
-              border: '1px solid #666',
-              borderRadius: 4,
-              padding: '1px 8px',
-              cursor: 'pointer',
-            }}
-          >
+          <button onClick={() => setResolution(64)} style={btn(resolution === 64)}>
             64
           </button>
           <span style={{ opacity: 0.6, marginLeft: 'auto' }}>{cells.length} cells</span>
         </div>
-        <div style={{ opacity: 0.55, fontSize: 11 }}>shift + wheel to move slice</div>
+        <div style={{ opacity: 0.55, fontSize: 11 }}>
+          {isTouch ? 'tap a cell for its contents' : 'shift + wheel to move slice · click a cell for its contents'}
+        </div>
       </div>
-      {tooltipPos && active && (
+      {!isTouch && tooltipPos && active && (
         <MembersTooltip
           x={tooltipPos.x}
           y={tooltipPos.y}

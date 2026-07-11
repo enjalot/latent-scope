@@ -115,17 +115,37 @@ void main() {
   gl_FragColor = vec4(r / 255.0, g / 255.0, b / 255.0, 1.0);
 }`;
 
+// Resolve the [r,g,b] (0..1) for a point: a color-by hue when one is supplied
+// (mirrors the 2D map exactly — same useColorBy palette), otherwise the shared
+// cluster palette (clusterColorRgb). A null entry inside pointColors means the
+// point has a missing/out-of-range value for the active color-by column, which
+// we render as a neutral gray so it reads as "no value" rather than vanishing.
+const GRAY = [0.6, 0.63, 0.65];
+function resolvePointColor(pointColors, i, cluster, numClusters) {
+  if (pointColors) {
+    const c = pointColors[i];
+    return c || GRAY;
+  }
+  return clusterColorRgb(cluster, numClusters);
+}
+
 function Scatter3D({
   scopeRows,
   width,
   height,
-  scope,
   clusterLabels,
   selectedCluster, // clusterFilter.cluster object (or null)
   hoveredIndex,
   onHover,
   onSelect,
   pointScale = 1,
+  // Per-point [r,g,b] (0..1) color-by triples aligned to scopeRows order, or
+  // null when Color By is off (falls back to the cluster palette). Mirrors the
+  // 2D scatter's `pointColors` so the 3D view respects Color By identically.
+  pointColors = null,
+  // Lightweight preview mode (Setup): points + orbit only — no picking, no
+  // hover/select wiring, no tooltip fetch. Used by the umap preview panel.
+  lightweight = false,
 }) {
   const { isDark } = useColorMode();
   const mountRef = useRef(null);
@@ -134,6 +154,16 @@ function Scatter3D({
   const onSelectRef = useRef(onSelect);
   onHoverRef.current = onHover;
   onSelectRef.current = onSelect;
+  // Keep the latest color-by array reachable from the build closure + the
+  // recolor effect without forcing a full scene rebuild on every change.
+  const pointColorsRef = useRef(pointColors);
+  pointColorsRef.current = pointColors;
+  // Coarse-pointer (touch) devices: bigger minimum point size + tap-to-select
+  // instead of hover, and touch-friendly camera-controls gestures.
+  const isTouch = useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)')?.matches,
+    []
+  );
   // Bumped whenever the scene is (re)built so the hover/size/selection effects
   // re-apply their uniforms onto the fresh material (rebuild resets uniforms).
   const [sceneVersion, setSceneVersion] = useState(0);
@@ -171,8 +201,12 @@ function Scatter3D({
     controls.draggingDampingFactor = 0.12;
     controls.minDistance = 0.05;
     controls.maxDistance = 40;
-    // Right-drag / two-finger -> truck (pan). Wheel -> dolly to cursor.
+    // Right-drag -> truck (pan). Wheel -> dolly to cursor.
     controls.mouseButtons.right = CameraControls.ACTION.TRUCK;
+    // Touch gestures: one finger orbits, two fingers pinch-zoom + pan together.
+    controls.touches.one = CameraControls.ACTION.TOUCH_ROTATE;
+    controls.touches.two = CameraControls.ACTION.TOUCH_DOLLY_TRUCK;
+    controls.touches.three = CameraControls.ACTION.TOUCH_TRUCK;
 
     // --- build instanced billboard mesh (skip deleted points) ---
     const N = scopeRows.length;
@@ -198,12 +232,12 @@ function Scatter3D({
       posArr[m * 3] = x;
       posArr[m * 3 + 1] = y;
       posArr[m * 3 + 2] = z;
-      const c = clusterColorRgb(r.cluster, numClusters);
-      colArr[m * 3] = c[0];
-      colArr[m * 3 + 1] = c[1];
-      colArr[m * 3 + 2] = c[2];
       idArr[m] = i; // scopeRows position -> matches the existing hover flow
       cluArr[m] = r.cluster;
+      const pc = resolvePointColor(pointColorsRef.current, i, r.cluster, numClusters);
+      colArr[m * 3] = pc[0];
+      colArr[m * 3 + 1] = pc[1];
+      colArr[m * 3 + 2] = pc[2];
       cx += x;
       cy += y;
       cz += z;
@@ -221,7 +255,8 @@ function Scatter3D({
     const uniforms = {
       uViewport: { value: new THREE.Vector2(width * dpr, height * dpr) },
       uPointScale: { value: pointScale * 2.2 * worldScale },
-      uMinPx: { value: 1.5 },
+      // Bigger floor on touch screens so 100k points stay legible / tappable.
+      uMinPx: { value: isTouch ? 3.0 : 1.5 },
       uMaxPx: { value: 42.0 },
       uHoverId: { value: -1 },
       uSelCluster: { value: -999 },
@@ -268,7 +303,13 @@ function Scatter3D({
     const radius = Math.max(0.3, Math.sqrt(ss / m) * 2.2);
     const center = new THREE.Vector3(cx, cy, cz);
     const d = radius * 2.4;
-    controls.setLookAt(cx + d * 0.4, cy + d * 0.3, cz + d, cx, cy, cz, false);
+    // The preview uses a more oblique 3/4 angle so the depth reads as 3D at a
+    // glance (the Explore view starts closer to head-on for a familiar map).
+    if (lightweight) {
+      controls.setLookAt(cx + d * 0.9, cy + d * 0.55, cz + d * 0.7, cx, cy, cz, false);
+    } else {
+      controls.setLookAt(cx + d * 0.4, cy + d * 0.3, cz + d, cx, cy, cz, false);
+    }
 
     // --- picking (full-buffer render + 1px readback) ---
     const pickTarget = new THREE.WebGLRenderTarget(
@@ -312,11 +353,19 @@ function Scatter3D({
       dpr,
       raf: 0,
       clock: new THREE.Clock(),
+      // recolor-in-place handles (Color By live updates without a rebuild)
+      colorAttr: geom.getAttribute('iColor'),
+      idAttr: geom.getAttribute('iId'),
+      cluAttr: geom.getAttribute('iCluster'),
+      count: m,
+      numClusters,
     };
     stateRef.current = st;
 
     // --- interaction ---
+    // Preview (lightweight) mode is orbit-only: no picking, hover, or select.
     const dom = renderer.domElement;
+    if (!lightweight) {
     let pendingPick = null;
     let rafPick = 0;
     const doPick = () => {
@@ -350,10 +399,20 @@ function Scatter3D({
       controls.moveTo(r.x, r.y, r.z ?? 0, true);
       controls.dolly(radius * 0.5, true);
     };
-    dom.addEventListener('mousemove', onMove);
+    // Touch devices don't hover — a tap selects (opening the detail drawer),
+    // so we skip the pick-on-move listener there but keep click/dblclick.
+    if (!isTouch) dom.addEventListener('mousemove', onMove);
     dom.addEventListener('mouseleave', onLeave);
     dom.addEventListener('click', onClick);
     dom.addEventListener('dblclick', onDblClick);
+    st.cleanupInteraction = () => {
+      if (rafPick) cancelAnimationFrame(rafPick);
+      dom.removeEventListener('mousemove', onMove);
+      dom.removeEventListener('mouseleave', onLeave);
+      dom.removeEventListener('click', onClick);
+      dom.removeEventListener('dblclick', onDblClick);
+    };
+    }
 
     const animate = () => {
       st.raf = requestAnimationFrame(animate);
@@ -366,11 +425,7 @@ function Scatter3D({
 
     return () => {
       cancelAnimationFrame(st.raf);
-      if (rafPick) cancelAnimationFrame(rafPick);
-      dom.removeEventListener('mousemove', onMove);
-      dom.removeEventListener('mouseleave', onLeave);
-      dom.removeEventListener('click', onClick);
-      dom.removeEventListener('dblclick', onDblClick);
+      st.cleanupInteraction?.();
       controls.dispose();
       geom.dispose();
       material.dispose();
@@ -396,6 +451,26 @@ function Scatter3D({
     if (!st) return;
     st.uniforms.uPointScale.value = pointScale * 2.2 * 0.02;
   }, [pointScale, sceneVersion]);
+
+  // Color By live update: rewrite the per-instance color buffer in place (no
+  // scene rebuild) so switching the Color By column recolors instantly and
+  // mirrors the 2D map. When pointColors is null we fall back to the cluster
+  // palette, so "None (selection)" restores the default cluster hues.
+  useEffect(() => {
+    const st = stateRef.current;
+    if (!st || !st.colorAttr) return;
+    const col = st.colorAttr.array;
+    const ids = st.idAttr.array;
+    const clus = st.cluAttr.array;
+    for (let k = 0; k < st.count; k++) {
+      const i = ids[k];
+      const c = resolvePointColor(pointColors, i, clus[k], st.numClusters);
+      col[k * 3] = c[0];
+      col[k * 3 + 1] = c[1];
+      col[k * 3 + 2] = c[2];
+    }
+    st.colorAttr.needsUpdate = true;
+  }, [pointColors, sceneVersion]);
 
   // Selected-cluster focus: dim non-members + fit the camera to the cluster bbox.
   useEffect(() => {
