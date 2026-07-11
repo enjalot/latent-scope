@@ -490,18 +490,32 @@ def run_umap():
     align = request.values.get('align')
     save = request.values.get('save')
     seed = request.values.get('seed')
+    # Incremental / registered umaps (issue #142)
+    transform_from = request.values.get('transform_from')
+    register_to = request.values.get('register_to')
     # Optional named-step metadata (issue: experiment gallery + named steps).
     # Consumed by ls-umap (WP-A) and written into umap-NNN.json.
     name = request.values.get('name')
     description = request.values.get('description')
 
-    err = _require_params(dataset=dataset, embedding_id=embedding_id,
-                          neighbors=neighbors, min_dist=min_dist)
+    if transform_from:
+        # neighbors/min_dist are ignored by the transform path (the saved
+        # reducer already encodes them)
+        err = _require_params(dataset=dataset, embedding_id=embedding_id)
+    else:
+        err = _require_params(dataset=dataset, embedding_id=embedding_id,
+                              neighbors=neighbors, min_dist=min_dist)
     if err:
         return err
 
     job_id = str(uuid.uuid4())
-    command = ['ls-umap', dataset, embedding_id, neighbors, min_dist]
+    command = ['ls-umap', dataset, embedding_id]
+    if neighbors is not None and min_dist is not None:
+        command += [neighbors, min_dist]
+    if transform_from:
+        command.append(f'--transform-from={transform_from}')
+    if register_to:
+        command.append(f'--register-to={register_to}')
     if init:
         command.append(f'--init={init}')
     if align:
