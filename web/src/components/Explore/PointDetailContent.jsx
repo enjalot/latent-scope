@@ -7,7 +7,6 @@ import {
   describeCellValue,
   formatDetailNumber,
 } from '../../lib/pointDetail';
-import { useScope } from '../../contexts/ScopeContext';
 
 import styles from './PointDetail.module.scss';
 
@@ -42,14 +41,14 @@ function DetailValue({ cell }) {
  * The body of a single row's detail view: images large (with a
  * click-to-original lightbox), the main text prominently, and the remaining
  * columns as a definition list formatted per data type. Shared between the
- * desktop drawer (PointDetail) and the mobile table's expanded rows.
+ * desktop drawer (PointDetail), the mobile table's expanded rows, and the
+ * Setup preview's drawer (PreviewPointDetail).
  *
- * `row` may be null while it loads — binary images only need the index, so
- * they render immediately.
+ * `dataset` is a prop (not ScopeContext) so contexts other than Explore can
+ * reuse the view. `row` may be null while it loads — binary images only need
+ * the index, so they render immediately.
  */
-function PointDetailContent({ row, index, imageSize = DEFAULT_IMAGE_SIZE }) {
-  const { dataset } = useScope();
-
+function PointDetailContent({ row, index, dataset, imageSize = DEFAULT_IMAGE_SIZE }) {
   // { src, alt, href? } for the full-size image modal
   const [lightbox, setLightbox] = useState(null);
 

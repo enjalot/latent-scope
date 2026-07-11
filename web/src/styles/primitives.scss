@@ -311,7 +311,7 @@
 .ls-select {
   appearance: none;
   background-color: var(--ls-surface-input);
-  border: 1px solid var(--borders-color-border-2);
+  border: 1px solid var(--borders-color-border-1);
   border-radius: var(--ls-radius-2);
   padding: 8px 10px;
   padding-right: calc(10px + var(--ls-space-4)); /* room for the chevron */
@@ -328,7 +328,7 @@
 }
 
 .ls-select:hover {
-  border-color: var(--neutrals-color-neutral-3);
+  border-color: var(--borders-color-border-2);
 }
 
 .ls-select:focus-visible {

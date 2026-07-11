@@ -410,9 +410,10 @@ function VisualizationPane({
       <div className={styles.configToggleContainer}>
         <button
           type="button"
-          className="ls-icon-btn"
+          className={`ls-icon-btn ${styles.configToggle}`}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          aria-label="Toggle configuration panel"
+          aria-label="Chart settings"
+          title="Chart settings"
           aria-expanded={isPanelOpen}
         >
           <svg

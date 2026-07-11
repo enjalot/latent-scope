@@ -1,4 +1,4 @@
-@use "./_shared" as *;
+@use './_shared' as *;
 
 .umap {
   @include setup-container;
@@ -19,7 +19,7 @@
   @include setup-step;
 }
 .umap-form {
-  @include setup-form;
+  @include setup-form-body;
 }
 
 .tooltip {

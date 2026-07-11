@@ -12,6 +12,7 @@ import { apiService, apiUrl } from '../../lib/apiService';
 import Preview from './Preview';
 import EstimatePanel from './EstimatePanel';
 import ExperimentGallery from './ExperimentGallery';
+import CreationPanel from './CreationPanel';
 
 import styles from './Umap.module.scss';
 
@@ -33,6 +34,10 @@ function Umap() {
   const [embeddings, setEmbeddings] = useState([]);
   const [umaps, setUmaps] = useState([]);
   const [clusters, setClusters] = useState([]);
+
+  // creation form collapse: null until the first umaps fetch resolves,
+  // then collapsed when user-generated umaps already exist
+  const [formOpen, setFormOpen] = useState(null);
 
   useEffect(() => {
     setPreviewLabel(umap?.id);
@@ -58,7 +63,10 @@ function Umap() {
   useEffect(() => {
     if (dataset) {
       apiService.fetchEmbeddings(dataset?.id).then((embs) => setEmbeddings(embs));
-      apiService.fetchUmaps(dataset?.id).then((ums) => setUmaps(ums));
+      apiService.fetchUmaps(dataset?.id).then((ums) => {
+        setUmaps(ums);
+        setFormOpen((open) => (open === null ? ums.length === 0 : open));
+      });
       apiService.fetchClusters(dataset?.id).then((cls) => setClusters(cls));
     }
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
@@ -168,172 +176,183 @@ function Umap() {
     goToNextStep();
   }, [updateScope, goToNextStep, umap, savedScope]);
 
+  // keep the form expanded while a job is running so JobProgress stays visible
+  const formExpanded = formOpen === true || !!umapJob;
+
   return (
     <div className={styles['umap']}>
       <div className={styles['umap-setup']}>
-        <div className={styles['umap-form']}>
-          <div>
-            Project high-dimensional embeddings to 2D using{' '}
-            <a href="https://umap-learn.readthedocs.io/en/latest/index.html">UMAP</a>
-          </div>
-          <form onSubmit={handleNewUmap}>
-            <label>
-              <span className={styles['umap-form-label']}>Neighbors: </span>
-              <input type="number" name="neighbors" defaultValue="25" disabled={!!umapJob} />
-              <span className="tooltip" data-tooltip-id="neighbors">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip
-                id="neighbors"
-                place="top"
-                effect="solid"
-                className={`${styles['tooltip']} tooltip-area`}
-              >
-                The number of neighbors to use in the UMAP algorithm. More neighbors will result in
-                a more global view of the data, while fewer neighbors will result in a more local
-                view of the data. More neighbors is also more computationally expensive.
-              </Tooltip>
-            </label>
-            <label>
-              <span className={styles['umap-form-label']}>Min Dist: </span>
-              <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
-              <span className="tooltip" data-tooltip-id="min-dist">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip
-                id="min-dist"
-                place="top"
-                effect="solid"
-                className={`${styles['tooltip']} tooltip-area`}
-              >
-                Min dist is a measure of how close points must be in the original space to be
-                considered neighbors in the low-dimensional space. A smaller value will result in a
-                more clustered UMAP, while a larger value will result in a more spread out UMAP.
-              </Tooltip>
-            </label>
-            <label>
-              <span className={styles['umap-form-label']}>Seed: </span>
-              <input type="text" name="seed" defaultValue="42" disabled={!!umapJob} />
-              <span className="tooltip" data-tooltip-id="seed">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip
-                id="seed"
-                place="top"
-                effect="solid"
-                className={`${styles['tooltip']} tooltip-area`}
-              >
-                The seed used to make the UMAP deterministic. Choose -1 for faster (parallel
-                computation) non-deterministic results.
-              </Tooltip>
-            </label>
-
-            <label>
-              <span className={styles['umap-form-label']}>Name: </span>
-              <input
-                type="text"
-                name="name"
-                placeholder="(optional)"
-                className={styles['umap-form-text']}
-                disabled={!!umapJob}
-              />
-            </label>
-            <label>
-              <span className={styles['umap-form-label']}>Description: </span>
-              <input
-                type="text"
-                name="description"
-                placeholder="(optional)"
-                className={styles['umap-form-text']}
-                disabled={!!umapJob}
-              />
-            </label>
-
-            <div className={styles['umap-form-align']}>
-              <Switch onChange={toggleShowAlign} color="secondary" label="Align UMAP" />
-              <span className="tooltip" data-tooltip-id="align-umap">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip
-                id="align-umap"
-                place="top"
-                effect="solid"
-                className={`${styles['tooltip']} tooltip-area`}
-              >
-                You can select other embeddings to align this UMAP with. This allows for a more
-                direct comparison between UMAPs of different embeddings.
-              </Tooltip>
+        <CreationPanel
+          title="New UMAP"
+          isOpen={formExpanded}
+          onToggle={() => setFormOpen(!formExpanded)}
+        >
+          <div className={styles['umap-form']}>
+            <div>
+              Project high-dimensional embeddings to 2D using{' '}
+              <a href="https://umap-learn.readthedocs.io/en/latest/index.html">UMAP</a>
             </div>
-
-            {showAlign && (
-              <div className={styles['umaps-align']}>
-                <span className={styles['umaps-align-info']}>
-                  Choose 1 or more embeddings to align alongside {embedding?.id}. An{' '}
-                  <a href="https://umap-learn.readthedocs.io/en/latest/aligned_umap_basic_usage.html">
-                    Aligned UMAP
-                  </a>{' '}
-                  will be generated for each embedding selected. It is computationally more
-                  expensive to align, as each embedding needs to be mapped.
-                </span>
-                {embeddings.map((emb, index) => {
-                  if (emb.id == embedding?.id) return null;
-                  return (
-                    <label key={index}>
-                      <input
-                        type="checkbox"
-                        id={`umap-align-${emb.id}`}
-                        name="umapAlign"
-                        value={emb.id}
-                      />
-                      {emb.id} - {emb.model_id} [{emb.dimensions}]
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-
-            {!showAlign && (
-              <div className={styles['umap-form-save']}>
-                <Switch onChange={toggleSave} color="secondary" label="Save UMAP model" />
-                <span className="tooltip" data-tooltip-id="save-umap">
+            <form onSubmit={handleNewUmap}>
+              <label>
+                <span className={styles['umap-form-label']}>Neighbors: </span>
+                <input type="number" name="neighbors" defaultValue="25" disabled={!!umapJob} />
+                <span className="tooltip" data-tooltip-id="neighbors">
                   <Icon name="help-circle" size={14} />
                 </span>
                 <Tooltip
-                  id="save-umap"
+                  id="neighbors"
                   place="top"
                   effect="solid"
                   className={`${styles['tooltip']} tooltip-area`}
                 >
-                  Saving a UMAP model will allow you to project new data (from the same embedding
-                  model) onto it later. Saving a UMAP model takes up quite a bit of disk space
-                  (proportional the the data used to make it).
+                  The number of neighbors to use in the UMAP algorithm. More neighbors will result
+                  in a more global view of the data, while fewer neighbors will result in a more
+                  local view of the data. More neighbors is also more computationally expensive.
+                </Tooltip>
+              </label>
+              <label>
+                <span className={styles['umap-form-label']}>Min Dist: </span>
+                <input type="text" name="min_dist" defaultValue="0.1" disabled={!!umapJob} />
+                <span className="tooltip" data-tooltip-id="min-dist">
+                  <Icon name="help-circle" size={14} />
+                </span>
+                <Tooltip
+                  id="min-dist"
+                  place="top"
+                  effect="solid"
+                  className={`${styles['tooltip']} tooltip-area`}
+                >
+                  Min dist is a measure of how close points must be in the original space to be
+                  considered neighbors in the low-dimensional space. A smaller value will result in
+                  a more clustered UMAP, while a larger value will result in a more spread out UMAP.
+                </Tooltip>
+              </label>
+              <label>
+                <span className={styles['umap-form-label']}>Seed: </span>
+                <input type="text" name="seed" defaultValue="42" disabled={!!umapJob} />
+                <span className="tooltip" data-tooltip-id="seed">
+                  <Icon name="help-circle" size={14} />
+                </span>
+                <Tooltip
+                  id="seed"
+                  place="top"
+                  effect="solid"
+                  className={`${styles['tooltip']} tooltip-area`}
+                >
+                  The seed used to make the UMAP deterministic. Choose -1 for faster (parallel
+                  computation) non-deterministic results.
+                </Tooltip>
+              </label>
+
+              <label>
+                <span className={styles['umap-form-label']}>Name: </span>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="(optional)"
+                  className={styles['umap-form-text']}
+                  disabled={!!umapJob}
+                />
+              </label>
+              <label>
+                <span className={styles['umap-form-label']}>Description: </span>
+                <input
+                  type="text"
+                  name="description"
+                  placeholder="(optional)"
+                  className={styles['umap-form-text']}
+                  disabled={!!umapJob}
+                />
+              </label>
+
+              <div className={styles['umap-form-align']}>
+                <Switch onChange={toggleShowAlign} color="secondary" label="Align UMAP" />
+                <span className="tooltip" data-tooltip-id="align-umap">
+                  <Icon name="help-circle" size={14} />
+                </span>
+                <Tooltip
+                  id="align-umap"
+                  place="top"
+                  effect="solid"
+                  className={`${styles['tooltip']} tooltip-area`}
+                >
+                  You can select other embeddings to align this UMAP with. This allows for a more
+                  direct comparison between UMAPs of different embeddings.
                 </Tooltip>
               </div>
-            )}
 
-            {embedding && (
-              <EstimatePanel
-                estimate={umapEstimate}
-                onEstimate={handleEstimateUmap}
-                loading={estimateLoading}
-                step="umap"
+              {showAlign && (
+                <div className={styles['umaps-align']}>
+                  <span className={styles['umaps-align-info']}>
+                    Choose 1 or more embeddings to align alongside {embedding?.id}. An{' '}
+                    <a href="https://umap-learn.readthedocs.io/en/latest/aligned_umap_basic_usage.html">
+                      Aligned UMAP
+                    </a>{' '}
+                    will be generated for each embedding selected. It is computationally more
+                    expensive to align, as each embedding needs to be mapped.
+                  </span>
+                  {embeddings.map((emb, index) => {
+                    if (emb.id == embedding?.id) return null;
+                    return (
+                      <label key={index}>
+                        <input
+                          type="checkbox"
+                          id={`umap-align-${emb.id}`}
+                          name="umapAlign"
+                          value={emb.id}
+                        />
+                        {emb.id} - {emb.model_id} [{emb.dimensions}]
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              {!showAlign && (
+                <div className={styles['umap-form-save']}>
+                  <Switch onChange={toggleSave} color="secondary" label="Save UMAP model" />
+                  <span className="tooltip" data-tooltip-id="save-umap">
+                    <Icon name="help-circle" size={14} />
+                  </span>
+                  <Tooltip
+                    id="save-umap"
+                    place="top"
+                    effect="solid"
+                    className={`${styles['tooltip']} tooltip-area`}
+                  >
+                    Saving a UMAP model will allow you to project new data (from the same embedding
+                    model) onto it later. Saving a UMAP model takes up quite a bit of disk space
+                    (proportional the the data used to make it).
+                  </Tooltip>
+                </div>
+              )}
+
+              {embedding && (
+                <EstimatePanel
+                  estimate={umapEstimate}
+                  onEstimate={handleEstimateUmap}
+                  loading={estimateLoading}
+                  step="umap"
+                />
+              )}
+
+              <Button
+                type="submit"
+                color={umap ? 'secondary' : 'primary'}
+                disabled={!!umapJob}
+                text="New UMAP"
+              ></Button>
+
+              <JobProgress
+                job={umapJob}
+                clearJob={() => setUmapJob(null)}
+                killJob={(job) =>
+                  apiService.killJob(dataset.id, job.id).then(setUmapJob).catch(console.error)
+                }
               />
-            )}
-
-            <Button
-              type="submit"
-              color={umap ? 'secondary' : 'primary'}
-              disabled={!!umapJob}
-              text="New UMAP"
-            ></Button>
-
-            <JobProgress
-              job={umapJob}
-              clearJob={() => setUmapJob(null)}
-              killJob={(job) => apiService.killJob(dataset.id, job.id).then(setUmapJob).catch(console.error)}
-            />
-          </form>
-        </div>
+            </form>
+          </div>
+        </CreationPanel>
         {/* The list of available UMAPS */}
         {umaps.filter((d) => d.embedding_id == embedding?.id).length >= 2 && (
           <div className={styles['compare-link']}>

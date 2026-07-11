@@ -83,7 +83,7 @@ const DataRow = memo(function DataRow({ dataset, row, onHover, clusterMap, index
       </div>
       {isExpanded && (
         <div className={styles.rowDetail} onClick={(e) => e.stopPropagation()}>
-          <PointDetailContent row={row} index={row.ls_index} />
+          <PointDetailContent row={row} index={row.ls_index} dataset={dataset} />
         </div>
       )}
     </div>

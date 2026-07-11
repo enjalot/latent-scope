@@ -14,6 +14,7 @@ import ModelSelect from '../ModelSelect';
 import JobProgress from '../Job/Progress';
 import DataTable from '../DataTable';
 import SettingsModal from '../SettingsModal';
+import CreationPanel from './CreationPanel';
 import styles from './ClusterLabels.module.scss';
 
 function labelName(labelId) {
@@ -55,8 +56,7 @@ function ClusterLabels() {
   // On image datasets the embedding column can be the image column, and image
   // structs must not be fed to the labeling chat model — let the user pick a
   // text column to label with instead.
-  const embedColumnIsImage =
-    dataset?.column_metadata?.[embedding?.text_column]?.type === 'image';
+  const embedColumnIsImage = dataset?.column_metadata?.[embedding?.text_column]?.type === 'image';
   const textColumns = useMemo(
     () =>
       (dataset?.columns || []).filter((c) => {
@@ -71,13 +71,17 @@ function ClusterLabels() {
       setLabelColumn(embedding?.text_column || null);
     } else {
       const preferred =
-        dataset?.text_column &&
-        dataset?.column_metadata?.[dataset.text_column]?.type !== 'image'
+        dataset?.text_column && dataset?.column_metadata?.[dataset.text_column]?.type !== 'image'
           ? dataset.text_column
           : textColumns[0];
       setLabelColumn(preferred || null);
     }
   }, [embedColumnIsImage, embedding, dataset, textColumns]);
+  // creation form collapse: null until the first label-sets fetch resolves,
+  // then collapsed only when user-generated label sets exist (the
+  // auto-generated "default" / "*-default" sets don't count)
+  const [formOpen, setFormOpen] = useState(null);
+
   // the models used to label a particular cluster (the ones the user has run)
   const [clusterLabelSets, setClusterLabelSets] = useState([]);
   // the actual labels for the given cluster
@@ -239,6 +243,10 @@ function ClusterLabels() {
           const labelsAvailable = data.filter((d) => d.cluster_id == cluster.id);
           const defaultLabel = { id: 'default', model_id: 'N/A', cluster_id: cluster.id };
           setClusterLabelSets([...labelsAvailable, defaultLabel]);
+          const hasUserLabelSets = labelsAvailable.some(
+            (d) => d.id !== 'default' && !String(d.id).endsWith('-default')
+          );
+          setFormOpen((open) => (open === null ? !hasUserLabelSets : open));
           // setSelected(lbl?.id)
         })
         .catch((err) => {
@@ -324,134 +332,143 @@ function ClusterLabels() {
     });
   }, [setCustomModels]);
 
+  // keep the form expanded while a job is running so JobProgress stays visible
+  const formExpanded = formOpen === true || !!clusterLabelsJob;
+
   return (
     <div className={styles['cluster-labels']}>
       <div className={styles['cluster-labels-setup']}>
-        <div className={styles['cluster-labels-form']}>
-          <p>
-            Automatically create labels for each cluster
-            {cluster ? ` in ${cluster.id}` : ''} using a chat model. For quickest CPU based results
-            use nltk top-words.
-          </p>
-          <form>
-            <label>
-              <span className={styles['cluster-labels-form-label']}>Chat Model:</span>
-              <ModelSelect
-                options={allOptionsGrouped}
-                defaultValue={defaultModel}
-                onChange={handleModelSelectChange}
-                onInputChange={searchHFModels}
-              />
-            </label>
-            <label>
-              <SettingsModal
-                tooltip="Configure API keys for 3rd party models or add custom models via URL."
-                color="primary"
-                onClose={() => handleSettingsClose()}
-              />
-            </label>
-          </form>
-          <form onSubmit={handleNewLabels}>
-            {embedColumnIsImage ? (
+        <CreationPanel
+          title="New labeling"
+          isOpen={formExpanded}
+          onToggle={() => setFormOpen(!formExpanded)}
+        >
+          <div className={styles['cluster-labels-form']}>
+            <p>
+              Automatically create labels for each cluster
+              {cluster ? ` in ${cluster.id}` : ''} using a chat model. For quickest CPU based
+              results use nltk top-words.
+            </p>
+            <form>
               <label>
-                <span className={styles['cluster-labels-form-label']}>Label using column:</span>
-                <select
-                  className="ls-select"
-                  value={labelColumn || ''}
-                  onChange={(e) => setLabelColumn(e.target.value)}
+                <span className={styles['cluster-labels-form-label']}>Chat Model:</span>
+                <ModelSelect
+                  options={allOptionsGrouped}
+                  defaultValue={defaultModel}
+                  onChange={handleModelSelectChange}
+                  onInputChange={searchHFModels}
+                />
+              </label>
+              <label>
+                <SettingsModal
+                  tooltip="Configure API keys for 3rd party models or add custom models via URL."
+                  color="primary"
+                  onClose={() => handleSettingsClose()}
+                />
+              </label>
+            </form>
+            <form onSubmit={handleNewLabels}>
+              {embedColumnIsImage ? (
+                <label>
+                  <span className={styles['cluster-labels-form-label']}>Label using column:</span>
+                  <select
+                    className="ls-select"
+                    value={labelColumn || ''}
+                    onChange={(e) => setLabelColumn(e.target.value)}
+                    disabled={!!clusterLabelsJob || !cluster}
+                  >
+                    {textColumns.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="tooltip" data-tooltip-id="label-column">
+                    <Icon name="help-circle" size={14} />
+                  </span>
+                  <Tooltip id="label-column" place="top" effect="solid" className="tooltip-area">
+                    The embedding was built on an image column, which can&apos;t be sent to the chat
+                    model. Cluster labels will be generated from this text column instead.
+                  </Tooltip>
+                </label>
+              ) : null}
+              <label>
+                <span className={styles['cluster-labels-form-label']}>Samples:</span>
+                <input
+                  type="number"
+                  name="samples"
+                  defaultValue={10}
+                  min={0}
                   disabled={!!clusterLabelsJob || !cluster}
-                >
-                  {textColumns.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <span className="tooltip" data-tooltip-id="label-column">
+                />
+                <span className="tooltip" data-tooltip-id="samples">
                   <Icon name="help-circle" size={14} />
                 </span>
-                <Tooltip id="label-column" place="top" effect="solid" className="tooltip-area">
-                  The embedding was built on an image column, which can&apos;t be sent to the chat
-                  model. Cluster labels will be generated from this text column instead.
+                <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
+                  The number of items to use from each cluster for summarization. Set to 0 to use
+                  all items. Items are chosen based on distance from the centroid of the cluster.
                 </Tooltip>
               </label>
-            ) : null}
-            <label>
-              <span className={styles['cluster-labels-form-label']}>Samples:</span>
-              <input
-                type="number"
-                name="samples"
-                defaultValue={10}
-                min={0}
+              <label>
+                <span className={styles['cluster-labels-form-label']}>Max Tokens per Sample:</span>
+                <input
+                  type="number"
+                  name="max_tokens_per_sample"
+                  defaultValue={scope?.embedding?.max_seq_length || 512}
+                  min={-1}
+                  disabled={!!clusterLabelsJob || !cluster}
+                />
+                <span className="tooltip" data-tooltip-id="max_tokens_per_sample">
+                  <Icon name="help-circle" size={14} />
+                </span>
+                <Tooltip
+                  id="max_tokens_per_sample"
+                  place="top"
+                  effect="solid"
+                  className="tooltip-area"
+                >
+                  The maximum number of tokens per sample to use, truncates long samples to max
+                  tokens. Set to -1 to ignore limits.
+                </Tooltip>
+              </label>
+              <label>
+                <span className={styles['cluster-labels-form-label']}>Max Tokens Total:</span>
+                <input
+                  type="number"
+                  name="max_tokens_total"
+                  defaultValue={chatModel?.params?.max_tokens || 8192}
+                  min={-1}
+                  disabled={!!clusterLabelsJob || !cluster}
+                />
+                <span className="tooltip" data-tooltip-id="max_tokens_total">
+                  <Icon name="help-circle" size={14} />
+                </span>
+                <Tooltip id="max_tokens_total" place="top" effect="solid" className="tooltip-area">
+                  The maximum number of tokens to use for across all samples. Set to -1 to ignore
+                  limits.
+                </Tooltip>
+              </label>
+              <textarea
+                name="context"
+                placeholder="Optional context for system prompt"
                 disabled={!!clusterLabelsJob || !cluster}
               />
-              <span className="tooltip" data-tooltip-id="samples">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip id="samples" place="top" effect="solid" className="tooltip-area">
-                The number of items to use from each cluster for summarization. Set to 0 to use all
-                items. Items are chosen based on distance from the centroid of the cluster.
-              </Tooltip>
-            </label>
-            <label>
-              <span className={styles['cluster-labels-form-label']}>Max Tokens per Sample:</span>
-              <input
-                type="number"
-                name="max_tokens_per_sample"
-                defaultValue={scope?.embedding?.max_seq_length || 512}
-                min={-1}
+              <Button
+                type="submit"
+                color={clusterLabelsJob ? 'secondary' : 'primary'}
                 disabled={!!clusterLabelsJob || !cluster}
+                text="Auto Label"
               />
-              <span className="tooltip" data-tooltip-id="max_tokens_per_sample">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip
-                id="max_tokens_per_sample"
-                place="top"
-                effect="solid"
-                className="tooltip-area"
-              >
-                The maximum number of tokens per sample to use, truncates long samples to max
-                tokens. Set to -1 to ignore limits.
-              </Tooltip>
-            </label>
-            <label>
-              <span className={styles['cluster-labels-form-label']}>Max Tokens Total:</span>
-              <input
-                type="number"
-                name="max_tokens_total"
-                defaultValue={chatModel?.params?.max_tokens || 8192}
-                min={-1}
-                disabled={!!clusterLabelsJob || !cluster}
-              />
-              <span className="tooltip" data-tooltip-id="max_tokens_total">
-                <Icon name="help-circle" size={14} />
-              </span>
-              <Tooltip id="max_tokens_total" place="top" effect="solid" className="tooltip-area">
-                The maximum number of tokens to use for across all samples. Set to -1 to ignore
-                limits.
-              </Tooltip>
-            </label>
-            <textarea
-              name="context"
-              placeholder="Optional context for system prompt"
-              disabled={!!clusterLabelsJob || !cluster}
-            />
-            <Button
-              type="submit"
-              color={clusterLabelsJob ? 'secondary' : 'primary'}
-              disabled={!!clusterLabelsJob || !cluster}
-              text="Auto Label"
-            />
-          </form>
+            </form>
 
-          <JobProgress
-            job={clusterLabelsJob}
-            clearJob={() => setClusterLabelsJob(null)}
-            killJob={handleKill}
-            rerunJob={handleRerun}
-          />
-        </div>
+            <JobProgress
+              job={clusterLabelsJob}
+              clearJob={() => setClusterLabelsJob(null)}
+              killJob={handleKill}
+              rerunJob={handleRerun}
+            />
+          </div>
+        </CreationPanel>
         <div className={styles['cluster-labels-list']}>
           {cluster &&
             clusterLabelSets
@@ -474,7 +491,9 @@ function ClusterLabels() {
                       {labelName(cl.id)}{' '}
                       {cl.id == savedScope?.cluster_labels_id && (
                         <span data-tooltip-id="saved">
-                          <Badge mono variant="neutral">SAVED</Badge>
+                          <Badge mono variant="neutral">
+                            SAVED
+                          </Badge>
                         </span>
                       )}
                     </span>

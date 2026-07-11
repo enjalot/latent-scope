@@ -1,0 +1,82 @@
+// Collapsible creation-form wrapper for Setup steps (see CreationPanel.jsx).
+// Panel chrome lives here; the hosted form uses the setup-form-body mixin.
+
+.panel {
+  flex-shrink: 0;
+  margin: var(--ls-space-2);
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+  width: 100%;
+  padding: var(--ls-space-2) var(--ls-space-3);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--ls-radius-2);
+  color: var(--text-color-text-main);
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 500;
+  line-height: var(--ls-leading-ui);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--ls-dur-fast) var(--ls-ease-out),
+    color var(--ls-dur-fast) var(--ls-ease-out);
+
+  &:hover {
+    background-color: var(--neutrals-color-neutral-2);
+  }
+
+  &:focus-visible {
+    outline: var(--ls-focus-ring);
+    outline-offset: -2px;
+  }
+}
+
+.open .trigger {
+  border-radius: var(--ls-radius-2) var(--ls-radius-2) 0 0;
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-color-text-subtle);
+  transition: color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.trigger:hover .icon {
+  color: var(--text-color-text-main);
+}
+
+// grid-template-rows 0fr/1fr collapse (never animate height)
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--ls-dur-slow) var(--ls-ease-in-out);
+}
+
+.open .collapse {
+  grid-template-rows: 1fr;
+}
+
+.inner {
+  overflow: hidden;
+  min-height: 0;
+  // hidden content leaves the a11y tree/tab order once the collapse finishes
+  visibility: hidden;
+  transition: visibility var(--ls-dur-slow) var(--ls-ease-in-out);
+}
+
+.open .inner {
+  visibility: visible;
+}
+
+.body {
+  padding: 0 var(--ls-space-3) var(--ls-space-3);
+}

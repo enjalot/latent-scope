@@ -1,4 +1,4 @@
-@use "./_shared" as *;
+@use './_shared' as *;
 
 .cluster-labels {
   @include setup-container;
@@ -20,7 +20,7 @@
   @include setup-step;
 }
 .cluster-labels-form {
-  @include setup-form;
+  @include setup-form-body;
 }
 .cluster-labels-list {
   @include item-list;

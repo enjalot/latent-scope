@@ -12,6 +12,7 @@ import { useColorMode } from '@/hooks/useColorMode';
 import FilterDataTable from '../Explore/FilterDataTable';
 import Scatter from '../Scatter';
 import HullPlot from '../HullPlot';
+import PreviewPointDetail from './PreviewPointDetail';
 import {
   mapSelectionColorsLight,
   mapSelectionColorsDark,
@@ -197,8 +198,18 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
 
   const [selectedIndices, setSelectedIndices] = useState([]);
 
+  // Row detail drawer: clicking a point on the preview map opens it for
+  // that row (like Explore's PointDetail); Escape / the X close it.
+  const [detailIndex, setDetailIndex] = useState(null);
+  const handleDetailClose = useCallback(() => setDetailIndex(null), []);
+  // A new point set (different umap or dataset) invalidates the open row.
+  useEffect(() => {
+    setDetailIndex(null);
+  }, [datasetId, umap]);
+
   const clearSelection = useCallback(() => {
     setSelectedIndices([]);
+    setDetailIndex(null);
     setDataIndices(range(0, 100));
     setDrawPoints(drawPoints.map((d) => [d[0], d[1], mapSelectionKey.normal]));
   }, [setSelectedIndices, setDataIndices, setDrawPoints, drawPoints]);
@@ -207,6 +218,9 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
   const handleSelected = useCallback(
     (selected) => {
       setSelectedIndices(selected);
+      // Clicking a point opens the detail drawer for it (a lasso opens the
+      // first row, matching Explore); clicking empty space closes it.
+      setDetailIndex(selected?.length ? selected[0] : null);
       // TODO: figure out how to reset the color without clearing the selected points
       // the problem is, we use regl-scatter internal state to vis the selected points
       // but if we update the drawPoints it will clear state
@@ -529,6 +543,15 @@ function Preview({ embedding, umap, cluster, labelId } = {}) {
             </div>
           )}
         </Tooltip>
+      )}
+
+      {dataset && (
+        <PreviewPointDetail
+          dataset={dataset}
+          selectedIndex={detailIndex}
+          clusterLabel={detailIndex !== null ? clusterMap[detailIndex]?.label : null}
+          onClose={handleDetailClose}
+        />
       )}
     </div>
   );

@@ -25,6 +25,27 @@
   gap: var(--ls-space-3);
 }
 
+/* chart-settings trigger: floating-HUD treatment so it reads as a control
+   over the map, not a stray glyph */
+.configToggle {
+  width: 32px;
+  height: 32px;
+  background-color: color-mix(in srgb, var(--neutrals-color-neutral-0) 95%, transparent);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-2);
+  box-shadow: var(--ls-shadow-1);
+  color: var(--text-color-text-main);
+}
+
+.configToggle:hover {
+  background-color: var(--neutrals-color-neutral-2);
+}
+
+.configToggle[aria-expanded='true'] {
+  border-color: var(--color-interaction-primary);
+  color: var(--color-interaction-primary);
+}
+
 /* Signature #2 — mono telemetry readout (text-swap only) */
 .telemetry {
   display: flex;

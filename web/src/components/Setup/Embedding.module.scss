@@ -1,4 +1,4 @@
-@use "./_shared" as *;
+@use './_shared' as *;
 
 .embeddings {
   @include setup-container;
@@ -19,9 +19,16 @@
   @include setup-step;
 }
 .embeddings-form {
-  @include setup-form;
+  @include setup-form-body;
 }
 
+.potential-embeddings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-2);
+  margin: var(--ls-space-2) var(--ls-space-2) 0;
+  flex-shrink: 0;
+}
 
 .embeddings-list {
   @include item-list;
@@ -50,7 +57,6 @@
 .prefix {
   width: 100%;
 }
-
 
 .item {
   @include setup-item;

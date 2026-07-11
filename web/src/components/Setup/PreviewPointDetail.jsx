@@ -1,25 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 
 import { apiService } from '../../lib/apiService';
-import { useScope } from '../../contexts/ScopeContext';
 import { Spinner } from '../ui';
-import PointDetailContent from './PointDetailContent';
+import PointDetailContent from '../Explore/PointDetailContent';
 
-import styles from './PointDetail.module.scss';
+import styles from './PreviewPointDetail.module.scss';
 
 /**
- * Right-side drawer showing every column of a single clicked row; the body
- * (images with lightbox, text, typed field list) is PointDetailContent,
- * shared with the mobile table's expanded rows.
+ * Point-detail drawer for the Setup preview map. The Explore drawer
+ * (PointDetail) reads from ScopeContext, which Setup doesn't provide, so
+ * this thin wrapper fetches the clicked row itself — the same
+ * fetchDataFromIndices path the preview's hover tooltip already uses — and
+ * reuses PointDetailContent for the body. Anchored absolutely to the right
+ * edge of the preview pane (position:relative container).
  */
-function PointDetail({ selectedIndex, onClose }) {
-  const { dataset, sae, clusterMap } = useScope();
-
+function PreviewPointDetail({ dataset, selectedIndex, clusterLabel, onClose }) {
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(false);
-  // Guard against stale async responses when the selection, dataset, or sae
-  // changes while a fetch is in flight — the key identifies the request, not
-  // just the row index (the same index can exist in another dataset).
+  // Guard against stale async responses when the selection or dataset
+  // changes while a fetch is in flight (mirrors Explore's PointDetail).
   const latestRequestRef = useRef(null);
 
   const isOpen = selectedIndex !== null && selectedIndex !== undefined;
@@ -30,11 +30,11 @@ function PointDetail({ selectedIndex, onClose }) {
       setRow(null);
       return;
     }
-    const requestKey = `${dataset.id}:${sae?.id ?? ''}:${selectedIndex}`;
+    const requestKey = `${dataset.id}:${selectedIndex}`;
     latestRequestRef.current = requestKey;
     setLoading(true);
     apiService
-      .fetchDataFromIndices(dataset.id, [selectedIndex], sae?.id ?? null)
+      .fetchDataFromIndices(dataset.id, [selectedIndex])
       .then((rows) => {
         if (latestRequestRef.current !== requestKey) return;
         setRow(rows?.[0] ?? null);
@@ -45,10 +45,10 @@ function PointDetail({ selectedIndex, onClose }) {
         setRow(null);
         setLoading(false);
       });
-  }, [isOpen, selectedIndex, dataset?.id, sae?.id]);
+  }, [isOpen, selectedIndex, dataset?.id]);
 
-  // Escape closes the drawer (PointDetailContent intercepts Escape first
-  // while its lightbox is open).
+  // Escape closes the drawer. PointDetailContent's lightbox intercepts
+  // Escape first (capture phase + stopPropagation), matching PointDetail.
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (event) => {
@@ -58,16 +58,18 @@ function PointDetail({ selectedIndex, onClose }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const cluster = isOpen ? clusterMap?.[selectedIndex] : null;
+  // Plain conditional render: nothing off-canvas that could extend the
+  // Setup page's overflow chain while closed.
+  if (!isOpen) return null;
 
   return (
-    <div className={`${styles.drawer} ${isOpen ? styles.open : ''}`}>
+    <div className={styles.drawer}>
       <div className={styles.header}>
         <div className={styles.headerText}>
           <span className={styles.title}>
-            Row <span className={styles.titleIndex}>{isOpen ? selectedIndex : ''}</span>
+            Row <span className={styles.titleIndex}>{selectedIndex}</span>
           </span>
-          {cluster?.label && <span className={styles.cluster}>{cluster.label}</span>}
+          {clusterLabel && <span className={styles.cluster}>{clusterLabel}</span>}
         </div>
         <button
           type="button"
@@ -96,10 +98,17 @@ function PointDetail({ selectedIndex, onClose }) {
             <Spinner size="sm" label="LOADING ROW" />
           </div>
         )}
-        {isOpen && <PointDetailContent row={row} index={selectedIndex} dataset={dataset} />}
+        <PointDetailContent row={row} index={selectedIndex} dataset={dataset} />
       </div>
     </div>
   );
 }
 
-export default PointDetail;
+PreviewPointDetail.propTypes = {
+  dataset: PropTypes.object,
+  selectedIndex: PropTypes.number,
+  clusterLabel: PropTypes.string,
+  onClose: PropTypes.func.isRequired,
+};
+
+export default PreviewPointDetail;

@@ -32,10 +32,13 @@
     background-color var(--ls-dur-fast) var(--ls-ease-out);
 }
 
-// selected/active step: label treatment carries the state (text-main + 600)
+// selected/active step: amber wash + underline so the change reads clearly
 .active {
   color: var(--text-color-text-main);
   font-weight: 600;
+  background-color: var(--ls-accent-surface);
+  box-shadow: inset 0 -2px 0 var(--color-interaction-primary);
+  border-radius: var(--ls-radius-2) var(--ls-radius-2) 0 0;
 }
 
 .completed {

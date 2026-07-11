@@ -293,7 +293,7 @@ textarea {
   font-size: var(--input-font-size);
   color: var(--text-color-text-main);
   background-color: var(--ls-input-bg);
-  border: 1px solid var(--borders-color-border-2);
+  border: 1px solid var(--borders-color-border-1);
   border-radius: var(--input-border-radius);
   padding: var(--input-padding);
   transition:
@@ -308,7 +308,7 @@ input[type='password']:hover,
 input[type='url']:hover,
 input:not([type]):hover,
 textarea:hover {
-  border-color: var(--neutrals-color-neutral-3);
+  border-color: var(--borders-color-border-2);
 }
 input::placeholder,
 textarea::placeholder {
@@ -349,6 +349,22 @@ button[class*='_button_secondary_outline']:focus {
 button[class*='_button_secondary_outline']:disabled {
   color: var(--text-color-text-disabled);
   border-color: var(--borders-color-border-1);
+}
+
+/* forge modals render into this portal (sibling of #root); without an
+   explicit z-index the in-app drawer/HUD stacking contexts paint over them */
+#RE_modal_portal {
+  position: relative;
+  z-index: var(--ls-z-modal);
+}
+
+/* forge Input draws a heavy 2px border; thin it to the input spec */
+div[class*='_input_container'] input {
+  border-width: 1px;
+  border-color: var(--borders-color-border-1);
+}
+div[class*='_input_container'] input:hover {
+  border-color: var(--borders-color-border-2);
 }
 
 /* One focus ring everywhere */

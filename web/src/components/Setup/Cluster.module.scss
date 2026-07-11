@@ -1,4 +1,4 @@
-@use "./_shared" as *;
+@use './_shared' as *;
 
 .cluster {
   @include setup-container;
@@ -19,7 +19,7 @@
   @include setup-step;
 }
 .cluster-form {
-  @include setup-form;
+  @include setup-form-body;
 }
 .cluster-list {
   @include item-list;
@@ -51,7 +51,6 @@
   font-family: var(--ls-font-ui);
   text-align: left;
 }
-
 
 .item img {
   width: 120px;
