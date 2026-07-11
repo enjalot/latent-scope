@@ -59,24 +59,24 @@ class OpenAIEmbedProvider(EmbedModelProvider):
 
 class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
-        import outlines
         import tiktoken
-        from openai import AsyncOpenAI, OpenAI
-        from outlines.models.openai import OpenAIConfig
+        from openai import OpenAI
         if self.base_url is None:
-            self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"))
-            self.encoder = tiktoken.encoding_for_model(self.name)
+            self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"))
+            try:
+                self.encoder = tiktoken.encoding_for_model(self.name)
+            except KeyError:
+                # newer models may not be known to the installed tiktoken
+                self.encoder = tiktoken.encoding_for_model("gpt-4o")
         else:
-            self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"), base_url=self.base_url)
+            self.client = OpenAI(api_key=get_key("OPENAI_API_KEY"), base_url=self.base_url)
             # even if this is some other model, we wont be able to figure out the tokenizer from custom API
             # so we just use gpt-4o as a fallback, it should be roughly correct for token counts
             self.encoder = tiktoken.encoding_for_model("gpt-4o")
-        config = OpenAIConfig(self.name)
-        self.model = outlines.models.openai(self.client, config)
-        self.generator = outlines.generate.text(self.model)
-
 
     def chat(self, messages):
+        # no sampling or token-cap params: gpt-5+ models reject max_tokens
+        # (they take max_completion_tokens) and non-default temperature
         response = self.client.chat.completions.create(
             model=self.name,
             messages=messages
@@ -86,4 +86,4 @@ class OpenAIChatProvider(ChatModelProvider):
     def summarize(self, items, context=""):
         from .prompts import summarize
         prompt = summarize(items, context)
-        return self.generator(prompt)
+        return self.chat([{"role": "user", "content": prompt}])

@@ -39,6 +39,7 @@ dependencies = [
     "waitress>=3,<4",
     # API providers
     "openai>=1.12,<3",
+    "anthropic>=0.40",
     "tiktoken>=0.5,<1",
     "mistralai>=1.0,<3",
     "cohere>=5.0,<7",
