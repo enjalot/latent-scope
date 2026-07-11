@@ -1,5 +1,7 @@
 import { Modal, Button } from 'react-element-forge';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useScope } from '../../contexts/ScopeContext';
+import { getLabelsForSaeModel, getSaeForModel } from '../../lib/SAE';
 import styles from './FeatureModal.module.scss';
 
 function FeatureModal({
@@ -14,9 +16,31 @@ function FeatureModal({
   handleFeatureClick,
 }) {
   const TO_SHOW = 15;
+  const { scope, sae } = useScope();
 
-  const baseUrl = 'https://enjalot.github.io/latent-taxonomy#model=NOMIC_FWEDU_25k&feature=';
-  const maxAct = Math.max(...topActs);
+  // Link out to the latent-taxonomy page for THIS scope's SAE. Fall back to
+  // the NOMIC model only if we can't resolve one (pre-labels legacy scopes).
+  const taxonomyModel =
+    getLabelsForSaeModel(sae?.model_id)?.label ||
+    getSaeForModel(scope?.embedding?.model_id)?.label ||
+    'NOMIC_FWEDU_25k';
+  const baseUrl = `https://enjalot.github.io/latent-taxonomy#model=${taxonomyModel}&feature=`;
+
+  // The SAE h5 stores top-k indices/acts in arbitrary order (torch topk with
+  // sorted=False), so "top 15" must sort by activation here — slicing the raw
+  // array showed an arbitrary subset and dropped genuinely strong features.
+  // origIdx preserves the position in the unsorted array, which is what the
+  // canvas hover (hoveredIdx) refers to.
+  const ranked = useMemo(
+    () =>
+      topIndices
+        .map((featIdx, origIdx) => ({ featIdx, act: topActs[origIdx], origIdx }))
+        .filter(({ act }) => act > 0)
+        .sort((a, b) => b.act - a.act),
+    [topIndices, topActs]
+  );
+
+  const maxAct = ranked.length ? ranked[0].act : 1;
   const getWidth = (act) => {
     return `${(act / maxAct) * 100}%`;
   };
@@ -63,7 +87,7 @@ function FeatureModal({
         </button>
       </div>
       <div className={styles.content}>
-        {topIndices.slice(0, TO_SHOW).map((featIdx, i) => {
+        {ranked.slice(0, TO_SHOW).map(({ featIdx, act, origIdx }, i) => {
           const feature = features?.[featIdx];
           return (
             <div
@@ -72,9 +96,9 @@ function FeatureModal({
             >
               <div
                 className={`${styles.itemBackground} ${
-                  hoveredIdx === i ? styles.itemBackgroundHovered : ''
+                  hoveredIdx === origIdx ? styles.itemBackgroundHovered : ''
                 }`}
-                style={{ width: getWidth(topActs[i]) }}
+                style={{ width: getWidth(act) }}
               />
               <div className={styles.featureLabel}>
                 <Button
@@ -82,7 +106,7 @@ function FeatureModal({
                   color="primary"
                   variant="outline"
                   size="small"
-                  onClick={() => featureClick(featIdx, topActs[i])}
+                  onClick={() => featureClick(featIdx, act)}
                 />
                 <span
                   title={`${baseUrl}${featIdx}`}
@@ -95,7 +119,7 @@ function FeatureModal({
                 </span>
                 <span className={styles.filterLabel}>{feature?.label}</span>
                 <span className={styles.filterMeta}>
-                  {topActs?.[i]?.toFixed(3)}/{feature?.dataset_max?.toFixed(3)} · n=
+                  {act?.toFixed(3)}/{feature?.dataset_max?.toFixed(3)} · n=
                   {feature?.dataset_count}
                 </span>
               </div>
