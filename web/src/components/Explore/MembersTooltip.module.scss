@@ -1,0 +1,50 @@
+// Floating members-in-cell tooltip (2D heatmap + 3D voxels). Rendered into a
+// portal with viewport coordinates from the component, so position: fixed.
+// Same visual language as the drawers; see DESIGN.md §5.
+.tooltip {
+  position: fixed;
+  z-index: var(--ls-z-tooltip);
+  background: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-2);
+  box-shadow: var(--ls-shadow-3);
+  border-radius: 4px;
+  padding: var(--ls-space-2) var(--ls-space-3);
+  pointer-events: none;
+  font-size: var(--ls-text-sm);
+}
+
+.header {
+  font-family: var(--ls-font-ui);
+  color: var(--text-color-text-1);
+  margin-bottom: var(--ls-space-1);
+}
+
+.count {
+  font-family: var(--ls-font-mono);
+  font-weight: 600;
+}
+
+.label {
+  color: var(--text-color-text-2);
+}
+
+.snippets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-1);
+}
+
+.snippet {
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.muted {
+  color: var(--text-color-text-3);
+  font-style: italic;
+}
