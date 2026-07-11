@@ -14,6 +14,30 @@ def _data_dir():
     return current_app.config['DATA_DIR']
 
 
+def _load_indices_file(path):
+    """Load a .indices file (newline-separated ints) as a list of ints."""
+    indices = np.loadtxt(path, dtype=int).tolist()
+    if isinstance(indices, int):
+        indices = [indices]
+    return indices
+
+
+def load_tag_indices(data_dir, dataset):
+    """Load all tags for a dataset as a dict of tag name -> list of indices.
+
+    Returns an empty dict when the dataset has no tags directory.
+    """
+    tagdir = os.path.join(data_dir, dataset, "tags")
+    tags = {}
+    if not os.path.isdir(tagdir):
+        return tags
+    for f in sorted(os.listdir(tagdir)):
+        if f.endswith(".indices"):
+            tag = f.split(".")[0]
+            tags[tag] = _load_indices_file(os.path.join(tagdir, f))
+    return tags
+
+
 # ===========================================================
 # Tags
 # ===========================================================
@@ -31,13 +55,7 @@ def tags():
         os.makedirs(tagdir)
     if dataset not in tagsets:
         tagsets[dataset] = {}
-    for f in os.listdir(tagdir):
-        if f.endswith(".indices"):
-            tag = f.split(".")[0]
-            indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-            if isinstance(indices, int):
-                indices = [indices]
-            tagsets[dataset][tag] = indices
+    tagsets[dataset].update(load_tag_indices(DATA_DIR, dataset))
     return jsonify(tagsets[dataset])
 
 
@@ -48,13 +66,7 @@ def new_tag():
     DATA_DIR = _data_dir()
     if dataset not in tagsets:
         tagsets[dataset] = {}
-    for f in os.listdir(os.path.join(DATA_DIR, dataset)):
-        if f.endswith(".indices"):
-            dtag = f.split(".")[0]
-            indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", dtag + ".indices"), dtype=int).tolist()
-            if isinstance(indices, int):
-                indices = [indices]
-            tagsets[dataset][dtag] = indices
+    tagsets[dataset].update(load_tag_indices(DATA_DIR, dataset))
 
     if tag not in tagsets[dataset]:
         tagsets[dataset][tag] = []
@@ -76,9 +88,7 @@ def add_tag():
     else:
         ts = tagsets[dataset]
     if tag not in ts:
-        indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if isinstance(indices, int):
-            indices = [indices]
+        indices = _load_indices_file(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"))
         ts[tag] = indices
     else:
         indices = ts[tag]
@@ -105,9 +115,7 @@ def add_tags():
     else:
         ts = tagsets[dataset]
     if tag not in ts:
-        indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if isinstance(indices, int):
-            indices = [indices]
+        indices = _load_indices_file(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"))
         ts[tag] = indices
     else:
         indices = ts[tag]
@@ -135,9 +143,7 @@ def remove_tag():
     else:
         ts = tagsets[dataset]
     if tag not in ts:
-        indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if isinstance(indices, int):
-            indices = [indices]
+        indices = _load_indices_file(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"))
         ts[tag] = indices
     else:
         indices = ts[tag]
@@ -161,9 +167,7 @@ def remove_tags():
     else:
         ts = tagsets[dataset]
     if tag not in ts:
-        indices = np.loadtxt(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"), dtype=int).tolist()
-        if isinstance(indices, int):
-            indices = [indices]
+        indices = _load_indices_file(os.path.join(DATA_DIR, dataset, "tags", tag + ".indices"))
         ts[tag] = indices
     else:
         indices = ts[tag]
