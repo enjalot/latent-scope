@@ -8,6 +8,7 @@ import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
 import { useSetup } from '../../contexts/SetupContext';
 import { apiService, apiUrl } from '../../lib/apiService';
+import { getBasemapsForModel } from '../../lib/basemap';
 
 import Preview from './Preview';
 import EstimatePanel from './EstimatePanel';
@@ -20,6 +21,11 @@ function Umap() {
 
   const [umapJob, setUmapJob] = useState(null);
   const { startJob: startUmapJob } = useStartJobPolling(dataset, setUmapJob, `${apiUrl}/jobs/umap`);
+  const { startJob: startBasemapJob } = useStartJobPolling(
+    dataset,
+    setUmapJob,
+    `${apiUrl}/jobs/basemap`
+  );
   const { startJob: deleteUmapJob } = useStartJobPolling(
     dataset,
     setUmapJob,
@@ -63,12 +69,32 @@ function Umap() {
     }
   }, [dataset, setEmbeddings, setUmaps, setClusters]);
 
+  // Pretrained basemap projectors: only offered when the registry has a model
+  // trained on the same embedding model as the selected embedding.
+  const [basemapModels, setBasemapModels] = useState([]);
+  useEffect(() => {
+    apiService.getBasemapModels().then(setBasemapModels).catch(console.error);
+  }, []);
+  const compatibleBasemaps = getBasemapsForModel(basemapModels, embedding?.model_id);
+
+  const handleNewBasemap = useCallback(
+    (e) => {
+      e.preventDefault();
+      const data = new FormData(e.target);
+      startBasemapJob({
+        embedding_id: embedding?.id,
+        basemap_id: data.get('basemap_id'),
+      });
+    },
+    [startBasemapJob, embedding]
+  );
+
   useEffect(() => {
     if (umapJob?.status == 'completed') {
       apiService.fetchUmaps(dataset?.id).then((umps) => {
         setUmaps(umps);
         let ump;
-        if (umapJob.job_name == 'umap') {
+        if (umapJob.job_name == 'umap' || umapJob.job_name == 'basemap') {
           ump = umps.find((d) => d.id == umapJob.run_id);
         } else if (umapJob.job_name == 'rm') {
           ump = umps.filter((d) => d.embedding_id == embedding?.id)[0];
@@ -333,6 +359,32 @@ function Umap() {
               killJob={(job) => apiService.killJob(dataset.id, job.id).then(setUmapJob).catch(console.error)}
             />
           </form>
+
+          {compatibleBasemaps.length > 0 && (
+            <form onSubmit={handleNewBasemap} className={styles['umap-form-basemap']}>
+              <div>
+                Or project onto a pretrained <b>basemap</b> — a parametric UMAP trained on a large
+                reference corpus with the same embedding model ({embedding?.model_id}). Projection
+                is near-instant and different datasets land in a shared, stable frame.
+              </div>
+              <label>
+                <span className={styles['umap-form-label']}>Basemap model: </span>
+                <select name="basemap_id" disabled={!!umapJob}>
+                  {compatibleBasemaps.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                type="submit"
+                color="secondary"
+                disabled={!!umapJob}
+                text="Project with basemap"
+              ></Button>
+            </form>
+          )}
         </div>
         {/* The list of available UMAPS */}
         {umaps.filter((d) => d.embedding_id == embedding?.id).length >= 2 && (

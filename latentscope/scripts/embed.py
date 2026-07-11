@@ -90,6 +90,10 @@ def main():
     parser.add_argument('text_column', type=str, help='Output file', default='text')
     parser.add_argument('model_id', type=str, help='ID of embedding model to use', default="transformers-BAAI___bge-small-en-v1.5")
     parser.add_argument('--prefix', type=str, help='Prefix to prepend to text before embedding', default="")
+    parser.add_argument('--no-prompt', dest='no_prompt', action='store_true',
+                        help="Disable the model's auto-applied default prompt (embed raw text); "
+                             "required for embeddings consumed by basemap models trained on "
+                             "prompt-free corpora")
     parser.add_argument('--dimensions', type=int, help='Truncate embeddings to dimensions a la Matroyshka embeddings')
     parser.add_argument('--rerun', type=str, help='Rerun the given embedding from last completed batch')
     parser.add_argument('--batch_size', type=int, help='Set the batch size (number of sentences to embed in one call)', default=100)
@@ -100,7 +104,7 @@ def main():
 
     # Parse arguments
     args = parser.parse_args()
-    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length, task=args.task)
+    embed(args.dataset_id, args.text_column, args.model_id, args.prefix, args.rerun, args.dimensions, args.batch_size, args.max_seq_length, task=args.task, no_prompt=args.no_prompt)
 
 def _make_token_counter(model):
     """Best-effort per-text token counter using a tokenizer the embedding
@@ -124,7 +128,7 @@ def _make_token_counter(model):
     return count
 
 
-def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None, task=None):
+def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_size=100, max_seq_length=None, task=None, no_prompt=False):
     import numpy as np
     import pandas as pd
 
@@ -235,6 +239,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
     # prompt when the user gives no prefix. If the user DID specify a prefix,
     # honor it and disable the auto prompt so the two don't stack. This is
     # model-agnostic — it keys off whether the model advertises a default prompt.
+    applied_prompt = ""
     if isinstance(model, TransformersEmbedProvider):
         st = getattr(model, "model", None)
         auto_prompt = getattr(st, "default_prompt_name", None)
@@ -242,6 +247,15 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
             print(f"Using the specified prefix {prefix!r}; disabling the model's "
                   f"auto-applied '{auto_prompt}' prompt so they don't stack.")
             st.default_prompt_name = None
+        elif auto_prompt and no_prompt:
+            print(f"--no-prompt: disabling the model's auto-applied '{auto_prompt}' prompt; "
+                  "embedding raw text")
+            st.default_prompt_name = None
+        elif auto_prompt:
+            # record the exact prompt text baked into these embeddings so
+            # downstream consumers (e.g. basemap models trained on prompt-free
+            # corpora) can check compatibility
+            applied_prompt = getattr(st, "prompts", {}).get(auto_prompt, auto_prompt)
     if input_type == "image":
         if not getattr(model, "supports_images", False):
             print(f"Error: column '{text_column}' is an image column but model "
@@ -395,6 +409,7 @@ def embed(dataset_id, text_column, model_id, prefix, rerun, dimensions, batch_si
         "dimensions": stats["dimensions"],
         "max_seq_length": max_seq_length,
         "prefix": prefix,
+        "applied_prompt": applied_prompt,
         "task": getattr(model, "task", None),
         "late_interaction": is_late_interaction,
         "min_values": stats["min_values"],
