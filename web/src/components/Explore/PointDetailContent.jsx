@@ -113,7 +113,24 @@ function PointDetailContent({ row, index, dataset, imageSize = DEFAULT_IMAGE_SIZ
       {row && textColumn && row[textColumn] !== undefined && (
         <div className={styles.textSection}>
           <div className={styles.sectionLabel}>{textColumn}</div>
-          <div className={styles.text}>{row[textColumn]}</div>
+          <div className={styles.text}>
+            {/* Token rows (token scopes) carry a char span into the text —
+                show the full document with the token highlighted in place. */}
+            {typeof row[textColumn] === 'string' &&
+            Number.isInteger(row.char_start) &&
+            row.char_start >= 0 &&
+            row.char_end > row.char_start ? (
+              <>
+                {row[textColumn].slice(0, row.char_start)}
+                <mark className={styles.tokenHighlight}>
+                  {row[textColumn].slice(row.char_start, row.char_end)}
+                </mark>
+                {row[textColumn].slice(row.char_end)}
+              </>
+            ) : (
+              row[textColumn]
+            )}
+          </div>
         </div>
       )}
 

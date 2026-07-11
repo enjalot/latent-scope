@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { useParams } from 'react-router-dom';
 
 import { apiService } from '../lib/apiService';
-import { saeAvailable } from '../lib/SAE';
+import { saeAvailable, getLabelsForSaeModel } from '../lib/SAE';
 
 const ScopeContext = createContext(null);
 
@@ -81,25 +81,41 @@ export function ScopeProvider({ children }) {
           });
         });
       } else if (sae?.id) {
-        // No CDN label parquet for this SAE (e.g. token-granularity SAEs):
-        // build the feature list from the per-dataset features endpoint with
-        // generic labels.
-        apiService.getDatasetFeatures(datasetId, sae.id).then((dsfts) => {
-          setFeatures(
-            dsfts.map((ft, i) => {
-              const featureId = ft.feature_id ?? i;
-              return {
-                feature: featureId,
-                label: `Feature ${featureId}`,
-                max_activation: ft.max_activation,
-                order: featureId,
-                dataset_max: ft.max_activation,
-                dataset_avg: ft.avg_activation,
-                dataset_count: ft.count,
-              };
+        // SAE declared by the scope itself (e.g. token-granularity SAEs).
+        // Labels come from a latent-taxonomy label parquet keyed by the SAE's
+        // model repo when one exists; the per-dataset stats endpoint fills in
+        // activations either way, and a missing/unpublished parquet falls
+        // back to generic "Feature N" labels rather than an empty surface.
+        const labelSource = getLabelsForSaeModel(sae.model_id);
+        const labelsPromise = labelSource
+          ? apiService.getFeatures(labelSource.url).catch((err) => {
+              console.warn(
+                `SAE label parquet unavailable (${labelSource.url}): ${err}; ` +
+                  'falling back to generic feature labels'
+              );
+              return null;
             })
-          );
-        });
+          : Promise.resolve(null);
+        Promise.all([labelsPromise, apiService.getDatasetFeatures(datasetId, sae.id)]).then(
+          ([labeled, dsfts]) => {
+            const byFeature = new Map((labeled || []).map((f) => [f.feature, f]));
+            setFeatures(
+              dsfts.map((ft, i) => {
+                const featureId = ft.feature_id ?? i;
+                const lf = byFeature.get(featureId);
+                return {
+                  feature: featureId,
+                  label: lf?.label || `Feature ${featureId}`,
+                  max_activation: lf?.max_activation ?? ft.max_activation,
+                  order: lf?.order ?? featureId,
+                  dataset_max: ft.max_activation,
+                  dataset_avg: ft.avg_activation,
+                  dataset_count: ft.count,
+                };
+              })
+            );
+          }
+        );
       }
     }
   }, [scope, sae, embeddings, datasetId]);
@@ -113,8 +129,24 @@ export function ScopeProvider({ children }) {
   const [deletedIndices, setDeletedIndices] = useState([]);
 
   const fetchScopeRows = useCallback(() => {
-    apiService
-      .fetchScopeRows(datasetId, scope.id)
+    // Token scopes have 100-300x the points of a row scope; fetch the scope
+    // parquet directly (binary, dictionary-encoded) instead of row JSON, and
+    // only the columns the Explore view actually reads.
+    const rowsPromise =
+      scope?.granularity === 'tokens'
+        ? apiService.fetchScopeRowsParquet(datasetId, scope.id, [
+            'ls_index',
+            'x',
+            'y',
+            'cluster',
+            'tile_index_64',
+            'deleted',
+            'parent_index',
+            'token_pos',
+            'token_str',
+          ])
+        : apiService.fetchScopeRows(datasetId, scope.id);
+    rowsPromise
       .then((scopeRows) => {
         setScopeRows(scopeRows);
         let clusterMap = {};

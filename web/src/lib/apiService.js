@@ -439,6 +439,33 @@ export const apiService = {
   fetchScopeRows: async (datasetId, scopeId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/parquet`);
   },
+  // Binary scope-rows transport: read the scope parquet directly instead of
+  // the row-oriented JSON endpoint. At token granularity (~100-300 points per
+  // document) the JSON payload is >10x the parquet bytes (227MB vs 20MB at 1M
+  // tokens), so token scopes always load this way. `columns` limits both the
+  // decode work and the resident row-object size.
+  fetchScopeRowsParquet: async (datasetId, scopeId, columns) => {
+    const { parquetReadObjects } = await import('hyparquet');
+    const response = await fetch(`${apiUrl}/files/${datasetId}/scopes/${scopeId}.parquet`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch scope parquet: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const file = {
+      byteLength: arrayBuffer.byteLength,
+      slice: (start, end) => arrayBuffer.slice(start, end),
+    };
+    const rows = await parquetReadObjects({ file, columns });
+    // parquet int64 columns (ls_index, parent_index, cluster, ...) decode as
+    // BigInt; the app indexes arrays and compares with === against plain
+    // numbers, so coerce in place.
+    for (const row of rows) {
+      for (const key in row) {
+        if (typeof row[key] === 'bigint') row[key] = Number(row[key]);
+      }
+    }
+    return rows;
+  },
   columnFilter: async (datasetId, filters) => {
     return fetchJson(
       `${apiUrl}/column-filter`,

@@ -24,3 +24,17 @@ export function getSaeForModel(modelId) {
   }
   return null;
 }
+
+// Label parquets keyed by the SAE's own model repo (not the embedding model).
+// Used for SAEs a scope declares directly (e.g. token-granularity SAEs run
+// with ls-sae --checkpoint): the labels live on the latent-taxonomy site.
+export const saeLabels = {
+  'enjalot/sae-jina-colbert-v2-tokens-64K': {
+    label: 'COLBERT_JINA_64K',
+    url: 'https://enjalot.github.io/latent-taxonomy/models/COLBERT_JINA_64K/features.parquet?cachebust=1',
+  },
+};
+
+export function getLabelsForSaeModel(saeModelId) {
+  return saeLabels[saeModelId] || null;
+}

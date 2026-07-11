@@ -72,6 +72,38 @@
   font-style: italic;
 }
 
+/* Token scopes: keep the highlighted token visible at any cell width —
+   context clips from the left before the token and from the right after it */
+.tokenSnippetCell {
+  display: flex;
+  align-items: baseline;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.tokenSnippetBefore {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  /* dir="rtl" on the element puts the ellipsis at the visual left; the inner
+     <bdi dir="ltr"> keeps the text itself rendering left-to-right */
+}
+
+.tokenSnippetCell .tokenHighlight {
+  flex: 0 0 auto;
+}
+
+.tokenSnippetAfter {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
 .featureColumnInfoTooltipIcon {
   display: inline-flex;
   align-items: center;

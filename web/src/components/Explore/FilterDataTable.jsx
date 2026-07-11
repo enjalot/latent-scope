@@ -52,13 +52,18 @@ function TokenSnippetCell({ row, column }) {
       </span>
     );
   }
+  // Three-segment flex so the highlighted token stays visible regardless of
+  // cell width: the before-context clips from the LEFT (dir="rtl" on the
+  // clipping span puts the ellipsis on the left; the inner <bdi dir="ltr">
+  // isolates the text so its rendering order is unaffected), the
+  // after-context clips from the right, and the token itself never shrinks.
   return (
-    <span title={text}>
-      {snippet.truncatedStart ? '…' : ''}
-      {snippet.before}
+    <span className={styles.tokenSnippetCell} title={text}>
+      <span className={styles.tokenSnippetBefore} dir="rtl">
+        <bdi dir="ltr">{snippet.before}</bdi>
+      </span>
       <span className={styles.tokenHighlight}>{snippet.match}</span>
-      {snippet.after}
-      {snippet.truncatedEnd ? '…' : ''}
+      <span className={styles.tokenSnippetAfter}>{snippet.after}</span>
     </span>
   );
 }
