@@ -55,6 +55,67 @@ def calculate_point_size(num_points, min_size=10, max_size=30, base_num_points=1
     else:
         return min(min_size + min_size * np.log(num_points / base_num_points), max_size)
 
+def _save_umap_preview(umap_embeddings, out_path, dimensions=2):
+    """Render the gallery thumbnail PNG for a umap run.
+
+    2D umaps get the classic flat scatter (unchanged). 3D umaps (``dimensions``
+    >= 3, with a z column) get a matplotlib 3D scatter with subtle depth cueing:
+    points are drawn back-to-front and their size / opacity / lightness fall off
+    with distance from the camera so the projection reads as a volume rather than
+    a flat blob. Output is 1024x1024 at 72 dpi, axis-free, filling the frame.
+    """
+    import math
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    point_size = calculate_point_size(umap_embeddings.shape[0])
+
+    if dimensions >= 3 and umap_embeddings.shape[1] >= 3:
+        x = umap_embeddings[:, 0]
+        y = umap_embeddings[:, 1]
+        z = umap_embeddings[:, 2]
+        fig = plt.figure(figsize=(14.22, 14.22))  # 1024px at 72 dpi
+        ax = fig.add_subplot(111, projection='3d')
+        elev, azim = 22, -60
+        ax.view_init(elev=elev, azim=azim)
+        # Unit vector from the scene toward the camera (matplotlib elev/azim
+        # convention) -> a per-point depth scalar for the cueing ramp.
+        e, a = math.radians(elev), math.radians(azim)
+        cam = np.array([math.cos(e) * math.cos(a),
+                        math.cos(e) * math.sin(a),
+                        math.sin(e)])
+        depth = x * cam[0] + y * cam[1] + z * cam[2]
+        dmin, dmax = float(depth.min()), float(depth.max())
+        t = (depth - dmin) / (dmax - dmin) if dmax > dmin else np.zeros_like(depth)
+        order = np.argsort(depth)  # far first, near points drawn on top
+        base = float(np.clip(point_size, 4, 16))
+        sizes = base * (0.4 + 0.9 * t)
+        colors = plt.cm.viridis(0.12 + 0.72 * t)
+        colors[:, 3] = 0.25 + 0.55 * t  # nearer points more opaque
+        ax.scatter(x[order], y[order], z[order], s=sizes[order], c=colors[order],
+                   edgecolors='none', depthshade=False)
+        ax.set_axis_off()
+        try:
+            ax.set_box_aspect((1, 1, 1))
+        except Exception:
+            pass
+        # Overscan the axes so the projected cloud fills the thumbnail instead
+        # of floating in the middle of the 3D axes' bounding cube.
+        ax.set_position([-0.18, -0.18, 1.36, 1.36])
+        fig.savefig(out_path, dpi=72)
+        plt.close(fig)
+        return
+
+    fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
+    print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
+    ax.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
+    ax.axis('off')  # remove axis
+    ax.set_position([0, 0, 1, 1])  # remove margins
+    fig.savefig(out_path)
+    plt.close(fig)
+
+
 def load_embeddings(dataset_id, embedding_id):
     import h5py
     import numpy as np
@@ -251,14 +312,10 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
         df.to_parquet(output_file)
         print("wrote", output_file)
 
-        # generate a scatterplot of the umap embeddings and save it to a file
-        fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
-        point_size = calculate_point_size(umap_embeddings.shape[0])
-        print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
-        plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
-        plt.axis('off')  # remove axis
-        plt.gca().set_position([0, 0, 1, 1])  # remove margins
-        plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+        # generate a scatterplot of the umap embeddings and save it to a file.
+        # 3D umaps get a depth-cued 3D projection thumbnail (see helper).
+        _save_umap_preview(umap_embeddings, os.path.join(umap_dir, f"{umap_id}.png"),
+                           dimensions=dimensions)
 
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
@@ -428,14 +485,10 @@ def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1,
         df.to_parquet(output_file)
         print("wrote", output_file)
 
-        # generate a scatterplot of the umap embeddings and save it to a file
-        fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px by 1024px at 72 dpi
-        point_size = calculate_point_size(umap_embeddings.shape[0])
-        print("POINT SIZE", point_size, "for", umap_embeddings.shape[0], "points")
-        plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
-        plt.axis('off')  # remove axis
-        plt.gca().set_position([0, 0, 1, 1])  # remove margins
-        plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+        # generate a scatterplot of the umap embeddings and save it to a file.
+        # 3D umaps get a depth-cued 3D projection thumbnail (see helper).
+        _save_umap_preview(umap_embeddings, os.path.join(umap_dir, f"{umap_id}.png"),
+                           dimensions=dimensions)
 
         # save a json file with the umap parameters
         with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
