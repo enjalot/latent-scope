@@ -377,29 +377,33 @@ export const apiService = {
     });
   },
   getFeatures: async (url) => {
-    // Load hyparquet lazily so the (large) parquet parser is only fetched
-    // when features are actually requested, instead of blocking app boot.
-    const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
-    // hyparquet handles fetching the parquet file itself; asyncBufferFromUrl
-    // performs its own response status checks and throws on failure.
-    const buffer = await asyncBufferFromUrl(url);
-    return new Promise((resolve) => {
-      parquetRead({
-        file: buffer,
-        // rowFormat: 'object',
-        onComplete: (data) => {
-          let fts = data.map((f) => {
-            return {
-              feature: parseInt(f[0]),
-              max_activation: f[1],
-              label: f[6],
-              order: f[7],
-            };
-          });
-          resolve(fts);
-        },
-      });
+    // Fetch the whole label parquet and parse from the buffer instead of
+    // hyparquet's range-request reader: GitHub Pages answers range requests
+    // with 416 when the client accepts gzip (offsets don't exist in the
+    // compressed representation browsers always negotiate), which broke
+    // label loading entirely. Label parquets are a few MB — a single
+    // gzip-friendly GET is both correct and faster. hyparquet stays lazily
+    // imported so the parser doesn't block app boot.
+    const { parquetReadObjects } = await import('hyparquet');
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch features parquet (${response.status}): ${url}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const file = {
+      byteLength: arrayBuffer.byteLength,
+      slice: (start, end) => arrayBuffer.slice(start, end),
+    };
+    const rows = await parquetReadObjects({
+      file,
+      columns: ['feature', 'max_activation', 'label', 'order'],
     });
+    return rows.map((f) => ({
+      feature: Number(f.feature),
+      max_activation: f.max_activation,
+      label: f.label,
+      order: f.order,
+    }));
   },
   getDatasetFeatures: async (datasetId, saeId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/features/${saeId}`);
