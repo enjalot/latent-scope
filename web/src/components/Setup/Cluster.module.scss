@@ -57,6 +57,12 @@
 .cluster-form input.cluster-form-text {
   width: 200px;
 }
+.cluster-form-switch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
 
 
 .item img {

@@ -75,6 +75,24 @@
     }
   },
   {
+    "provider": "huggingface",
+    "name": "minishlab/potion-base-2M",
+    "id": "huggingface-minishlab___potion-base-2M",
+    "params": {}
+  },
+  {
+    "provider": "huggingface",
+    "name": "minishlab/potion-base-8M",
+    "id": "huggingface-minishlab___potion-base-8M",
+    "params": {}
+  },
+  {
+    "provider": "huggingface",
+    "name": "minishlab/potion-retrieval-32M",
+    "id": "huggingface-minishlab___potion-retrieval-32M",
+    "params": {}
+  },
+  {
     "provider": "colbert",
     "name": "colbert-ir/colbertv2.0",
     "id": "colbert-colbert-ir___colbertv2.0",

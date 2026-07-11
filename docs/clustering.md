@@ -1,6 +1,6 @@
 # Clustering methods
 
-After projecting embeddings with `ls-umap`, the `ls-cluster` step assigns every
+After projecting embeddings with [`ls-umap`](umap.md), the `ls-cluster` step assigns every
 point a cluster id. Latent Scope 1.0 supports four clustering methods and lets
 you choose whether to cluster on the 2D UMAP projection or the original
 high-dimensional embedding ([issue #41](https://github.com/enjalot/latent-scope/issues/41)).
@@ -8,7 +8,9 @@ high-dimensional embedding ([issue #41](https://github.com/enjalot/latent-scope/
 ```bash
 # ls-cluster <dataset_id> <umap_id> <samples> <min_samples> <cluster_selection_epsilon> [column]
 #            [--method {evoc,hdbscan,kmeans,gmm}] [--cluster_on {umap,embedding}]
-#            [--n_neighbors N] [--noise_level F] [--name ...] [--description ...]
+#            [--n_neighbors N] [--noise_level F] [--approx_n_clusters N]
+#            [--base_n_clusters N] [--seed N] [--assign-noise]
+#            [--name ...] [--description ...]
 ls-cluster mydataset umap-001 5 3 0.0 --method hdbscan
 ```
 
@@ -28,8 +30,15 @@ are only meaningful for HDBSCAN but must still be supplied for the other methods
 | `gmm` | scikit-learn (`GaussianMixture`) | **number of clusters (components)** | no |
 
 - **EVoC** and **HDBSCAN** are density-based: `samples` is the minimum cluster
-  size, and points that don't fit a cluster are marked as noise (`-1`) and then
-  reassigned to their nearest cluster centroid.
+  size, and points that don't fit a cluster are marked as noise (`-1`). By
+  default the noise points are kept as an explicit extra cluster labeled
+  **"Unclustered"** (with no hull drawn around it), so the map stays honest
+  about what the algorithm couldn't place. Pass `--assign-noise` to instead
+  reassign every noise point to its nearest cluster centroid (the pre-1.0
+  behavior). Either way the run prints the noise count and percentage, the
+  original `-1` labels are preserved in the `raw_cluster` column, and the run
+  metadata records `n_noise`, `assign_noise`, and (when present) the id of the
+  `unclustered_cluster`.
 - **KMeans** and **GMM** are partitional: `samples` is the target **number of
   clusters**, and every point is always assigned (no noise). `min_samples` and
   `cluster_selection_epsilon` are ignored for these methods but still positional:
@@ -40,8 +49,25 @@ are only meaningful for HDBSCAN but must still be supplied for the other methods
   ls-cluster mydataset umap-001 15 3 0.0 --method gmm
   ```
 
-EVoC-only tuning flags: `--n_neighbors` (kNN graph, default 15) and
-`--noise_level` (0.0–1.0, default 0.5).
+EVoC-only tuning flags: `--n_neighbors` (kNN graph, default 15),
+`--noise_level` (0.0–1.0, default 0.5), `--approx_n_clusters` (aim for roughly
+this many clusters in the final output), and `--base_n_clusters` (target
+exactly this many clusters at the finest layer of the hierarchy). The
+`min_samples` positional is forwarded to EVoC as well as HDBSCAN. `--seed`
+makes `evoc`, `kmeans`, and `gmm` runs reproducible (HDBSCAN is deterministic
+for a fixed input).
+
+### HDBSCAN parameter sensitivity
+
+`min_cluster_size` (the `samples` positional) has **cliff behavior**: small
+changes can collapse the clustering. On one real dataset, moving
+`min_cluster_size` from 150 to 160 dropped the result from 53 clusters to 3,
+and on another from 110 to 120 dropped it from 55 to 5. Where the cliff sits is
+specific to each embedding, so sweep the value in small steps around your
+current setting rather than jumping by large factors. Separately,
+`min_samples=1` is an effective lever for reducing the noise fraction — in the
+same report it cut noise from 33% to ~25% of the dataset — without collapsing
+the clustering the way a larger `min_cluster_size` can.
 
 ---
 

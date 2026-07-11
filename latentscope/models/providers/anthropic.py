@@ -1,4 +1,5 @@
 from latentscope.util import get_key
+from latentscope.util.retry import retry_transient
 
 from .base import ChatModelProvider
 
@@ -32,7 +33,7 @@ class AnthropicChatProvider(ChatModelProvider):
         }
         if system:
             kwargs["system"] = system
-        response = self.client.messages.create(**kwargs)
+        response = retry_transient()(lambda: self.client.messages.create(**kwargs))()
         if response.stop_reason == "refusal":
             print(f"WARNING: {self.name} refused the request")
             return ""

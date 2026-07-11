@@ -2,6 +2,7 @@ import os
 import time
 
 from latentscope.util import get_key
+from latentscope.util.retry import retry_transient
 
 from .base import EmbedModelProvider
 
@@ -9,6 +10,7 @@ from .base import EmbedModelProvider
 class CohereAIEmbedProvider(EmbedModelProvider):
     def load_model(self):
         import cohere
+
         api_key = get_key("COHERE_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for Cohere")
@@ -16,7 +18,11 @@ class CohereAIEmbedProvider(EmbedModelProvider):
         self.client = cohere.Client(api_key)
 
     def embed(self, inputs, dimensions=None):
-        time.sleep(0.01) # TODO proper rate limiting
-        response = self.client.embed(texts=inputs, model=self.name, input_type=self.params["input_type"])
+        time.sleep(0.01)  # TODO proper rate limiting
+        response = retry_transient()(
+            lambda: self.client.embed(
+                texts=inputs, model=self.name, input_type=self.params["input_type"]
+            )
+        )()
         embeddings = response.embeddings
         return embeddings
