@@ -90,6 +90,15 @@ gpu = [
     "cuml-cu12==25.2.*",   # validated on CUDA 12.8 (gsv); 26.x needs CUDA 12.9
     "cuvs-cu12==25.2.*",
 ]
+# Model2Vec static embeddings (issue #68). NOT needed for the pre-distilled
+# potion models seeded in models/embedding_models.json: those repos are saved
+# in sentence-transformers format (a StaticEmbedding module) and load with
+# sentence-transformers alone. Install this extra only to distill your own
+# Model2Vec models or to load repos published in the raw model2vec format
+# (which sentence-transformers loads via StaticEmbedding.from_model2vec).
+model2vec = [
+    "model2vec>=0.3,<1",
+]
 
 [project.urls]
 Source = "https://github.com/enjalot/latent-scope"
