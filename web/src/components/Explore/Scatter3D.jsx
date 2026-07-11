@@ -205,12 +205,34 @@ function Scatter3D({
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.01, 100);
 
     const controls = new CameraControls(camera, renderer.domElement);
-    controls.dollyToCursor = true;
+    // -----------------------------------------------------------------------
+    // Camera recipe: predictable "FPS fly-through" (shared with VoxelView).
+    //
+    // dollyToCursor is intentionally OFF. When it's on, every wheel tick slides
+    // the orbit target sideways toward the cursor; after "zoom in, look around,
+    // zoom out" the target has crept away from the cloud — exactly the drifting
+    // centre users reported. With it off the wheel dollies straight along the
+    // view ray, so the framing centre is stable and in/out is symmetric.
+    //
+    // infinityDolly turns the wheel into a fly control: once the camera hits
+    // minDistance it keeps moving *through* the cloud (the target is pushed
+    // ahead instead of clamping), so you can fly in and out the far side. Left-
+    // drag orbits/looks, right-drag OR shift+left-drag trucks (pans), and WASD
+    // flies while the pointer is over the canvas (wired in the interaction
+    // block below). We measured the drift before/after this change — the stale
+    // pivot is eliminated.
+    // -----------------------------------------------------------------------
+    controls.dollyToCursor = false;
+    controls.infinityDolly = true;
+    controls.dollySpeed = 0.8;
     controls.dampingFactor = 0.06;
     controls.draggingDampingFactor = 0.12;
     controls.minDistance = 0.05;
     controls.maxDistance = 40;
-    // Right-drag -> truck (pan). Wheel -> dolly to cursor.
+    controls.mouseButtons.left = CameraControls.ACTION.ROTATE;
+    controls.mouseButtons.wheel = CameraControls.ACTION.DOLLY;
+    // Right-drag -> truck (pan). Shift+left-drag also trucks (swapped on
+    // pointerdown below — camera-controls 3.x has no shift-modifier mapping).
     controls.mouseButtons.right = CameraControls.ACTION.TRUCK;
     // Touch gestures: one finger orbits, two fingers pinch-zoom + pan together.
     controls.touches.one = CameraControls.ACTION.TOUCH_ROTATE;
@@ -368,8 +390,14 @@ function Scatter3D({
       cluAttr: geom.getAttribute('iCluster'),
       count: m,
       numClusters,
+      // WASD fly state (desktop): keys held + whether the pointer is over us.
+      flyKeys: { KeyW: false, KeyS: false, KeyA: false, KeyD: false },
+      pointerOver: false,
     };
     stateRef.current = st;
+    // Debug handle so the interaction/drift harness can read the live camera +
+    // controls (target/position) from the page. DEV-only; stripped in prod.
+    if (import.meta.env?.DEV && !lightweight) window.__ls3d = st;
 
     // --- interaction ---
     // Preview (lightweight) mode is orbit-only: no picking, hover, or select.
@@ -393,7 +421,30 @@ function Scatter3D({
       pendingPick = null;
       onHoverRef.current && onHoverRef.current(null);
     };
-    const onClick = (e) => {
+    // Click-vs-drag disambiguation. A select (which opens the detail drawer)
+    // must only fire on a real click — a rotate/pan/fly drag that happens to
+    // start and end on the canvas must NOT open a detail. We treat pointerup as
+    // a click only when it moved < 5px and took < 400ms since pointerdown.
+    const CLICK_PX = 5;
+    const CLICK_MS = 400;
+    let downPt = null;
+    const onPointerDown = (e) => {
+      if (e.button === 0) {
+        // Shift+left-drag trucks (pans); plain left-drag orbits. Set before
+        // camera-controls reads the action (this listener is capture-phase).
+        controls.mouseButtons.left = e.shiftKey
+          ? CameraControls.ACTION.TRUCK
+          : CameraControls.ACTION.ROTATE;
+      }
+      downPt = { x: e.clientX, y: e.clientY, t: performance.now(), button: e.button };
+    };
+    const onPointerUp = (e) => {
+      if (!downPt || e.button !== 0) return;
+      const moved = Math.hypot(e.clientX - downPt.x, e.clientY - downPt.y);
+      const dt = performance.now() - downPt.t;
+      const isClick = moved < CLICK_PX && dt < CLICK_MS && !e.shiftKey;
+      downPt = null;
+      if (!isClick) return; // a drag/pan/rotate — never a select
       const rect = dom.getBoundingClientRect();
       const id = pick(e.clientX - rect.left, e.clientY - rect.top);
       onSelectRef.current && onSelectRef.current(id === -1 ? [] : [id]);
@@ -408,24 +459,69 @@ function Scatter3D({
       controls.moveTo(r.x, r.y, r.z ?? 0, true);
       controls.dolly(radius * 0.5, true);
     };
+    // WASD fly (desktop nicety): while the pointer is over the canvas and no
+    // text field (e.g. the search box) is focused, W/S fly along the view ray
+    // and A/D truck sideways. Applied smoothly in the animate loop.
+    const isTypingTarget = () => {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+    };
+    const onEnter = () => {
+      st.pointerOver = true;
+    };
+    const onLeaveCanvas = () => {
+      st.pointerOver = false;
+      st.flyKeys.KeyW = st.flyKeys.KeyS = st.flyKeys.KeyA = st.flyKeys.KeyD = false;
+    };
+    const onKeyDown = (e) => {
+      if (!st.pointerOver || isTypingTarget()) return;
+      if (e.code in st.flyKeys) {
+        st.flyKeys[e.code] = true;
+        e.preventDefault();
+      }
+    };
+    const onKeyUp = (e) => {
+      if (e.code in st.flyKeys) st.flyKeys[e.code] = false;
+    };
     // Touch devices don't hover — a tap selects (opening the detail drawer),
-    // so we skip the pick-on-move listener there but keep click/dblclick.
+    // so we skip the pick-on-move listener there but keep tap/dbltap.
     if (!isTouch) dom.addEventListener('mousemove', onMove);
     dom.addEventListener('mouseleave', onLeave);
-    dom.addEventListener('click', onClick);
+    dom.addEventListener('pointerdown', onPointerDown, { capture: true });
+    dom.addEventListener('pointerup', onPointerUp);
     dom.addEventListener('dblclick', onDblClick);
+    dom.addEventListener('pointerenter', onEnter);
+    dom.addEventListener('pointerleave', onLeaveCanvas);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
     st.cleanupInteraction = () => {
       if (rafPick) cancelAnimationFrame(rafPick);
       dom.removeEventListener('mousemove', onMove);
       dom.removeEventListener('mouseleave', onLeave);
-      dom.removeEventListener('click', onClick);
+      dom.removeEventListener('pointerdown', onPointerDown, { capture: true });
+      dom.removeEventListener('pointerup', onPointerUp);
       dom.removeEventListener('dblclick', onDblClick);
+      dom.removeEventListener('pointerenter', onEnter);
+      dom.removeEventListener('pointerleave', onLeaveCanvas);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
     };
     }
 
     const animate = () => {
       st.raf = requestAnimationFrame(animate);
       const dt = st.clock.getDelta();
+      // WASD fly: forward/back along the view ray + truck sideways.
+      const f = st.flyKeys;
+      if (f.KeyW || f.KeyS || f.KeyA || f.KeyD) {
+        const step = radius * 1.2 * dt;
+        if (f.KeyW) controls.forward(step, false);
+        if (f.KeyS) controls.forward(-step, false);
+        if (f.KeyA) controls.truck(-step, 0, false);
+        if (f.KeyD) controls.truck(step, 0, false);
+      }
       controls.update(dt);
       renderer.render(scene, camera);
     };

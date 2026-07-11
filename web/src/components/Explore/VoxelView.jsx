@@ -240,10 +240,19 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
     const radius = Math.max(0.3, Math.sqrt(ss / M) * 1.9);
 
     const controls = new CameraControls(camera, renderer.domElement);
-    controls.dollyToCursor = true;
+    // Camera recipe: predictable FPS fly-through — matches Scatter3D (see the
+    // long note there). dollyToCursor OFF so the framing centre never drifts on
+    // "zoom in / look around / zoom out"; infinityDolly ON so the wheel flies
+    // straight through the voxel cloud; shift+left-drag OR right-drag trucks.
+    controls.dollyToCursor = false;
+    controls.infinityDolly = true;
+    controls.dollySpeed = 0.8;
     controls.dampingFactor = 0.06;
+    controls.draggingDampingFactor = 0.12;
     controls.minDistance = 0.05;
     controls.maxDistance = 40;
+    controls.mouseButtons.left = CameraControls.ACTION.ROTATE;
+    controls.mouseButtons.wheel = CameraControls.ACTION.DOLLY;
     controls.mouseButtons.right = CameraControls.ACTION.TRUCK;
     // Touch gestures: one finger orbits, two fingers pinch-zoom + pan.
     controls.touches.one = CameraControls.ACTION.TOUCH_ROTATE;
@@ -312,6 +321,7 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
       dpr,
     };
     stateRef.current = st;
+    if (import.meta.env?.DEV) window.__ls3dVoxel = st;
     // Apply the initial lookAt immediately so the plane is derived from the
     // real starting view (not the camera's pre-update default orientation),
     // then freeze that plane. NO controlend re-derivation — orbiting keeps it.
@@ -404,7 +414,27 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
       setActiveCell(null);
       setTooltipPos(null);
     };
-    const onClick = (e) => {
+    // Click-vs-drag disambiguation + shift+left-drag pan (matches Scatter3D).
+    // A cell select only fires on a real click (< 5px, < 400ms) so a rotate /
+    // pan / fly drag that ends on a voxel never opens the cell drawer.
+    const CLICK_PX = 5;
+    const CLICK_MS = 400;
+    let downPt = null;
+    const onPointerDown = (e) => {
+      if (e.button === 0) {
+        st.controls.mouseButtons.left = e.shiftKey
+          ? CameraControls.ACTION.TRUCK
+          : CameraControls.ACTION.ROTATE;
+      }
+      downPt = { x: e.clientX, y: e.clientY, t: performance.now(), button: e.button };
+    };
+    const onPointerUp = (e) => {
+      if (!downPt || e.button !== 0) return;
+      const moved = Math.hypot(e.clientX - downPt.x, e.clientY - downPt.y);
+      const dt = performance.now() - downPt.t;
+      const isClick = moved < CLICK_PX && dt < CLICK_MS && !e.shiftKey;
+      downPt = null;
+      if (!isClick) return; // a drag/pan/rotate — not a cell select
       const picked = pickAt(e.clientX, e.clientY);
       if (picked >= 0 && onCellSelect) onCellSelect(cells[picked].idx, column);
     };
@@ -417,12 +447,14 @@ function VoxelView({ scopeRows, width, height, scope, clusterLabels, pointColors
     };
     if (!isTouch) dom.addEventListener('mousemove', onMove);
     dom.addEventListener('mouseleave', onLeave);
-    dom.addEventListener('click', onClick);
+    dom.addEventListener('pointerdown', onPointerDown, { capture: true });
+    dom.addEventListener('pointerup', onPointerUp);
     dom.addEventListener('wheel', onWheel, { capture: true, passive: false });
     return () => {
       dom.removeEventListener('mousemove', onMove);
       dom.removeEventListener('mouseleave', onLeave);
-      dom.removeEventListener('click', onClick);
+      dom.removeEventListener('pointerdown', onPointerDown, { capture: true });
+      dom.removeEventListener('pointerup', onPointerUp);
       dom.removeEventListener('wheel', onWheel, { capture: true });
     };
   }, [cells, width, height, setActiveCell, column, onCellSelect, isTouch]);
