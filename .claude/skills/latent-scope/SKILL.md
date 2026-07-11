@@ -23,7 +23,9 @@ uv run ls-cluster mydata umap-001 25 5 0.0 --method hdbscan
 uv run ls-scope   mydata embedding-001 umap-001 cluster-001 default "My scope" "desc"
 uv run ls-serve   $LATENT_SCOPE_DATA          # http://localhost:5001 — show the user
 ```
-(`ls-cluster` auto-writes `default` labels, so no LLM is required for a first map.)
+(`ls-cluster` auto-writes `default` labels, so no LLM is required for a first map.
+HDBSCAN/EVoC noise becomes an explicit "Unclustered" cluster — that's expected,
+not a bug; `--assign-noise` restores nearest-centroid reassignment.)
 
 ## Fast path — images (point at a folder)
 ```bash

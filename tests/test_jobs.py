@@ -269,6 +269,44 @@ class TestPostCompat:
         assert response.get_json()["status"] == "dead"
 
 
+class TestClusterCommand:
+    """The /cluster route must forward the #143 flags to ls-cluster."""
+
+    def _capture_command(self, client, monkeypatch, query):
+        import latentscope.server.jobs as jobs_mod
+        captured = {}
+        done = threading.Event()
+
+        def fake_run_job(data_dir, dataset, job_id, command):
+            captured["command"] = command
+            done.set()
+
+        monkeypatch.setattr(jobs_mod, "run_job", fake_run_job)
+        res = client.get(f"/api/jobs/cluster?{query}")
+        assert res.status_code == 200
+        assert done.wait(5)
+        return captured["command"]
+
+    def test_new_flags_forwarded(self, client, monkeypatch):
+        cmd = self._capture_command(
+            client, monkeypatch,
+            "dataset=ds1&umap_id=umap-001&samples=5&min_samples=3"
+            "&cluster_selection_epsilon=0.0&method=evoc"
+            "&assign_noise=true&seed=7&base_n_clusters=12")
+        assert "--assign-noise" in cmd
+        assert "--seed=7" in cmd
+        assert "--base_n_clusters=12" in cmd
+
+    def test_flags_omitted_by_default(self, client, monkeypatch):
+        cmd = self._capture_command(
+            client, monkeypatch,
+            "dataset=ds1&umap_id=umap-001&samples=5&min_samples=3"
+            "&cluster_selection_epsilon=0.0&method=hdbscan")
+        assert "--assign-noise" not in cmd
+        assert not any(c.startswith("--seed") for c in cmd)
+        assert not any(c.startswith("--base_n_clusters") for c in cmd)
+
+
 def test_readonly_app_does_not_reconcile_jobs(tmp_data_dir):
     """Codex review on #119: read-only deployments must not mutate the data
     dir — starting the app in read_only mode must leave stale 'running' job
