@@ -2,6 +2,8 @@ import { useState, useCallback, useMemo, memo } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'react-tooltip';
 import { useFilter } from '../../contexts/FilterContext';
+import { useScope } from '../../contexts/ScopeContext';
+import { tokenSnippet, cleanTokenString, DEFAULT_SNIPPET_WINDOW } from '../../lib/tokenSnippet';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
 
@@ -19,6 +21,35 @@ FilterDataTable.propTypes = {
   onHover: PropTypes.func,
   onClick: PropTypes.func,
 };
+
+// Token-scope text cell: window the parent document's text around the token's
+// character span and highlight the token in place (built from substring
+// slices — no innerHTML). Tokens without a surface form (CLS/SEP/markers,
+// char_start === -1) fall back to the plain truncated text plus a muted note.
+function TokenSnippetCell({ row, column }) {
+  const text = row[column];
+  const snippet = tokenSnippet(text, row.char_start, row.char_end, DEFAULT_SNIPPET_WINDOW);
+  if (!snippet) {
+    const plain = typeof text === 'string' ? text : '';
+    return (
+      <span title={plain}>
+        <span className={styles.tokenSpecialNote}>{row.token_str} (special token) </span>
+        {plain.length > 2 * DEFAULT_SNIPPET_WINDOW
+          ? `${plain.slice(0, 2 * DEFAULT_SNIPPET_WINDOW)}…`
+          : plain}
+      </span>
+    );
+  }
+  return (
+    <span title={text}>
+      {snippet.truncatedStart ? '…' : ''}
+      {snippet.before}
+      <span className={styles.tokenHighlight}>{snippet.match}</span>
+      {snippet.after}
+      {snippet.truncatedEnd ? '…' : ''}
+    </span>
+  );
+}
 
 function RowWithHover({ props, onHover, onClick }) {
   const { row } = props;
@@ -55,6 +86,7 @@ function FilterDataTable({
   onClick = () => {},
 }) {
   const { dataTableRows, page, setPage, totalPages, loading } = useFilter();
+  const { scope, isTokenScope } = useScope();
 
   // feature tooltip content
   const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
@@ -76,17 +108,21 @@ function FilterDataTable({
     };
 
     const ls_features_column = 'ls_features';
+    const ls_token_column = 'ls_token';
+    // Token scopes window the text column the embedding was computed over.
+    const textColumn = (isTokenScope && scope?.embedding?.text_column) || dataset.text_column;
     let columns = ['ls_index'];
+    if (isTokenScope) columns.push(ls_token_column);
     // Text column is always the first column (after index)
 
-    columns.push(dataset.text_column);
+    columns.push(textColumn);
 
     if (distances && distances.length) columns.push('ls_similarity');
     if (sae_id) columns.push(ls_features_column);
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
     // if (tagset && Object.keys(tagset).length) columns.push('tags');
 
-    columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
+    columns = columns.concat(dataset.columns.filter((d) => d !== textColumn));
 
     let columnDefs = columns.map((col) => {
       const metadata = dataset.column_metadata ? dataset.column_metadata[col] : null;
@@ -146,6 +182,22 @@ function FilterDataTable({
         };
       }
 
+      if (col === ls_token_column) {
+        // Compact token column (frozen, so react-data-grid keeps it up front
+        // near the index column) showing the cleaned surface string.
+        return {
+          ...baseCol,
+          name: 'token',
+          width: 90,
+          frozen: true,
+          renderCell: ({ row }) => (
+            <span className={styles.tokenCell} title={row.token_str}>
+              {cleanTokenString(row.token_str)}
+            </span>
+          ),
+        };
+      }
+
       if (col === 'ls_cluster') {
         return {
           ...baseCol,
@@ -157,12 +209,15 @@ function FilterDataTable({
         };
       }
 
-      if (col === dataset.text_column) {
+      if (col === textColumn) {
         return {
           ...baseCol,
           width: 500,
-          renderHeaderCell: () => <div className={styles.textColumn}>{dataset.text_column}</div>,
+          renderHeaderCell: () => <div className={styles.textColumn}>{textColumn}</div>,
           renderCell: ({ row }) => {
+            if (isTokenScope) {
+              return <TokenSnippetCell row={row} column={col} />;
+            }
             return <span title={row[col]}>{row[col]}</span>;
           },
         };
@@ -233,7 +288,7 @@ function FilterDataTable({
     // Add index column as first column
     return [indexColumn, ...columnDefs];
     // return columnDefs;
-  }, [dataset, clusterMap, distances, features, feature, sae_id]);
+  }, [dataset, scope, isTokenScope, clusterMap, distances, features, feature, sae_id]);
 
   const renderRowWithHover = useCallback(
     (key, props) => {

@@ -260,6 +260,23 @@ export const apiService = {
       return rows;
     });
   },
+  // Token-scope table fetch (granularity: "tokens"): `indices` are global
+  // token indices. Returns one row per token in request order — the parent
+  // document's columns plus index (the token index), parent_index, token_str,
+  // token_pos, char_start/char_end (span in the parent's text column; -1/-1
+  // for tokens with no surface form), and sae_acts/sae_indices when saeId is
+  // given (token-level top-k).
+  fetchTokensFromIndices: async (datasetId, indices, embeddingId, saeId) => {
+    return fetchJson(
+      `${apiUrl}/tokens/indexed`,
+      postJsonOptions({
+        dataset: datasetId,
+        embedding_id: embeddingId,
+        indices: indices,
+        ...(saeId ? { sae_id: saeId } : {}),
+      })
+    );
+  },
   fetchClusterLabelsAvailable: async (datasetId, clusterId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels_available`);
   },

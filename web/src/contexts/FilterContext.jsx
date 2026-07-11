@@ -38,6 +38,7 @@ export function FilterProvider({ children }) {
     scope,
     scopeLoaded,
     clusterLabels,
+    isTokenScope,
   } = useScope();
 
   // Set view of deletedIndices for O(1) membership checks in hot paths;
@@ -149,6 +150,10 @@ export function FilterProvider({ children }) {
               break;
             }
             case filterConstants.SEARCH: {
+              // Token scopes: NN search returns document indices, which don't
+              // index token points — unsupported (UI hides it; this guards
+              // url-driven searches). Doc→token mapping is follow-up work.
+              if (isTokenScope) break;
               const { filter } = searchFilter;
               indices = await filter(value);
               break;
@@ -185,7 +190,16 @@ export function FilterProvider({ children }) {
     if (scopeLoaded) {
       applyFilter();
     }
-  }, [filterConfig, baseIndices, scopeRows, deletedIndicesSet, datasetId, scope, scopeLoaded]);
+  }, [
+    filterConfig,
+    baseIndices,
+    scopeRows,
+    deletedIndicesSet,
+    datasetId,
+    scope,
+    scopeLoaded,
+    isTokenScope,
+  ]);
 
   // When centeredIndices change on mobile, update filteredIndices only if no filter is active.
   // Separate from the main filter effect to avoid re-running async filters or resetting pagination.
@@ -237,8 +251,19 @@ export function FilterProvider({ children }) {
         }
       }
 
-      apiService
-        .fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id)
+      // Token scopes: indices are token indices, so page rows come from the
+      // token endpoint (parent-document columns + token_str/char span) rather
+      // than /indexed. Both return rows carrying `index`.
+      const fetchRows = isTokenScope
+        ? apiService.fetchTokensFromIndices(
+            datasetId,
+            nonDeletedIndices,
+            scope?.embedding_id || scope?.embedding?.id,
+            scope?.sae_id
+          )
+        : apiService.fetchDataFromIndices(datasetId, nonDeletedIndices, scope?.sae_id);
+
+      fetchRows
         .then((rows) => {
           // Only update state if this is the latest request.
           if (rowsRequestIdRef.current !== requestId) {
@@ -264,7 +289,7 @@ export function FilterProvider({ children }) {
     } else {
       setDataTableRows([]);
     }
-  }, [shownIndices, deletedIndicesSet, datasetId, scope, filterConfig, page]);
+  }, [shownIndices, deletedIndicesSet, datasetId, scope, isTokenScope, filterConfig, page]);
 
   // The context exposes only the state and setters that consumer components need.
   const value = {

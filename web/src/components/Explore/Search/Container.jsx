@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import SearchResults from './SearchResults';
 import styles from './Container.module.scss';
 import { useFilter } from '../../../contexts/FilterContext';
+import { useScope } from '../../../contexts/ScopeContext';
 import { filterConstants } from './utils';
 /*
  * SearchContainer is the main parent component that manages the overall search state.
@@ -19,6 +20,7 @@ import { filterConstants } from './utils';
 const Container = () => {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [, setUrlParams] = useSearchParams();
+  const { isTokenScope } = useScope();
 
   const {
     searchFilter,
@@ -128,7 +130,9 @@ const Container = () => {
             value={filterQuery}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && filterQuery) {
+              // Token scopes: Enter would run a NN search whose document
+              // indices don't index token points — disabled (see SearchResults).
+              if (e.key === 'Enter' && filterQuery && !isTokenScope) {
                 handleSelect({
                   type: filterConstants.SEARCH,
                   value: filterQuery,

@@ -165,7 +165,7 @@ const CustomMenu = ({ children, ...props }) => {
 export const NUM_SEARCH_RESULTS = 4;
 
 const SearchResults = ({ query, menuIsOpen, onSelect, setFilterQuery }) => {
-  const { features, datasetId, scope, clusterLabels } = useScope();
+  const { features, datasetId, scope, clusterLabels, isTokenScope } = useScope();
   const columnFilter = useColumnFilter(datasetId, scope);
   const { columnFilters } = columnFilter;
 
@@ -204,8 +204,11 @@ const SearchResults = ({ query, menuIsOpen, onSelect, setFilterQuery }) => {
 
   // Build grouped options.
   // First, if the user has typed something, add a NN option.
+  // Token scopes: NN search returns DOCUMENT indices, which don't index token
+  // points, so it's hidden. Mapping MaxSim results onto token indices is
+  // follow-up work.
   const groupedOptions = [];
-  if (query.trim() !== '') {
+  if (query.trim() !== '' && !isTokenScope) {
     groupedOptions.push({
       label: 'Nearest Neighbors',
       options: [
@@ -231,7 +234,9 @@ const SearchResults = ({ query, menuIsOpen, onSelect, setFilterQuery }) => {
     });
   }
 
-  if (columnOptions.length > 0) {
+  // Column filters operate on dataset rows, not tokens, so they're hidden for
+  // token scopes too.
+  if (columnOptions.length > 0 && !isTokenScope) {
     groupedOptions.push({
       label: COLUMNS,
       options: columnOptions,

@@ -24,7 +24,11 @@ export function ScopeProvider({ children }) {
     apiService
       .fetchScope(datasetId, scopeId)
       .then((scope) => {
-        if (saeAvailable[scope.embedding?.model_id]) {
+        // The SAE surface is enabled either by a pretrained CDN-labeled SAE
+        // for the embedding model (lib/SAE.js) or by the scope meta carrying
+        // its own sae + sae_id (e.g. token-granularity SAEs trained on the
+        // dataset itself).
+        if (saeAvailable[scope.embedding?.model_id] || (scope.sae && scope.sae_id)) {
           setSae(scope.sae);
         } else {
           delete scope.sae;
@@ -76,9 +80,29 @@ export function ScopeProvider({ children }) {
             setFeatures(fts);
           });
         });
+      } else if (sae?.id) {
+        // No CDN label parquet for this SAE (e.g. token-granularity SAEs):
+        // build the feature list from the per-dataset features endpoint with
+        // generic labels.
+        apiService.getDatasetFeatures(datasetId, sae.id).then((dsfts) => {
+          setFeatures(
+            dsfts.map((ft, i) => {
+              const featureId = ft.feature_id ?? i;
+              return {
+                feature: featureId,
+                label: `Feature ${featureId}`,
+                max_activation: ft.max_activation,
+                order: featureId,
+                dataset_max: ft.max_activation,
+                dataset_avg: ft.avg_activation,
+                dataset_count: ft.count,
+              };
+            })
+          );
+        });
       }
     }
-  }, [scope, sae, embeddings]);
+  }, [scope, sae, embeddings, datasetId]);
 
   const [clusterMap, setClusterMap] = useState({});
   const [, setClusterIndices] = useState([]);
@@ -129,12 +153,17 @@ export function ScopeProvider({ children }) {
     if (scope) fetchScopeRows();
   }, [scope, fetchScopeRows]);
 
+  // Token scopes (granularity: "tokens") map one point per token of a
+  // late-interaction embedding instead of one per dataset row.
+  const isTokenScope = scope?.granularity === 'tokens';
+
   const value = {
     datasetId,
     scopeId,
     dataset,
     scope,
     sae,
+    isTokenScope,
     scopeLoaded,
     error,
     clusterMap,

@@ -13,6 +13,7 @@ import ClusterLabelsPanel from '../components/Explore/ClusterLabelsPanel';
 import PointDetail from '../components/Explore/PointDetail';
 
 import { ScopeProvider, useScope } from '../contexts/ScopeContext';
+import { cleanTokenString } from '../lib/tokenSnippet';
 import { FilterProvider, useFilter } from '../contexts/FilterContext';
 import useDebounce from '../hooks/useDebounce';
 import { useSmallScreen } from '../hooks/useSmallScreen';
@@ -55,6 +56,7 @@ function ExploreContent() {
     sae,
     scopes,
     tags,
+    isTokenScope,
   } = useScope();
 
   const navigate = useNavigate();
@@ -79,9 +81,6 @@ function ExploreContent() {
   const [hovered, setHovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  // Note: this currently has no setter wired up; it exists to satisfy
-  // VisualizationPane's props with a stable empty value.
-  const [dataTableRows] = useState([]);
   // Index of the point whose detail drawer is open (null = closed).
   const [selectedIndex, setSelectedIndex] = useState(null);
 
@@ -119,6 +118,18 @@ function ExploreContent() {
       // the ref would still point at the old index during that window and a
       // late response for the old point could overwrite the new tooltip/image.
       latestHoverIndexRef.current = hoveredIndex;
+      if (isTokenScope) {
+        // Token scopes resolve hover locally: scopeRows carry token_str, so
+        // no getHoverText roundtrip is needed. scopeRows[i].ls_index === i.
+        setHovered({
+          text: null,
+          token: cleanTokenString(scopeRows[hoveredIndex]?.token_str),
+          loading: false,
+          index: hoveredIndex,
+          cluster: clusterMap[hoveredIndex],
+        });
+        return;
+      }
       // Update the tooltip immediately with the new index + cluster so the
       // image (keyed on the index) swaps right away; the text arrives after
       // the hydration fetch, marked loading until then.
@@ -140,7 +151,7 @@ function ExploreContent() {
       setHovered(null);
       latestHoverIndexRef.current = null; // Reset the ref when hover is cleared
     }
-  }, [hoveredIndex, deletedIndicesSet, clusterMap, debouncedHydrateHoverText]);
+  }, [hoveredIndex, deletedIndicesSet, clusterMap, debouncedHydrateHoverText, isTokenScope, scopeRows]);
 
   // Update hover annotations
   useEffect(() => {
@@ -399,7 +410,6 @@ function ExploreContent() {
                 hoverAnnotations={hoverAnnotations}
                 selectedAnnotations={selectedAnnotations}
                 hoveredCluster={hoveredCluster}
-                dataTableRows={dataTableRows}
               />
             ) : null}
             <PointDetail selectedIndex={selectedIndex} onClose={handleDetailClose} />

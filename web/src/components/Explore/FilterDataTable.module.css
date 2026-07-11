@@ -85,6 +85,26 @@
   text-align: center;
 }
 
+/* Token scopes: compact cell showing the token's cleaned surface string */
+.tokenCell {
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* Token scopes: the token's span highlighted inside its document snippet */
+.tokenHighlight {
+  background-color: rgba(211, 150, 94, 0.45);
+  border-radius: 2px;
+  font-weight: 600;
+  padding: 0 1px;
+}
+
+/* Token scopes: note for tokens with no surface form (CLS/SEP/markers) */
+.tokenSpecialNote {
+  color: var(--text-color-text-subtle, #999);
+  font-style: italic;
+}
+
 @media (prefers-color-scheme: dark) {
   .tagActive {
     background-color: #111;

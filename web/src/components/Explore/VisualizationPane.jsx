@@ -53,7 +53,6 @@ function VisualizationPane({
   hoverAnnotations,
   selectedAnnotations,
   hoveredCluster,
-  dataTableRows,
   isSmallScreen = false,
 }) {
   const { scopeRows, clusterLabels, scope, features, dataset } = useScope();
@@ -113,6 +112,9 @@ function VisualizationPane({
     filteredIndices,
     filterConfig,
     filterActive,
+    // The current table page's rows (with sae_indices/sae_acts when an SAE is
+    // active) — drives the feature activation coloring below.
+    dataTableRows,
   } = useFilter();
 
   // only show the hull if we are filtering by cluster
@@ -146,12 +148,12 @@ function VisualizationPane({
 
     const lookup = new Map();
     dataTableRows.forEach((data) => {
-      const activatedIdx = data.sae_indices.indexOf(featureFilter.feature);
+      const activatedIdx = data.sae_indices ? data.sae_indices.indexOf(featureFilter.feature) : -1;
       if (activatedIdx !== -1) {
         const activatedFeature = data.sae_acts[activatedIdx];
         // normalize the activation to be between 0 and 1
         const min = 0.0;
-        const max = features[featureFilter.feature].dataset_max;
+        const max = features?.[featureFilter.feature]?.dataset_max || 1.0;
         const normalizedActivation = (activatedFeature - min) / (max - min);
         lookup.set(data.ls_index, normalizedActivation);
       }
@@ -159,10 +161,15 @@ function VisualizationPane({
     return lookup;
   }, [featureIsSelected, dataTableRows, featureFilter.feature, features]);
 
+  // Set view of shownIndices for O(1) membership checks: an Array.includes
+  // per point would make this O(N·page) — a real hotspot for token scopes
+  // with ~1M points.
+  const shownIndicesSet = useMemo(() => new Set(shownIndices), [shownIndices]);
+
   const drawingPoints = useMemo(() => {
     return scopeRows.map((p, i) => {
       if (featureIsSelected) {
-        if (shownIndices?.includes(i)) {
+        if (shownIndicesSet.has(i)) {
           const activation = featureActivationMap.get(p.ls_index);
           return activation !== undefined
             ? [p.x, p.y, mapSelectionKey.selected, activation]
@@ -175,15 +182,15 @@ function VisualizationPane({
         return [-10, -10, mapSelectionKey.hidden, 0.0];
         //   } else if (hoveredIndex === i) {
         //     return [p.x, p.y, mapSelectionKey.hovered, 0.0];
-      } else if (shownIndices?.includes(i)) {
+      } else if (shownIndicesSet.has(i)) {
         return [p.x, p.y, mapSelectionKey.selected, 0.0];
-      } else if (shownIndices?.length) {
+      } else if (shownIndicesSet.size) {
         return [p.x, p.y, mapSelectionKey.notSelected, 0.0];
       } else {
         return [p.x, p.y, mapSelectionKey.normal, 0.0];
       }
     });
-  }, [scopeRows, shownIndices, featureActivationMap, featureIsSelected]);
+  }, [scopeRows, shownIndicesSet, featureActivationMap, featureIsSelected]);
 
   // ====================================================================================================
   // Color-by column (#131): drive point hue from a numeric/categorical column.
@@ -412,8 +419,10 @@ function VisualizationPane({
     if (!shownIndices || !scopeRows) return [];
     return shownIndices
       .map((ls_index, i) => {
-        // Find the point in scopeRows with matching ls_index
-        const point = scopeRows.find((p) => p.ls_index === ls_index);
+        // scopeRows[i].ls_index === i (scope invariant), so index directly
+        // instead of an O(N) find per shown row — token scopes can have ~1M
+        // points.
+        const point = scopeRows[ls_index];
         return point ? { ...point, index: i } : null;
       })
       .filter((point) => point !== null);
@@ -635,6 +644,16 @@ function VisualizationPane({
           }}
         >
           <div className="tooltip-content">
+            {/* Token scopes: the hovered point is a token — show its cleaned
+                surface string prominently (resolved locally from scopeRows). */}
+            {hovered.token !== undefined && hovered.token !== null && (
+              <>
+                <span style={{ fontSize: '1.25em', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                  {hovered.token}
+                </span>
+                <br></br>
+              </>
+            )}
             {hoveredCluster && (
               <span>
                 <span className="key">Cluster {hoveredCluster.cluster}: </span>
