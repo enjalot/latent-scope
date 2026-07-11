@@ -1,7 +1,7 @@
 import os
-import time
 
 from latentscope.util import get_key
+from latentscope.util.retry import retry_transient
 
 from .base import ChatModelProvider, EmbedModelProvider
 
@@ -13,6 +13,7 @@ class OpenAIEmbedProvider(EmbedModelProvider):
 
     def load_model(self):
         from openai import OpenAI
+
         api_key = get_key("OPENAI_API_KEY")
         if api_key is None:
             print("ERROR: No API key found for OpenAI")
@@ -31,31 +32,34 @@ class OpenAIEmbedProvider(EmbedModelProvider):
         # models may not have a matching tiktoken encoding.
         if self.base_url is None:
             import tiktoken
+
             self.encoder = tiktoken.encoding_for_model(self.name)
         else:
             self.encoder = None
 
     def embed(self, inputs, dimensions=None):
-        time.sleep(0.01) # TODO proper rate limiting
         inputs = [b.replace("\n", " ") for b in inputs]
         # Only truncate via tiktoken for native OpenAI models
         if self.encoder is not None:
             enc = self.encoder
             max_tokens = self.params.get("max_tokens", 8191)
-            inputs = [enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b for b in inputs]
-        if dimensions is not None and dimensions > 0:
-            response = self.client.embeddings.create(
-                input=inputs,
-                model=self.name,
-                dimensions=dimensions
-            )
-        else:
-            response = self.client.embeddings.create(
-                input=inputs,
-                model=self.name
-            )
+            inputs = [
+                enc.decode(enc.encode(b)[:max_tokens]) if len(enc.encode(b)) > max_tokens else b
+                for b in inputs
+            ]
+
+        @retry_transient()
+        def _create():
+            if dimensions is not None and dimensions > 0:
+                return self.client.embeddings.create(
+                    input=inputs, model=self.name, dimensions=dimensions
+                )
+            return self.client.embeddings.create(input=inputs, model=self.name)
+
+        response = _create()
         embeddings = [embedding.embedding for embedding in response.data]
         return embeddings
+
 
 class OpenAIChatProvider(ChatModelProvider):
     def load_model(self):
@@ -63,6 +67,7 @@ class OpenAIChatProvider(ChatModelProvider):
         import tiktoken
         from openai import AsyncOpenAI, OpenAI
         from outlines.models.openai import OpenAIConfig
+
         if self.base_url is None:
             self.client = AsyncOpenAI(api_key=get_key("OPENAI_API_KEY"))
             self.encoder = tiktoken.encoding_for_model(self.name)
@@ -75,15 +80,14 @@ class OpenAIChatProvider(ChatModelProvider):
         self.model = outlines.models.openai(self.client, config)
         self.generator = outlines.generate.text(self.model)
 
-
     def chat(self, messages):
-        response = self.client.chat.completions.create(
-            model=self.name,
-            messages=messages
-        )
+        response = retry_transient()(
+            lambda: self.client.chat.completions.create(model=self.name, messages=messages)
+        )()
         return response.choices[0].message.content
 
     def summarize(self, items, context=""):
         from .prompts import summarize
+
         prompt = summarize(items, context)
-        return self.generator(prompt)
+        return retry_transient()(self.generator)(prompt)

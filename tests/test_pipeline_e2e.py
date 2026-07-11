@@ -127,7 +127,8 @@ def test_full_pipeline_small_dataset(pipeline_env):
     assert len(cluster_df) == n_total
     n_clusters = cluster_df["cluster"].nunique()
     assert n_clusters >= 2, "expected the 3 planted topics to form >=2 clusters"
-    # noise points must all have been reassigned
+    # no -1 survives: by default noise becomes an explicit "Unclustered"
+    # cluster (#143); --assign-noise would reassign to nearest centroids
     assert (cluster_df["cluster"] >= 0).all()
     labels_path = os.path.join(
         data_dir, dataset_id, "clusters", "cluster-001-labels-default.parquet")
@@ -688,6 +689,105 @@ class FakeTokenizingProvider(FakeEmbedProvider):
     def __init__(self, dim=DIM):
         super().__init__(dim)
         self.tokenizer = self._WordTokenizer()
+
+
+def test_embed_failure_leaves_debug_parquet_and_rerun_cleans_it(pipeline_env,
+                                                                monkeypatch,
+                                                                capsys):
+    """#143: a failed batch writes a debug parquet and points at --rerun; a
+    subsequent successful --rerun completes and removes the stale debug file."""
+    data_dir = pipeline_env
+    dataset_id = "e2e-test"
+
+    from latentscope.scripts.ingest import ingest
+    ingest(dataset_id, make_input_df(), text_column="text")
+
+    import latentscope.scripts.embed as embed_mod
+
+    class CrashingProvider(FakeEmbedProvider):
+        calls = 0
+
+        def embed(self, batch, dimensions=None):
+            CrashingProvider.calls += 1
+            if CrashingProvider.calls > 1:
+                raise RuntimeError("simulated crash")
+            return super().embed(batch, dimensions)
+
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: CrashingProvider())
+    with pytest.raises(SystemExit):
+        embed_mod.embed(dataset_id, "text", "fake-test-model", prefix=None,
+                        rerun=None, dimensions=None, batch_size=50)
+
+    embedding_dir = os.path.join(data_dir, dataset_id, "embeddings")
+    debug_path = os.path.join(embedding_dir, "embedding-001-batch-1.parquet")
+    assert os.path.exists(debug_path)
+    out = capsys.readouterr().out
+    # the failure message names the exact resume command
+    assert "ls-embed e2e-test text fake-test-model --rerun embedding-001" in out
+
+    # resume with a healthy provider: run completes and cleans the debug file
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeEmbedProvider())
+    embed_mod.embed(dataset_id, "text", "fake-test-model", prefix=None,
+                    rerun="embedding-001", dimensions=None, batch_size=50)
+    assert not os.path.exists(debug_path)
+    out = capsys.readouterr().out
+    assert "cleaned up stale debug batch file embedding-001-batch-1.parquet" in out
+    assert os.path.exists(os.path.join(embedding_dir, "embedding-001.json"))
+
+    from latentscope.util.embedding_store import get_embedding_count
+    n_total = N_PER_TOPIC * len(TOPICS)
+    assert get_embedding_count(data_dir, dataset_id, "embedding-001") == n_total
+
+
+# ---------------------------------------------------------------------------
+# max_seq_length OOM preflight (#143)
+# ---------------------------------------------------------------------------
+
+class FakeUncappedProvider(FakeEmbedProvider):
+    """FakeEmbedProvider whose inner model advertises a huge max_seq_length,
+    like sentence-transformers models with no practical sequence cap."""
+
+    class _InnerModel:
+        max_seq_length = 8192
+
+    def __init__(self, dim=DIM):
+        super().__init__(dim)
+        self.model = self._InnerModel()
+
+
+def test_embed_warns_when_max_seq_length_uncapped(pipeline_env, monkeypatch, capsys):
+    """#143: an uncapped model without --max_seq_length gets a prominent OOM
+    warning (print-only; the sequence length is never silently capped)."""
+    dataset_id = "preflight"
+    import latentscope.scripts.embed as embed_mod
+    from latentscope.scripts.ingest import ingest
+
+    ingest(dataset_id, make_input_df(n_per_topic=2), text_column="text")
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeUncappedProvider())
+    embed_mod.embed(dataset_id, "text", "fake-uncapped", prefix=None, rerun=None,
+                    dimensions=None, batch_size=5)
+    out = capsys.readouterr().out
+    assert "effective max_seq_length: 8192" in out
+    assert "WARNING" in out
+    assert "--max_seq_length 512 --batch_size 32" in out
+
+
+def test_embed_no_warning_when_user_caps_max_seq_length(pipeline_env, monkeypatch,
+                                                        capsys):
+    dataset_id = "preflight-capped"
+    import latentscope.scripts.embed as embed_mod
+    from latentscope.scripts.ingest import ingest
+
+    ingest(dataset_id, make_input_df(n_per_topic=2), text_column="text")
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeUncappedProvider())
+    embed_mod.embed(dataset_id, "text", "fake-uncapped", prefix=None, rerun=None,
+                    dimensions=None, batch_size=5, max_seq_length=512)
+    out = capsys.readouterr().out
+    assert "can exhaust MPS/CUDA memory" not in out
 
 
 def test_make_token_counter_uses_provider_tokenizer():

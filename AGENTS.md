@@ -103,7 +103,7 @@ tiny dataset, embeds it on CPU, runs the whole pipeline, and verifies search.
 | ingest | `ls-ingest <ds> --path <file-or-image-dir> --text_column <col>` (or a DataFrame via the library API) | `input.parquet`, `meta.json` (column detection) |
 | embed | `ls-embed <ds> <col> <model_id> [--task] [--prefix] [--dimensions] [--batch_size] [--max_seq_length]` | `embeddings/embedding-NNN.*` (LanceDB) |
 | umap | `ls-umap <ds> <embedding_id> <neighbors> <min_dist> [--save --transform-from --align --register-to --name --description]` (growing datasets: docs/umap.md) | `umaps/umap-NNN.*` (x,y in [-1,1]) |
-| cluster | `ls-cluster <ds> <umap_id> <samples> <min_samples> <epsilon> [--method] [--cluster_on] [--name]` | `clusters/cluster-NNN.*` + `…-labels-default.parquet` |
+| cluster | `ls-cluster <ds> <umap_id> <samples> <min_samples> <epsilon> [--method] [--cluster_on] [--assign-noise] [--seed] [--name]` | `clusters/cluster-NNN.*` + `…-labels-default.parquet` (noise → an "Unclustered" cluster unless `--assign-noise`) |
 | label | `ls-label <ds> <text_col> <cluster_id> <chat_model_id> <samples> <context>` | `clusters/<cluster>-labels-NNN.parquet` |
 | scope | `ls-scope <ds> <embedding_id> <umap_id> <cluster_id> <labels_id> "<label>" "<desc>"` | `scopes/scopes-NNN.*` + per-scope LanceDB |
 | atlas | `ls-sprite-atlas <ds> <scope_id> <image_column>` (image datasets only) | tiled image pyramid for the image map |
@@ -176,6 +176,16 @@ the auto prompt (they don't stack), for models that use raw instruction prefixes
 input space with `--cluster_on {umap,embedding}` — cluster on the 2D projection
 (spatially coherent) or the high-dim embeddings (semantically tighter). EVoC and
 HDBSCAN find the cluster count for you; kmeans/gmm need it.
+
+**Noise is honest by default**: HDBSCAN/EVoC noise points land in an explicit
+**"Unclustered"** cluster (empty hull, excluded from LLM labeling) instead of
+being silently reassigned to the nearest centroid — expect one when a run
+prints a `NOISE: N points (P%)` line. Pass `--assign-noise` for the old
+reassignment behavior. Steering: `--seed` (reproducible evoc/kmeans/gmm),
+`--approx_n_clusters` / `--base_n_clusters` (evoc granularity targets), and
+note HDBSCAN's `min_cluster_size` has **cliff behavior** (a small bump can
+collapse dozens of clusters into a few) while `min_samples 1` reduces noise
+without collapsing — see `docs/clustering.md`.
 
 ---
 
