@@ -167,6 +167,76 @@ def test_cluster_on_explicit_umap_recorded(umapped_dataset):
     assert meta["n_clusters"] == 4
 
 
+@pytest.fixture
+def umapped_dataset_3d(tmp_data_dir, monkeypatch):
+    """ingest -> embed (fake) -> 3D umap, leaving a dataset ready to cluster.
+
+    Mirrors ``umapped_dataset`` but projects to --dimensions 3 so the umap
+    parquet carries an x, y, z column set (the feature/3d path)."""
+    monkeypatch.setenv("LATENT_SCOPE_DATA", tmp_data_dir)
+    monkeypatch.setenv("LATENT_SCOPE_NO_DOTENV", "1")
+
+    import latentscope.scripts.embed as embed_mod
+    monkeypatch.setattr(embed_mod, "get_embedding_model",
+                        lambda model_id: FakeEmbedProvider())
+
+    from latentscope.scripts.embed import embed
+    from latentscope.scripts.ingest import ingest
+    from latentscope.scripts.umapper import umapper
+
+    dataset_id = "cluster-methods-3d"
+    ingest(dataset_id, make_input_df(), text_column="text")
+    embed(dataset_id, "text", "fake-test-model", prefix=None, rerun=None,
+          dimensions=None, batch_size=50)
+    umapper(dataset_id, "embedding-001", neighbors=10, min_dist=0.1, dimensions=3)
+    return tmp_data_dir, dataset_id
+
+
+def test_cluster_on_3d_umap_uses_all_three_axes(umapped_dataset_3d, monkeypatch):
+    """A 3D umap (x, y, z) must be clustered on all three axes for
+    ``cluster_on='umap'`` so labels match the 3D geometry, not a 2D shadow."""
+    data_dir, dataset_id = umapped_dataset_3d
+    import latentscope.scripts.cluster as cluster_mod
+    from latentscope.scripts.cluster import clusterer
+
+    captured = {}
+    real_kmeans = cluster_mod._run_kmeans
+
+    def spy_kmeans(embeddings, n_clusters, use_cuml=False):
+        captured["shape"] = getattr(embeddings, "shape", None)
+        return real_kmeans(embeddings, n_clusters, use_cuml=use_cuml)
+
+    monkeypatch.setattr(cluster_mod, "_run_kmeans", spy_kmeans)
+
+    clusterer(dataset_id, "umap-001", samples=3, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="kmeans")
+    # 3D umap -> clustering input is (n, 3), not the 2D (n, 2) shadow.
+    assert captured["shape"] is not None
+    assert captured["shape"][1] == 3
+
+
+def test_cluster_on_2d_umap_uses_two_axes(umapped_dataset, monkeypatch):
+    """Regression guard: the default 2D umap path still clusters on exactly the
+    (n, 2) x/y projection (byte-identical to pre-3D behavior)."""
+    data_dir, dataset_id = umapped_dataset
+    import latentscope.scripts.cluster as cluster_mod
+    from latentscope.scripts.cluster import clusterer
+
+    captured = {}
+    real_kmeans = cluster_mod._run_kmeans
+
+    def spy_kmeans(embeddings, n_clusters, use_cuml=False):
+        captured["shape"] = getattr(embeddings, "shape", None)
+        return real_kmeans(embeddings, n_clusters, use_cuml=use_cuml)
+
+    monkeypatch.setattr(cluster_mod, "_run_kmeans", spy_kmeans)
+
+    clusterer(dataset_id, "umap-001", samples=3, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="kmeans")
+    assert captured["shape"] is not None
+    assert captured["shape"][1] == 2
+
+
 def test_evoc_node_embedding_dim_caps_low_dim_input():
     """EVoC PCA-inits its node embedding with up to 15 components; on 2-D umap
     input the dim must be capped at the feature count or PCA raises."""
