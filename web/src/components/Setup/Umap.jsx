@@ -338,7 +338,7 @@ function Umap() {
 
               <Button
                 type="submit"
-                color={umap ? 'secondary' : 'primary'}
+                color="primary"
                 disabled={!!umapJob}
                 text="New UMAP"
               ></Button>

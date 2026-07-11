@@ -167,6 +167,274 @@ def test_cluster_on_explicit_umap_recorded(umapped_dataset):
     assert meta["n_clusters"] == 4
 
 
+# ---------------------------------------------------------------------------
+# Noise handling (#143): default keeps noise as an "Unclustered" cluster;
+# --assign-noise restores the old nearest-centroid reassignment.
+# ---------------------------------------------------------------------------
+
+def _plant_noise_labels(monkeypatch, labels):
+    """Force _run_hdbscan to return a fixed label array so noise is deterministic."""
+    import numpy as np
+
+    import latentscope.scripts.cluster as cluster_mod
+    fixed = np.asarray(labels)
+    monkeypatch.setattr(cluster_mod, "_run_hdbscan",
+                        lambda *args, **kwargs: fixed.copy())
+
+
+def _read_default_labels(data_dir, dataset_id, cluster_id="cluster-001"):
+    return pd.read_parquet(os.path.join(data_dir, dataset_id, "clusters",
+                                        f"{cluster_id}-labels-default.parquet"))
+
+
+def test_noise_kept_as_unclustered_cluster_by_default(umapped_dataset, monkeypatch,
+                                                      capsys):
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    # 2 real clusters + 20 noise points -> Unclustered gets dense id 2
+    labels = [0] * 50 + [1] * 50 + [-1] * 20
+    _plant_noise_labels(monkeypatch, labels)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    df = _read_cluster_df(data_dir, dataset_id)
+    # noise became the extra dense cluster id 2; raw labels stay honest
+    assert (df["cluster"] >= 0).all()
+    assert df["cluster"].tolist() == [0] * 50 + [1] * 50 + [2] * 20
+    assert df["raw_cluster"].tolist() == labels
+
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert meta["assign_noise"] is False
+    assert meta["unclustered_cluster"] == 2
+    assert meta["n_clusters"] == 2  # real clusters only
+    assert meta["n_noise"] == 20
+
+    labels_df = _read_default_labels(data_dir, dataset_id)
+    assert len(labels_df) == 3
+    assert labels_df.loc[2, "label"] == "Unclustered"
+    assert len(labels_df.loc[2, "hull"]) == 0  # no hull around scattered noise
+    assert sorted(labels_df.loc[2, "indices"]) == list(range(100, 120))
+    assert labels_df.loc[0, "label"] == "Cluster 0"
+
+    out = capsys.readouterr().out
+    assert "NOISE: 20 points (16.7% of 120)" in out
+    assert "--assign-noise" in out
+
+    # scope must handle the Unclustered cluster (positional label lookup) and
+    # its empty hull without errors
+    from latentscope.scripts.scope import scope
+    scope(dataset_id, "embedding-001", "umap-001", "cluster-001",
+          "default", "noise scope", "unclustered end-to-end")
+    scope_df = pd.read_parquet(os.path.join(
+        data_dir, dataset_id, "scopes", "scopes-001.parquet"))
+    assert (scope_df.loc[100:119, "label"] == "Unclustered").all()
+    with open(os.path.join(data_dir, dataset_id, "scopes", "scopes-001.json")) as f:
+        scope_meta = json.load(f)
+    unclustered_lookup = [c for c in scope_meta["cluster_labels_lookup"]
+                          if c["label"] == "Unclustered"]
+    assert len(unclustered_lookup) == 1
+    assert unclustered_lookup[0]["hull"] == []
+
+
+def test_unclustered_id_never_collides_with_non_dense_labels(umapped_dataset, monkeypatch):
+    """Non-dense label sets (a gap at 0 — possible via the `column` path or an
+    unexpected backend) must not merge noise into a real cluster: the
+    Unclustered id is max(labels)+1, not len(labels)."""
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    # real clusters 1 and 2 (0 unused) + noise: len(non_noise)=2 would collide
+    # with real cluster 2; max+1=3 must be chosen instead
+    labels = [1] * 50 + [2] * 50 + [-1] * 20
+    _plant_noise_labels(monkeypatch, labels)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    df = _read_cluster_df(data_dir, dataset_id)
+    assert df["cluster"].tolist() == [1] * 50 + [2] * 50 + [3] * 20
+    # real cluster 2 kept exactly its own 50 points
+    assert (df["cluster"] == 2).sum() == 50
+
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert meta["unclustered_cluster"] == 3
+
+
+def test_assign_noise_flag_restores_centroid_reassignment(umapped_dataset,
+                                                          monkeypatch, capsys):
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    labels = [0] * 50 + [1] * 50 + [-1] * 20
+    _plant_noise_labels(monkeypatch, labels)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan",
+              assign_noise=True)
+
+    df = _read_cluster_df(data_dir, dataset_id)
+    # every noise point went to one of the two real clusters; no extra cluster
+    assert (df["cluster"] >= 0).all()
+    assert set(df["cluster"].unique()) == {0, 1}
+    assert df["raw_cluster"].tolist() == labels
+
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert meta["assign_noise"] is True
+    assert "unclustered_cluster" not in meta
+    assert meta["n_clusters"] == 2
+    assert meta["n_noise"] == 20
+
+    labels_df = _read_default_labels(data_dir, dataset_id)
+    assert len(labels_df) == 2
+    assert "Unclustered" not in labels_df["label"].tolist()
+
+    out = capsys.readouterr().out
+    assert "NOISE: 20 points (16.7% of 120) reassigned" in out
+
+
+def test_all_noise_becomes_single_unclustered_cluster(umapped_dataset, monkeypatch):
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    _plant_noise_labels(monkeypatch, [-1] * N_TOTAL)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    df = _read_cluster_df(data_dir, dataset_id)
+    assert (df["cluster"] == 0).all()
+    assert (df["raw_cluster"] == -1).all()
+
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert meta["unclustered_cluster"] == 0
+    assert meta["n_clusters"] == 0
+    assert meta["n_noise"] == N_TOTAL
+
+    labels_df = _read_default_labels(data_dir, dataset_id)
+    assert len(labels_df) == 1
+    assert labels_df.loc[0, "label"] == "Unclustered"
+    assert len(labels_df.loc[0, "hull"]) == 0
+
+
+def test_zero_noise_adds_no_unclustered_cluster(umapped_dataset):
+    """kmeans never emits -1: no Unclustered cluster and no meta key."""
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    clusterer(dataset_id, "umap-001", samples=3, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="kmeans")
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert meta["assign_noise"] is False
+    assert "unclustered_cluster" not in meta
+    labels_df = _read_default_labels(data_dir, dataset_id)
+    assert "Unclustered" not in labels_df["label"].tolist()
+
+
+def test_labeler_skips_llm_for_unclustered_cluster(umapped_dataset, monkeypatch):
+    """LLM labeling must not summarize the noise bucket: it keeps the literal
+    label "Unclustered" and the model is only called for real clusters."""
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    labels = [0] * 50 + [1] * 50 + [-1] * 20
+    _plant_noise_labels(monkeypatch, labels)
+    clusterer(dataset_id, "umap-001", samples=5, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="hdbscan")
+
+    import latentscope.scripts.label_clusters as label_mod
+
+    calls = []
+
+    class FakeChatModel:
+        encoder = None
+
+        def load_model(self):
+            pass
+
+        def summarize(self, items, context):
+            calls.append(items)
+            return "Fake Topic Label"
+
+    monkeypatch.setattr(label_mod, "get_chat_model",
+                        lambda model_id: FakeChatModel())
+    label_mod.labeler(dataset_id, "text", "cluster-001", "fake-chat",
+                      samples=0, context="", rerun=None)
+
+    labeled = pd.read_parquet(os.path.join(
+        data_dir, dataset_id, "clusters", "cluster-001-labels-001.parquet"))
+    assert labeled.loc[0, "label"] == "Fake Topic Label"
+    assert labeled.loc[1, "label"] == "Fake Topic Label"
+    assert labeled.loc[2, "label"] == "Unclustered"
+    assert bool(labeled.loc[2, "labeled"]) is True
+    # the LLM was only called for the two real clusters, never the noise bucket
+    assert len(calls) == 2
+
+
+# ---------------------------------------------------------------------------
+# Remaining EVoC knobs + seed (#143)
+# ---------------------------------------------------------------------------
+
+def test_run_evoc_forwards_new_knobs(monkeypatch):
+    """base_n_clusters / min_samples / seed(random_state) reach evoc.EVoC."""
+    import sys
+    import types
+
+    import numpy as np
+
+    captured = {}
+
+    class FakeEVoC:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def fit_predict(self, X):
+            return np.zeros(len(X), dtype=int)
+
+    fake_evoc = types.ModuleType("evoc")
+    fake_evoc.EVoC = FakeEVoC
+    monkeypatch.setitem(sys.modules, "evoc", fake_evoc)
+
+    from latentscope.scripts.cluster import _run_evoc
+    embeddings = np.random.default_rng(0).normal(size=(10, 32))
+    _run_evoc(embeddings, samples=7, min_samples=3, n_neighbors=20,
+              noise_level=0.4, approx_n_clusters=6, base_n_clusters=12, seed=99)
+
+    assert captured["base_min_cluster_size"] == 7
+    assert captured["min_samples"] == 3
+    assert captured["n_neighbors"] == 20
+    assert captured["noise_level"] == 0.4
+    assert captured["approx_n_clusters"] == 6
+    assert captured["base_n_clusters"] == 12
+    assert captured["random_state"] == 99
+
+
+def test_seed_recorded_in_meta_and_reproducible_kmeans(umapped_dataset):
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    clusterer(dataset_id, "umap-001", samples=3, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="kmeans",
+              seed=123)
+    clusterer(dataset_id, "umap-001", samples=3, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="kmeans",
+              seed=123)
+
+    meta = _read_cluster_meta(data_dir, dataset_id, "cluster-001")
+    assert meta["seed"] == 123
+    # same seed -> identical assignments across runs
+    first = _read_cluster_df(data_dir, dataset_id, "cluster-001")
+    second = _read_cluster_df(data_dir, dataset_id, "cluster-002")
+    assert first["cluster"].tolist() == second["cluster"].tolist()
+
+
+def test_seed_omitted_from_meta_when_unset(umapped_dataset):
+    data_dir, dataset_id = umapped_dataset
+    from latentscope.scripts.cluster import clusterer
+
+    clusterer(dataset_id, "umap-001", samples=3, min_samples=3,
+              cluster_selection_epsilon=0.0, column=None, method="gmm")
+    meta = _read_cluster_meta(data_dir, dataset_id)
+    assert "seed" not in meta
+
+
 def test_evoc_node_embedding_dim_caps_low_dim_input():
     """EVoC PCA-inits its node embedding with up to 15 components; on 2-D umap
     input the dim must be capped at the feature count or PCA raises."""

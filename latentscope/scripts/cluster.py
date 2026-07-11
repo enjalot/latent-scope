@@ -58,6 +58,16 @@ def main():
     parser.add_argument('--approx_n_clusters', type=int, default=None,
                         help='EVoC: aim for approximately this many clusters '
                              '(picks the closest cluster layer)')
+    parser.add_argument('--base_n_clusters', type=int, default=None,
+                        help='EVoC: target exactly this many clusters at the '
+                             'base (finest) layer of the hierarchy')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='Random seed for evoc/kmeans/gmm (reproducible runs)')
+    parser.add_argument('--assign-noise', dest='assign_noise', action='store_true',
+                        help='Reassign HDBSCAN/EVoC noise points (-1) to their '
+                             'nearest cluster centroid (pre-1.0 behavior). By '
+                             'default noise points are kept as a separate '
+                             '"Unclustered" cluster.')
     parser.add_argument('--name', type=str, default=None,
                         help='Human-friendly title for this cluster run')
     parser.add_argument('--description', type=str, default=None,
@@ -69,6 +79,8 @@ def main():
               method=args.method, cluster_on=args.cluster_on,
               n_neighbors=args.n_neighbors, noise_level=args.noise_level,
               approx_n_clusters=args.approx_n_clusters,
+              base_n_clusters=args.base_n_clusters, seed=args.seed,
+              assign_noise=args.assign_noise,
               name=args.name, description=args.description)
 
 
@@ -105,7 +117,8 @@ def _evoc_node_embedding_dim(n_features, n_neighbors):
     return None
 
 
-def _run_evoc(embeddings, samples, n_neighbors=15, noise_level=0.5, approx_n_clusters=None):
+def _run_evoc(embeddings, samples, min_samples=5, n_neighbors=15, noise_level=0.5,
+              approx_n_clusters=None, base_n_clusters=None, seed=None):
     """Run EVoC clustering on the input vectors (always CPU — no cuML equivalent)."""
     import evoc
     kwargs = {}
@@ -114,11 +127,17 @@ def _run_evoc(embeddings, samples, n_neighbors=15, noise_level=0.5, approx_n_clu
         kwargs['node_embedding_dim'] = node_dim
     if approx_n_clusters is not None:
         kwargs['approx_n_clusters'] = approx_n_clusters
+    if base_n_clusters is not None:
+        kwargs['base_n_clusters'] = base_n_clusters
+    if seed is not None:
+        kwargs['random_state'] = seed
     print(f"Running EVoC clustering with base_min_cluster_size={samples}, "
-          f"n_neighbors={n_neighbors}, noise_level={noise_level}"
+          f"min_samples={min_samples}, n_neighbors={n_neighbors}, "
+          f"noise_level={noise_level}"
           + (f", {kwargs}" if kwargs else ""))
     clusterer = evoc.EVoC(
         base_min_cluster_size=samples,
+        min_samples=min_samples,
         n_neighbors=n_neighbors,
         noise_level=noise_level,
         **kwargs,
@@ -159,18 +178,19 @@ def _run_hdbscan(embeddings, samples, min_samples, cluster_selection_epsilon, us
     return clusterer.labels_
 
 
-def _run_kmeans(embeddings, n_clusters, use_cuml=False):
+def _run_kmeans(embeddings, n_clusters, use_cuml=False, seed=None):
     """Run KMeans clustering, on the GPU (cuML) when available, else sklearn.
 
     ``n_clusters`` is mapped from the ``samples`` positional CLI argument.
     """
     import numpy as np
 
+    random_state = 42 if seed is None else seed
     if use_cuml:
         try:
             from cuml.cluster import KMeans as cuKMeans
             print(f"Running cuML KMeans clustering with n_clusters={n_clusters}")
-            km = cuKMeans(n_clusters=n_clusters, random_state=42)
+            km = cuKMeans(n_clusters=n_clusters, random_state=random_state)
             labels = km.fit_predict(np.asarray(embeddings, dtype=np.float32))
             return _as_numpy_labels(labels)
         except Exception as e:
@@ -178,25 +198,27 @@ def _run_kmeans(embeddings, n_clusters, use_cuml=False):
 
     from sklearn.cluster import KMeans
     print(f"Running KMeans clustering with n_clusters={n_clusters} (sklearn/CPU)")
-    km = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
+    km = KMeans(n_clusters=n_clusters, n_init=10, random_state=random_state)
     return km.fit_predict(embeddings)
 
 
-def _run_gmm(embeddings, n_clusters):
+def _run_gmm(embeddings, n_clusters, seed=None):
     """Run Gaussian Mixture Model clustering (sklearn/CPU — no stable cuML equivalent).
 
     ``n_clusters`` (number of mixture components) is mapped from the ``samples``
     positional CLI argument.
     """
     from sklearn.mixture import GaussianMixture
+    random_state = 42 if seed is None else seed
     print(f"Running GMM clustering with n_components={n_clusters} (sklearn/CPU)")
-    gmm = GaussianMixture(n_components=n_clusters, random_state=42)
+    gmm = GaussianMixture(n_components=n_clusters, random_state=random_state)
     return gmm.fit_predict(embeddings)
 
 
 def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsilon, column,
               method='evoc', cluster_on=None, n_neighbors=15, noise_level=0.5,
-              approx_n_clusters=None, name=None, description=None):
+              approx_n_clusters=None, base_n_clusters=None, seed=None,
+              assign_noise=False, name=None, description=None):
     DATA_DIR = get_data_dir()
     cluster_dir = os.path.join(DATA_DIR, dataset_id, "clusters")
     # Check if clusters directory exists, if not, create it
@@ -258,39 +280,74 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
             cluster_input = umap_embeddings
 
         if method == 'evoc':
-            cluster_labels = _run_evoc(cluster_input, samples,
+            cluster_labels = _run_evoc(cluster_input, samples, min_samples=min_samples,
                                        n_neighbors=n_neighbors, noise_level=noise_level,
-                                       approx_n_clusters=approx_n_clusters)
+                                       approx_n_clusters=approx_n_clusters,
+                                       base_n_clusters=base_n_clusters, seed=seed)
         elif method == 'kmeans':
-            cluster_labels = _run_kmeans(cluster_input, samples, use_cuml=res.use_cuml)
+            cluster_labels = _run_kmeans(cluster_input, samples, use_cuml=res.use_cuml,
+                                         seed=seed)
         elif method == 'gmm':
-            cluster_labels = _run_gmm(cluster_input, samples)
+            cluster_labels = _run_gmm(cluster_input, samples, seed=seed)
         else:  # hdbscan
             cluster_labels = _run_hdbscan(cluster_input, samples, min_samples,
                                           cluster_selection_epsilon, use_cuml=res.use_cuml)
 
     # copy cluster labels to another array
+    cluster_labels = np.asarray(cluster_labels).copy()
     raw_cluster_labels = cluster_labels.copy()
 
-    # Determine points with no assigned cluster
+    # Determine points with no assigned cluster. kmeans/gmm never emit -1, so
+    # noise handling cleanly no-ops for them.
     unique_labels = np.unique(cluster_labels)
     non_noise_labels = unique_labels[unique_labels != -1]
-    centroids = [umap_embeddings[cluster_labels == label].mean(axis=0) for label in non_noise_labels]
-
-    # Assign noise points to the closest cluster centroid. kmeans/gmm never emit
-    # -1, so noise_points is empty and this block cleanly no-ops for them.
     noise_points = umap_embeddings[cluster_labels == -1]
-    if non_noise_labels.shape[0] > 0 and noise_points.shape[0] > 0:
-        closest_centroid_indices = np.argmin(cdist(noise_points, centroids), axis=1)
+    n_noise = noise_points.shape[0]
 
-        # Update cluster_labels with the new assignments for noise points
-        noise_indices = np.where(cluster_labels == -1)[0]
-        new_assignments = [non_noise_labels[index] for index in closest_centroid_indices]
-        cluster_labels[noise_indices] = new_assignments
+    # Noise handling (issue #143). Default: keep noise honest as an explicit
+    # extra "Unclustered" cluster with the next dense id, so downstream code
+    # (positional label lookup in scope.py, LLM labeling) still sees dense ids
+    # 0..n with no -1. --assign-noise restores the pre-1.0 behavior of
+    # reassigning every noise point to its nearest non-noise cluster centroid.
+    unclustered_cluster = None
+    if n_noise > 0:
+        noise_pct = 100.0 * n_noise / cluster_labels.shape[0]
+        if assign_noise and non_noise_labels.shape[0] > 0:
+            centroids = [umap_embeddings[cluster_labels == label].mean(axis=0)
+                         for label in non_noise_labels]
+            closest_centroid_indices = np.argmin(cdist(noise_points, centroids), axis=1)
 
+            # Update cluster_labels with the new assignments for noise points
+            noise_indices = np.where(cluster_labels == -1)[0]
+            new_assignments = [non_noise_labels[index] for index in closest_centroid_indices]
+            cluster_labels[noise_indices] = new_assignments
+            print(f"NOISE: {n_noise} points ({noise_pct:.1f}% of "
+                  f"{cluster_labels.shape[0]}) reassigned to their nearest "
+                  "cluster centroid (--assign-noise); omit the flag to keep "
+                  "them as a separate 'Unclustered' cluster instead")
+        else:
+            # All-noise runs (non_noise_labels empty) also land here — even
+            # with --assign-noise there are no centroids to reassign to, so
+            # everything becomes one big Unclustered cluster with id 0.
+            # max+1 (not len) so a non-dense label set (e.g. the `column`
+            # path supplying labels {1, 2}) can never collide with a real
+            # cluster id; for dense 0..n-1 output the two are identical.
+            unclustered_cluster = (
+                int(non_noise_labels.max()) + 1 if non_noise_labels.shape[0] > 0 else 0
+            )
+            cluster_labels[cluster_labels == -1] = unclustered_cluster
+            if assign_noise:
+                hint = ("--assign-noise had no effect: there are no non-noise "
+                        "clusters to reassign to")
+            else:
+                hint = ("pass --assign-noise to reassign them to their nearest "
+                        "cluster centroid instead")
+            print(f"NOISE: {n_noise} points ({noise_pct:.1f}% of "
+                  f"{cluster_labels.shape[0]}) kept as a separate 'Unclustered' "
+                  f"cluster (id {unclustered_cluster}); {hint}")
 
     print("n_clusters:", len(non_noise_labels))
-    print("noise points assigned to clusters:", len(noise_points))
+    print("noise points:", n_noise)
 
     # save umap embeddings to a parquet file with columns x,y
     df = pd.DataFrame({"cluster": cluster_labels, "raw_cluster": raw_cluster_labels})
@@ -349,13 +406,20 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
         "min_samples": min_samples,
         "cluster_selection_epsilon": cluster_selection_epsilon,
         "n_clusters": len(non_noise_labels),
-        "n_noise": len(noise_points),
+        "n_noise": n_noise,
+        "assign_noise": assign_noise,
     }
+    if unclustered_cluster is not None:
+        meta["unclustered_cluster"] = unclustered_cluster
     if method == 'evoc':
         meta["n_neighbors"] = n_neighbors
         meta["noise_level"] = noise_level
         if approx_n_clusters is not None:
             meta["approx_n_clusters"] = approx_n_clusters
+        if base_n_clusters is not None:
+            meta["base_n_clusters"] = base_n_clusters
+    if seed is not None and method in ('evoc', 'kmeans', 'gmm'):
+        meta["seed"] = seed
     if name is not None:
         meta["name"] = name
     if description is not None:
@@ -371,9 +435,17 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     # iterate over the clusters and create a row for each in a new dataframe with a label, description and array of indicies
     slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
     for cluster_label, indices in tqdm(cluster_indices.items()):
-        label = f"Cluster {cluster_label}"
-        description = f"This is cluster {cluster_label} with {len(indices)} items."
-        hull = hulls_by_label.get(cluster_label, [])
+        if unclustered_cluster is not None and cluster_label == unclustered_cluster:
+            # The noise bucket: give it an honest label and no hull — a convex
+            # hull around scattered noise would cover most of the map.
+            label = "Unclustered"
+            description = (f"{len(indices)} noise points the clustering "
+                           "algorithm did not assign to any cluster.")
+            hull = []
+        else:
+            label = f"Cluster {cluster_label}"
+            description = f"This is cluster {cluster_label} with {len(indices)} items."
+            hull = hulls_by_label.get(cluster_label, [])
         new_row = pd.DataFrame({'label': [label], 'description': [description], 'indices': [list(indices)], 'hull': [hull]})
         slides_df = pd.concat([slides_df, new_row], ignore_index=True)
 

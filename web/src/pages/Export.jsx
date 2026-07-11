@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Button } from 'react-element-forge';
 import SubNav from '../components/SubNav';
 import { apiService, apiUrl } from '../lib/apiService';
 import HFUpload from '../components/HFUpload';
@@ -90,6 +91,17 @@ function Export() {
     navigate(`/datasets/${datasetId}/export/${e.target.value}`);
   };
 
+  const [combining, setCombining] = useState(false);
+  const handleCombine = useCallback(() => {
+    setCombining(true);
+    apiService
+      .combineExport(datasetId, scopeId)
+      .then(() => apiService.fetchExportList(datasetId))
+      .then(setDatasetFiles)
+      .catch(console.error)
+      .finally(() => setCombining(false));
+  }, [datasetId, scopeId]);
+
   return (
     <div className={styles['page']}>
       <SubNav dataset={dataset} scope={scope} scopes={scopes} onScopeChange={navigateToScope} />
@@ -113,6 +125,15 @@ function Export() {
             cluster and label from clustering and labeling) and the metadata into a single JSON.
           </p>
           <ul>{scopeFiles.map(fileLink)}</ul>
+          {scopeId ? (
+            <Button
+              color="secondary"
+              size="small"
+              onClick={handleCombine}
+              disabled={combining}
+              text={combining ? 'Generating…' : 'Generate combined export (includes tags)'}
+            />
+          ) : null}
         </div>
         {scopeId ? (
           <div className={styles['code-snippets']}>

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from 'react-tooltip';
-import { Button, Icon } from 'react-element-forge';
+import { Button, Icon, Switch } from 'react-element-forge';
 
 import JobProgress from '../Job/Progress';
 import { useStartJobPolling } from '../Job/Run';
@@ -36,6 +36,14 @@ const METHOD_LABELS = {
 // maps to n_clusters); evoc/hdbscan use the same positional as min cluster size.
 const isCentroidMethod = (method) => method === 'kmeans' || method === 'gmm';
 
+// evoc/hdbscan can leave points unclustered ("noise"); kmeans/gmm always
+// assign every point, so the assign-noise toggle only applies to the former.
+const emitsNoise = (method) => method === 'evoc' || method === 'hdbscan';
+
+// The backend wires --seed through to evoc/kmeans/gmm; hdbscan has no
+// random_state so we don't offer it there.
+const supportsSeed = (method) => method !== 'hdbscan';
+
 // This component is responsible for the embeddings state
 // New embeddings update the list
 function Cluster() {
@@ -62,6 +70,9 @@ function Cluster() {
   const [cluster, setCluster] = useState(null);
   const [method, setMethod] = useState('evoc');
   const [clusterOn, setClusterOn] = useState(DEFAULT_CLUSTER_ON['evoc']);
+  // Off by default: noise points stay in an explicit "Unclustered" cluster
+  // (the new backend default); on = reassign them to their nearest centroid.
+  const [assignNoise, setAssignNoise] = useState(false);
   const [qualityMetrics, setQualityMetrics] = useState({});
 
   // creation form collapse: null until the first clusters fetch resolves,
@@ -74,6 +85,9 @@ function Cluster() {
     const m = e.target.value;
     setMethod(m);
     setClusterOn(DEFAULT_CLUSTER_ON[m] || 'umap');
+    // The assign-noise switch unmounts for kmeans/gmm; clear the state so a
+    // later remount (back to evoc/hdbscan) matches the unchecked UI.
+    if (!emitsNoise(m)) setAssignNoise(false);
   }, []);
 
   useEffect(() => {
@@ -171,15 +185,24 @@ function Cluster() {
         params.noise_level = data.get('noise_level');
         const approx = data.get('approx_n_clusters');
         if (approx) params.approx_n_clusters = approx;
+        const baseN = data.get('base_n_clusters');
+        if (baseN) params.base_n_clusters = baseN;
       } else if (method === 'hdbscan') {
         params.min_samples = data.get('min_samples');
         params.cluster_selection_epsilon = data.get('cluster_selection_epsilon');
       }
       // kmeans/gmm: only `samples` (= n_clusters) + cluster_on are needed;
       // the server defaults the unused positionals.
+      if (supportsSeed(method)) {
+        const seed = data.get('seed');
+        if (seed) params.seed = seed;
+      }
+      // Only send when checked: the backend default (omitted) keeps noise
+      // points in an explicit "Unclustered" cluster.
+      if (emitsNoise(method) && assignNoise) params.assign_noise = true;
       startClusterJob(params);
     },
-    [startClusterJob, umap, method, clusterOn]
+    [startClusterJob, umap, method, clusterOn, assignNoise]
   );
 
   // Inline rename of an existing cluster run (experiment gallery) without re-running.
@@ -361,6 +384,28 @@ function Cluster() {
                       automatically (which can land on very few clusters for large datasets).
                     </Tooltip>
                   </label>
+                  <label>
+                    <span className={styles['cluster-form-label']}>Base Clusters:</span>
+                    <input
+                      type="number"
+                      name="base_n_clusters"
+                      placeholder="auto"
+                      min="2"
+                      disabled={!!clusterJob || !umap}
+                    />
+                    <span className="tooltip" data-tooltip-id="base_n_clusters">
+                      <Icon name="help-circle" size={14} />
+                    </span>
+                    <Tooltip
+                      id="base_n_clusters"
+                      place="top"
+                      effect="solid"
+                      className="tooltip-area"
+                    >
+                      Number of clusters in the finest-grained (base) layer of EVoC&apos;s
+                      hierarchy. Leave empty to let EVoC choose automatically.
+                    </Tooltip>
+                  </label>
                 </>
               ) : method === 'hdbscan' ? (
                 <>
@@ -404,6 +449,43 @@ function Cluster() {
                   </label>
                 </>
               ) : null}
+              {supportsSeed(method) && (
+                <label>
+                  <span className={styles['cluster-form-label']}>Seed:</span>
+                  <input
+                    type="number"
+                    name="seed"
+                    placeholder="(optional)"
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="cluster_seed">
+                    <Icon name="help-circle" size={14} />
+                  </span>
+                  <Tooltip id="cluster_seed" place="top" effect="solid" className="tooltip-area">
+                    Random seed to make the clustering reproducible. Leave empty for a random run
+                    each time.
+                  </Tooltip>
+                </label>
+              )}
+              {emitsNoise(method) && (
+                <div className={styles['cluster-form-switch']}>
+                  <Switch
+                    onChange={(value) => setAssignNoise(value)}
+                    defaultState={assignNoise}
+                    color="secondary"
+                    label="Reassign noise to nearest cluster"
+                    disabled={!!clusterJob || !umap}
+                  />
+                  <span className="tooltip" data-tooltip-id="assign_noise">
+                    <Icon name="help-circle" size={14} />
+                  </span>
+                  <Tooltip id="assign_noise" place="top" effect="solid" className="tooltip-area">
+                    When on, points the algorithm marks as noise are reassigned to their nearest
+                    cluster centroid. When off (the default), they are kept together in an explicit
+                    &quot;Unclustered&quot; cluster.
+                  </Tooltip>
+                </div>
+              )}
               <label>
                 <span className={styles['cluster-form-label']}>Name:</span>
                 <input
@@ -434,7 +516,7 @@ function Cluster() {
               )}
               <Button
                 type="submit"
-                color={cluster ? 'secondary' : 'primary'}
+                color="primary"
                 disabled={false}
                 text="New Clusters"
               />
@@ -490,10 +572,22 @@ function Cluster() {
                     <>
                       {cl.n_neighbors && <span>Neighbors: {cl.n_neighbors}</span>}
                       {cl.noise_level != null && <span>Noise: {cl.noise_level}</span>}
+                      {cl.base_n_clusters != null && (
+                        <span>Base clusters: {cl.base_n_clusters}</span>
+                      )}
                     </>
                   ) : null}
+                  {cl.seed != null && <span>Seed: {cl.seed}</span>}
                   <span>Clusters: {cl.n_clusters}</span>
-                  <span>Noise points: {cl.n_noise}</span>
+                  <span>
+                    Noise points: {cl.n_noise}
+                    {/* assign_noise is only recorded by newer runs; old metas omit it */}
+                    {cl.n_noise > 0 && cl.assign_noise != null
+                      ? cl.assign_noise
+                        ? ' (reassigned)'
+                        : ' (unclustered)'
+                      : ''}
+                  </span>
                 </>
               )}
               renderMetrics={(cl) =>

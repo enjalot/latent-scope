@@ -51,6 +51,12 @@
   font-family: var(--ls-font-ui);
   text-align: left;
 }
+.cluster-form-switch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ls-space-2);
+}
 
 .item img {
   width: 120px;
