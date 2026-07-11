@@ -16,7 +16,6 @@ const Export = lazy(() => import('./pages/Export'));
 const DataMapPlot = lazy(() => import('./pages/DataMapPlot'));
 
 import 'react-element-forge/dist/style.css';
-import './latentscope--brand-theme.scss';
 
 const env = import.meta.env;
 console.log('ENV', env);

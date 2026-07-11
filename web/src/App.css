@@ -1,26 +1,23 @@
 #root {
-  /* max-width: 1280px; */
   max-width: 100%;
   margin: 0;
-  /* margin: 0 auto; */
-  /* padding: 2rem; */
-  /* text-align: center; */
 }
 
 .page {
-  padding-top: 40px;
-  height: calc(100vh - 93px); /* 40 + 53 (subnav height) */
+  padding-top: var(--ls-nav-height);
+  height: calc(100vh - var(--ls-page-offset));
 }
 
 .docs-banner {
   display: block;
-  padding: 10px;
+  padding: var(--ls-space-2) var(--ls-space-3);
   width: 100%;
-  background-color: salmon;
-  color: black;
+  background-color: var(--color-background-subtle-callout);
+  color: var(--text-color-text-main);
+  border-bottom: 1px solid var(--borders-color-border-1);
   text-decoration: underline;
 }
 
 .tooltip-area {
-  z-index: 300;
+  z-index: var(--ls-z-tooltip);
 }

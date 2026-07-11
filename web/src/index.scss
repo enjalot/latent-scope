@@ -1,85 +1,88 @@
-@import "./latentscope--brand-theme.scss";
+@use './latentscope--brand-theme.scss';
 
+/*
+ * Forge theming layer: aliases the token NAMES react-element-forge consumes onto the
+ * brand-theme primitives. No color literals live here — brand-theme.scss is the single
+ * source of truth for values (light AND dark). See DESIGN.md.
+ */
 :root {
-
-   /**
+  /**
   FONTS
   **/
-  --font-primary: 'Roboto';
-  --font-secondary: 'Inter';
+  --font-primary: 'IBM Plex Sans';
+  --font-secondary: 'IBM Plex Mono';
   --font-backup: 'system-ui';
   /**
-  TYPOGRPAPHY
+  TYPOGRAPHY
   **/
-  --font-primary-weight: 500;
-  --font-secondary-weight: 700;
+  --font-primary-weight: 400;
+  --font-secondary-weight: 400;
   // sizes
-  --font-body-xs: 12;
-  --font-body-sm: 14;
-  --font-body-md: 16;
-  --font-body-lg: 18;
+  --font-body-xs: 0.75rem;
+  --font-body-sm: 0.875rem;
+  --font-body-md: 1rem;
+  --font-body-lg: 1.125rem;
   // mobile sizes
-  --font-body-mobile-md: 14;
-  --font-body-mobile-lg: 16;
+  --font-body-mobile-md: 0.875rem;
+  --font-body-mobile-lg: 1rem;
   // weights
   --font-body-thin-weight: 300;
-  --font-body-regular-weight: 500;
+  --font-body-regular-weight: 400;
   --font-body-semibold-weight: 600;
   --font-body-bold-weight: 700;
   /**
-  AVATAR
+  AVATAR — value in brand-theme
   **/
-  --color-avatar-bg: #E8EFFD;
   /**
   BUTTON
   **/
-  --button-font-size: 1rem;
+  --button-font-size: 0.875rem;
   --button-font-weight: 500;
-  --button-border-radius: 12px;
-  --button-border-stroke: 2px;
-  --button-padding-large: 12px 18px;
-  --button-padding-large-round: 18px;
-  --button-padding-medium: 4px 8px;
-  --button-padding-medium-round: 8px;
-  --button-padding-small: 3px 6px;
-  --button-padding-small-round: 6px;
-  --button-box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  --button-border-radius: var(--ls-radius-2);
+  --button-border-stroke: 1px;
+  --button-padding-large: 10px 16px;
+  --button-padding-large-round: 10px;
+  --button-padding-medium: 6px 12px;
+  --button-padding-medium-round: 6px;
+  --button-padding-small: 3px 8px;
+  --button-padding-small-round: 3px;
+  --button-box-shadow: none;
   /**
   COPY BUTTON
   **/
-  --copy-button-font-size: 0.875rem;
+  --copy-button-font-size: 0.75rem;
   --copy-button-font-weight: 500;
   /**
   CHECKBOX
   **/
   --checkbox-label-font-size: 0.875rem;
-  --checkbox-label-font-weight: 500;
+  --checkbox-label-font-weight: 400;
   /**
   INPUTS
   **/
-  --input-label-font-size: 0.875rem;
+  --input-label-font-size: 0.8125rem;
   --input-label-font-weight: 600;
   --input-font-size: 0.875rem;
   --input-info-font-size: 0.875rem;
-  --input-border-radius: 12px;
-  --input-padding: 12px;
+  --input-border-radius: var(--ls-radius-2);
+  --input-padding: 8px 10px;
   /**
   DROPDOWN
   **/
-  --dropdown-margin-top: 12px;
-  --dropdown-border-radius: 4px;
+  --dropdown-margin-top: 6px;
+  --dropdown-border-radius: var(--ls-radius-2);
   /**
   BADGE
   **/
-  --badge-font-size: 0.875rem;
+  --badge-font-size: 0.75rem;
   --badge-font-weight: 500;
-  --badge-padding: 5px 12px;
-  --badge-border-radius: 56px;
+  --badge-padding: 2px 8px;
+  --badge-border-radius: var(--ls-radius-1);
   /**
   RADIO
   **/
   --radio-label-font-size: 0.875rem;
-  --radio-label-font-weight: 500;
+  --radio-label-font-weight: 400;
   /**
   SWITCH
   **/
@@ -87,13 +90,12 @@
   /**
   TOOLTIP
   **/
-  --tooltip-font-size: 0.875rem;
-  --tooltip-font-weight: 500;
-  --tooltip-width: 250px;
+  --tooltip-font-size: 0.75rem;
+  --tooltip-font-weight: 400;
+  --tooltip-width: 280px;
   /**
   PRIMARY INTERACTION
   **/
-
   --color-interaction-primary: var(--interactions---primary-color-interaction-primary);
   --color-interaction-primary-hover: var(--interactions---primary-color-interaction-primary-hover);
   --color-interaction-primary-active: var(--interactions---primary-color-interaction-primary-active);
@@ -114,29 +116,28 @@
   --color-interaction-secondary-alt-active: var(--interactions---secondary-color-interaction-secondary-active);
   --color-interaction-secondary-alt-disabled: var(--interactions---secondary-color-interaction-secondary-disabled);
   /**
-  DELETE INTERACTION
+  DELETE INTERACTION — aliases the critical set
   **/
   --color-interaction-delete: var(--semantic-color-semantic-critical);
-  --color-interaction-delete-alt: var(--color-semantic-critical-bg-alt);
-  --color-interaction-delete-hover: var(--color-semantic-critical-hover);
-  --color-interaction-delete-active: var(--color-semantic-critical-active);
-  --color-interaction-delete-disabled: var(--color-semantic-critical-disabled);
-  --color-interaction-delete-alt-disabled: var(--color-semantic-critical-disabled);
+  --color-interaction-delete-alt: var(--semantic-color-semantic-critical-bg-alt);
+  --color-interaction-delete-hover: var(--semantic-color-semantic-critical-hover);
+  --color-interaction-delete-active: var(--semantic-color-semantic-critical-active);
+  --color-interaction-delete-disabled: var(--semantic-color-semantic-critical-disabled);
+  --color-interaction-delete-alt-disabled: var(--semantic-color-semantic-critical-disabled);
   /**
-  ALT INTERACTION
+  POS INTERACTION — aliases the success set
   **/
-  --color-interaction-pos: var(--color-semantic-success);
-  --color-interaction-pos-hover: var(--color-semantic-success-hover);
-  --color-interaction-pos-active: var(--color-semantic-success-active);
-  --color-interaction-pos-disabled: var(--color-semantic-success-disabled);
-  --color-interaction-pos-alt: var(--color-text-reverse);
-  --color-interaction-pos-alt-hover: var(--color-semantic-success-hover);
-  --color-interaction-pos-alt-active: var(--color-semantic-success-disabled);
-  --color-interaction-pos-alt-disabled: var(--color-semantic-success-disabled);
+  --color-interaction-pos: var(--semantic-color-semantic-success);
+  --color-interaction-pos-hover: var(--semantic-color-semantic-success-hover);
+  --color-interaction-pos-active: var(--semantic-color-semantic-success-active);
+  --color-interaction-pos-disabled: var(--semantic-color-semantic-success-disabled);
+  --color-interaction-pos-alt: var(--text-color-text-reverse);
+  --color-interaction-pos-alt-hover: var(--semantic-color-semantic-success-hover);
+  --color-interaction-pos-alt-active: var(--semantic-color-semantic-success-disabled);
+  --color-interaction-pos-alt-disabled: var(--semantic-color-semantic-success-disabled);
   /**
   SEMANTIC
   **/
-
   --color-semantic-info: var(--semantic-color-semantic-info);
   --color-semantic-info-hover: var(--semantic-color-semantic-info-hover);
   --color-semantic-info-active: var(--semantic-color-semantic-info-active);
@@ -185,45 +186,20 @@
   --color-neutral-2: var(--neutrals-color-neutral-2);
   --color-neutral-3: var(--neutrals-color-neutral-3);
   /**
-  STATUS
-  **/
-  --color-status-ready: #7ED320;
-  --color-status-offline: #ADA7A8;
-  --color-status-busy: #F19B53;
-  /**
   BACKGROUNDS
   **/
-  --color-background-overlay: rgba(23, 10, 122, 0.4);
-  --color-background-subtle-callout: #E8EFFD;
-  --color-background-modal-overlay: rgba(0, 0, 0, 0.3);
-  --color-background-critical: #F9E1E5;
-  --color-background-neutral-0: #FFFFFF;
-  /**
-  MENU
-  **/
-  --color-interactions-menu: #000000;
-  --color-interactions-menu-hover: #2F2F2F;
-  --color-interactions-menu-inactive: #757575;
-  /**
-  Badge
-  **/
-  --color-badge-primary-bg: #000000;
-  --color-badge-primary-text: #FFFFFF;
-  --color-badge-secondary-bg: #FFFFFF;
-  --color-badge-secondary-text: #000000;
-  /**
-  BUTTON
-  **/
-  --copy-button-text-color: #757575;
+  --color-background-overlay: var(--overlays-color-background-overlay);
+  --color-background-modal-overlay: var(--overlays-color-background-modal-overlay);
+  --color-background-critical: var(--semantic-color-semantic-critical-bg-alt);
+  --color-background-neutral-0: var(--neutrals-color-neutral-0);
 
-
-  font-family: Roboto, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: var(--ls-font-ui);
+  font-size: 16px;
+  line-height: var(--ls-leading-body);
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text-color-text-main);
+  background-color: var(--ls-surface-page);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -234,117 +210,90 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--text-color-text-primary);
   text-decoration: inherit;
+  transition: color var(--ls-dur-fast) var(--ls-ease-out);
 }
 a:hover {
-  color: #535bf2;
+  color: var(--color-interaction-primary-hover);
 }
 
 body {
   margin: 0;
-  /* display: flex; */
-  /* place-items: center; */
   min-width: 320px;
   min-height: 100vh;
   overflow-y: hidden;
   scrollbar-width: none; /* For Firefox */
-  -ms-overflow-style: none; /* For Internet Explorer and Edge */
-  
+  -ms-overflow-style: none;
+
   &::-webkit-scrollbar {
-    display: none; /* For Chrome, Safari, and Opera */
+    display: none;
   }
 }
 
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  line-height: var(--ls-leading-tight);
+  text-wrap: balance;
+}
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-size: var(--ls-text-3xl);
+}
+h2 {
+  font-size: var(--ls-text-2xl);
+}
+h3 {
+  font-size: var(--ls-text-lg);
 }
 
-
+/*
+ * Safety-net baseline for native <button>: quiet secondary treatment so any
+ * button not yet migrated to forge still sits inside the system.
+ */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  /* padding: 0.6em 1.2em; */
-  padding: 0.3em 0.6em;
-  font-size: 1em;
+  font-family: inherit;
+  font-size: var(--ls-text-sm);
   font-weight: 500;
-  /* font-family: inherit; */
-  font-family: 'Orbitron', sans-serif;
-  background-color: #1a1a1a;
+  color: var(--text-color-text-main);
+  background-color: var(--color-interaction-secondary);
+  border: 1px solid var(--borders-color-border-2);
+  border-radius: var(--ls-radius-2);
+  padding: 3px 8px;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition:
+    background-color var(--ls-dur-fast) var(--ls-ease-out),
+    border-color var(--ls-dur-fast) var(--ls-ease-out),
+    color var(--ls-dur-fast) var(--ls-ease-out);
 }
 button:hover {
-  border-color: #646cff;
+  background-color: var(--color-interaction-secondary-hover);
+  border-color: var(--neutrals-color-neutral-3);
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:disabled {
+  color: var(--text-color-text-disabled);
+  cursor: not-allowed;
 }
 
-// .button {
-//   display: inline-block;
-//   border-radius: 8px;
-//   border: 1px solid #ccc;
-//   /* padding: 0.6em 1.2em; */
-//   padding: 0.3em 0.6em;
-//   font-size: 1em;
-//   font-weight: 500;
-//   /* font-family: inherit; */
-//   font-family: 'Orbitron', sans-serif;
-//   /* background-color: #1a1a1a; */
-//   cursor: pointer;
-//   transition: border-color 0.25s;
-//   width: fit-content;
-// }
-// .button:hover {
-//   border-color: #646cff;
-// }
-// .button:focus,
-// .button:focus-visible {
-//   outline: 4px auto -webkit-focus-ring-color;
-// }
+/* One focus ring everywhere */
+:focus-visible {
+  outline: var(--ls-focus-ring);
+  outline-offset: var(--ls-focus-ring-offset);
+}
 
 .tooltip {
   filter: grayscale(100%);
   padding: 0.5em 0.5em;
 }
 .tooltip:hover {
-  filter: grayscale(0%)
-
+  filter: grayscale(0%);
 }
 
 .tooltip-content {
   max-height: 300px;
   overflow: hidden;
 }
-// .tooltip-text {
-//   max-height: 300px;
-//   overflow: hidden;
-// }
-
-// select {
-//   font-weight: 500;
-//   margin: 0 6px;
-//   padding: 3px;
-// }
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
- 
-}
-
-
 
 ::-webkit-scrollbar {
   width: 10px;
@@ -352,67 +301,21 @@ button:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--neutrals-color-neutral-1);
-  border-radius: 2px;
-  border: none; /* Ensures there are no borders on the scrollbar thumb */
+  background-color: var(--neutrals-color-neutral-3);
+  border-radius: var(--ls-radius-1);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  border: none; /* Ensures there are no borders on the scrollbar track */
+  border: none;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-reduced-motion: reduce) {
   :root {
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-
-    // Background colors
-    --color-background-overlay: rgba(23, 10, 122, 0.6);
-    --color-background-subtle-callout: #2A2A3F;
-    --color-background-modal-overlay: rgba(0, 0, 0, 0.5);
-    --color-background-critical: #3F1F24;
-    --color-background-neutral-0: #1A1A1A;
-
-    // Text colors
-    --color-text-main: #FFFFFF;
-    --color-text-subtle: rgba(255, 255, 255, 0.65);
-    --color-text-reverse: #213547;
-    --color-text-reverse-subtle: rgba(33, 53, 71, 0.65);
-
-    // Border colors
-    --color-border-1: #333333;
-    --color-border-2: #404040;
-    --color-border-3: #4D4D4D;
-
-    // Neutral colors
-    --color-neutral-0: #1A1A1A;
-    --color-neutral-0-reverse: #FFFFFF;
-    --color-neutral-1: #2A2A2A;
-    --color-neutral-2: #3A3A3A;
-    --color-neutral-3: #4A4A4A;
-
-    // Badge colors
-    --color-badge-primary-bg: #FFFFFF;
-    --color-badge-primary-text: #000000;
-    --color-badge-secondary-bg: #333333;
-    --color-badge-secondary-text: #FFFFFF;
-
-    // Menu colors
-    --color-interactions-menu: #FFFFFF;
-    --color-interactions-menu-hover: #CCCCCC;
-    --color-interactions-menu-inactive: #808080;
-
-    // Copy button
-    --copy-button-text-color: #A0A0A0;
-  }
-
-  button {
-    background-color: #2A2A2A;
-    color: #FFFFFF;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: #555;
+    --ls-dur-fast: 1ms;
+    --ls-dur-base: 1ms;
+    --ls-dur-slow: 1ms;
   }
 }
