@@ -6,6 +6,7 @@ from dotenv import load_dotenv, set_key
 
 _SUPPORTED_API_KEYS = [
     "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
     "VOYAGE_API_KEY",
     "TOGETHER_API_KEY",
     "COHERE_API_KEY",
