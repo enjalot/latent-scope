@@ -10,36 +10,28 @@ const groupStyles = {
   alignItems: 'center',
   justifyContent: 'space-between',
 };
-const groupBadgeStyles = {
-  backgroundColor: '#EBECF0',
-  borderRadius: '2em',
-  color: '#172B4D',
-  display: 'inline-block',
-  fontSize: 12,
-  fontWeight: 'normal',
-  lineHeight: '1',
-  minWidth: 1,
-  padding: '0.16666666666667em 0.5em',
-  textAlign: 'center',
-};
+// machine facts (sizes, download counts) — mono, token-colored so both modes work
 const downloadsStyle = {
-  color: '#172B4D',
+  color: 'var(--text-color-text-subtle)',
   display: 'inline-block',
-  fontSize: 12,
-  fontWeight: 'normal',
+  fontFamily: 'var(--ls-font-mono)',
+  fontSize: 'var(--ls-text-xs)',
+  fontVariantNumeric: 'tabular-nums',
+  fontWeight: 400,
   lineHeight: '1',
   minWidth: 1,
-  padding: '0.16666666666667em 0.5em',
+  padding: '0 0.5em',
   textAlign: 'center',
 };
 const providerStyle = {
-  color: '#ccc',
+  color: 'var(--text-color-text-subtle)',
   display: 'inline-block',
-  // fontSize: 12,
-  fontWeight: 'normal',
+  fontFamily: 'var(--ls-font-mono)',
+  fontSize: 'var(--ls-text-xs)',
+  fontWeight: 400,
   lineHeight: '1',
   minWidth: 1,
-  padding: '0.16666666666667em 0.5em',
+  padding: '0 0.5em',
   textAlign: 'center',
 };
 
@@ -81,13 +73,9 @@ function ModelSelect({
   const formatGroupLabel = useCallback((option) => {
     return (
       <div style={groupStyles}>
-        {option.label == 'huggingface' ? (
-          <span>🤗 Local Models</span>
-        ) : (
-          <span>{option.label}</span>
-        )}
+        {option.label == 'huggingface' ? <span>Local Models</span> : <span>{option.label}</span>}
         {option.options.length ? (
-          <span style={groupBadgeStyles}>{option.options.length}</span>
+          <span className="ls-chip">{option.options.length}</span>
         ) : null}
       </div>
     );

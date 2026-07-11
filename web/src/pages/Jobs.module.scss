@@ -5,7 +5,7 @@
 }
 
 .content {
-  padding: 20px;
+  padding: var(--ls-space-4);
   flex-grow: 1;
   overflow: auto;
 }
@@ -14,35 +14,66 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: var(--ls-space-4);
 }
 
 .jobs-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--ls-space-2);
 }
 
+/* clickable row (rendered as a <button> for keyboard access) */
 .job {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  gap: var(--ls-space-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--ls-space-2) var(--ls-space-3);
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  cursor: pointer;
+  transition:
+    background-color var(--ls-dur-fast) var(--ls-ease-out),
+    border-color var(--ls-dur-fast) var(--ls-ease-out);
+
+  &:hover {
+    background-color: var(--neutrals-color-neutral-2);
+    border-color: var(--borders-color-border-2);
+  }
 }
 
 .job-name {
-  font-weight: bold;
-}
-
-.job-status {
-  font-weight: bold;
-  padding: 5px;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
+  color: var(--text-color-text-main);
+  white-space: nowrap;
 }
 
 .job-id {
-  font-size: 10px;
-  padding: 5px;
-  color: #666;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
+  white-space: nowrap;
+}
+
+.job-command {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* lg modal (DESIGN §5): doubled class outranks forge's hashed width class without !important */
+.modal.modal {
+  width: min(880px, 90vw);
+  min-width: min(880px, 90vw);
 }

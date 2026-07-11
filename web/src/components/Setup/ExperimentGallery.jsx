@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Button } from 'react-element-forge';
+import { Button, Icon } from 'react-element-forge';
+import { Badge } from '../ui';
 
 import styles from './ExperimentGallery.module.scss';
 
@@ -16,7 +17,7 @@ import styles from './ExperimentGallery.module.scss';
  * Props:
  *  - items: array of run rows (already filtered by the parent)
  *  - selectedId: id of the currently selected run
- *  - savedId: id of the run referenced by the saved scope (renders a 💾 badge)
+ *  - savedId: id of the run referenced by the saved scope (renders a SAVED badge)
  *  - onSelect(item): selection callback
  *  - onProceed(): advance to the next step with the selected run
  *  - proceedLabel: text for the proceed button (e.g. `Proceed with umap-001`)
@@ -131,21 +132,21 @@ function ExperimentGallery({
                     {title}
                     {item.name ? <span className={styles['title-id']}> ({item.id})</span> : null}
                     {savedId === item.id ? (
-                      <span className={styles['saved']} title="Used by the saved scope">
-                        💾
+                      <span className={styles['saved']} data-tooltip-id="saved">
+                        <Badge mono variant="neutral">SAVED</Badge>
                       </span>
                     ) : null}
                   </span>
                   <button
                     type="button"
-                    className={styles['edit-button']}
+                    className="ls-icon-btn"
                     title="Rename / describe"
                     onClick={(e) => {
                       e.stopPropagation();
                       startEditing(item);
                     }}
                   >
-                    ✏️
+                    <Icon name="edit-2" size={16} />
                   </button>
                 </div>
               )}
@@ -177,13 +178,16 @@ function ExperimentGallery({
               )}
               <Button
                 className={styles['delete']}
-                color="secondary"
+                color="delete"
+                variant="outline"
+                size="small"
+                icon="trash"
+                label="Delete run"
                 disabled={isDeleteDisabled}
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete?.(item);
                 }}
-                text="🗑️"
               />
             </div>
           </div>

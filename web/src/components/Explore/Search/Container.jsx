@@ -117,6 +117,8 @@ const Container = () => {
     });
   };
 
+  const menuIsOpen = dropdownIsOpen || (isInputFocused && filterQuery === '');
+
   return (
     <div className={styles.searchContainer}>
       <div className={styles.searchBarContainer}>
@@ -151,13 +153,16 @@ const Container = () => {
         </div>
 
         {/* When a query exists, show the NN search result and filter options */}
-        <div className={styles.searchResults} ref={selectRef}>
+        <div
+          className={`${styles.searchResults} ${menuIsOpen ? styles.searchResultsOpen : ''}`}
+          ref={selectRef}
+        >
           <div className={styles.searchResultsHeader}>
             <SearchResults
               query={filterQuery}
               setFilterQuery={setFilterQuery}
               onSelect={handleSelect}
-              menuIsOpen={dropdownIsOpen || (isInputFocused && filterQuery === '')}
+              menuIsOpen={menuIsOpen}
             />
           </div>
         </div>
@@ -176,12 +181,12 @@ const SearchResultsMetadata = ({ filterConfig }) => {
       <div className={styles.searchResultsMetadata}>
         <div className={styles.searchResultsMetadataItem}>
           <span className={styles.searchResultsMetadataLabel}>
-            Showing first {shownIndices.length} rows in dataset:
+            Showing first {shownIndices.length.toLocaleString()} rows in dataset:
           </span>
         </div>
         <div className={styles.searchResultsMetadataItem}>
           <span className={styles.searchResultsMetadataValue}>
-            {filteredIndices.length} results
+            {filteredIndices.length.toLocaleString()} results
           </span>
         </div>
       </div>
@@ -208,7 +213,7 @@ const SearchResultsMetadata = ({ filterConfig }) => {
       </div>
       <div className={styles.searchResultsMetadataItem}>
         <span className={styles.searchResultsMetadataLabel}>Total Rows: </span>
-        <span className={styles.searchResultsMetadataValue}>{totalResults}</span>
+        <span className={styles.searchResultsMetadataValue}>{totalResults.toLocaleString()}</span>
       </div>
     </div>
   );

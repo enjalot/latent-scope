@@ -10,25 +10,25 @@ SlideBar.propTypes = {
   onClick: PropTypes.func,
 };
 function SlideBar({ slides, selected, onHover, onClick }) {
-
   return (
     <div className="slide-bar">
-      <div className="slide-bar-header">
-        {slides.length} Slides
-      </div>
+      <div className="slide-bar-header">{slides.length} Slides</div>
       <div className="slide-bar-body">
         {slides.map((slide, index) => {
           return (
-            <div 
+            <button
+              type="button"
               key={index}
-              className={slide === selected ? "slide-active slide-bar-item" : "slide-bar-item"}
-              onMouseEnter={() => onHover ? onHover(slide) : null}
-              onMouseLeave={() => onHover ? onHover(null) : null}
-              onClick={() => onClick ? onClick(slide) : null}
+              className={slide === selected ? 'slide-active slide-bar-item' : 'slide-bar-item'}
+              onMouseEnter={() => (onHover ? onHover(slide) : null)}
+              onMouseLeave={() => (onHover ? onHover(null) : null)}
+              onFocus={() => (onHover ? onHover(slide) : null)}
+              onBlur={() => (onHover ? onHover(null) : null)}
+              onClick={() => (onClick ? onClick(slide) : null)}
             >
               {slide.label}
-            </div>
-          )
+            </button>
+          );
         })}
       </div>
     </div>

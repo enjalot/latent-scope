@@ -1,19 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { groups } from 'd3-array';
-// import Scatter from '../Scatter';
-// import Scatter from '../ScatterCanvas';
 import Scatter from './ScatterGL';
 import AnnotationPlot from '../AnnotationPlot';
 import HullPlot from '../HullPlot';
 import TilePlot from '../TilePlot';
-import { Tooltip } from 'react-tooltip';
 import CrossHair from './Crosshair';
 import { processHulls } from './util';
 import FilteredPointsOverlay from './FilteredPointsOverlay';
 import PointLabel from './PointLabel';
 import { filterConstants } from './Search/utils';
-
-// import { useColorMode } from '../../hooks/useColorMode';
 
 import { useScope } from '../../contexts/ScopeContext';
 import { useFilter } from '../../contexts/FilterContext';
@@ -29,20 +24,23 @@ import ColorLegend from './ColorLegend';
 import styles from './VisualizationPane.module.scss';
 import ConfigurationPanel from './ConfigurationPanel';
 import { useColorBy } from '../../hooks/useColorBy';
-import { Button } from 'react-element-forge';
-// VisualizationPane.propTypes = {
-//   hoverAnnotations: PropTypes.array.isRequired,
-//   hoveredCluster: PropTypes.object,
-//   cluster: PropTypes.object,
-//   scope: PropTypes.object,
-//   selectedAnnotations: PropTypes.array.isRequired,
-//   onScatter: PropTypes.func.isRequired,
-//   onSelect: PropTypes.func.isRequired,
-//   onHover: PropTypes.func.isRequired,
-//   hovered: PropTypes.object,
-//   dataset: PropTypes.object.isRequired,
-//   containerRef: PropTypes.object.isRequired,
-// };
+import { Readout, Spinner } from '../ui';
+
+// Signature #1 — viewport reticle ticks: four corner L-marks that turn amber
+// while a selection/filter is active. Pure chrome: pointer-events none.
+function ViewportReticle({ active }) {
+  return (
+    <div
+      className={`${styles.reticle} ${active ? styles.reticleActive : ''}`}
+      aria-hidden="true"
+    >
+      <span />
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
 
 function VisualizationPane({
   width,
@@ -220,30 +218,6 @@ function VisualizationPane({
     return colorByColors;
   }, [colorByColumn, colorByColors, drawingPoints.length]);
 
-  // const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  // useEffect(() => {
-  //   console.log('==== hovered ==== ', hovered);
-  //   if (hovered) {
-  //     // console.log("hovered", hovered, scopeRows[hovered.index])
-  //     const point = scopeRows[hovered.index];
-  //     if (point && xDomain && yDomain) {
-  //       let px = point.x;
-  //       if (px < xDomain[0]) px = xDomain[0];
-  //       if (px > xDomain[1]) px = xDomain[1];
-  //       let py = point.y;
-  //       if (py < yDomain[0]) py = yDomain[0];
-  //       if (py > yDomain[1]) py = yDomain[1];
-  //       const xPos = ((px - xDomain[0]) / (xDomain[1] - xDomain[0])) * width + 19;
-  //       const yPos = ((py - yDomain[1]) / (yDomain[0] - yDomain[1])) * size[1] + umapOffset - 28;
-  //       // console.log("xPos", xPos, "yPos", yPos)
-  //       setTooltipPosition({
-  //         x: xPos,
-  //         y: yPos,
-  //       });
-  //     }
-  //   }
-  // }, [hovered, scopeRows, xDomain, yDomain, width, height, umapOffset]);
-
   const hulls = useMemo(() => {
     return processHulls(clusterLabels, scopeRows, (d) => (d.deleted ? null : [d.x, d.y]));
   }, [scopeRows, clusterLabels]);
@@ -419,28 +393,61 @@ function VisualizationPane({
       .filter((point) => point !== null);
   }, [shownIndices, scopeRows]);
 
-  // console.log({
-  //   shownIndices,
-  //   selectedPoints: selectedPoints.map((p) => {
-  //     return {
-  //       index: p.index,
-  //       ls_index: p.ls_index,
-  //     };
-  //   }),
-  // });
+  // Signature #2 — mono telemetry: shown/total point counts + zoom factor.
+  const totalPoints = scopeRows?.length || 0;
+  const shownCount = shownIndices?.length;
+  const ptsValue =
+    shownCount != null && shownCount > 0 && shownCount !== totalPoints
+      ? `${shownCount.toLocaleString()}/${totalPoints.toLocaleString()}`
+      : totalPoints.toLocaleString();
+  const zoomValue = `${(transform?.k || 1).toFixed(1)}×`;
+
+  const selectionActive = filterActive || selectedAnnotations?.length > 0;
 
   return (
-    // <div style={{ width, height }} ref={umapRef}>
-    <div ref={umapRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={umapRef} className={styles.visualizationPane}>
+      {!scopeRows?.length && (
+        <div className="ls-scrim">
+          <Spinner label="LOADING MAP…" />
+        </div>
+      )}
+      <ViewportReticle active={selectionActive} />
       <div className={styles.configToggleContainer}>
-        <Button
-          className={styles['configToggle']}
+        <button
+          type="button"
+          className={`ls-icon-btn ${styles.configToggle}`}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          aria-label="Toggle configuration panel"
-          icon={'settings'}
-          size="small"
-          // color="#333"
-        />
+          aria-label="Chart settings"
+          title="Chart settings"
+          aria-expanded={isPanelOpen}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="4" y1="21" x2="4" y2="14" />
+            <line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" />
+            <line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" />
+            <line x1="9" y1="8" x2="15" y2="8" />
+            <line x1="17" y1="16" x2="23" y2="16" />
+          </svg>
+        </button>
+
+        <div className={styles.telemetry}>
+          <Readout label="PTS" value={ptsValue} />
+          <Readout label="ZOOM" value={zoomValue} />
+        </div>
 
         <ConfigurationPanel
           isOpen={isPanelOpen}
@@ -465,9 +472,10 @@ function VisualizationPane({
           exposes colorable columns and we're not in the image map. */}
       {colorableColumns.length > 0 && !imageMode && (
         <div className={styles.colorByContainer}>
-          <label className={styles.colorByPicker}>
+          <label className={`${styles.colorByPicker} ls-panel ls-panel--floating`}>
             <span className={styles.colorByLabel}>Color by</span>
             <select
+              className="ls-select"
               value={colorByColumn || ''}
               onChange={(e) => setColorByColumn(e.target.value || null)}
             >
@@ -604,110 +612,27 @@ function VisualizationPane({
         )}
       </div>
 
-      {/* Hover information display */}
+      {/* Hover information display — a floating Panel pinned top-right */}
       {hovered && (
-        <div
-          data-tooltip-id="featureTooltip"
-          style={{
-            position: 'absolute',
-            right: 225,
-            top: 0,
-            pointerEvents: 'none',
-          }}
-        ></div>
+        <div className={`${styles.hoverCard} ls-panel ls-panel--floating`}>
+          {hoveredCluster && (
+            <span className={styles.hoverCardCluster}>
+              Cluster {hoveredCluster.cluster}: {hoveredCluster.label}
+            </span>
+          )}
+          <Readout label="INDEX" value={hovered.index} />
+          {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
+            <HoverThumbnail
+              src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
+              alt={`${hoverImageColumn} ${hovered.index}`}
+              size={150}
+            />
+          )}
+          <p className={styles.hoverCardText}>
+            {hovered.loading && !hovered.text ? <em>loading…</em> : hovered.text}
+          </p>
+        </div>
       )}
-      {hovered && (
-        <Tooltip
-          id="featureTooltip"
-          isOpen={hovered !== null}
-          delayShow={0}
-          delayHide={0}
-          delayUpdate={0}
-          noArrow={true}
-          className="tooltip-area"
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            pointerEvents: 'none',
-            width: '400px',
-            backgroundColor: '#D3965E',
-          }}
-        >
-          <div className="tooltip-content">
-            {hoveredCluster && (
-              <span>
-                <span className="key">Cluster {hoveredCluster.cluster}: </span>
-                <span className="value">{hoveredCluster.label}</span>
-              </span>
-            )}
-            <br></br>
-            <span>Index: {hovered.index}</span>
-            {hoverImageColumn && hovered.index !== null && hovered.index !== undefined && (
-              <HoverThumbnail
-                src={imageUrlFor(dataset.id, hoverImageColumn, hovered.index, 150)}
-                alt={`${hoverImageColumn} ${hovered.index}`}
-                size={150}
-              />
-            )}
-            <p className="tooltip-text">
-              {hovered.loading && !hovered.text ? <em>loading…</em> : hovered.text}
-            </p>
-          </div>
-        </Tooltip>
-      )}
-
-      {/* {!isMobileDevice() && (
-              <div className="hovered-point">
-                  {hoveredCluster && (
-                      <span>
-                          <span className="key">Cluster {hoveredCluster.cluster}:</span>
-                          <span className="value">{hoveredCluster.label}</span>
-                      </span>
-                  )}
-                  {hovered &&
-                      Object.keys(hovered).map((key, idx) => {
-                          let d = hovered[key];
-                if (typeof d === "object" && !Array.isArray(d)) {
-                    d = JSON.stringify(d);
-                }
-                let meta =
-                    dataset.column_metadata && dataset.column_metadata[key];
-                let value;
-                if (meta && meta.image) {
-                  value = (
-                      <span className="value" key={idx}>
-                          <img src={d} alt={key} height={64} />
-                      </span>
-                  );
-              } else if (meta && meta.url) {
-                  value = (
-                      <span className="value" key={idx}>
-                          <a href={d}>url</a>
-                      </span>
-                  );
-              } else if (meta && meta.type == "array") {
-                  value = (
-                      <span className="value" key={idx}>
-                          [{d.length}]
-                      </span>
-                  );
-              } else {
-                    value = (
-                        <span className="value" key={idx}>
-                            {d}
-                        </span>
-                    );
-                }
-                return (
-                    <span key={key}>
-                        <span className="key">{key}:</span>
-                        {value}
-                    </span>
-                );
-            })}
-              </div>
-          )} */}
     </div>
   );
 }

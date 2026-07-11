@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { scaleLinear } from 'd3-scale';
+import { mapSelectionColorsLight, mapSelectionKey } from '@/lib/colors';
 import '../AnnotationPlot.css';
 
 /**
@@ -38,7 +39,9 @@ function FilteredPointsOverlay({
     const xScale = scaleLinear().domain(xDomain).range([0, width]);
     const yScale = scaleLinear().domain(yDomain).range([height, 0]);
 
-    ctx.fillStyle = '#5cb85c';
+    // Single-source the map's "selected" point color from the shared palette
+    // (data-viz palette, not chrome — kept in lib/colors).
+    ctx.fillStyle = mapSelectionColorsLight[mapSelectionKey.selected];
     ctx.globalAlpha = 0.6;
 
     const r = 3;

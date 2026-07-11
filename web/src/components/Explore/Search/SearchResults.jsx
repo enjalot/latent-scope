@@ -276,20 +276,23 @@ const SearchResults = ({ query, menuIsOpen, onSelect, setFilterQuery }) => {
         }),
         groupHeading: (base) => ({
           ...base,
+          // mono micro-label overline
+          fontFamily: 'var(--ls-font-mono)',
           color: 'var(--text-color-text-subtle)',
-          fontSize: '0.9em',
-          fontWeight: 600,
+          fontSize: 'var(--ls-text-2xs)',
+          fontWeight: 500,
           textTransform: 'uppercase',
+          letterSpacing: 'var(--ls-tracking-label)',
           padding: '0 10px',
-          marginBottom: '8px',
+          marginBottom: 'var(--ls-space-2)',
         }),
         option: (base, state) => ({
           ...base,
           padding: '8px 16px',
-          backgroundColor: state.isFocused ? 'var(--neutrals-color-neutral-1)' : 'transparent',
+          backgroundColor: state.isFocused ? 'var(--neutrals-color-neutral-2)' : 'transparent',
           cursor: 'pointer',
           '&:hover': {
-            backgroundColor: 'var(--neutrals-color-neutral-1)',
+            backgroundColor: 'var(--neutrals-color-neutral-2)',
           },
         }),
         menuList: (base) => ({

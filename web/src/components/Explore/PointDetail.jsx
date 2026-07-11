@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button } from 'react-element-forge';
 
 import { apiService } from '../../lib/apiService';
 import { useScope } from '../../contexts/ScopeContext';
+import { Spinner } from '../ui';
 import PointDetailContent from './PointDetailContent';
 
 import styles from './PointDetail.module.scss';
@@ -64,22 +64,39 @@ function PointDetail({ selectedIndex, onClose }) {
     <div className={`${styles.drawer} ${isOpen ? styles.open : ''}`}>
       <div className={styles.header}>
         <div className={styles.headerText}>
-          <span className={styles.title}>Row {isOpen ? selectedIndex : ''}</span>
+          <span className={styles.title}>
+            Row <span className={styles.titleIndex}>{isOpen ? selectedIndex : ''}</span>
+          </span>
           {cluster?.label && <span className={styles.cluster}>{cluster.label}</span>}
         </div>
-        <Button
-          className={styles.closeButton}
+        <button
+          type="button"
+          className={`ls-icon-btn ${styles.closeButton}`}
           onClick={onClose}
           aria-label="Close point detail"
-          icon="x"
-          variant="outline"
-          size="small"
-        />
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
 
       <div className={styles.content}>
-        {loading && <div className={styles.loading}>Loading…</div>}
-        {isOpen && <PointDetailContent row={row} index={selectedIndex} />}
+        {loading && (
+          <div className={styles.loading}>
+            <Spinner size="sm" label="LOADING ROW" />
+          </div>
+        )}
+        {isOpen && <PointDetailContent row={row} index={selectedIndex} dataset={dataset} />}
       </div>
     </div>
   );

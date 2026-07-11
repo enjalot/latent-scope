@@ -1,41 +1,47 @@
+/* Raw <table> adopting the .ls-rdg table values (DESIGN.md §5 Tables). */
+
 table.datatable {
   width: 100%;
   max-width: 100%;
   border-collapse: collapse;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  color: var(--text-color-text-main);
+  background-color: var(--ls-surface-panel);
 }
 
-.datatable th, .datatable td {
-  border: 1px solid #ddd;
-  padding: 8px;
+.datatable th,
+.datatable td {
+  padding: var(--ls-space-2);
   text-align: left;
   word-wrap: break-word; /* Break long words */
   overflow-wrap: break-word; /* Alternative to word-wrap */
 }
 
+/* header: Sans 600 xs uppercase, standard border below, no vertical rules */
 .datatable th {
-  background-color: #f4f4f4;
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  background-color: var(--neutrals-color-neutral-1);
+  font-size: var(--ls-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-color-text-subtle);
+  border-bottom: 1px solid var(--borders-color-border-2);
 }
 
-.datatable .tag-active {
-  background-color: #fff;
-  border: 1px solid gray;
-}
-.datatable .tag-inactive {
-  background-color: #eee;
-  filter: grayscale(100%);
-  opacity: 0.5;
+.datatable td {
+  border-bottom: 1px solid var(--borders-color-border-1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .datatable th {
-    background-color: #141414;
-  }
+.datatable tbody tr:hover {
+  background-color: color-mix(in srgb, var(--neutrals-color-neutral-2) 55%, transparent);
+}
 
-  .datatable .tag-active {
-    background-color: #111;
-    border: 1px solid gray;
-  }
-  .datatable .tag-inactive {
-    background-color: #333;
-  }
+/* tag chips are .ls-badge buttons (see DataTable.jsx) */
+.datatable button.ls-badge {
+  cursor: pointer;
+  margin-right: var(--ls-space-1);
 }

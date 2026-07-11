@@ -2,9 +2,7 @@ import { useEffect, useRef } from 'react';
 import { scaleDiverging, scaleSequential } from 'd3-scale';
 import { interpolateRdBu, interpolateCool } from 'd3-scale-chromatic';
 
-// import "./EmbeddingVis.css"
-
-const EmbeddingVis = ({ 
+const EmbeddingVis = ({
   embedding, 
   rows = embedding && embedding.length < 256 ? Math.floor(Math.sqrt(embedding.length)) : 16,
   spacing = 0.5,
@@ -26,7 +24,12 @@ const EmbeddingVis = ({
     const rw = width / cols - spacing
 
     const canvas = container.current
+    // Render at device resolution (retina) while laying out at CSS pixels.
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = width * dpr
+    canvas.height = height * dpr
     const ctx = canvas.getContext('2d')
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, width, height)
     embedding.forEach((d,i) => {
       const x = (i % cols) * (rw + spacing)
@@ -44,10 +47,11 @@ const EmbeddingVis = ({
     })
   }, [embedding, rows, width, height, spacing, minValues, maxValues, difference])
 
-  return <canvas 
+  return <canvas
     className="embedding-vis"
-    ref={container} 
-    width={width} 
+    ref={container}
+    style={{ width, height }}
+    width={width}
     height={height} />;
 };
 

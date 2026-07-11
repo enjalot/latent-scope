@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { scaleLinear, scaleSequential } from 'd3-scale';
 import { extent } from 'd3-array';
 import { interpolateOranges } from 'd3-scale-chromatic';
+import { useColorMode } from '@/hooks/useColorMode';
 import styles from './TilePlot.module.scss';
 
 /*
@@ -31,7 +32,10 @@ const TilePlot = ({
   height
 }) => {
   const container = useRef();
-  
+  // The base fill is chrome (the map well behind the tiles), so it must flip
+  // with the theme; colorMode in the effect deps re-paints on theme change.
+  const { colorMode } = useColorMode();
+
   useEffect(() => {
     if(xDomain && yDomain) {
       const xScale = scaleLinear()
@@ -43,11 +47,18 @@ const TilePlot = ({
 
       const zScale = (t) => t/(.01 + xDomain[1] - xDomain[0])
       const canvas = container.current
+      // Render at device resolution (retina) while laying out at CSS pixels.
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = width * dpr
+      canvas.height = height * dpr
       const ctx = canvas.getContext('2d')
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, width, height)
-      // TODO: accomodate dark mode
       ctx.globalAlpha = 1
-      ctx.fillStyle = "white"
+      ctx.fillStyle =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--ls-surface-map')
+          .trim() || '#ffffff'
       ctx.fillRect(0, 0, width, height)
 
       ctx.fillStyle = fill 
@@ -88,12 +99,13 @@ const TilePlot = ({
       })
     }
 
-  }, [tiles, tileMeta, fill, stroke, size, xDomain, yDomain, width, height])
+  }, [tiles, tileMeta, fill, stroke, size, xDomain, yDomain, width, height, colorMode])
 
-  return <canvas 
+  return <canvas
     className={styles["tile-plot"]}
-    ref={container} 
-    width={width} 
+    ref={container}
+    style={{ width, height }}
+    width={width}
     height={height} />;
 };
 

@@ -1,10 +1,12 @@
+@use "./_shared" as *;
+
 .estimatePanel {
-  margin: 8px 0;
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 6px;
-  padding: 8px 12px;
-  background: var(--bg-secondary, #f8f9fa);
-  font-size: 0.85em;
+  margin: var(--ls-space-2) 0;
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  padding: var(--ls-space-2) var(--ls-space-3);
+  background: var(--neutrals-color-neutral-1);
+  font-size: var(--ls-text-sm);
 }
 
 .estimateHeader {
@@ -15,78 +17,53 @@
 
 .estimateActions {
   display: flex;
-  gap: 8px;
+  gap: var(--ls-space-2);
   align-items: center;
 }
 
-.estimateResults, .benchmarkResults {
-  margin-top: 8px;
+.estimateResults,
+.benchmarkResults {
+  margin-top: var(--ls-space-2);
 }
 
 .benchmarkResults {
-  border-top: 1px solid var(--border-color, #ddd);
-  padding-top: 8px;
-}
-
-.benchmarkHeader {
-  font-weight: 600;
-  margin-bottom: 4px;
+  border-top: 1px solid var(--borders-color-border-1);
+  padding-top: var(--ls-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ls-space-1);
 }
 
 .estimateSummary {
   display: flex;
-  gap: 16px;
+  gap: var(--ls-space-4);
   flex-wrap: wrap;
-}
-
-.estimateItem {
-  display: flex;
-  flex-direction: column;
-}
-
-.estimateLabel {
-  font-size: 0.8em;
-  color: var(--text-secondary, #666);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.estimateValue {
-  font-weight: 600;
-  font-size: 1.1em;
-}
-
-.lateInteractionBadge {
-  background: var(--accent-color, #6366f1);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8em;
-  font-weight: 500;
+  align-items: center;
 }
 
 .estimateNote {
-  margin-top: 4px;
-  font-size: 0.85em;
-  color: var(--text-secondary, #888);
+  margin-top: var(--ls-space-1);
+  font-size: var(--ls-text-xs);
+  color: var(--text-color-text-subtle);
   font-style: italic;
 }
 
 .detailsToggle {
   background: none;
   border: none;
-  color: var(--link-color, #4a90d9);
+  color: var(--text-color-text-primary);
   cursor: pointer;
-  padding: 4px 0;
-  font-size: 0.85em;
+  padding: var(--ls-space-1) 0;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-xs);
   text-decoration: underline;
 }
 
 .estimateDetails {
-  margin-top: 4px;
-  padding: 4px 8px;
-  background: var(--bg-tertiary, #f0f0f0);
-  border-radius: 4px;
-  font-size: 0.9em;
+  margin-top: var(--ls-space-1);
+  padding: var(--ls-space-1) var(--ls-space-2);
+  background: var(--neutrals-color-neutral-2);
+  border-radius: var(--ls-radius-1);
   line-height: 1.6;
+  @include mono-fact;
 }

@@ -1,9 +1,53 @@
 import { useState, useEffect, useMemo } from 'react';
 import './LeftPane.css';
-import { Button } from 'react-element-forge';
 import { apiService } from '../../lib/apiService';
 import { compareVersions } from 'compare-versions';
 import ScopeHeader from './ScopeHeader';
+
+const iconProps = {
+  width: 16,
+  height: 16,
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': 'true',
+};
+
+// feather-style glyphs for the rail buttons
+const TableIcon = () => (
+  <svg {...iconProps}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <line x1="3" y1="15" x2="21" y2="15" />
+    <line x1="12" y1="3" x2="12" y2="21" />
+  </svg>
+);
+const GridIcon = () => (
+  <svg {...iconProps}>
+    <rect x="3" y="3" width="7" height="7" />
+    <rect x="14" y="3" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" />
+    <rect x="3" y="14" width="7" height="7" />
+  </svg>
+);
+const PenToolIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 19l7-7 3 3-7 7-3-3z" />
+    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+    <path d="M2 2l7.586 7.586" />
+    <circle cx="11" cy="11" r="2" />
+  </svg>
+);
+const InfoIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
 
 export default function LeftPane({
   dataset,
@@ -32,30 +76,34 @@ export default function LeftPane({
   return (
     <div className="left-pane-container">
       <div className="button-column main-buttons">
-        <Button
-          className="left-pane-button"
-          size="small"
-          icon="table"
-          color="primary"
+        <button
+          type="button"
+          className="ls-icon-btn left-pane-button selected"
           title="Filter data points"
-        />
-        <Button
-          className={`left-pane-button ${showClusters ? 'selected' : ''}`}
-          size="small"
-          icon="grid"
-          color={showClusters ? 'primary' : 'secondary'}
+          aria-label="Filter data points"
+        >
+          <TableIcon />
+        </button>
+        <button
+          type="button"
+          className={`ls-icon-btn left-pane-button ${showClusters ? 'selected' : ''}`}
           title="Browse clusters"
+          aria-label="Browse clusters"
+          aria-pressed={showClusters}
           onClick={onToggleClusters}
           data-testid="toggle-clusters-button"
-        />
-        <Button
-          className="left-pane-button disabled"
-          size="small"
-          icon="pen-tool"
-          color="secondary"
+        >
+          <GridIcon />
+        </button>
+        <button
+          type="button"
+          className="ls-icon-btn left-pane-button"
           title="Annotate"
+          aria-label="Annotate"
           disabled
-        />
+        >
+          <PenToolIcon />
+        </button>
       </div>
 
       <div
@@ -63,15 +111,16 @@ export default function LeftPane({
         onMouseEnter={() => setShowMetadata(true)}
         onMouseLeave={() => setShowMetadata(false)}
       >
-        <Button
-          className={`left-pane-button ${isOutdatedScope ? 'warning-button' : ''}`}
-          size="small"
-          icon="info"
-          color="secondary"
+        <button
+          type="button"
+          className={`ls-icon-btn left-pane-button ${isOutdatedScope ? 'warning-button' : ''}`}
           title="Show scope metadata"
-        />
+          aria-label="Show scope metadata"
+        >
+          <InfoIcon />
+        </button>
         {(showMetadata || isOutdatedScope) && (
-          <div className="metadata-tooltip">
+          <div className="metadata-tooltip ls-panel ls-panel--floating">
             <ScopeHeader
               dataset={dataset}
               tags={tags}

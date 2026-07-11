@@ -4,11 +4,12 @@ import { render, cleanup, fireEvent, screen } from '@testing-library/react';
 // react-element-forge ships a UMD bundle that doesn't load under jsdom; mock
 // Button to a plain <button> so the component tree renders.
 vi.mock('react-element-forge', () => ({
-  Button: ({ text, onClick, disabled, className }) => (
-    <button className={className} disabled={disabled} onClick={onClick}>
+  Button: ({ text, onClick, disabled, className, label }) => (
+    <button className={className} disabled={disabled} onClick={onClick} aria-label={label}>
       {text}
     </button>
   ),
+  Icon: ({ name }) => <svg data-icon={name} />,
 }));
 
 const { default: ExperimentGallery } = await import('./ExperimentGallery.jsx');
@@ -68,7 +69,7 @@ describe('ExperimentGallery', () => {
   it('calls onDelete when the delete button is clicked', () => {
     const onDelete = vi.fn();
     render(<ExperimentGallery items={items} selectedId="umap-001" onDelete={onDelete} />);
-    fireEvent.click(screen.getAllByText('🗑️')[0]);
+    fireEvent.click(screen.getAllByLabelText('Delete run')[0]);
     expect(onDelete).toHaveBeenCalledWith(items[0]);
   });
 });

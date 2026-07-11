@@ -1,4 +1,4 @@
-@import "./_shared";
+@use './_shared' as *;
 
 .cluster {
   @include setup-container;
@@ -19,7 +19,7 @@
   @include setup-step;
 }
 .cluster-form {
-  @include setup-form;
+  @include setup-form-body;
 }
 .cluster-list {
   @include item-list;
@@ -40,30 +40,23 @@
   @include setup-delete;
 }
 .cluster-form-label {
-  width: 125px;
-  display: inline-block;
-}
-.method-badge {
-  font-size: 0.75em;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #e0e0e0;
-  color: #555;
-  margin-left: 4px;
+  @include setup-form-label;
 }
 .cluster-form input {
   width: 84px;
+  @include numeric-input;
 }
 .cluster-form input.cluster-form-text {
   width: 200px;
+  font-family: var(--ls-font-ui);
+  text-align: left;
 }
 .cluster-form-switch {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
-
 
 .item img {
   width: 120px;
@@ -74,26 +67,10 @@
 .quality-metrics {
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: var(--ls-space-2);
   flex-wrap: wrap;
-  margin-top: 4px;
-}
-.metric-badge {
-  font-size: 0.7em;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #d4edda;
-  color: #155724;
+  margin-top: var(--ls-space-1);
 }
 .compare-link {
-  padding: 8px 0;
-  text-align: center;
-}
-.compare-link a {
-  color: seagreen;
-  font-weight: 600;
-  text-decoration: none;
-}
-.compare-link a:hover {
-  text-decoration: underline;
+  @include compare-link;
 }

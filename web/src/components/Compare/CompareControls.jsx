@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import ColorLegend from './ColorLegend';
+import { Readout } from '../ui';
 import styles from './Compare.module.css';
 
 // A column is colorable if it's numeric, or a string column ingest tagged with
@@ -69,13 +70,17 @@ function CompareControls({
   return (
     <div className={styles['controls']}>
       <div className={styles['controls-header']}>
-        <b>{datasetId}</b>
-        <span>{dataset?.length} rows</span>
+        <span className={styles['dataset-name']}>{datasetId}</span>
+        <Readout label="ROWS" value={dataset?.length?.toLocaleString()} />
       </div>
       <div className={styles['umap-selectors']}>
         <div className={styles['umap-selector']}>
           <label>Left UMAP</label>
-          <select value={left?.id || ''} onChange={(e) => onSetLeft(e.target.value)}>
+          <select
+            className="ls-select"
+            value={left?.id || ''}
+            onChange={(e) => onSetLeft(e.target.value)}
+          >
             {umaps.map((um) => (
               <option key={um.id} value={um.id}>
                 {formatUmapOption(um)}
@@ -85,7 +90,11 @@ function CompareControls({
         </div>
         <div className={styles['umap-selector']}>
           <label>Right UMAP</label>
-          <select value={right?.id || ''} onChange={(e) => onSetRight(e.target.value)}>
+          <select
+            className="ls-select"
+            value={right?.id || ''}
+            onChange={(e) => onSetRight(e.target.value)}
+          >
             {umaps.map((um) => (
               <option key={um.id} value={um.id}>
                 {formatUmapOption(um)}
@@ -97,7 +106,11 @@ function CompareControls({
       <div className={styles['metric-controls']}>
         <div className={styles['metric-selector']}>
           <label>Metric</label>
-          <select value={metric} onChange={(e) => onMetricChange(e.target.value)}>
+          <select
+            className="ls-select"
+            value={metric}
+            onChange={(e) => onMetricChange(e.target.value)}
+          >
             {Object.entries(METRIC_INFO).map(([key, info]) => (
               <option key={key} value={key}>{info.label}</option>
             ))}
@@ -108,7 +121,9 @@ function CompareControls({
         </div>
         {metric !== 'displacement' && (
           <div className={styles['metric-k']}>
-            <label>k = {metricK}</label>
+            <label>
+              k <span className={styles['control-value']}>{metricK}</span>
+            </label>
             <input
               type="range"
               min="5"
@@ -121,7 +136,7 @@ function CompareControls({
         )}
         <div className={styles['threshold-control']}>
           <label>
-            Threshold: {threshold.toFixed(2)}
+            Threshold <span className={styles['control-value']}>{threshold.toFixed(2)}</span>
             {displacementLoading && <span className={styles['loading-indicator']}> computing...</span>}
           </label>
           <input
@@ -132,13 +147,12 @@ function CompareControls({
             value={threshold}
             onChange={(e) => onThresholdChange(parseFloat(e.target.value))}
           />
-          <span className={styles['threshold-count']}>
-            {aboveThresholdCount} points above threshold
-          </span>
+          <Readout label="ABOVE THRESHOLD" value={aboveThresholdCount.toLocaleString()} />
         </div>
         <div className={styles['metric-selector']}>
           <label>Color by</label>
           <select
+            className="ls-select"
             value={colorColumn || ''}
             onChange={(e) => onColorColumnChange(e.target.value)}
           >

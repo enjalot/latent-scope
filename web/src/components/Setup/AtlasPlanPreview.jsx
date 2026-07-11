@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { scaleSequential } from 'd3-scale';
 import { interpolateOranges } from 'd3-scale-chromatic';
+import { useColorMode } from '@/hooks/useColorMode';
 
 /**
  * Renders the scope's density heatmap from a plan's density grid, with an
@@ -10,6 +11,8 @@ import { interpolateOranges } from 'd3-scale-chromatic';
  */
 function AtlasPlanPreview({ plan, selectedRes, size = 360 }) {
   const canvasRef = useRef();
+  // grid chrome colors come from tokens; re-render when the theme flips
+  const { colorMode } = useColorMode();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -22,6 +25,10 @@ function AtlasPlanPreview({ plan, selectedRes, size = 360 }) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size, size);
     if (!plan?.density) return;
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const gridStroke = rootStyle.getPropertyValue('--ls-color-selection').trim();
+    const gridFill = rootStyle.getPropertyValue('--ls-color-selection-fill').trim();
 
     const { res, counts } = plan.density;
     let maxC = 0;
@@ -43,12 +50,13 @@ function AtlasPlanPreview({ plan, selectedRes, size = 360 }) {
       const T = entry.tiles_per_axis;
       const tw = size / T;
       if (entry.tile_coords) {
-        ctx.fillStyle = 'rgba(40, 90, 200, 0.18)';
+        ctx.fillStyle = gridFill;
         for (const [tx, ty] of entry.tile_coords) {
           ctx.fillRect(tx * tw, ty * tw, tw, tw); // image-space ty=0 = top
         }
       }
-      ctx.strokeStyle = 'rgba(40, 90, 200, 0.55)';
+      ctx.strokeStyle = gridStroke;
+      ctx.globalAlpha = 0.55;
       ctx.lineWidth = 0.75;
       for (let i = 0; i <= T; i++) {
         ctx.beginPath();
@@ -60,13 +68,19 @@ function AtlasPlanPreview({ plan, selectedRes, size = 360 }) {
         ctx.lineTo(size, i * tw);
         ctx.stroke();
       }
+      ctx.globalAlpha = 1;
     }
-  }, [plan, selectedRes, size]);
+  }, [plan, selectedRes, size, colorMode]);
 
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: size, height: size, border: '1px solid #ddd', borderRadius: 4 }}
+      style={{
+        width: size,
+        height: size,
+        border: '1px solid var(--borders-color-border-1)',
+        borderRadius: 'var(--ls-radius-1)',
+      }}
     />
   );
 }

@@ -1,12 +1,6 @@
-
 .scatter {
   position: absolute;
-  background-color: #fefefe;
+  /* the map canvas is the darkest surface in the app; flips with the theme */
+  background-color: var(--ls-surface-map);
   user-select: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .scatter {
-    background-color: #111;
-  }
 }

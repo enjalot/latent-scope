@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from 'react-element-forge';
 import JobProgress from '../components/Job/Progress';
 import { useStartJobPolling } from '../components/Job/Run';
 import SubNav from '../components/SubNav';
@@ -362,6 +363,7 @@ function DataMapPlot() {
               <label>
                 <span>Kernel:</span>
                 <select
+                  className="ls-select"
                   name="glow_keywords.kernel"
                   value={config.glow_keywords.kernel}
                   onChange={handleChange}
@@ -395,7 +397,7 @@ function DataMapPlot() {
               </label>
             </div>
             <div className={styles['create-button']}>
-              <button type="submit">Create Plot</button>
+              <Button type="submit" color="primary" text="Create Plot" />
             </div>
           </form>
 
@@ -411,8 +413,19 @@ function DataMapPlot() {
           ) : null}
         </div>
         <div className={styles['plots']}>
-          <h3>Plots ({plotFiles.length})</h3>
-          <div className={styles['plot-list']}>{plotFiles.map(fileLink)}</div>
+          <h3>
+            Plots <span className="ls-chip">{plotFiles.length}</span>
+          </h3>
+          {plotFiles.length ? (
+            <div className={styles['plot-list']}>{plotFiles.map(fileLink)}</div>
+          ) : (
+            <div className="ls-empty">
+              <span className="ls-overline">NO PLOTS</span>
+              <p className="ls-empty__text">
+                Configure a plot above and press Create Plot — finished renders appear here.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

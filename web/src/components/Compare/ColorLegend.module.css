@@ -1,18 +1,19 @@
+/* Compare color-by legend — panel chrome from the token layer; swatch/ramp
+   colors themselves are data-viz values passed in as props. */
 .legend {
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 11px;
-  color: #333;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  padding: var(--ls-space-2);
+  font-size: var(--ls-text-2xs);
+  color: var(--text-color-text-main);
   max-width: 240px;
   pointer-events: auto;
 }
 
 .title {
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: var(--ls-space-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -21,14 +22,18 @@
 .ramp {
   width: 180px;
   height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--ls-radius-1);
+  border: 1px solid var(--borders-color-border-3);
 }
 
+/* min/max readouts under the ramp — machine facts */
 .extent {
   display: flex;
   justify-content: space-between;
   margin-top: 2px;
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
 }
 
 .swatches {
@@ -42,14 +47,14 @@
 .swatchRow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--ls-space-2);
 }
 
 .swatch {
   width: 12px;
   height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--ls-radius-1);
+  border: 1px solid var(--borders-color-border-3);
   flex-shrink: 0;
 }
 
@@ -61,17 +66,8 @@
 }
 
 .swatchCount {
-  color: #888;
+  color: var(--text-color-text-subtle);
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .legend {
-    background-color: rgba(30, 30, 30, 0.9);
-    border-color: #555;
-    color: #e0e0e0;
-  }
-  .swatchCount {
-    color: #aaa;
-  }
 }

@@ -1,0 +1,31 @@
+// Lives inside the map hover tooltip (an inverse surface), so the placeholder
+// derives from currentColor instead of theme surface tokens — it stays legible
+// on whatever surface the tooltip uses in either mode.
+.thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--ls-space-1);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: var(--ls-radius-1);
+}
+
+// "LOADING…" / "NO IMAGE" — mono micro status line
+.status {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  opacity: 0.7;
+}
+
+.image {
+  object-fit: contain;
+  display: block;
+  transition: opacity var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.imageLoading {
+  opacity: 0.5;
+}

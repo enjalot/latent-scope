@@ -144,7 +144,7 @@ function SpriteAtlas() {
         <div className={styles.controls}>
           <label>
             <span>Max resolution</span>
-            <select value={maxRes} onChange={(e) => setMaxRes(+e.target.value)}>
+            <select className="ls-select" value={maxRes} onChange={(e) => setMaxRes(+e.target.value)}>
               {ALL_RESOLUTIONS.map((r) => (
                 <option key={r} value={r}>
                   {r}×{r}
@@ -154,7 +154,7 @@ function SpriteAtlas() {
           </label>
           <label>
             <span>Cell size</span>
-            <select value={cellSize} onChange={(e) => setCellSize(+e.target.value)}>
+            <select className="ls-select" value={cellSize} onChange={(e) => setCellSize(+e.target.value)}>
               {CELL_SIZES.map((c) => (
                 <option key={c} value={c}>
                   {c}px
@@ -178,7 +178,7 @@ function SpriteAtlas() {
           <div className={styles.previewCol}>
             <AtlasPlanPreview plan={plan} selectedRes={selectedRes} size={320} />
             <div className={styles.previewCaption}>
-              Heatmap density · blue grid = {selectedRes}×{selectedRes} tiles
+              Heatmap density · grid = {selectedRes}×{selectedRes} tiles
               {planLoading ? ' · updating…' : ''}
             </div>
           </div>
@@ -281,7 +281,11 @@ function SpriteAtlas() {
       <div className={styles['atlas-preview']}>
         <div className={styles.preview}>
           <div className={styles['scope-actions']}>
-            <div className={styles['action-card'] + ' ' + styles['action-card-explore']}>
+            <div
+              className={
+                'ls-panel ' + styles['action-card'] + ' ' + styles['action-card-explore']
+              }
+            >
               <h3>
                 <Link
                   to={`/datasets/${dataset?.id}/explore/${scope?.id}`}

@@ -1,0 +1,643 @@
+/**
+ * Amber Console — shared UI primitives.
+ * Utility classes consumed app-wide. See web/src/components/ui/README.md for usage.
+ * Every value is a --ls-* / forge token; no magic numbers, no !important.
+ * Imported once from App.jsx (after react-element-forge/dist/style.css).
+ */
+
+/* ------------------------------------------------------------------ */
+/* Tabs — THE one tab primitive                                        */
+/* ------------------------------------------------------------------ */
+
+.ls-tab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 6px 12px;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 500;
+  line-height: var(--ls-leading-ui);
+  color: var(--text-color-text-subtle);
+  cursor: pointer;
+  transition:
+    color var(--ls-dur-fast) var(--ls-ease-out),
+    border-color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.ls-tab:hover {
+  color: var(--text-color-text-main);
+  border-bottom-color: var(--borders-color-border-2);
+}
+
+.ls-tab--active,
+.ls-tab[aria-selected='true'] {
+  color: var(--text-color-text-main);
+  border-bottom-color: var(--interactions---primary-color-interaction-primary);
+}
+
+.ls-tab:focus-visible {
+  outline: var(--ls-focus-ring);
+  outline-offset: -2px;
+}
+
+.ls-tab:disabled {
+  color: var(--text-color-text-disabled);
+  cursor: default;
+  border-bottom-color: transparent;
+}
+
+/* counts inside tabs are machine facts */
+.ls-tab__count {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  margin-left: var(--ls-space-1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Badges + mono chips — THE one badge                                 */
+/* ------------------------------------------------------------------ */
+
+.ls-badge,
+.ls-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ls-space-1);
+  padding: 2px 8px;
+  border-radius: var(--ls-radius-1);
+  border: 1px solid var(--borders-color-border-1);
+  background: var(--color-badge-secondary-bg);
+  color: var(--color-badge-secondary-text);
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-xs);
+  font-weight: 500;
+  line-height: var(--ls-leading-tight);
+  white-space: nowrap;
+}
+
+/* adjacent badges/chips never touch, even in gap-less containers */
+:is(.ls-badge, .ls-chip) + :is(.ls-badge, .ls-chip) {
+  margin-inline-start: var(--ls-space-1);
+}
+
+/* semantic washes: 12% of the semantic base over the panel surface */
+.ls-badge--critical {
+  background: color-mix(
+    in srgb,
+    var(--semantic-color-semantic-critical) 12%,
+    var(--ls-surface-panel)
+  );
+  color: var(--text-color-text-critical);
+}
+
+.ls-badge--info {
+  background: color-mix(in srgb, var(--semantic-color-semantic-info) 12%, var(--ls-surface-panel));
+  color: var(--text-color-text-info);
+}
+
+.ls-badge--success {
+  background: color-mix(
+    in srgb,
+    var(--semantic-color-semantic-success) 12%,
+    var(--ls-surface-panel)
+  );
+  color: var(--text-color-text-success);
+}
+
+.ls-badge--warning {
+  background: color-mix(
+    in srgb,
+    var(--semantic-color-semantic-warning) 12%,
+    var(--ls-surface-panel)
+  );
+  color: var(--text-color-text-warning);
+}
+
+.ls-badge--neutral {
+  background: color-mix(
+    in srgb,
+    var(--semantic-color-semantic-neutral) 12%,
+    var(--ls-surface-panel)
+  );
+  color: var(--text-color-text-neutral);
+}
+
+/* selected tag chip: amber wash + amber text; never a border-width shift */
+.ls-badge--selected {
+  background: var(--ls-accent-surface);
+  color: var(--text-color-text-primary);
+  border-color: var(--ls-accent-line);
+}
+
+/* mono chip: machine facts — HDF5, LANCE, run IDs, RUN/OK/ERR/DEAD */
+.ls-chip {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  font-variant-numeric: tabular-nums;
+}
+
+/* IndexCircle replacement: 20px square mono chip */
+.ls-chip--index {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  justify-content: center;
+  border: 1px solid var(--borders-color-border-3);
+  letter-spacing: 0;
+}
+
+.ls-chip--index.ls-badge--selected {
+  border-color: var(--interactions---primary-color-interaction-primary);
+  color: var(--text-color-text-primary);
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ */
+/* Icon button — 28×28 ghost                                           */
+/* ------------------------------------------------------------------ */
+
+.ls-icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--ls-radius-2);
+  color: var(--text-color-text-subtle);
+  cursor: pointer;
+  transition:
+    color var(--ls-dur-fast) var(--ls-ease-out),
+    background-color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.ls-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ls-icon-btn:hover {
+  color: var(--text-color-text-main);
+  background: var(--neutrals-color-neutral-2);
+}
+
+.ls-icon-btn:active {
+  background: var(--neutrals-color-neutral-3);
+}
+
+.ls-icon-btn:focus-visible {
+  outline: var(--ls-focus-ring);
+  outline-offset: -1px;
+}
+
+.ls-icon-btn:disabled {
+  color: var(--text-color-text-disabled);
+  background: transparent;
+  cursor: default;
+}
+
+/* pagination: icon buttons + mono readout (Pagination component) */
+.ls-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ls-space-1);
+}
+
+.ls-pagination__readout {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color-text-subtle);
+  padding-inline: var(--ls-space-2);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Console — a real terminal embedded in the bench (dark in BOTH modes) */
+/* ------------------------------------------------------------------ */
+
+.ls-console {
+  background: var(--ls-surface-console);
+  color: var(--ls-console-text);
+  border: 1px solid var(--ls-console-border);
+  border-radius: var(--ls-radius-2);
+  padding: var(--ls-space-3);
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+  overflow: auto;
+}
+
+.ls-console__line {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ls-console__line--error {
+  color: #e89c90; /* console is fixed-dark in both modes; dark critical text */
+}
+
+.ls-console__time {
+  color: var(--ls-console-text-dim);
+}
+
+/* collapse/expand: animate grid-template-rows 0fr↔1fr, never height.
+   Structure: <div class="ls-console-collapse [ls-console-collapse--collapsed]">
+                <div class="ls-console-collapse__inner"><pre class="ls-console">…</pre></div>
+              </div> */
+.ls-console-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--ls-dur-slow) var(--ls-ease-in-out);
+}
+
+.ls-console-collapse--collapsed {
+  grid-template-rows: 0fr;
+}
+
+.ls-console-collapse__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Readout — mono telemetry (label + value)                            */
+/* ------------------------------------------------------------------ */
+
+.ls-readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ls-space-2);
+  font-family: var(--ls-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.ls-readout__label {
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
+.ls-readout__value {
+  font-size: var(--ls-text-xs);
+  font-weight: 400;
+  color: var(--text-color-text-main);
+}
+
+/* mono micro-label overline (headers, empty states, modal eyebrows) */
+.ls-overline {
+  display: block;
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
+/* ------------------------------------------------------------------ */
+/* Select — skin for raw <select>                                      */
+/* ------------------------------------------------------------------ */
+
+.ls-select {
+  appearance: none;
+  background-color: var(--ls-surface-input);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  padding: 8px 10px;
+  padding-right: calc(10px + var(--ls-space-4)); /* room for the chevron */
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  line-height: var(--ls-leading-ui);
+  color: var(--text-color-text-main);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c574f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  transition: border-color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+.ls-select:hover {
+  border-color: var(--borders-color-border-2);
+}
+
+.ls-select:focus-visible {
+  border-color: var(--interactions---primary-color-interaction-primary);
+  outline: var(--ls-focus-ring);
+  outline-offset: var(--ls-focus-ring-offset);
+}
+
+.ls-select:disabled {
+  color: var(--text-color-text-disabled);
+  background-color: var(--interactions---secondary-color-interaction-secondary-disabled);
+  cursor: default;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ls-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a39d92' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Tables — react-data-grid theming (wrap the grid in .ls-rdg)         */
+/* ------------------------------------------------------------------ */
+
+.ls-rdg {
+  font-family: var(--ls-font-ui);
+}
+
+/* rdg's own custom-property API — zero !important needed.
+   Must target the .rdg element itself: rdg re-declares every --rdg-* var
+   on the grid root inside @layer rdg.Root, and element-own declarations
+   beat inherited ones regardless of layer, so vars set on the wrapper
+   are inert. Unlayered element-targeted rules win over rdg's layer. */
+.ls-rdg .rdg {
+  --rdg-color: var(--text-color-text-main);
+  --rdg-border-color: var(--borders-color-border-1);
+  --rdg-background-color: var(--ls-surface-panel);
+  --rdg-header-background-color: var(--neutrals-color-neutral-1);
+  --rdg-header-draggable-background-color: var(--neutrals-color-neutral-2);
+  --rdg-row-hover-background-color: color-mix(
+    in srgb,
+    var(--neutrals-color-neutral-2) 55%,
+    transparent
+  );
+  --rdg-row-selected-background-color: var(--ls-accent-surface);
+  --rdg-row-selected-hover-background-color: color-mix(
+    in srgb,
+    var(--interactions---primary-color-interaction-primary) 16%,
+    transparent
+  );
+  --rdg-selection-color: var(--ls-accent-line);
+  --rdg-checkbox-focus-color: var(--ls-focus-ring-color);
+  --rdg-font-size: var(--ls-text-sm);
+  --rdg-color-scheme: light dark;
+}
+
+/* no vertical rules between cells */
+.ls-rdg .rdg-cell {
+  border-inline-end: none;
+}
+
+/* header: Sans 600 xs uppercase, standard border below */
+.ls-rdg .rdg-header-row .rdg-cell {
+  font-size: var(--ls-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-color-text-subtle);
+  border-block-end: 1px solid var(--borders-color-border-2);
+}
+
+/* opt-in numeric cell (pass cellClass="ls-rdg-cell--num" on the column) */
+.ls-rdg .ls-rdg-cell--num {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ------------------------------------------------------------------ */
+/* Spinner + scrim + loading stack                                     */
+/* ------------------------------------------------------------------ */
+
+.ls-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--borders-color-border-2);
+  border-top-color: var(--interactions---primary-color-interaction-primary);
+  border-radius: var(--ls-radius-round);
+  animation: ls-spin 800ms linear infinite;
+}
+
+.ls-spinner--sm {
+  width: 14px;
+  height: 14px;
+}
+
+/* spinner + mono status line, stacked */
+.ls-loading {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ls-space-2);
+}
+
+.ls-loading__status,
+.ls-scrim__status {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
+/* full-container loading veil: parent needs position: relative */
+.ls-scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ls-space-3);
+  background: var(--ls-scrim);
+  z-index: var(--ls-z-overlay);
+}
+
+/* skeleton block — pair with width/height utilities at the call site */
+.ls-skeleton {
+  background: var(--neutrals-color-neutral-2);
+  border-radius: var(--ls-radius-1);
+  animation: ls-pulse 1.5s var(--ls-ease-in-out) infinite;
+}
+
+/* ------------------------------------------------------------------ */
+/* Status diodes — the ONLY element that glows or pulses               */
+/* ------------------------------------------------------------------ */
+
+.ls-diode {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: var(--ls-radius-round);
+  background: var(--ls-diode-color, var(--color-status-offline));
+  color: var(--ls-diode-color, var(--color-status-offline)); /* feeds currentColor glow */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+/* glow lives on a pseudo so `--ls-glow-status: none` (light mode) stays valid;
+   only live (pulsing) diodes emit — steady diodes stay flat */
+.ls-diode--pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ls-radius-round);
+  box-shadow: var(--ls-glow-status);
+}
+
+.ls-diode--ready {
+  --ls-diode-color: var(--color-status-ready);
+}
+
+.ls-diode--busy {
+  --ls-diode-color: var(--color-status-busy);
+}
+
+.ls-diode--offline {
+  --ls-diode-color: var(--color-status-offline);
+}
+
+.ls-diode--critical {
+  --ls-diode-color: var(--semantic-color-semantic-critical);
+}
+
+.ls-diode--pulse {
+  animation: ls-pulse 2s var(--ls-ease-in-out) infinite;
+}
+
+/* diode + mono label pairing (StatusDiode component) */
+.ls-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ls-space-2);
+}
+
+.ls-status__label {
+  font-family: var(--ls-font-mono);
+  font-size: var(--ls-text-2xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--ls-tracking-label);
+  color: var(--text-color-text-subtle);
+}
+
+/* ------------------------------------------------------------------ */
+/* Panels                                                              */
+/* ------------------------------------------------------------------ */
+
+.ls-panel {
+  background: var(--ls-surface-panel);
+  border: 1px solid var(--borders-color-border-1);
+  border-radius: var(--ls-radius-2);
+  padding: var(--ls-space-4);
+}
+
+/* floating over the map: ConfigurationPanel, metadata card, colorBy chip */
+.ls-panel--floating {
+  background: color-mix(in srgb, var(--neutrals-color-neutral-0) 95%, transparent);
+  border-color: var(--borders-color-border-2);
+  border-radius: var(--ls-radius-3);
+  box-shadow: var(--ls-shadow-2);
+  z-index: var(--ls-z-hud);
+}
+
+.ls-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ls-space-2);
+  margin-bottom: var(--ls-space-3);
+}
+
+.ls-panel__title {
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  font-weight: 600;
+  color: var(--text-color-text-main);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tooltip — react-tooltip theme class (pass className="ls-tooltip")   */
+/* doubled selector beats react-tooltip's injected single-class rules  */
+/* without !important, regardless of stylesheet order                  */
+/* ------------------------------------------------------------------ */
+
+.ls-tooltip.ls-tooltip {
+  --rt-opacity: 1;
+  --rt-transition-show-delay: 150ms;
+  --rt-transition-closing-delay: 150ms;
+  background-color: var(--color-badge-primary-bg);
+  color: var(--color-badge-primary-text);
+  border-radius: var(--ls-radius-1);
+  padding: 6px 8px;
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-xs);
+  font-weight: 400;
+  line-height: var(--ls-leading-ui);
+  max-width: var(--tooltip-width);
+  z-index: var(--ls-z-tooltip);
+}
+
+/* ------------------------------------------------------------------ */
+/* Empty state                                                         */
+/* ------------------------------------------------------------------ */
+
+.ls-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ls-space-2);
+  padding: var(--ls-space-6) var(--ls-space-4);
+  text-align: center;
+}
+
+.ls-empty__text {
+  font-family: var(--ls-font-ui);
+  font-size: var(--ls-text-sm);
+  color: var(--text-color-text-subtle);
+  max-width: 44ch;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Shared keyframes + reduced motion                                   */
+/* ------------------------------------------------------------------ */
+
+@keyframes ls-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ls-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* pulses freeze (diodes hold steady-on, skeletons go static);
+     spinners keep rotating — they are state-necessary */
+  .ls-diode--pulse,
+  .ls-skeleton {
+    animation: none;
+  }
+}

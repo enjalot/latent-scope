@@ -1,0 +1,43 @@
+.bulkRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ls-space-2);
+}
+
+.tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ls-space-2);
+}
+
+/* clickable tag chip: chrome comes from .ls-badge (+ .ls-badge--selected for
+   the amber wash — colors only, no border-width shift) */
+.tagButton {
+  appearance: none;
+  cursor: pointer;
+  transition:
+    background-color var(--ls-dur-fast) var(--ls-ease-out),
+    border-color var(--ls-dur-fast) var(--ls-ease-out),
+    color var(--ls-dur-fast) var(--ls-ease-out);
+}
+
+/* applied only to unselected chips (JSX-gated) so hovering a selected chip
+   keeps its amber wash */
+.tagButtonIdle:hover {
+  background-color: var(--neutrals-color-neutral-2);
+}
+
+.tagButton:focus-visible {
+  outline: var(--ls-focus-ring);
+  outline-offset: var(--ls-focus-ring-offset);
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--ls-space-2);
+}

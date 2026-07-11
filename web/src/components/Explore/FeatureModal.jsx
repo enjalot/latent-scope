@@ -21,10 +21,6 @@ function FeatureModal({
     return `${(act / maxAct) * 100}%`;
   };
 
-  const itemStyle = (featIdx) => ({
-    fontWeight: featIdx === selectedFeature ? 'bold' : 'normal',
-  });
-
   const featureClick = useCallback(
     (featIdx, activation) => {
       handleFeatureClick(featIdx, activation, features[featIdx]?.label);
@@ -38,24 +34,47 @@ function FeatureModal({
       className={styles.featureModal}
       isVisible={isOpen}
       onClose={onClose}
-      title={`Features for Index ${rowIndex}`}
+      // --ls-z-modal: sits above the point detail drawer (--ls-z-drawer)
+      zIndex={510}
     >
       <div className={styles.header}>
-        <span className={styles.headerText}>Top {TO_SHOW} Activated SAE Features</span>
-        <Button onClick={onClose} icon="x" color="primary" variant="outline" size="small" />
+        <div className={styles.headerText}>
+          <span className="ls-overline">SAE FEATURES · ROW {rowIndex}</span>
+          <span className={styles.title}>Top {TO_SHOW} activated features</span>
+        </div>
+        <button
+          type="button"
+          className="ls-icon-btn"
+          onClick={onClose}
+          aria-label="Close feature list"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
       <div className={styles.content}>
         {topIndices.slice(0, TO_SHOW).map((featIdx, i) => {
           const feature = features?.[featIdx];
           return (
-            <div className={styles.item} key={i} style={itemStyle(featIdx)}>
+            <div
+              className={`${styles.item} ${featIdx === selectedFeature ? styles.itemSelected : ''}`}
+              key={i}
+            >
               <div
-                className={styles.itemBackground}
-                style={{
-                  width: getWidth(topActs[i]),
-                  borderBottom: hoveredIdx === i ? '2px solid #b87333' : 'none',
-                  backgroundColor: hoveredIdx === i ? '#b87333' : '#aaa',
-                }}
+                className={`${styles.itemBackground} ${
+                  hoveredIdx === i ? styles.itemBackgroundHovered : ''
+                }`}
+                style={{ width: getWidth(topActs[i]) }}
               />
               <div className={styles.featureLabel}>
                 <Button
@@ -74,9 +93,10 @@ function FeatureModal({
                 >
                   {featIdx}:
                 </span>
-                <span className={styles.filterLabel}>
-                  {feature?.label} [ activation: {topActs?.[i]?.toFixed(3)} /{' '}
-                  {feature?.dataset_max?.toFixed(3)}] [count: {feature?.dataset_count}]
+                <span className={styles.filterLabel}>{feature?.label}</span>
+                <span className={styles.filterMeta}>
+                  {topActs?.[i]?.toFixed(3)}/{feature?.dataset_max?.toFixed(3)} · n=
+                  {feature?.dataset_count}
                 </span>
               </div>
             </div>
