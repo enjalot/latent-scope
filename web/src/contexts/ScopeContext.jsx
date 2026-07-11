@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { useParams } from 'react-router-dom';
 
 import { apiService } from '../lib/apiService';
-import { saeAvailable, getLabelsForSaeModel } from '../lib/SAE';
+import { getSaeForModel, getLabelsForSaeModel } from '../lib/SAE';
 
 const ScopeContext = createContext(null);
 
@@ -28,7 +28,7 @@ export function ScopeProvider({ children }) {
         // for the embedding model (lib/SAE.js) or by the scope meta carrying
         // its own sae + sae_id (e.g. token-granularity SAEs trained on the
         // dataset itself).
-        if (saeAvailable[scope.embedding?.model_id] || (scope.sae && scope.sae_id)) {
+        if (getSaeForModel(scope.embedding?.model_id) || (scope.sae && scope.sae_id)) {
           setSae(scope.sae);
         } else {
           delete scope.sae;
@@ -69,8 +69,9 @@ export function ScopeProvider({ children }) {
   useEffect(() => {
     if (sae && embeddings && scope) {
       let embedding = embeddings.find((e) => e.id == scope.embedding_id);
-      if (embedding && saeAvailable[embedding.model_id]) {
-        apiService.getFeatures(saeAvailable[embedding.model_id]?.url).then((fts) => {
+      const saeEntry = getSaeForModel(embedding?.model_id);
+      if (embedding && saeEntry) {
+        apiService.getFeatures(saeEntry.url).then((fts) => {
           apiService.getDatasetFeatures(datasetId, sae?.id).then((dsfts) => {
             dsfts.forEach((ft, i) => {
               fts[i].dataset_max = ft.max_activation;
@@ -189,6 +190,10 @@ export function ScopeProvider({ children }) {
   // late-interaction embedding instead of one per dataset row.
   const isTokenScope = scope?.granularity === 'tokens';
 
+  // The pretrained-SAE registry entry for this scope's embedding model
+  // (label carries the latent-taxonomy model name for deep links).
+  const saeEntry = useMemo(() => getSaeForModel(scope?.embedding?.model_id), [scope]);
+
   const value = {
     datasetId,
     scopeId,
@@ -196,6 +201,7 @@ export function ScopeProvider({ children }) {
     scope,
     sae,
     isTokenScope,
+    saeEntry,
     scopeLoaded,
     error,
     clusterMap,

@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate SAE features from embeddings for a dataset')
     parser.add_argument('dataset_id', type=str, help='Dataset name (directory name in data/)')
     parser.add_argument('embedding_id', type=str, help='Name of embedding to use')
-    parser.add_argument("model_id", type=str, nargs="?", help="HF id of model to use", default="enjalot/sae-nomic-text-v1.5-FineWeb-edu-10BT")
+    parser.add_argument("model_id", type=str, nargs="?", help="HF id of model to use", default="enjalot/sae-nomic-text-v1.5-FineWeb-edu-100BT")
     parser.add_argument('k_expansion', type=str, nargs="?", help='Output file', default="64_32")
     parser.add_argument('device', type=str, nargs="?", help='Device to use')
     parser.add_argument('--checkpoint', type=str, default=None,

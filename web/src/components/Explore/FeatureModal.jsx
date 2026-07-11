@@ -1,7 +1,7 @@
 import { Modal, Button } from 'react-element-forge';
 import { useCallback, useMemo } from 'react';
 import { useScope } from '../../contexts/ScopeContext';
-import { getLabelsForSaeModel, getSaeForModel } from '../../lib/SAE';
+import { getLabelsForSaeModel } from '../../lib/SAE';
 import styles from './FeatureModal.module.scss';
 
 function FeatureModal({
@@ -16,15 +16,14 @@ function FeatureModal({
   handleFeatureClick,
 }) {
   const TO_SHOW = 15;
-  const { scope, sae } = useScope();
+  const { sae, saeEntry } = useScope();
 
-  // Link out to the latent-taxonomy page for THIS scope's SAE. Fall back to
-  // the NOMIC model only if we can't resolve one (pre-labels legacy scopes).
-  const taxonomyModel =
-    getLabelsForSaeModel(sae?.model_id)?.label ||
-    getSaeForModel(scope?.embedding?.model_id)?.label ||
-    'NOMIC_FWEDU_25k';
-  const baseUrl = `https://enjalot.github.io/latent-taxonomy#model=${taxonomyModel}&feature=`;
+  // Deep-link into the latent-taxonomy browser for THIS scope's SAE:
+  // scope-declared SAEs (e.g. token SAEs) resolve by the SAE's model repo,
+  // pretrained registry SAEs by the embedding model's registry entry.
+  const taxonomyName =
+    getLabelsForSaeModel(sae?.model_id)?.label || saeEntry?.label || 'NOMIC_FWEDU_25k';
+  const baseUrl = `https://enjalot.github.io/latent-taxonomy#model=${taxonomyName}&feature=`;
 
   // The SAE h5 stores top-k indices/acts in arbitrary order (torch topk with
   // sorted=False), so "top 15" must sort by activation here — slicing the raw
