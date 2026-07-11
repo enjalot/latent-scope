@@ -6,6 +6,12 @@ import { useColorMode } from '../../hooks/useColorMode';
 
 CameraControls.install({ THREE });
 
+// Chrome colors live in the token layer; the WebGL clear color is read at
+// build time and the scene rebuilds when the color mode flips (CrosshairPlot
+// pattern). Point palettes themselves are data-driven and stay in JS.
+const readToken = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
 // ---------------------------------------------------------------------------
 // Soft-splat billboard shader, ported/adapted from latent-renders pointset.js:
 // FOV-correct size attenuation with min/max pixel clamps, energy-preserving
@@ -147,7 +153,8 @@ function Scatter3D({
   // hover/select wiring, no tooltip fetch. Used by the umap preview panel.
   lightweight = false,
 }) {
-  const { isDark } = useColorMode();
+  // useColorMode re-renders on theme flips, which re-reads the chrome tokens.
+  useColorMode();
   const mountRef = useRef(null);
   const stateRef = useRef(null); // holds three.js objects across renders
   const onHoverRef = useRef(onHover);
@@ -174,7 +181,9 @@ function Scatter3D({
     return Math.max(max + 1, clusterLabels?.length || 0, 1);
   }, [scopeRows, clusterLabels]);
 
-  const bg = isDark ? 0x111111 : 0xfafafa;
+  // Map surface token (the darkest surface in dark mode). A primitive string,
+  // so the build effect below only re-runs when the theme actually changes.
+  const bg = readToken('--ls-surface-map');
 
   // Build the scene once (renderer, camera, controls, mesh). Rebuilds when the
   // point data or canvas size changes.
