@@ -5,6 +5,7 @@ from .base import ChatModelProvider
 
 class AnthropicChatProvider(ChatModelProvider):
     def load_model(self):
+        import tiktoken
         from anthropic import Anthropic
 
         api_key = get_key("ANTHROPIC_API_KEY")
@@ -14,9 +15,11 @@ class AnthropicChatProvider(ChatModelProvider):
             # fall back to the SDK's own resolution (ANTHROPIC_API_KEY env,
             # ANTHROPIC_AUTH_TOKEN, or an `ant auth login` profile)
             self.client = Anthropic()
-        # no local tokenizer for Claude models; label_clusters handles
-        # encoder=None by skipping token-based sample truncation
-        self.encoder = None
+        # Claude has no local tokenizer; use the gpt-4o encoding as a rough
+        # approximation so label_clusters' --max_tokens_per_sample /
+        # --max_tokens_total caps still apply (same fallback the OpenAI
+        # provider uses for custom endpoints)
+        self.encoder = tiktoken.encoding_for_model("gpt-4o")
 
     def chat(self, messages):
         # the Messages API takes system prompts as a top-level param

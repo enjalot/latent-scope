@@ -123,11 +123,23 @@ class TestAnthropicChatProvider:
         provider = self._provider(stop_reason="refusal")
         assert provider.chat([{"role": "user", "content": "hi"}]) == ""
 
-    def test_encoder_is_none_for_labeler_truncation_skip(self):
-        # label_clusters uses model.encoder for token truncation and
-        # handles None by keeping items untruncated
-        provider = self._provider()
-        assert provider.encoder is None
+    def test_load_model_sets_approximate_encoder(self, monkeypatch):
+        # label_clusters uses model.encoder to enforce --max_tokens_per_sample
+        # and --max_tokens_total; Claude has no local tokenizer so the provider
+        # supplies the approximate gpt-4o encoding rather than None
+        import sys
+        from types import ModuleType
+
+        fake_anthropic = ModuleType("anthropic")
+        fake_anthropic.Anthropic = lambda **kwargs: object()
+        monkeypatch.setitem(sys.modules, "anthropic", fake_anthropic)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+        provider = AnthropicChatProvider("claude-haiku-4-5", {"max_tokens": 8192})
+        provider.load_model()
+        assert provider.encoder is not None
+        text = "hello world"
+        assert provider.encoder.decode(provider.encoder.encode(text)) == text
 
 
 class TestChatModelRegistry:
