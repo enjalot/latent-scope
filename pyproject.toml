@@ -132,6 +132,11 @@ ls-upload-dataset = "latentscope.scripts.upload_dataset:main"
 [tool.hatch.version]
 path = "latentscope/__version__.py"
 
+[tool.hatch.build]
+# The built web UI (latentscope/web/dist) is gitignored, and hatchling skips
+# gitignored files by default — declare it as a build artifact so it ships.
+artifacts = ["latentscope/web/dist"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["latentscope"]
 
