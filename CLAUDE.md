@@ -36,6 +36,12 @@ ingest → embed → umap → cluster → label → scope → (sprite atlas) →
 - **ColBERT late-interaction (multi-vector) embeddings** via `pylate` — per-token
   vectors stored fp16, searched with MaxSim (issue #64). See
   `examples/colbert_quickstart/`.
+- **Token maps**: for late-interaction embeddings, an alternative granularity
+  that maps **one point per token** (not per document) while the table shows
+  parent documents with the selected token highlighted in context. Pipeline:
+  `ls-tokenize` → `ls-umap --granularity tokens` → `ls-cluster` (token-frequency
+  default labels) → optional `ls-sae --granularity tokens --checkpoint <dir>`
+  (token-level SAE features) → `ls-scope`. See `docs/token-maps.md`.
 - **LanceDB vector storage** (replaced HDF5). Embeddings live in a per-dataset
   LanceDB table; old HDF5 embeddings are migrated on demand.
 - **UMAP projection + clustering**, with LLM cluster labeling. Four clustering

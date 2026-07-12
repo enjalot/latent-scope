@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import PropTypes from 'prop-types';
 import { Tooltip } from 'react-tooltip';
 import { useFilter } from '../../contexts/FilterContext';
+import { useScope } from '../../contexts/ScopeContext';
+import { tokenSnippet, cleanTokenString, DEFAULT_SNIPPET_WINDOW } from '../../lib/tokenSnippet';
 // import DataTable from './DataTable';
 import 'react-data-grid/lib/styles.css';
 
@@ -31,6 +33,40 @@ FilterDataTable.propTypes = {
   showNavigation: PropTypes.bool,
   showIndexColumn: PropTypes.bool,
 };
+
+// Token-scope text cell: window the parent document's text around the token's
+// character span and highlight the token in place (built from substring
+// slices — no innerHTML). Tokens without a surface form (CLS/SEP/markers,
+// char_start === -1) fall back to the plain truncated text plus a muted note.
+function TokenSnippetCell({ row, column }) {
+  const text = row[column];
+  const snippet = tokenSnippet(text, row.char_start, row.char_end, DEFAULT_SNIPPET_WINDOW);
+  if (!snippet) {
+    const plain = typeof text === 'string' ? text : '';
+    return (
+      <span title={plain}>
+        <span className={styles.tokenSpecialNote}>{row.token_str} (special token) </span>
+        {plain.length > 2 * DEFAULT_SNIPPET_WINDOW
+          ? `${plain.slice(0, 2 * DEFAULT_SNIPPET_WINDOW)}…`
+          : plain}
+      </span>
+    );
+  }
+  // Three-segment flex so the highlighted token stays visible regardless of
+  // cell width: the before-context clips from the LEFT (dir="rtl" on the
+  // clipping span puts the ellipsis on the left; the inner <bdi dir="ltr">
+  // isolates the text so its rendering order is unaffected), the
+  // after-context clips from the right, and the token itself never shrinks.
+  return (
+    <span className={styles.tokenSnippetCell} title={text}>
+      <span className={styles.tokenSnippetBefore} dir="rtl">
+        <bdi dir="ltr">{snippet.before}</bdi>
+      </span>
+      <span className={styles.tokenHighlight}>{snippet.match}</span>
+      <span className={styles.tokenSnippetAfter}>{snippet.after}</span>
+    </span>
+  );
+}
 
 function RowWithHover({ props, onHover, onClick }) {
   const { row } = props;
@@ -103,6 +139,11 @@ function FilterDataTableBody({
   standalone = false,
   onHover = () => {},
   onClick = () => {},
+  // Token scopes (granularity: "tokens"): rows are tokens; the text column is
+  // rendered as a snippet with the token highlighted. Passed down by the
+  // connected variant; standalone (Setup/Preview) tables are always row-level.
+  scope = null,
+  isTokenScope = false,
 }) {
   // feature tooltip content
   const [featureTooltipContent, setFeatureTooltipContent] = useState(null);
@@ -124,10 +165,14 @@ function FilterDataTableBody({
     };
 
     const ls_features_column = 'ls_features';
+    const ls_token_column = 'ls_token';
+    // Token scopes window the text column the embedding was computed over.
+    const textColumn = (isTokenScope && scope?.embedding?.text_column) || dataset.text_column;
     let columns = ['ls_index'];
+    if (isTokenScope) columns.push(ls_token_column);
     // Text column is always the first column (after index)
 
-    columns.push(dataset.text_column);
+    columns.push(textColumn);
 
     if (distances && distances.length) columns.push('ls_similarity');
     if (showEmbeddings) columns.push('ls_embedding');
@@ -135,7 +180,7 @@ function FilterDataTableBody({
     if (clusterMap && Object.keys(clusterMap).length) columns.push('ls_cluster');
     // if (tagset && Object.keys(tagset).length) columns.push('tags');
 
-    columns = columns.concat(dataset.columns.filter((d) => d !== dataset.text_column));
+    columns = columns.concat(dataset.columns.filter((d) => d !== textColumn));
 
     let columnDefs = columns.map((col) => {
       const metadata = dataset.column_metadata ? dataset.column_metadata[col] : null;
@@ -194,6 +239,22 @@ function FilterDataTableBody({
         };
       }
 
+      if (col === ls_token_column) {
+        // Compact token column (frozen, so react-data-grid keeps it up front
+        // near the index column) showing the cleaned surface string.
+        return {
+          ...baseCol,
+          name: 'token',
+          width: 90,
+          frozen: true,
+          renderCell: ({ row }) => (
+            <span className={styles.tokenCell} title={row.token_str}>
+              {cleanTokenString(row.token_str)}
+            </span>
+          ),
+        };
+      }
+
       if (col === 'ls_cluster') {
         return {
           ...baseCol,
@@ -205,11 +266,14 @@ function FilterDataTableBody({
         };
       }
 
-      if (col === dataset.text_column) {
+      if (col === textColumn) {
         return {
           ...baseCol,
           width: 500,
           renderCell: ({ row }) => {
+            if (isTokenScope) {
+              return <TokenSnippetCell row={row} column={col} />;
+            }
             return <span title={row[col]}>{row[col]}</span>;
           },
         };
@@ -282,7 +346,18 @@ function FilterDataTableBody({
 
     // Add index column as first column
     return showIndexColumn ? [indexColumn, ...columnDefs] : columnDefs;
-  }, [dataset, clusterMap, distances, features, feature, sae_id, showEmbeddings, showIndexColumn]);
+  }, [
+    dataset,
+    scope,
+    isTokenScope,
+    clusterMap,
+    distances,
+    features,
+    feature,
+    sae_id,
+    showEmbeddings,
+    showIndexColumn,
+  ]);
 
   const renderRowWithHover = useCallback(
     (key, props) => {
@@ -360,9 +435,11 @@ function FilterDataTableBody({
   );
 }
 
-// Explore variant: rows, pagination and loading state come from FilterContext.
+// Explore variant: rows, pagination and loading state come from FilterContext;
+// token-scope awareness (snippet highlighting, token column) from ScopeContext.
 function ConnectedFilterDataTable(props) {
   const { dataTableRows, page, setPage, totalPages, loading } = useFilter();
+  const { scope, isTokenScope } = useScope();
   return (
     <FilterDataTableBody
       {...props}
@@ -371,6 +448,8 @@ function ConnectedFilterDataTable(props) {
       setPage={setPage}
       totalPages={totalPages}
       loading={loading}
+      scope={scope}
+      isTokenScope={isTokenScope}
     />
   );
 }

@@ -13,12 +13,13 @@ import ClusterLabelsPanel from '../components/Explore/ClusterLabelsPanel';
 import PointDetail from '../components/Explore/PointDetail';
 
 import { ScopeProvider, useScope } from '../contexts/ScopeContext';
+import { cleanTokenString, tokenSnippet } from '../lib/tokenSnippet';
 import { FilterProvider, useFilter } from '../contexts/FilterContext';
 import useDebounce from '../hooks/useDebounce';
 import { useSmallScreen } from '../hooks/useSmallScreen';
 import MobileExplore from './MobileExplore';
 
-import { filterConstants } from '../components/Explore/Search/utils';
+import { filterConstants, applyFilterToUrlParams } from '../components/Explore/Search/utils';
 import { Spinner } from '../components/ui';
 
 // Create a new component that wraps the main content
@@ -39,6 +40,7 @@ function ExploreContent() {
     sae,
     scopes,
     tags,
+    isTokenScope,
   } = useScope();
 
   const navigate = useNavigate();
@@ -52,6 +54,7 @@ function ExploreContent() {
     setFilterQuery,
     featureFilter,
     searchFilter,
+    clusterFilter,
     setFilterConfig,
     setFilterActive,
     setUrlParams,
@@ -63,9 +66,6 @@ function ExploreContent() {
   const [hovered, setHovered] = useState(null);
   const [hoveredCluster, setHoveredCluster] = useState(null);
   const [hoverAnnotations, setHoverAnnotations] = useState([]);
-  // Note: this currently has no setter wired up; it exists to satisfy
-  // VisualizationPane's props with a stable empty value.
-  const [dataTableRows] = useState([]);
   // Index of the point whose detail drawer is open (null = closed).
   const [selectedIndex, setSelectedIndex] = useState(null);
 
@@ -96,6 +96,27 @@ function ExploreContent() {
 
   const debouncedHydrateHoverText = useDebounce(hydrateHoverText, 5);
 
+  // Token scopes: hydrate the hovered token's passage context (parent text +
+  // char span) so the hover card can show the token highlighted in place.
+  const hydrateTokenHover = useCallback(
+    (index, setter) => {
+      latestHoverIndexRef.current = index;
+      const embeddingId = scope?.embedding_id || scope?.embedding?.id;
+      const textColumn = scope?.embedding?.text_column;
+      apiService.fetchTokensFromIndices(datasetId, [index], embeddingId).then((rows) => {
+        if (latestHoverIndexRef.current !== index || !rows?.length) return;
+        const row = rows[0];
+        setter({
+          text: row[textColumn],
+          snippet: tokenSnippet(row[textColumn], row.char_start, row.char_end, 120),
+        });
+      });
+    },
+    [datasetId, scope]
+  );
+
+  const debouncedHydrateTokenHover = useDebounce(hydrateTokenHover, 5);
+
   useEffect(() => {
     if (hoveredIndex !== null && hoveredIndex !== undefined && !deletedIndicesSet.has(hoveredIndex)) {
       // Invalidate any in-flight hydration for the previous point before we
@@ -103,6 +124,30 @@ function ExploreContent() {
       // the ref would still point at the old index during that window and a
       // late response for the old point could overwrite the new tooltip/image.
       latestHoverIndexRef.current = hoveredIndex;
+      if (isTokenScope) {
+        // Token scopes: the token string renders instantly from scopeRows
+        // (scopeRows[i].ls_index === i); the passage context (token
+        // highlighted in the parent text) hydrates behind it.
+        const token = cleanTokenString(scopeRows[hoveredIndex]?.token_str);
+        setHovered({
+          text: null,
+          token,
+          loading: true,
+          index: hoveredIndex,
+          cluster: clusterMap[hoveredIndex],
+        });
+        debouncedHydrateTokenHover(hoveredIndex, ({ text, snippet }) => {
+          setHovered({
+            text,
+            tokenSnippet: snippet,
+            token,
+            loading: false,
+            index: hoveredIndex,
+            cluster: clusterMap[hoveredIndex],
+          });
+        });
+        return;
+      }
       // Update the tooltip immediately with the new index + cluster so the
       // image (keyed on the index) swaps right away; the text arrives after
       // the hydration fetch, marked loading until then.
@@ -124,7 +169,15 @@ function ExploreContent() {
       setHovered(null);
       latestHoverIndexRef.current = null; // Reset the ref when hover is cleared
     }
-  }, [hoveredIndex, deletedIndicesSet, clusterMap, debouncedHydrateHoverText]);
+  }, [
+    hoveredIndex,
+    deletedIndicesSet,
+    clusterMap,
+    debouncedHydrateHoverText,
+    debouncedHydrateTokenHover,
+    isTokenScope,
+    scopeRows,
+  ]);
 
   // Update hover annotations
   useEffect(() => {
@@ -265,16 +318,30 @@ function ExploreContent() {
 
   const handleFeatureClick = useCallback(
     (featIdx, activation, label) => {
+      // Filters are single-select: selecting a feature replaces whatever
+      // filter was active (e.g. an open cluster) in both hook state and the
+      // URL, so the active-filter chip shows the feature and clearing it
+      // doesn't take a hidden cluster filter down with it.
+      if (clusterFilter.cluster) clusterFilter.clear();
       setFilterQuery(label);
       setFilterConfig({ type: filterConstants.FEATURE, value: featIdx, label });
       featureFilter.setFeature(featIdx);
       setFilterActive(true);
-      setUrlParams((prev) => {
-        prev.set('feature', featIdx);
-        return new URLSearchParams(prev);
-      });
+      setUrlParams((prev) =>
+        applyFilterToUrlParams(new URLSearchParams(prev), {
+          type: filterConstants.FEATURE,
+          value: featIdx,
+        })
+      );
     },
-    [featureFilter.setFeature, setFilterQuery, setFilterConfig, setFilterActive, setUrlParams]
+    [
+      featureFilter.setFeature,
+      clusterFilter,
+      setFilterQuery,
+      setFilterConfig,
+      setFilterActive,
+      setUrlParams,
+    ]
   );
 
   if (scopeError)
@@ -380,7 +447,6 @@ function ExploreContent() {
                 hoverAnnotations={hoverAnnotations}
                 selectedAnnotations={selectedAnnotations}
                 hoveredCluster={hoveredCluster}
-                dataTableRows={dataTableRows}
               />
             ) : null}
             <PointDetail selectedIndex={selectedIndex} onClose={handleDetailClose} />

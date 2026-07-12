@@ -110,7 +110,6 @@ function MobileExplore() {
               hoverAnnotations={hoverAnnotations}
               selectedAnnotations={[]}
               hoveredCluster={hoveredCluster}
-              dataTableRows={[]}
               isSmallScreen={true}
             />
           ) : null}

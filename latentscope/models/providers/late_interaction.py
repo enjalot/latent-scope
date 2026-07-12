@@ -108,6 +108,57 @@ class ColBERTEmbedProvider(EmbedModelProvider):
         mean_vectors = np.array(mean_vectors_list, dtype=np.float32)
         return mean_vectors, token_vectors_list
 
+    def tokenize_documents(self, inputs):
+        """Reproduce pylate's document tokenization, aligned 1:1 with the
+        vectors embed_multi stores.
+
+        pylate encodes documents as: tokenizer(text, truncation,
+        max_length=document_length - 1), then inserts the document marker
+        token at position 1, then drops tokens whose id is in the punctuation
+        skiplist (the dropped positions get no output vector). This method
+        replays that pipeline with return_offsets_mapping so each stored
+        vector gets a surface string and char span.
+
+        Returns
+        -------
+        list[list[tuple[str, int, int]]]
+            Per input, one (token_str, char_start, char_end) per kept token,
+            in stored-vector order. Tokens with no surface form (CLS, the
+            document marker, SEP) have char_start == char_end == -1.
+        """
+        model = self.model
+        tokenizer = model.tokenizer
+        prefix_id = getattr(model, "document_prefix_id", None)
+        prefix_str = getattr(model, "document_prefix", None)
+        max_length = model.document_length - (1 if prefix_id is not None else 0)
+        skiplist = set(model.skiplist)
+
+        encoded = tokenizer(
+            list(inputs),
+            truncation=True,
+            max_length=max_length,
+            return_offsets_mapping=True,
+        )
+
+        results = []
+        for ids, offsets in zip(encoded["input_ids"], encoded["offset_mapping"]):
+            strs = tokenizer.convert_ids_to_tokens(ids)
+            offsets = list(offsets)
+            if prefix_id is not None:
+                ids = [ids[0], prefix_id] + ids[1:]
+                strs = [strs[0], prefix_str] + strs[1:]
+                offsets = [offsets[0], (0, 0)] + offsets[1:]
+            tokens = []
+            for tid, s, (start, end) in zip(ids, strs, offsets):
+                if tid in skiplist:
+                    continue
+                if start == end:
+                    tokens.append((s, -1, -1))
+                else:
+                    tokens.append((s, int(start), int(end)))
+            results.append(tokens)
+        return results
+
 
 class ColPaliEmbedProvider(EmbedModelProvider):
     """EXPERIMENTAL: ColPali-style vision-language late interaction models.

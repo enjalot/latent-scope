@@ -49,6 +49,61 @@
   text-decoration: underline;
 }
 
+/* Token scopes: compact cell showing the token's cleaned surface string */
+.tokenCell {
+  font-family: var(--ls-font-mono, monospace);
+  font-weight: 600;
+}
+
+/* Token scopes: the token's span highlighted inside its document snippet.
+   Accent surface/line from the design system so it reads in both themes. */
+.tokenHighlight {
+  background-color: var(--ls-accent-surface);
+  box-shadow: inset 0 -2px 0 var(--ls-accent-line);
+  border-radius: 2px;
+  color: inherit;
+  font-weight: 600;
+  padding: 0 1px;
+}
+
+/* Token scopes: note for tokens with no surface form (CLS/SEP/markers) */
+.tokenSpecialNote {
+  color: var(--text-color-text-subtle, #999);
+  font-style: italic;
+}
+
+/* Token scopes: keep the highlighted token visible at any cell width —
+   context clips from the left before the token and from the right after it */
+.tokenSnippetCell {
+  display: flex;
+  align-items: baseline;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.tokenSnippetBefore {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  /* dir="rtl" on the element puts the ellipsis at the visual left; the inner
+     <bdi dir="ltr"> keeps the text itself rendering left-to-right */
+}
+
+.tokenSnippetCell .tokenHighlight {
+  flex: 0 0 auto;
+}
+
+.tokenSnippetAfter {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
 .featureColumnInfoTooltipIcon {
   display: inline-flex;
   align-items: center;

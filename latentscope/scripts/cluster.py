@@ -263,6 +263,22 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     # which space we cluster on.
     umap_embeddings = np.column_stack((umap_embeddings_df['x'], umap_embeddings_df['y']))
 
+    with open(os.path.join(DATA_DIR, dataset_id, "umaps", f"{umap_id}.json")) as f:
+        umap_meta = json.load(f)
+    granularity = umap_meta.get("granularity", "rows")
+    if granularity == "tokens":
+        # Token umaps have one row per token, so anything one-per-dataset-row
+        # cannot be used as clustering input.
+        if effective_cluster_on == 'embedding':
+            print(f"{umap_id} is a token-granularity umap; the embedding matrix is "
+                  "one mean vector per document and cannot cluster token points. "
+                  "Use --cluster_on umap (with hdbscan/kmeans/gmm).")
+            sys.exit(1)
+        if column is not None:
+            print("--column clusters by a dataset column, which is one value per "
+                  "document; not applicable to a token-granularity umap.")
+            sys.exit(1)
+
     if column is not None:
         input_df = pd.read_parquet(os.path.join(DATA_DIR, dataset_id, "input.parquet"))
         # use the column as the cluster labels
@@ -414,6 +430,7 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
         "id": cluster_id,
         "umap_id": umap_id,
         "method": method,
+        "granularity": granularity,
         "cluster_on": effective_cluster_on,
         "samples": samples,
         "min_samples": min_samples,
@@ -445,6 +462,26 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
     # get the indices of each item in a cluster
     cluster_indices = df.groupby('cluster').groups
 
+    # Token clusters get real default labels for free: the most frequent token
+    # strings in the cluster. (Document clusters keep "Cluster N" and rely on
+    # ls-label for meaningful names.)
+    token_strs = None
+    if granularity == "tokens":
+        from latentscope.util.embedding_store import load_token_metadata
+        embedding_id = umap_meta["embedding_id"]
+        tok_df = load_token_metadata(DATA_DIR, dataset_id, embedding_id,
+                                     columns=["token_index", "token_str", "char_start"])
+        if len(tok_df) == len(df):
+            # surface tokens only; specials (CLS/marker/SEP) carry no meaning
+            token_strs = tok_df["token_str"].where(tok_df["char_start"] >= 0).to_numpy()
+        else:
+            print(f"token metadata has {len(tok_df)} rows but cluster has {len(df)}; "
+                  "skipping token-frequency labels")
+
+    def _display_token(s):
+        # strip subword markers for display: sentencepiece '▁', BPE 'Ġ', WordPiece '##'
+        return s.lstrip("▁Ġ").removeprefix("##") or s
+
     # iterate over the clusters and create a row for each in a new dataframe with a label, description and array of indicies
     slides_df = pd.DataFrame(columns=['label', 'description', 'indices'])
     for cluster_label, indices in tqdm(cluster_indices.items()):
@@ -455,6 +492,16 @@ def clusterer(dataset_id, umap_id, samples, min_samples, cluster_selection_epsil
             description = (f"{len(indices)} noise points the clustering "
                            "algorithm did not assign to any cluster.")
             hull = []
+        elif token_strs is not None:
+            counts = pd.Series(token_strs[np.asarray(indices)]).dropna().value_counts()
+            top = [_display_token(s) for s in counts.index[:5].tolist()]
+            # dedupe post-display (e.g. '▁the' and 'the' collapse) keeping order
+            top = list(dict.fromkeys(t for t in top if t.strip()))[:3]
+            label = ", ".join(top) if top else f"Cluster {cluster_label}"
+            description = (f"Token cluster {cluster_label} with {len(indices)} tokens; "
+                           f"most frequent: {', '.join(top)}." if top else
+                           f"Token cluster {cluster_label} with {len(indices)} tokens.")
+            hull = hulls_by_label.get(cluster_label, [])
         else:
             label = f"Cluster {cluster_label}"
             description = f"This is cluster {cluster_label} with {len(indices)} items."

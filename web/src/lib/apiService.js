@@ -260,6 +260,23 @@ export const apiService = {
       return rows;
     });
   },
+  // Token-scope table fetch (granularity: "tokens"): `indices` are global
+  // token indices. Returns one row per token in request order — the parent
+  // document's columns plus index (the token index), parent_index, token_str,
+  // token_pos, char_start/char_end (span in the parent's text column; -1/-1
+  // for tokens with no surface form), and sae_acts/sae_indices when saeId is
+  // given (token-level top-k).
+  fetchTokensFromIndices: async (datasetId, indices, embeddingId, saeId) => {
+    return fetchJson(
+      `${apiUrl}/tokens/indexed`,
+      postJsonOptions({
+        dataset: datasetId,
+        embedding_id: embeddingId,
+        indices: indices,
+        ...(saeId ? { sae_id: saeId } : {}),
+      })
+    );
+  },
   fetchClusterLabelsAvailable: async (datasetId, clusterId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/clusters/${clusterId}/labels_available`);
   },
@@ -360,29 +377,33 @@ export const apiService = {
     });
   },
   getFeatures: async (url) => {
-    // Load hyparquet lazily so the (large) parquet parser is only fetched
-    // when features are actually requested, instead of blocking app boot.
-    const { asyncBufferFromUrl, parquetRead } = await import('hyparquet');
-    // hyparquet handles fetching the parquet file itself; asyncBufferFromUrl
-    // performs its own response status checks and throws on failure.
-    const buffer = await asyncBufferFromUrl(url);
-    return new Promise((resolve) => {
-      parquetRead({
-        file: buffer,
-        // rowFormat: 'object',
-        onComplete: (data) => {
-          let fts = data.map((f) => {
-            return {
-              feature: parseInt(f[0]),
-              max_activation: f[1],
-              label: f[6],
-              order: f[7],
-            };
-          });
-          resolve(fts);
-        },
-      });
+    // Fetch the whole label parquet and parse from the buffer instead of
+    // hyparquet's range-request reader: GitHub Pages answers range requests
+    // with 416 when the client accepts gzip (offsets don't exist in the
+    // compressed representation browsers always negotiate), which broke
+    // label loading entirely. Label parquets are a few MB — a single
+    // gzip-friendly GET is both correct and faster. hyparquet stays lazily
+    // imported so the parser doesn't block app boot.
+    const { parquetReadObjects } = await import('hyparquet');
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch features parquet (${response.status}): ${url}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const file = {
+      byteLength: arrayBuffer.byteLength,
+      slice: (start, end) => arrayBuffer.slice(start, end),
+    };
+    const rows = await parquetReadObjects({
+      file,
+      columns: ['feature', 'max_activation', 'label', 'order'],
     });
+    return rows.map((f) => ({
+      feature: Number(f.feature),
+      max_activation: f.max_activation,
+      label: f.label,
+      order: f.order,
+    }));
   },
   getDatasetFeatures: async (datasetId, saeId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/features/${saeId}`);
@@ -421,6 +442,33 @@ export const apiService = {
   },
   fetchScopeRows: async (datasetId, scopeId) => {
     return fetchJson(`${apiUrl}/datasets/${datasetId}/scopes/${scopeId}/parquet`);
+  },
+  // Binary scope-rows transport: read the scope parquet directly instead of
+  // the row-oriented JSON endpoint. At token granularity (~100-300 points per
+  // document) the JSON payload is >10x the parquet bytes (227MB vs 20MB at 1M
+  // tokens), so token scopes always load this way. `columns` limits both the
+  // decode work and the resident row-object size.
+  fetchScopeRowsParquet: async (datasetId, scopeId, columns) => {
+    const { parquetReadObjects } = await import('hyparquet');
+    const response = await fetch(`${apiUrl}/files/${datasetId}/scopes/${scopeId}.parquet`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch scope parquet: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const file = {
+      byteLength: arrayBuffer.byteLength,
+      slice: (start, end) => arrayBuffer.slice(start, end),
+    };
+    const rows = await parquetReadObjects({ file, columns });
+    // parquet int64 columns (ls_index, parent_index, cluster, ...) decode as
+    // BigInt; the app indexes arrays and compares with === against plain
+    // numbers, so coerce in place.
+    for (const row of rows) {
+      for (const key in row) {
+        if (typeof row[key] === 'bigint') row[key] = Number(row[key]);
+      }
+    }
+    return rows;
   },
   columnFilter: async (datasetId, filters) => {
     return fetchJson(

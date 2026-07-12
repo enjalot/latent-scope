@@ -13,7 +13,7 @@ import styles from './PointDetail.module.scss';
  * shared with the mobile table's expanded rows.
  */
 function PointDetail({ selectedIndex, onClose }) {
-  const { dataset, sae, clusterMap } = useScope();
+  const { dataset, scope, sae, clusterMap, isTokenScope } = useScope();
 
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -33,8 +33,17 @@ function PointDetail({ selectedIndex, onClose }) {
     const requestKey = `${dataset.id}:${sae?.id ?? ''}:${selectedIndex}`;
     latestRequestRef.current = requestKey;
     setLoading(true);
-    apiService
-      .fetchDataFromIndices(dataset.id, [selectedIndex], sae?.id ?? null)
+    // Token scopes: selectedIndex is a token index, so the row comes from the
+    // token endpoint (parent-document columns + token metadata).
+    const fetchRow = isTokenScope
+      ? apiService.fetchTokensFromIndices(
+          dataset.id,
+          [selectedIndex],
+          scope?.embedding_id || scope?.embedding?.id,
+          sae?.id ?? null
+        )
+      : apiService.fetchDataFromIndices(dataset.id, [selectedIndex], sae?.id ?? null);
+    fetchRow
       .then((rows) => {
         if (latestRequestRef.current !== requestKey) return;
         setRow(rows?.[0] ?? null);
@@ -45,7 +54,7 @@ function PointDetail({ selectedIndex, onClose }) {
         setRow(null);
         setLoading(false);
       });
-  }, [isOpen, selectedIndex, dataset?.id, sae?.id]);
+  }, [isOpen, selectedIndex, dataset?.id, sae?.id, isTokenScope, scope?.embedding_id, scope?.embedding?.id]);
 
   // Escape closes the drawer (PointDetailContent intercepts Escape first
   // while its lightbox is open).

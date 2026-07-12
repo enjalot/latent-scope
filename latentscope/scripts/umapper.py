@@ -28,6 +28,12 @@ def main():
                              'transform fit on the shared row prefix')
     parser.add_argument('--seed', type=int, help='Random seed', default=None)
     parser.add_argument('--sae_id', type=str, help='SAE to project instead of embedding', default=None)
+    parser.add_argument('--granularity', type=str, choices=['rows', 'tokens'], default='rows',
+                        help='Project one point per dataset row (default) or one point per '
+                             'token of a late-interaction embedding (requires ls-tokenize)')
+    parser.add_argument('--fit_sample', type=int, default=1_000_000,
+                        help='Token granularity only: max tokens the reducer is fit on; '
+                             'the rest are batch-transformed through the fitted reducer')
     parser.add_argument('--name', type=str, help='Human-friendly name for this umap', default=None)
     parser.add_argument('--description', type=str, help='Free-text description for this umap',
                         default=None)
@@ -39,7 +45,14 @@ def main():
     if seed == -1:
         seed = None
 
-    if args.transform_from:
+    if args.granularity == 'tokens':
+        if args.align or args.init or args.sae_id or args.register_to or args.transform_from:
+            parser.error("--granularity tokens cannot be combined with "
+                         "--align/--init/--sae_id/--register-to/--transform-from")
+        token_umapper(args.dataset_id, args.embedding_id, args.neighbors, args.min_dist,
+                      seed=seed, fit_sample=args.fit_sample, save=args.save,
+                      name=args.name, description=args.description)
+    elif args.transform_from:
         if args.align or args.init or args.save or args.sae_id or args.register_to:
             parser.error("--transform-from cannot be combined with "
                          "--align/--init/--save/--sae_id/--register-to")
@@ -662,6 +675,161 @@ def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, in
             pickle.dump(reducer, f)
 
     print("done with", umap_id)
+
+def token_umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, seed=None,
+                  fit_sample=1_000_000, save=False, name=None, description=None,
+                  transform_batch_tokens=250_000):
+    """Project every token of a late-interaction embedding to 2D.
+
+    One point per stored token vector, in global token_index order (the same
+    order ls-tokenize writes metadata in). Token counts routinely reach
+    millions, so the full token set is never materialized: the reducer is fit
+    on at most `fit_sample` uniformly sampled tokens, then every token is
+    streamed through reducer.transform in bounded batches. When the corpus
+    fits inside `fit_sample` a plain fit_transform runs instead.
+    """
+    DATA_DIR = get_data_dir()
+    umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
+    if not os.path.exists(umap_dir):
+        os.makedirs(umap_dir)
+
+    umap_id = _next_umap_id(umap_dir)
+    print("RUNNING:", umap_id, "(granularity=tokens)")
+
+    import pickle
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+
+    from latentscope.util.embedding_store import (
+        count_token_metadata,
+        has_token_metadata,
+        iter_token_vectors,
+    )
+
+    if not has_token_metadata(DATA_DIR, dataset_id, embedding_id):
+        print(f"No token metadata for {embedding_id}. Run:\n"
+              f"  ls-tokenize {dataset_id} {embedding_id}\n"
+              "first — it validates that token strings align with the stored "
+              "token vectors, which token maps depend on.")
+        sys.exit(1)
+
+    total_tokens = count_token_metadata(DATA_DIR, dataset_id, embedding_id)
+    print(f"{total_tokens} tokens total")
+
+    from latentscope.util.device import resolve_device
+    res = resolve_device()
+    use_cuml = res.use_cuml and not save
+    if res.use_cuml and save:
+        print("umapper: --save pickles a CPU reducer; running CPU umap-learn")
+
+    if total_tokens <= fit_sample:
+        print("fitting on all tokens")
+        parts = []
+        for _, vec_list in iter_token_vectors(DATA_DIR, dataset_id, embedding_id):
+            parts.append(np.concatenate(vec_list))
+        all_tokens = np.concatenate(parts)
+        parts = None
+        umap_embeddings, reducer = _reduce_umap(
+            all_tokens, neighbors, min_dist, seed, use_cuml)
+        all_tokens = None
+        fit_n = total_tokens
+    else:
+        fit_n = fit_sample
+        print(f"fitting on a uniform sample of {fit_n} tokens, "
+              "then transforming the rest")
+        rng = np.random.default_rng(seed if seed is not None else 0)
+        sample_idx = np.sort(rng.choice(total_tokens, size=fit_n, replace=False))
+
+        parts = []
+        position = 0
+        for _, vec_list in iter_token_vectors(DATA_DIR, dataset_id, embedding_id):
+            flat = np.concatenate(vec_list)
+            lo = np.searchsorted(sample_idx, position)
+            hi = np.searchsorted(sample_idx, position + len(flat))
+            if hi > lo:
+                parts.append(flat[sample_idx[lo:hi] - position])
+            position += len(flat)
+        fit_matrix = np.concatenate(parts)
+        parts = None
+
+        _, reducer = _reduce_umap(fit_matrix, neighbors, min_dist, seed, use_cuml)
+        fit_matrix = None
+
+        print("transforming all tokens through the fitted reducer")
+        outputs = []
+        buffer = []
+        buffered = 0
+        def flush():
+            nonlocal buffer, buffered
+            if not buffer:
+                return
+            batch = np.concatenate(buffer)
+            outputs.append(_to_numpy(reducer.transform(batch)).astype(np.float32))
+            buffer = []
+            buffered = 0
+        for _, vec_list in iter_token_vectors(DATA_DIR, dataset_id, embedding_id):
+            flat = np.concatenate(vec_list)
+            buffer.append(flat)
+            buffered += len(flat)
+            if buffered >= transform_batch_tokens:
+                flush()
+        flush()
+        umap_embeddings = np.concatenate(outputs)
+        outputs = None
+
+    assert len(umap_embeddings) == total_tokens, (
+        f"projected {len(umap_embeddings)} tokens, expected {total_tokens}")
+
+    min_values = np.min(umap_embeddings, axis=0)
+    max_values = np.max(umap_embeddings, axis=0)
+    umap_embeddings = (umap_embeddings - min_values) / (max_values - min_values)
+    umap_embeddings = 2 * umap_embeddings - 1
+
+    print("writing normalized umap", umap_id)
+    df = pd.DataFrame(umap_embeddings.astype(np.float32), columns=['x', 'y'])
+    output_file = os.path.join(umap_dir, f"{umap_id}.parquet")
+    df.to_parquet(output_file)
+    print("wrote", output_file)
+
+    fig, ax = plt.subplots(figsize=(14.22, 14.22))
+    # calculate_point_size is tuned for row counts; token maps are 100-300x
+    # denser, so scale the preview marker down or the PNG is a solid blob
+    n_points = umap_embeddings.shape[0]
+    point_size = 0.1 if n_points > 100_000 else calculate_point_size(n_points)
+    print("POINT SIZE", point_size, "for", n_points, "points")
+    plt.scatter(umap_embeddings[:, 0], umap_embeddings[:, 1], s=point_size, alpha=0.5)
+    plt.axis('off')
+    plt.gca().set_position([0, 0, 1, 1])
+    plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+    plt.close(fig)
+
+    with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
+        meta = {
+            "id": umap_id,
+            "embedding_id": embedding_id,
+            "neighbors": neighbors,
+            "min_dist": min_dist,
+            "min_values": min_values.tolist(),
+            "max_values": max_values.tolist(),
+            "granularity": "tokens",
+            "total_tokens": int(total_tokens),
+            "fit_sample": int(fit_n),
+        }
+        if name is not None:
+            meta["name"] = name
+        if description is not None:
+            meta["description"] = description
+        json.dump(meta, f, indent=2)
+
+    if save:
+        with open(os.path.join(umap_dir, f'{umap_id}.pkl'), 'wb') as f:
+            pickle.dump(reducer, f)
+
+    print("done with", umap_id)
+    return umap_id
+
 
 def sparse_umapper(dataset_id, embedding_id, sae_id, neighbors=25, min_dist=0.1, save=False,
                    init=None, seed=None, name=None, description=None, dimensions=2):

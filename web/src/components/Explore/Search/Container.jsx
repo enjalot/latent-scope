@@ -6,7 +6,8 @@ import { useSearchParams } from 'react-router-dom';
 import SearchResults from './SearchResults';
 import styles from './Container.module.scss';
 import { useFilter } from '../../../contexts/FilterContext';
-import { filterConstants } from './utils';
+import { useScope } from '../../../contexts/ScopeContext';
+import { filterConstants, applyFilterToUrlParams } from './utils';
 /*
  * SearchContainer is the main parent component that manages the overall search state.
  * It holds the current query and suggestion data, and conditionally renders subcomponents.
@@ -19,6 +20,7 @@ import { filterConstants } from './utils';
 const Container = () => {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [, setUrlParams] = useSearchParams();
+  const { isTokenScope } = useScope();
 
   const {
     searchFilter,
@@ -69,20 +71,18 @@ const Container = () => {
 
   const handleSelect = (selection) => {
     setDropdownIsOpen(false);
+
+    // Filters are single-select: switching type clears the previous filter's
+    // hook state so it doesn't linger (e.g. an open cluster surviving a
+    // feature selection), and the URL carries exactly one filter.
+    const { type } = selection;
+    if (type !== filterConstants.CLUSTER && clusterFilter.cluster) clusterFilter.clear();
+    if (type !== filterConstants.FEATURE && featureFilter.feature >= 0) featureFilter.clear();
+
     setFilterConfig(selection);
     setFilterActive(true);
 
-    const { type, value, column } = selection;
-
-    setUrlParams((prev) => {
-      if (type === filterConstants.COLUMN) {
-        prev.set('column', column);
-        prev.set('value', value);
-      } else {
-        prev.set(type, value);
-      }
-      return prev;
-    });
+    setUrlParams((prev) => applyFilterToUrlParams(new URLSearchParams(prev), selection));
   };
 
   const handleClear = () => {
@@ -130,7 +130,9 @@ const Container = () => {
             value={filterQuery}
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && filterQuery) {
+              // Token scopes: Enter would run a NN search whose document
+              // indices don't index token points — disabled (see SearchResults).
+              if (e.key === 'Enter' && filterQuery && !isTokenScope) {
                 handleSelect({
                   type: filterConstants.SEARCH,
                   value: filterQuery,

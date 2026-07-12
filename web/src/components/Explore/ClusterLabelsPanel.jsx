@@ -121,6 +121,7 @@ const ClusterLabelsPanel = () => {
   const { clusterLabels, scopeRows } = useScope();
   const {
     clusterFilter,
+    featureFilter,
     setFilterConfig,
     setFilterActive,
     setFilterQuery,
@@ -171,6 +172,8 @@ const ClusterLabelsPanel = () => {
           return new URLSearchParams(prev);
         });
       } else {
+        // single-select: a cluster selection replaces any active feature
+        if (featureFilter.feature >= 0) featureFilter.clear();
         clusterFilter.setCluster(clusterItem);
         setFilterQuery(clusterItem.label);
         setFilterConfig({
@@ -189,7 +192,15 @@ const ClusterLabelsPanel = () => {
         });
       }
     },
-    [activeClusterIndex, clusterFilter, setFilterConfig, setFilterActive, setFilterQuery, setUrlParams]
+    [
+      activeClusterIndex,
+      clusterFilter,
+      featureFilter,
+      setFilterConfig,
+      setFilterActive,
+      setFilterQuery,
+      setUrlParams,
+    ]
   );
 
   const handleClearFilter = useCallback(() => {

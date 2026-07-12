@@ -231,3 +231,13 @@
   font-size: var(--ls-text-xs);
   font-variant-numeric: tabular-nums;
 }
+
+/* Token scopes: the selected token highlighted inside the full document text */
+.tokenHighlight {
+  background-color: var(--ls-accent-surface);
+  box-shadow: inset 0 -2px 0 var(--ls-accent-line);
+  border-radius: 2px;
+  color: inherit;
+  font-weight: 600;
+  padding: 0 1px;
+}

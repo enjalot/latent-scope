@@ -197,6 +197,10 @@ without collapsing — see `docs/clustering.md`.
 - **Setup gallery** — umap/cluster runs carry names/descriptions and show as
   browsable cards (not bare ids).
 - **Search** — dense similarity, and ColBERT MaxSim for late-interaction.
+- **Token maps** — for late-interaction embeddings, map one point per *token*
+  (`ls-tokenize` → `ls-umap --granularity tokens` → cluster → scope, optional
+  token-level SAE features); the table shows parent documents with the
+  selected token highlighted. See `docs/token-maps.md`.
 - **Density heatmap** and, for image datasets, a **sprite-atlas image map**
   (heatmap → representative images → points as you zoom).
 

@@ -200,6 +200,184 @@ def load_token_vectors(data_dir, dataset_id, embedding_id, indices=None):
     return result
 
 
+def load_num_tokens(data_dir, dataset_id, embedding_id):
+    """Load the per-document token counts for a late interaction embedding.
+
+    Returns
+    -------
+    np.ndarray of shape (N,) int32, in ls_index order.
+    """
+    db = _connect(data_dir, dataset_id)
+    table_name = _embedding_table_name(embedding_id)
+
+    if table_name not in _get_table_names(db):
+        raise ValueError(f"No LanceDB table for {embedding_id}")
+    tbl = db.open_table(table_name)
+    if "num_tokens" not in tbl.schema.names:
+        raise ValueError(f"Embedding {embedding_id} does not have token vectors "
+                         "(not a late interaction embedding).")
+    data = tbl.to_lance().to_table(columns=["ls_index", "num_tokens"])
+    order = np.argsort(data["ls_index"].to_numpy())
+    return data["num_tokens"].to_numpy()[order].astype(np.int32)
+
+
+def iter_token_vectors(data_dir, dataset_id, embedding_id, row_batch_size=256):
+    """Stream per-token vectors for all documents, in ls_index order.
+
+    Never materializes the full token set: reads `row_batch_size` documents
+    per LanceDB query.
+
+    Yields
+    ------
+    (ls_indices, token_vectors_list) : (np.ndarray of int64, list[np.ndarray])
+        token_vectors_list[i] has shape (T_i, D) float32 and belongs to
+        document ls_indices[i].
+    """
+    db = _connect(data_dir, dataset_id)
+    table_name = _embedding_table_name(embedding_id)
+    if table_name not in _get_table_names(db):
+        raise ValueError(f"No LanceDB table for {embedding_id}")
+    tbl = db.open_table(table_name)
+    if "token_vectors" not in tbl.schema.names:
+        raise ValueError(f"Embedding {embedding_id} does not have token vectors "
+                         "(not a late interaction embedding).")
+
+    n = tbl.count_rows()
+    for start in range(0, n, row_batch_size):
+        stop = min(start + row_batch_size, n)
+        df = (
+            tbl.search()
+            .where(f"ls_index >= {start} AND ls_index < {stop}")
+            .select(["ls_index", "token_vectors"])
+            .limit(stop - start)
+            .to_pandas()
+        )
+        df = df.sort_values("ls_index")
+        vecs = [np.stack(tv).astype(np.float32) for tv in df["token_vectors"]]
+        yield df["ls_index"].to_numpy(), vecs
+
+
+# ---------------------------------------------------------------------------
+# Token metadata (token strings + char offsets for late interaction models)
+#
+# Written by ls-tokenize: one row per *kept* token, aligned 1:1 with the
+# vectors nested in the embedding table's token_vectors column. token_index
+# is the global position (cumulative over documents in ls_index order), the
+# same ordering iter_token_vectors yields.
+# ---------------------------------------------------------------------------
+
+def _token_table_name(embedding_id):
+    """Return the LanceDB table name for an embedding's token metadata."""
+    return f"tok-{embedding_id}"
+
+
+def append_token_metadata(data_dir, dataset_id, embedding_id, ls_indices,
+                          token_pos, token_strs, char_starts, char_ends,
+                          start_token_index):
+    """Append a batch of token metadata rows.
+
+    All arguments are flat, parallel arrays (one entry per token).
+    char_start/char_end are offsets into the *original* text column value
+    (before any embedding prefix); -1/-1 marks tokens with no surface form
+    (CLS/marker/SEP or prefix tokens).
+    """
+    import pyarrow as pa
+
+    db = _connect(data_dir, dataset_id)
+    table_name = _token_table_name(embedding_id)
+
+    n = len(token_strs)
+    batch = pa.table({
+        "token_index": pa.array(
+            range(start_token_index, start_token_index + n), pa.int64()),
+        "ls_index": pa.array(np.asarray(ls_indices, dtype=np.int64), pa.int64()),
+        "token_pos": pa.array(np.asarray(token_pos, dtype=np.int32), pa.int32()),
+        "token_str": pa.array(token_strs, pa.string()),
+        "char_start": pa.array(np.asarray(char_starts, dtype=np.int32), pa.int32()),
+        "char_end": pa.array(np.asarray(char_ends, dtype=np.int32), pa.int32()),
+    })
+
+    if table_name in _get_table_names(db):
+        db.open_table(table_name).add(batch)
+    else:
+        db.create_table(table_name, batch)
+
+
+def drop_token_metadata(data_dir, dataset_id, embedding_id):
+    """Remove the token metadata table if it exists (for re-runs)."""
+    db = _connect(data_dir, dataset_id)
+    table_name = _token_table_name(embedding_id)
+    if table_name in _get_table_names(db):
+        db.drop_table(table_name)
+
+
+def has_token_metadata(data_dir, dataset_id, embedding_id):
+    """Check whether ls-tokenize has been run for this embedding."""
+    db = _connect(data_dir, dataset_id)
+    return _token_table_name(embedding_id) in _get_table_names(db)
+
+
+def count_token_metadata(data_dir, dataset_id, embedding_id):
+    """Return the total number of token metadata rows."""
+    db = _connect(data_dir, dataset_id)
+    table_name = _token_table_name(embedding_id)
+    if table_name not in _get_table_names(db):
+        return 0
+    return db.open_table(table_name).count_rows()
+
+
+def load_token_metadata(data_dir, dataset_id, embedding_id, token_indices=None,
+                        ls_indices=None, columns=None):
+    """Load token metadata rows as a pandas DataFrame.
+
+    Parameters
+    ----------
+    token_indices : list[int] or None
+        Filter to these global token indices.
+    ls_indices : list[int] or None
+        Filter to all tokens of these parent documents.
+    columns : list[str] or None
+        Subset of columns to read.
+
+    Returns
+    -------
+    pd.DataFrame sorted by token_index.
+    """
+    db = _connect(data_dir, dataset_id)
+    table_name = _token_table_name(embedding_id)
+    if table_name not in _get_table_names(db):
+        raise ValueError(f"No token metadata for {embedding_id}. Run ls-tokenize first.")
+    tbl = db.open_table(table_name)
+
+    if token_indices is not None:
+        values = ",".join(str(int(i)) for i in token_indices)
+        query = tbl.search().where(f"token_index IN ({values})").limit(len(token_indices))
+    elif ls_indices is not None:
+        values = ",".join(str(int(i)) for i in ls_indices)
+        # no precise row bound known up front; count first to set the limit
+        query = tbl.search().where(f"ls_index IN ({values})").limit(tbl.count_rows())
+    else:
+        query = tbl.search().limit(tbl.count_rows())
+
+    if columns is not None:
+        query = query.select(columns)
+    df = query.to_pandas()
+    if "token_index" in df.columns:
+        df = df.sort_values("token_index").reset_index(drop=True)
+    return df
+
+
+def create_token_metadata_indexes(data_dir, dataset_id, embedding_id):
+    """BTREE indexes for the two lookup patterns: by token and by parent doc."""
+    db = _connect(data_dir, dataset_id)
+    table_name = _token_table_name(embedding_id)
+    if table_name not in _get_table_names(db):
+        return
+    tbl = db.open_table(table_name)
+    tbl.create_scalar_index("token_index")
+    tbl.create_scalar_index("ls_index")
+
+
 def has_token_vectors(data_dir, dataset_id, embedding_id):
     """Check if this embedding has per-token vectors (late interaction)."""
     db = _connect(data_dir, dataset_id)
