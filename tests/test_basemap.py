@@ -265,3 +265,131 @@ def test_procrustes_align_recovers_target(tmp_data_dir, monkeypatch):
     assert meta["min_values"] == [-5.0, -5.0]
     assert meta["basemap"]["basemap_id"] == "basemap-test"
     assert os.path.exists(os.path.join(umap_dir, "umap-003.png"))
+
+
+# ---------------------------------------------------------------------------
+# current (kernel-era) checkpoints: run-directory packs, derived frames,
+# density underlays, provenance
+# ---------------------------------------------------------------------------
+
+def _save_kernel_era_checkpoint(path, d_in=DIM, hidden_dim=16):
+    """A parametric_umap checkpoint with the training knobs current
+    latent-basemap runs record next to the weights."""
+    model = ResidualBottleneckMLP(d_in, hidden_dim, 2, 3)
+    torch.save({
+        "model_state_dict": model.state_dict(),
+        "architecture": "residual_bottleneck",
+        "input_dim": d_in, "hidden_dim": hidden_dim, "n_layers": 3, "n_components": 2,
+        "n_neighbors": 15, "a": 1.9328, "b": 0.7905,
+        "low_dim_kernel": "umap", "kernel_alpha": 1.0,
+        "fneg_weight": 1.0, "fneg_lo": 0.1, "fneg_hi": 0.4,
+        "density_weight": 0.0,
+    }, path)
+    return model
+
+
+def _make_run_dir(tmp_path, name="umap-md000-x4-fneg10", n=500, density=True):
+    """A latent-basemap run directory: checkpoint + coordinates + density render."""
+    run_dir = tmp_path / name
+    run_dir.mkdir()
+    checkpoint = str(run_dir / "model.pt")
+    _save_kernel_era_checkpoint(checkpoint)
+    rng = np.random.default_rng(3)
+    coords = rng.normal(size=(n, 2)).astype(np.float32) * 10
+    np.save(run_dir / "coordinates.npy", coords)
+    if density:
+        import matplotlib.image as mpimg
+        mpimg.imsave(str(run_dir / "density.png"), np.zeros((16, 16, 4), dtype=np.float32))
+    (run_dir / "summary.json").write_text(json.dumps({"arm": name}))
+    return checkpoint, coords
+
+
+def test_load_records_kernel_era_provenance(tmp_path):
+    path = str(tmp_path / "model.pt")
+    _save_kernel_era_checkpoint(path)
+    _, info = load_basemap_checkpoint(path)
+    assert info["arch"] == "residual_bottleneck"
+    # kernel/fneg knobs do not touch inference but identify which map this is
+    assert info["provenance"]["low_dim_kernel"] == "umap"
+    assert info["provenance"]["kernel_alpha"] == 1.0
+    assert info["provenance"]["fneg_weight"] == 1.0
+    assert info["provenance"]["a"] == 1.9328
+
+
+def test_extent_from_coordinates_matches_padded_percentile_box(tmp_path):
+    from latentscope.scripts.basemap import (
+        EXTENT_PAD,
+        EXTENT_PERCENTILES,
+        _extent_from_coordinates,
+    )
+    rng = np.random.default_rng(11)
+    coords = rng.normal(size=(5000, 2)).astype(np.float32)
+    path = str(tmp_path / "coordinates.npy")
+    np.save(path, coords)
+
+    mins, maxs = _extent_from_coordinates(path)
+    lo, hi = np.percentile(coords.astype(np.float64), EXTENT_PERCENTILES, axis=0)
+    pad = EXTENT_PAD * (hi - lo)
+    assert np.allclose(mins, lo - pad)
+    assert np.allclose(maxs, hi + pad)
+
+
+def test_basemapper_uses_run_directory_pack(embedded_dataset, tmp_path):
+    """A checkpoint given by path picks up its run directory's coordinates
+    (canonical frame) and density render (underlay) with no registry entry."""
+    data_dir, dataset_id = embedded_dataset
+    checkpoint, coords = _make_run_dir(tmp_path)
+
+    umap_id = basemapper(dataset_id, "embedding-001", checkpoint)
+
+    umap_dir = os.path.join(data_dir, dataset_id, "umaps")
+    with open(os.path.join(umap_dir, f"{umap_id}.json")) as f:
+        meta = json.load(f)
+    # the run directory names the map, not the (always "model.pt") file
+    assert meta["basemap"]["basemap_id"] == "umap-md000-x4-fneg10"
+    assert meta["basemap"]["frame"] == "canonical"
+    assert meta["basemap"]["extent_source"] == "coordinates"
+    assert meta["basemap"]["density_png"].endswith("density.png")
+    assert meta["basemap"]["provenance"]["low_dim_kernel"] == "umap"
+    # the frame is the map's own padded percentile box
+    from latentscope.scripts.basemap import _extent_from_coordinates
+    mins, maxs = _extent_from_coordinates(str(tmp_path / "umap-md000-x4-fneg10"
+                                              / "coordinates.npy"))
+    assert np.allclose(meta["min_values"], mins)
+    assert np.allclose(meta["max_values"], maxs)
+    assert os.path.exists(os.path.join(umap_dir, f"{umap_id}.png"))
+
+
+def test_basemapper_no_underlay_flag_and_legacy_extent(embedded_dataset, tmp_path, monkeypatch):
+    from latentscope.scripts.basemap import _underlay_aligns
+    data_dir, dataset_id = embedded_dataset
+    checkpoint, _ = _make_run_dir(tmp_path)
+
+    umap_id = basemapper(dataset_id, "embedding-001", checkpoint, underlay=False)
+    umap_dir = os.path.join(data_dir, dataset_id, "umaps")
+    with open(os.path.join(umap_dir, f"{umap_id}.json")) as f:
+        assert json.load(f)["basemap"]["density_png"] is None
+
+    # a legacy registry extent (unpadded, from a separate reference sample) is
+    # not the render's box, so no underlay is drawn against it
+    assert not _underlay_aligns({"min_values": [-1, -1], "max_values": [1, 1],
+                                 "percentiles": [0.1, 99.9]})
+    assert _underlay_aligns({"min_values": [-1, -1], "max_values": [1, 1],
+                             "percentiles": [0.1, 99.9], "pad": 0.02})
+
+
+def test_basemapper_dataset_frame_when_no_pack(embedded_dataset, tmp_path):
+    """A loose checkpoint with no artifacts beside it still projects, in the
+    dataset's own frame."""
+    data_dir, dataset_id = embedded_dataset
+    checkpoint, _ = _make_run_dir(tmp_path, name="loose")
+    os.remove(str(tmp_path / "loose" / "coordinates.npy"))
+    os.remove(str(tmp_path / "loose" / "summary.json"))
+
+    umap_id = basemapper(dataset_id, "embedding-001", checkpoint)
+    umap_dir = os.path.join(data_dir, dataset_id, "umaps")
+    with open(os.path.join(umap_dir, f"{umap_id}.json")) as f:
+        meta = json.load(f)
+    assert meta["basemap"]["basemap_id"] == "model.pt"
+    assert meta["basemap"]["frame"] == "dataset"
+    assert meta["basemap"]["density_png"] is None

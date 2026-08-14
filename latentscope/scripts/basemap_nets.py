@@ -91,10 +91,25 @@ class ResidualBottleneckMLP(nn.Module):
         return self.proj_out(x)
 
 
+# Training-time knobs that later latent-basemap checkpoints (the "kernel era":
+# low-dim kernel choice, far-negative sampling, density regularization) carry
+# alongside the weights. They do not change inference — a projector forward pass
+# is a plain MLP — but they identify WHICH map a checkpoint draws, so we record
+# them in the umap meta for provenance.
+PROVENANCE_FIELDS = (
+    "n_neighbors", "a", "b",
+    "low_dim_kernel", "kernel_alpha", "correlation_weight",
+    "pos_ratio", "positive_target_mode",
+    "fneg_weight", "fneg_lo", "fneg_hi",
+    "density_weight", "density_radii_path", "density_nn_path",
+    "learning_rate", "clip_grad_norm", "clip_grad_value",
+)
+
+
 def load_basemap_checkpoint(path, device="cpu"):
     """Load either checkpoint lineage; returns (model, info dict).
 
-    info: {"arch", "d_in", "hidden_dim", "n_layers", "n_params"}
+    info: {"arch", "d_in", "hidden_dim", "n_layers", "n_params", "provenance"}
     """
     checkpoint = torch.load(path, map_location=device, weights_only=False)
     state_dict = checkpoint["model_state_dict"]
@@ -141,4 +156,5 @@ def load_basemap_checkpoint(path, device="cpu"):
     model.eval()
     model.to(device)
     info["n_params"] = sum(p.numel() for p in model.parameters())
+    info["provenance"] = {k: checkpoint[k] for k in PROVENANCE_FIELDS if k in checkpoint}
     return model, info

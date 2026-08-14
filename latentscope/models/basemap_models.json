@@ -1,5 +1,59 @@
 [
   {
+    "id": "basemap-minilm-2m-umap-md000-x4-fneg10",
+    "name": "MiniLM mixed-2M umap kernel, far-neg (x4 dose)",
+    "checkpoint": "/data/latent-basemap/sandbox/2m-knobs/umap-md000-x4-fneg10/model.pt",
+    "coordinates": "/data/latent-basemap/sandbox/2m-knobs/umap-md000-x4-fneg10/coordinates.npy",
+    "density_png": "/data/latent-basemap/sandbox/2m-knobs/umap-md000-x4-fneg10/density.png",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -23.96989986541748,
+        -31.89296159421921
+      ],
+      "max_values": [
+        25.1504303982544,
+        13.962312789554598
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "pad": 0.02,
+      "n_reference": 2000000,
+      "reference": "the map's own 2M training rows (coordinates.npy), same box as density.png"
+    },
+    "description": "Kernel-era sandbox map (Aug 2026): residual_bottleneck h2048, UMAP low-dim kernel (a=1.9328, b=0.7905), far-negative sampling fneg_weight=1.0 lo/hi 0.1/0.4, 4x dose. Trained on the mixed 2M MiniLM substrate (fineweb-edu / RedPajama / pile chunked-120). Ships a density render, so projections draw the basemap underneath."
+  },
+  {
+    "id": "basemap-minilm-12500k-umap-md000-x2-fneg10",
+    "name": "MiniLM mixed-12.5M umap kernel, far-neg (x2 dose)",
+    "checkpoint": "/data/latent-basemap/sandbox/12500k-knobs/umap-md000-x2-fneg10/model.pt",
+    "coordinates": "/data/latent-basemap/sandbox/12500k-knobs/umap-md000-x2-fneg10/coordinates.npy",
+    "density_png": "/data/latent-basemap/sandbox/12500k-knobs/umap-md000-x2-fneg10/density.png",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -33.634795498771666,
+        -29.35361772720337
+      ],
+      "max_values": [
+        29.944285662574767,
+        26.44914877120974
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "pad": 0.02,
+      "n_reference": 12500000,
+      "reference": "the map's own 12.5M training rows (coordinates.npy), same box as density.png"
+    },
+    "description": "Kernel-era sandbox map (Aug 2026) at the 12.5M rung: same knobs as the 2M far-neg arm at 2x dose. The larger substrate gives finer structure; use this one when a dataset should land against the bigger map."
+  },
+  {
     "id": "basemap-minilm-ded-30m-bigger",
     "name": "MiniLM ded-30M bigger (h1024)",
     "checkpoint": "/data/checkpoints/pumap/model_ded_ded-30m-bigger-model.pt",

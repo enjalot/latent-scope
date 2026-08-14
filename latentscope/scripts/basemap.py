@@ -31,12 +31,16 @@ def main():
                              "Default: canonical when the registry has an extent, else dataset.")
     parser.add_argument('--force', action='store_true',
                         help='Skip the embedding-model compatibility check')
+    parser.add_argument('--no-underlay', dest='underlay', action='store_false',
+                        help="Don't draw the basemap's density render behind the projected "
+                             'points in the thumbnail (default: draw it when available)')
     parser.add_argument('--name', type=str, default=None, help='Human-friendly name for this umap')
     parser.add_argument('--description', type=str, default=None,
                         help='Free-text description for this umap')
     args = parser.parse_args()
     basemapper(args.dataset_id, args.embedding_id, args.basemap_id, device=args.device,
-               frame=args.frame, force=args.force, name=args.name, description=args.description)
+               frame=args.frame, force=args.force, underlay=args.underlay,
+               name=args.name, description=args.description)
 
 
 def _strip_model_prefix(model_id):
@@ -54,13 +58,94 @@ def _strip_model_prefix(model_id):
     return name.replace("___", "/")
 
 
+# A latent-basemap run directory ships the checkpoint next to the artifacts that
+# describe the map it draws: the training rows' coordinates (which define the
+# map's canonical frame) and a 1024x1024 binned density render of them (the
+# underlay). Anything found here is used automatically when a checkpoint is
+# given by path, so sandbox/round models work with no registry entry.
+PACK_FILES = {
+    "coordinates": "coordinates.npy",
+    "density_png": "density.png",
+    "summary": "summary.json",
+}
+# Frame convention, matched to latent-basemap's render (experiments/map_renders.py
+# robust_extent): the extent is the 0.1/99.9 percentile box padded by 2%, so one
+# outlier island cannot shrink the map. The density render uses exactly this box,
+# so a frame built the same way puts projected points in register with it.
+EXTENT_PERCENTILES = (0.1, 99.9)
+EXTENT_PAD = 0.02
+
+
+def _pack_artifacts(checkpoint_path):
+    """Sibling artifacts of a checkpoint (coordinates / density render / summary)."""
+    run_dir = os.path.dirname(os.path.abspath(checkpoint_path))
+    found = {}
+    for key, filename in PACK_FILES.items():
+        path = os.path.join(run_dir, filename)
+        if os.path.exists(path):
+            found[key] = path
+    return found
+
+
+def _extent_from_coordinates(coordinates_path, sample_rows=2_000_000):
+    """Derive a canonical [-1, 1] frame from a map's own training coordinates.
+
+    Reads the memmap in a strided subsample (never materializes the array — a
+    100M-row coordinates file is 800 MB) and returns (min_values, max_values)
+    for the padded percentile box.
+    """
+    import numpy as np
+    coords = np.load(coordinates_path, mmap_mode="r")
+    if coords.ndim != 2 or coords.shape[1] != 2:
+        raise ValueError(f"{coordinates_path}: expected (N, 2) coordinates, got {coords.shape}")
+    if len(coords) > sample_rows:
+        idx = np.linspace(0, len(coords) - 1, sample_rows).astype(np.int64)
+        pts = np.asarray(coords[idx], dtype=np.float64)
+    else:
+        pts = np.asarray(coords, dtype=np.float64)
+    lo, hi = np.percentile(pts, EXTENT_PERCENTILES, axis=0)
+    pad = EXTENT_PAD * (hi - lo)
+    pad[pad == 0] = 1.0
+    return (lo - pad).tolist(), (hi + pad).tolist()
+
+
+def _underlay_aligns(extent):
+    """True when a frame was built the same way the density render's box was.
+
+    A density PNG only registers with the points if the [-1, 1] frame is the
+    identical percentile box; a frame from a differently-derived extent (e.g. the
+    legacy registry entries, which store an unpadded percentile box over a 300k
+    reference sample) would be off by a few percent, so no underlay is drawn.
+    """
+    if not extent:
+        return False
+    return (tuple(extent.get("percentiles") or ()) == EXTENT_PERCENTILES
+            and extent.get("pad") == EXTENT_PAD)
+
+
 def _resolve_basemap(basemap_id):
-    """Resolve a registry id or checkpoint path to (registry_entry, checkpoint_path)."""
+    """Resolve a registry id or checkpoint path to (registry_entry, checkpoint_path).
+
+    A bare checkpoint path gets a synthetic registry entry built from its run
+    directory, so current sandbox/round models project into their own canonical
+    frame (and draw their own underlay) without being registered first.
+    """
     from latentscope.models import get_basemap_model_dict
     if basemap_id.endswith(".pt") or os.path.sep in basemap_id:
         if not os.path.exists(basemap_id):
             raise ValueError(f"basemap checkpoint not found: {basemap_id}")
-        return None, basemap_id
+        pack = _pack_artifacts(basemap_id)
+        # in a latent-basemap run directory the DIRECTORY names the map (the
+        # checkpoint is always "model.pt"); a loose checkpoint names itself
+        run_dir = os.path.dirname(os.path.abspath(basemap_id))
+        is_run_dir = "coordinates" in pack or "summary" in pack
+        entry = {
+            "id": (os.path.basename(run_dir) if is_run_dir else os.path.basename(basemap_id)),
+            "checkpoint": basemap_id,
+            "unregistered": True,
+        }
+        entry.update(pack)
+        return entry, basemap_id
     entry = get_basemap_model_dict(basemap_id)
     checkpoint = entry["checkpoint"]
     if not os.path.isabs(checkpoint):
@@ -68,11 +153,14 @@ def _resolve_basemap(basemap_id):
         checkpoint = os.path.join(base_dir, checkpoint)
     if not os.path.exists(checkpoint):
         raise ValueError(f"basemap checkpoint for '{basemap_id}' not found: {checkpoint}")
+    # registry entries may name their own artifacts; otherwise fall back to
+    # whatever sits next to the checkpoint
+    entry = {**_pack_artifacts(checkpoint), **entry}
     return entry, checkpoint
 
 
 def basemapper(dataset_id, embedding_id, basemap_id, device=None, frame=None, force=False,
-               name=None, description=None):
+               underlay=True, name=None, description=None):
     DATA_DIR = get_data_dir()
     umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
     if not os.path.exists(umap_dir):
@@ -87,7 +175,13 @@ def basemapper(dataset_id, embedding_id, basemap_id, device=None, frame=None, fo
     emb_model = _strip_model_prefix(emb_meta.get("model_id"))
     if entry is not None:
         expected = entry.get("embedding_model")
-        if emb_model != expected:
+        if expected is None:
+            # unregistered checkpoint given by path: nothing declares which
+            # embedding model it was trained on, so only the input dimension
+            # (checked below) guards the projection
+            print(f"NOTE: '{entry['id']}' is not in the basemap registry; the embedding model "
+                  f"('{emb_model}') cannot be verified against it")
+        elif emb_model != expected:
             msg = (f"embedding {embedding_id} was made with '{emb_model}' but basemap "
                    f"'{entry['id']}' expects '{expected}'")
             if not force:
@@ -153,12 +247,23 @@ def basemapper(dataset_id, embedding_id, basemap_id, device=None, frame=None, fo
 
     # map raw model coordinates into the [-1, 1] frame
     extent = entry.get("extent") if entry is not None else None
+    extent_source = "registry" if extent else None
+    coordinates_path = entry.get("coordinates") if entry is not None else None
+    if extent is None and coordinates_path:
+        # no registry extent, but the map's own training coordinates are on disk:
+        # derive the same padded percentile box the density render uses
+        print("deriving canonical extent from", coordinates_path)
+        mins, maxs = _extent_from_coordinates(coordinates_path)
+        extent = {"min_values": mins, "max_values": maxs,
+                  "percentiles": list(EXTENT_PERCENTILES), "pad": EXTENT_PAD,
+                  "source": coordinates_path}
+        extent_source = "coordinates"
     if frame is None:
         frame = "canonical" if extent else "dataset"
     if frame == "canonical":
         if not extent:
-            raise ValueError(f"basemap '{basemap_id}' has no canonical extent in the registry; "
-                             "use --frame dataset")
+            raise ValueError(f"basemap '{basemap_id}' has no canonical extent (no registry entry "
+                             "and no coordinates.npy next to the checkpoint); use --frame dataset")
         min_values = np.array(extent["min_values"], dtype=np.float64)
         max_values = np.array(extent["max_values"], dtype=np.float64)
         coords = apply_normalization(raw, min_values, max_values).astype(np.float32)
@@ -175,13 +280,33 @@ def basemapper(dataset_id, embedding_id, basemap_id, device=None, frame=None, fo
     df.to_parquet(output_file)
     print("wrote", output_file)
 
+    # thumbnail: the projected points, over the basemap's own density render when
+    # one is available in the same frame (this is the underlay — every latent-scope
+    # surface that already shows umap-NNN.png shows the user's data over the map)
+    density_png = entry.get("density_png") if entry is not None else None
+    underlay_drawn = False
+    if underlay and density_png and frame == "canonical" and _underlay_aligns(extent):
+        underlay_drawn = True
+
     fig, ax = plt.subplots(figsize=(14.22, 14.22))  # 1024px square at 72 dpi
     point_size = calculate_point_size(coords.shape[0])
-    plt.scatter(coords[:, 0], coords[:, 1], s=point_size, alpha=0.5)
-    plt.xlim(-1.05, 1.05)
-    plt.ylim(-1.05, 1.05)
-    plt.axis('off')
-    plt.gca().set_position([0, 0, 1, 1])
+    if underlay_drawn:
+        import matplotlib.image as mpimg
+        print("drawing basemap density underlay from", density_png)
+        # latent-basemap's density render is a 180-degree rotation of the natural
+        # axes (see experiments/map_renders.render_png: the transpose is followed
+        # by a rot90(2) and a row flip, which nets to an x-mirror). Rotate it back
+        # so it lines up with points plotted x-right / y-up.
+        ax.imshow(np.rot90(mpimg.imread(density_png), 2), extent=(-1, 1, -1, 1),
+                  alpha=0.85, interpolation='nearest', zorder=0)
+        ax.scatter(coords[:, 0], coords[:, 1], s=point_size, alpha=0.6,
+                   c='#d1495b', linewidths=0, zorder=1)
+    else:
+        ax.scatter(coords[:, 0], coords[:, 1], s=point_size, alpha=0.5)
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_ylim(-1.05, 1.05)
+    ax.axis('off')
+    ax.set_position([0, 0, 1, 1])
     plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
     plt.close(fig)
 
@@ -198,8 +323,13 @@ def basemapper(dataset_id, embedding_id, basemap_id, device=None, frame=None, fo
             "arch": info["arch"],
             "n_params": info["n_params"],
             "frame": frame,
+            "extent_source": extent_source,
+            # training-time knobs off the checkpoint: which map this actually is
+            "provenance": info.get("provenance") or {},
+            # the density render behind the points, in the same [-1, 1] frame
+            "density_png": density_png if underlay_drawn else None,
         },
-        "name": name if name is not None else (entry["name"] if entry is not None else basemap_id),
+        "name": name or (entry.get("name") if entry is not None else None) or basemap_id,
     }
     if description is not None:
         meta["description"] = description
