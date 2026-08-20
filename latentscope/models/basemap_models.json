@@ -223,5 +223,102 @@
     },
     "description": "Current-gen 8M fineweb-edu atlas with mid-near-4 pairs (ffr 0.51, stronger global cohesion). Embed WITHOUT the 'Document: ' prompt.",
     "embedding_prompt": "raw"
+  },
+  {
+    "id": "minilm-2m-r0265-seed42",
+    "name": "MiniLM 2M sealed (R0265 seed42)",
+    "checkpoint": "/data/checkpoints/pumap/maps/minilm-2m-r0265-seed42/model.pt",
+    "coordinates": "/data/checkpoints/pumap/maps/minilm-2m-r0265-seed42/coordinates.npy",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -17.013820121269227,
+        -27.604524717178347
+      ],
+      "max_values": [
+        30.162429341773997,
+        19.980287690963756
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "pad": 0.02,
+      "n_reference": 2000000,
+      "reference": "the map's own training rows (coordinates.npy), same box as density.png"
+    },
+    "density_png": "/data/checkpoints/pumap/maps/minilm-2m-r0265-seed42/density.png",
+    "description": "Sealed R0265 2M family cell, promoted recipe (x4 dose, fneg band).",
+    "embedding_prompt": "raw",
+    "summary": {
+      "provenance": "sealed R0265 2M family cell, promoted recipe (x4 dose)",
+      "evidence_status": "sealed",
+      "rows": 2000000
+    }
+  },
+  {
+    "id": "minilm-50m-r0267-seed42",
+    "name": "minilm-50m-r0267-seed42",
+    "checkpoint": "/data/checkpoints/pumap/maps/minilm-50m-r0267-seed42/model.pt",
+    "coordinates": "/data/checkpoints/pumap/maps/minilm-50m-r0267-seed42/coordinates.npy",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -30.146973845863343,
+        -34.82865658847808
+      ],
+      "max_values": [
+        39.66451197185518,
+        19.071946888847393
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "pad": 0.02,
+      "n_reference": 50000000,
+      "reference": "the map's own training rows (coordinates.npy), same box as density.png"
+    },
+    "density_png": "/data/checkpoints/pumap/maps/minilm-50m-r0267-seed42/density.png",
+    "embedding_prompt": "raw",
+    "summary": {
+      "provenance": "sealed R0267 50M staging cell (x2 dose, host-int8)",
+      "evidence_status": "sealed",
+      "rows": 50000000
+    }
+  },
+  {
+    "id": "minilm-100m-r0268-preview-seed42",
+    "name": "minilm-100m-r0268-preview-seed42",
+    "checkpoint": "/data/checkpoints/pumap/maps/minilm-100m-r0268-preview-seed42/model.pt",
+    "coordinates": "/data/checkpoints/pumap/maps/minilm-100m-r0268-preview-seed42/coordinates.npy",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimensions": 384,
+    "extent": {
+      "min_values": [
+        -41.62567845840454,
+        -17.76568439945221
+      ],
+      "max_values": [
+        24.193138213348504,
+        48.4236128147507
+      ],
+      "percentiles": [
+        0.1,
+        99.9
+      ],
+      "pad": 0.02,
+      "n_reference": 100000000,
+      "reference": "the map's own training rows (coordinates.npy), same box as density.png"
+    },
+    "density_png": "/data/checkpoints/pumap/maps/minilm-100m-r0268-preview-seed42/density.png",
+    "embedding_prompt": "raw",
+    "summary": {
+      "provenance": "100M flagship PREVIEW: byte-identical attempt-4 model via the R11 rehearsal transform; NON-EVIDENCE until R0268 seals, map itself is the real 100M projection",
+      "evidence_status": "preview-non-evidence",
+      "rows": 100000000
+    }
   }
 ]
