@@ -122,6 +122,9 @@ export const apiService = {
   getEmbeddingModels: async () => {
     return fetchJson(`${apiUrl}/models/embedding_models`);
   },
+  getBasemapModels: async () => {
+    return fetchJson(`${apiUrl}/models/basemap_models`);
+  },
   getRecentEmbeddingModels: async () => {
     return fetchJson(`${apiUrl}/models/embedding_models/recent`);
   },

@@ -340,6 +340,104 @@ def transform_umap(dataset_id, embedding_id, transform_from, name=None, descript
     return umap_id
 
 
+def align_main():
+    parser = argparse.ArgumentParser(
+        description='Procrustes-align an existing umap onto another umap of the same dataset, '
+                    'writing the aligned layout as a new umap')
+    parser.add_argument('dataset_id', type=str, help='Dataset name (directory name in data/)')
+    parser.add_argument('source_umap', type=str,
+                        help='umap whose coordinates get transformed (e.g. umap-002)')
+    parser.add_argument('target_umap', type=str,
+                        help='umap whose frame the source is aligned into (e.g. umap-001)')
+    parser.add_argument('--name', type=str, default=None, help='Human-friendly name')
+    parser.add_argument('--description', type=str, default=None, help='Free-text description')
+    args = parser.parse_args()
+    procrustes_align(args.dataset_id, args.source_umap, args.target_umap,
+                     name=args.name, description=args.description)
+
+
+def procrustes_align(dataset_id, source_umap, target_umap, name=None, description=None):
+    """Similarity-register (procrustes with uniform scale) source_umap onto target_umap.
+
+    Rows are matched by index (both umaps come from the same dataset), the
+    least-squares similarity transform is fit on the shared prefix, and the
+    aligned layout is written as a new umap-NNN in the target's frame. The
+    normalized procrustes disparity is printed and stored in the meta — a
+    direct measure of how similar the two layouts are up to
+    rotation/reflection/scale/translation.
+    """
+    DATA_DIR = get_data_dir()
+    umap_dir = os.path.join(DATA_DIR, dataset_id, "umaps")
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+
+    from latentscope.scripts.registration import count_out_of_frame, register_layout
+
+    source_meta = _read_umap_meta(umap_dir, source_umap)
+    target_meta = _read_umap_meta(umap_dir, target_umap)
+    src = pd.read_parquet(os.path.join(umap_dir, f"{source_umap}.parquet"))[['x', 'y']].to_numpy()
+    dst = pd.read_parquet(os.path.join(umap_dir, f"{target_umap}.parquet"))[['x', 'y']].to_numpy()
+    if len(src) != len(dst):
+        print(f"warning: {source_umap} has {len(src)} rows, {target_umap} has {len(dst)}; "
+              "aligning on the shared prefix")
+
+    aligned, (c, R, t) = register_layout(src, dst)
+    aligned = aligned.astype(np.float32)
+
+    n_shared = min(len(src), len(dst))
+    residual = ((aligned[:n_shared] - dst[:n_shared]) ** 2).sum()
+    total = ((dst[:n_shared] - dst[:n_shared].mean(axis=0)) ** 2).sum()
+    disparity = float(residual / total) if total > 0 else float('nan')
+    print(f"procrustes disparity ({source_umap} -> {target_umap}): {disparity:.4f}")
+
+    outside = count_out_of_frame(aligned)
+    if outside > 0:
+        print(f"{outside} aligned points fall outside [-1, 1]; not rescaling")
+
+    umap_id = _next_umap_id(umap_dir)
+    print("RUNNING:", umap_id)
+    df = pd.DataFrame(aligned, columns=['x', 'y'])
+    df.to_parquet(os.path.join(umap_dir, f"{umap_id}.parquet"))
+
+    fig, ax = plt.subplots(figsize=(14.22, 14.22))
+    point_size = calculate_point_size(aligned.shape[0])
+    plt.scatter(aligned[:, 0], aligned[:, 1], s=point_size, alpha=0.5)
+    plt.axis('off')
+    plt.gca().set_position([0, 0, 1, 1])
+    plt.savefig(os.path.join(umap_dir, f"{umap_id}.png"))
+    plt.close(fig)
+
+    meta = {
+        "id": umap_id,
+        "embedding_id": source_meta.get("embedding_id"),
+        "neighbors": source_meta.get("neighbors"),
+        "min_dist": source_meta.get("min_dist"),
+        # the aligned layout lives in the target's frame
+        "min_values": target_meta.get("min_values", [-1.0, -1.0]),
+        "max_values": target_meta.get("max_values", [1.0, 1.0]),
+        "aligned_from": source_umap,
+        "registered_to": target_umap,
+        "registration": {
+            "scale": float(c),
+            "rotation": np.asarray(R).tolist(),
+            "translation": np.asarray(t).tolist(),
+        },
+        "procrustes_disparity": disparity,
+    }
+    if "basemap" in source_meta:
+        meta["basemap"] = source_meta["basemap"]
+    meta["name"] = name if name is not None else f"{source_umap} aligned to {target_umap}"
+    if description is not None:
+        meta["description"] = description
+    with open(os.path.join(umap_dir, f'{umap_id}.json'), 'w') as f:
+        json.dump(meta, f, indent=2)
+
+    print("done with", umap_id)
+    return umap_id, disparity
+
+
 def umapper(dataset_id, embedding_id, neighbors=25, min_dist=0.1, save=False, init=None, align=None,
             seed=None, register_to=None, name=None, description=None):
     DATA_DIR = get_data_dir()

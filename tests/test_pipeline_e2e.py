@@ -189,6 +189,14 @@ def test_scope_rerun_refreshes_combined_input_parquet(pipeline_env):
     assert refreshed["cluster"].tolist() == cluster_labels_df["cluster"].tolist()
 
 
+def test_scope_pq_subvectors_divide_prime_embedding_dimension():
+    from latentscope.scripts.scope import _pq_sub_vectors
+
+    assert _pq_sub_vectors(253) == 11
+    assert 253 % _pq_sub_vectors(253) == 0
+    assert _pq_sub_vectors(512) == 32
+
+
 def test_cluster_evoc_reads_lancedb_embeddings(pipeline_env):
     """Regression: EVoC (the default cluster method) must read embeddings from
     the LanceDB store. Before the fix it read embeddings/{id}.h5 directly and

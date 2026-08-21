@@ -52,6 +52,23 @@ def get_embedding_model_dict(model_id):
     return model
 
 
+def get_basemap_model_list():
+    """Return the list of available pretrained basemap (parametric UMAP) models."""
+    from importlib.resources import files
+    basemap_path = files('latentscope.models').joinpath('basemap_models.json')
+    with open(basemap_path) as f:
+        return json.load(f)
+
+
+def get_basemap_model_dict(basemap_id):
+    basemap_list = get_basemap_model_list()
+    basemap_dict = {model['id']: model for model in basemap_list}
+    model = basemap_dict.get(basemap_id)
+    if not model:
+        raise ValueError(f"Basemap model '{basemap_id}' not found")
+    return model
+
+
 def _parse_colbert_model_id(model_id):
     """Return the model name from a colbert model_id, or None if not colbert."""
     if model_id.startswith("colbert-"):

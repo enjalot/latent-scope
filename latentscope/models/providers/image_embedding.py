@@ -7,6 +7,8 @@ text providers use: one L2-normalized vector per input row. Dual encoders
 caption columns of a dataset land in a single shared space.
 """
 
+import os
+
 from .base import EmbedModelProvider
 
 
@@ -19,6 +21,11 @@ def _projected_features(output):
 
 
 def _select_device(torch):
+    # Respect the same explicit device policy as UMAP/clustering before asking
+    # PyTorch about CUDA. This avoids even initializing the CUDA driver on
+    # shared-GPU hosts when a caller has forced Latent Scope onto CPU.
+    if os.environ.get("LATENT_SCOPE_DEVICE", "").strip().lower() == "cpu":
+        return "cpu"
     try:
         if torch.cuda.is_available():
             return "cuda"
