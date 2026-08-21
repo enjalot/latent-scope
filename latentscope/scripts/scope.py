@@ -24,6 +24,13 @@ def main():
     scope(**vars(args))
 
 
+def _pq_sub_vectors(dim):
+    """Choose an IVF-PQ sub-vector count that evenly divides ``dim``."""
+    target = max(1, dim // 16)
+    return next(candidate for candidate in range(target, 0, -1)
+                if dim % candidate == 0)
+
+
 
 def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
     import h5py
@@ -95,10 +102,15 @@ def export_lance(directory, dataset, scope_id, metric="cosine", partitions=256):
     print(f"Creating ANN index for embeddings on table '{table_name}'")
     num_rows = len(scope_df)
     actual_partitions = min(partitions, max(1, num_rows // 10))
-    sub_vectors = max(1, dim // 16)
-    if num_rows >= 256:
+    sub_vectors = _pq_sub_vectors(dim)
+    if num_rows >= 256 and (sub_vectors > 1 or dim <= 16):
         print(f"Partitioning into {actual_partitions} partitions, {sub_vectors} sub-vectors")
         tbl.create_index(num_partitions=actual_partitions, num_sub_vectors=sub_vectors, metric=metric)
+    elif num_rows >= 256:
+        print(
+            f"Embedding dimension {dim} has no useful PQ divisor; "
+            "skipping ANN index and using exact search"
+        )
     else:
         print(f"Dataset too small ({num_rows} rows) for IVF index, skipping ANN index")
 
@@ -286,4 +298,3 @@ def scope(dataset_id, embedding_id, umap_id, cluster_id, cluster_labels_id, labe
     export_lance(DATA_DIR, dataset_id, id)
 
     print("wrote scope", id)
-
