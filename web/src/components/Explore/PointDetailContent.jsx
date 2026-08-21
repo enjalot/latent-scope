@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Modal, Button } from 'react-element-forge';
+import '@google/model-viewer';
 
+import { assetUrlFor } from '../../lib/assetUrl';
 import { imageUrlFor } from '../../lib/imageUrl';
 import {
   organizeDetailColumns,
@@ -71,12 +73,40 @@ function PointDetailContent({ row, index, imageSize = DEFAULT_IMAGE_SIZE }) {
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [lightbox]);
 
-  const { imageColumns, textColumn, listColumns } = organizeDetailColumns(dataset);
+  const { imageColumns, modelColumns, textColumn, listColumns } =
+    organizeDetailColumns(dataset);
   const metadata = dataset?.column_metadata || {};
   const hasIndex = index !== null && index !== undefined;
 
   return (
     <>
+      {row &&
+        modelColumns.map((column) => {
+          const src = assetUrlFor(dataset.id, row[column]);
+          if (!src) return null;
+          return (
+            <div key={column} className={styles.modelSection}>
+              <model-viewer
+                class={styles.modelViewer}
+                src={src}
+                alt={`${column} for row ${index}`}
+                camera-controls=""
+                auto-rotate=""
+                rotation-per-second="12deg"
+                shadow-intensity="1"
+                exposure="1.05"
+                interaction-prompt="auto"
+              />
+              <div className={styles.imageCaption}>
+                <span>{column}</span>
+                <a href={src} target="_blank" rel="noreferrer">
+                  open GLB ↗
+                </a>
+              </div>
+            </div>
+          );
+        })}
+
       {hasIndex &&
         imageColumns.map(({ column, kind }) => {
           const src =

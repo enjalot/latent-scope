@@ -4,10 +4,11 @@ import { organizeDetailColumns, describeCellValue, formatDetailNumber } from './
 describe('organizeDetailColumns', () => {
   const dataset = {
     text_column: 'text',
-    columns: ['text', 'photo', 'thumb_url', 'link', 'score', 'tokens', 'ls_index'],
+    columns: ['text', 'photo', 'thumb_url', 'model', 'link', 'score', 'tokens', 'ls_index'],
     column_metadata: {
       photo: { type: 'image', image_kind: 'binary' },
       thumb_url: { image: true, image_kind: 'url' },
+      model: { type: 'string', model3d: true, model_kind: 'gltf' },
       link: { url: true },
       score: { type: 'number', extent: [0, 1] },
       tokens: { type: 'array' },
@@ -15,11 +16,13 @@ describe('organizeDetailColumns', () => {
   };
 
   it('splits image columns by kind and keeps the rest in order', () => {
-    const { imageColumns, textColumn, listColumns } = organizeDetailColumns(dataset);
+    const { imageColumns, modelColumns, textColumn, listColumns } =
+      organizeDetailColumns(dataset);
     expect(imageColumns).toEqual([
       { column: 'photo', kind: 'binary' },
       { column: 'thumb_url', kind: 'url' },
     ]);
+    expect(modelColumns).toEqual(['model']);
     expect(textColumn).toBe('text');
     expect(listColumns).toEqual(['link', 'score', 'tokens']);
   });
@@ -33,6 +36,7 @@ describe('organizeDetailColumns', () => {
   it('handles a missing dataset and missing metadata', () => {
     expect(organizeDetailColumns(null)).toEqual({
       imageColumns: [],
+      modelColumns: [],
       textColumn: null,
       listColumns: [],
     });

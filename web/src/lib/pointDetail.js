@@ -14,16 +14,20 @@ const INTERNAL_COLUMNS = new Set(['ls_index', 'index', 'idx', 'sae_indices', 'sa
  * Returns:
  * - imageColumns: [{ column, kind }] where kind is "binary" (fetched from the
  *   backend image endpoint) or "url" (the row value is the image URL)
+ * - modelColumns: dataset-relative glTF/GLB assets shown in a 3D viewer
  * - textColumn: the dataset's main text column (shown prominently)
  * - listColumns: everything else, in dataset column order
  */
 export function organizeDetailColumns(dataset) {
-  if (!dataset) return { imageColumns: [], textColumn: null, listColumns: [] };
+  if (!dataset) {
+    return { imageColumns: [], modelColumns: [], textColumn: null, listColumns: [] };
+  }
   const metadata = dataset.column_metadata || {};
   const columns = dataset.columns || [];
   const textColumn = dataset.text_column || null;
 
   const imageColumns = [];
+  const modelColumns = [];
   const listColumns = [];
   columns.forEach((column) => {
     if (INTERNAL_COLUMNS.has(column)) return;
@@ -32,11 +36,13 @@ export function organizeDetailColumns(dataset) {
       imageColumns.push({ column, kind: 'binary' });
     } else if (meta?.image) {
       imageColumns.push({ column, kind: 'url' });
+    } else if (meta?.model3d) {
+      modelColumns.push(column);
     } else if (column !== textColumn) {
       listColumns.push(column);
     }
   });
-  return { imageColumns, textColumn, listColumns };
+  return { imageColumns, modelColumns, textColumn, listColumns };
 }
 
 /** Format a number compactly: integers with locale separators, floats trimmed. */

@@ -271,6 +271,11 @@ def ingest(dataset_id, df, text_column=None, skip_thumbnails=False):
                 ):
                     column_metadata[column]["image"] = True
                     column_metadata[column]["image_kind"] = "url"
+            if df[column].dropna().astype(str).str.lower().str.endswith(
+                (".glb", ".gltf")
+            ).all():
+                column_metadata[column]["model3d"] = True
+                column_metadata[column]["model_kind"] = "gltf"
         if column_type == "image":
             column_metadata[column]["image"] = True
             column_metadata[column]["image_kind"] = "binary"

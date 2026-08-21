@@ -122,6 +122,12 @@ In Explore, image datasets default to the heatmap and transition to the image
 grid (then individual points) as you zoom — no separate toggle. See the
 **Images** step in Setup to plan resolutions and preview size estimates.
 
+String columns whose non-null values all end in `.glb` or `.gltf` are marked as
+dataset-relative 3D assets. Put those files below the dataset directory (for
+example `mydataset/models/head-001.glb`) and store `models/head-001.glb` in the
+table. Clicking a point opens the asset in the detail drawer's interactive
+orbit/zoom viewer; `/api/files` serves it from the same data root.
+
 ---
 
 ## 5. ColBERT late-interaction (multi-vector) embeddings

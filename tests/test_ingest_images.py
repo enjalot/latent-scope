@@ -112,6 +112,21 @@ def test_ingest_url_image_detection_still_works(ingest_env):
     assert "image" not in page_meta
 
 
+def test_ingest_detects_relative_gltf_asset_paths(ingest_env):
+    from latentscope.scripts.ingest import ingest
+
+    df = pd.DataFrame({
+        "model_3d": ["models/one.glb", "models/two.gltf"],
+        "caption": ["one", "two"],
+    })
+    ingest("models-3d", df, text_column="caption")
+
+    meta = load_meta(ingest_env, "models-3d")["column_metadata"]["model_3d"]
+    assert meta["type"] == "string"
+    assert meta["model3d"] is True
+    assert meta["model_kind"] == "gltf"
+
+
 def test_ingest_non_image_bytes_not_flagged(ingest_env):
     from latentscope.scripts.ingest import ingest
 
